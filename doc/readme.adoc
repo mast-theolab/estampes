@@ -153,6 +153,11 @@ A label-specific option.
 |====
 | Label | Option | Description
 
+.2+| `AtCrd` | `last` | Only last geometry if multiple present.
+| `first` <| Only the first geometry if multiple present.
+| `all`   <| All geometries should be extracted.
+| `scan`  <| Geometries relative to a scan procedure
+
 .2+| `DipStr` | `H` | Harmonic dipole strength
 | `A` <| Anharmonic dipole strength
 
@@ -162,13 +167,24 @@ A label-specific option.
 .2+| `3xx` | 0 | Data for all incident frequencies
 | _N_ <| Data for _N_-th incident frequency
 
-.2+| `FCDat` | JMat | Duschinsky matrix
+.2+| `FCDat` | SimInf | Simulation information/parameters
+| JMat   <| Duschinsky matrix
+| JMatF  <| Duschinsky matrix (full dimension if red-dim requested)
 | KVec   <| Shift vector
 | SRAMat <| Sharp and Rosenstock A matrix
 | SRBVec <| Sharp and Rosenstock B vector
 | SRCMat <| Sharp and Rosenstock C matrix
 | SRDVec <| Sharp and Rosenstock D vector
 | SREMat <| Sharp and Rosenstock E matrix
+| GeomIS <| Initial-state geometry
+| GeomFS <| Final-state geometry
+| GeomMS <| Intermediate geometry
+| ExGeom <| Extrapolated geometry
+| Spec   <| Spectrum/spectra
+| SpcLeg <| Spectrum legend
+| BShape <| Band-shape broadening method and parameters
+| Conv   <| Convergence Data
+| Assign <| Assignment data
 
 .2+ | `VPTDat` | XMat | Anharmonic stem:[bb"chi"]
 | GMat <| Variational correction matrix (for _Generalized_...)
@@ -253,6 +269,11 @@ The module provides a high-level class, *`DataFile`*, and 2 basic functions, `bu
             State definition inconsistent with available data.
         `QuantityError`::::
             Unsupported quantity
+    `version`:::
+        Should return a tuple with
+
+        * The name of the program used to generate the file or the file type for '`standard`' exchange formats (ex: PDB, XYZ), as a string
+        * A dictionary with program/format versions if relevant (`None` otherwise)
 `parse_qlabel`::
     A simple function which parses a _qlabel_ and returns a tuple of the different components and fill missing elements.
     This routine is internally called by the parsing methods.
