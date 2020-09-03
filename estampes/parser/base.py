@@ -391,8 +391,8 @@ def build_qlabel(qtag: tp.Union[str, int],
     return '{}:{}:{}:{}:{}'.format(a, b, c, d, e)
 
 
-def reshape_dblock(dblock: tp.List[tp.Any],
-                   dshape: tp.List[int]
+def reshape_dblock(dblock: tp.Sequence[tp.Any],
+                   dshape: tp.Sequence[int]
                    ) -> tp.List[tp.Any]:
     """Reshapes a data block.
 
@@ -431,10 +431,10 @@ def reshape_dblock(dblock: tp.List[tp.Any],
             nzero.append(i)
         else:
             sshape *= dim
+    _dshape = list(dshape)
     if nzero:
         if len(nzero) > 1:
             raise ValueError('Shape inconsistent with data block size')
-        _dshape = list(dshape)
         _dshape[nzero[0]] = lblock // sshape
         if _dshape[nzero[0]]*sshape != lblock:
             raise ValueError('Shape inconsistent with data block size')
@@ -451,13 +451,13 @@ def reshape_dblock(dblock: tp.List[tp.Any],
     if lshape == 1:
         data = dblock
     elif lshape == 2:
-        dim1 = dshape[0]
+        dim1 = _dshape[0]
         data = []
         for i in range(0, lblock, dim1):
             data.append([dblock[i+j] for j in range(dim1)])
     elif lshape == 3:
-        dim1 = dshape[0]
-        dim2 = dshape[1]
+        dim1 = _dshape[0]
+        dim2 = _dshape[1]
         dim12 = dim1*dim2
         data = []
         for i in range(0, lblock, dim12):
