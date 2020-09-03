@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Asciidoctor 2.0.10">
+<meta name="generator" content="Asciidoctor 1.5.8">
 <title>ESTAMPES: A prototypical program for spectral analysis</title>
 <style>
 @import url(http://fonts.googleapis.com/css?family=Titillium+Web:400,700);
@@ -671,12 +671,15 @@ table.tableblock.grid-all { -webkit-border-radius: 0; border-radius: 0; -webkit-
 
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+/* Pygments CSS disabled. Pygments is not available. */
+</style>
 </head>
 <body class="article toc2 toc-left">
 <div id="header">
 <h1>ESTAMPES: A prototypical program for spectral analysis</h1>
 <div class="details">
-<span id="revnumber">version 19.11.10</span>
+<span id="revnumber">version 20.09.02</span>
 <br><span id="revremark">Introduction</span>
 </div>
 <div id="toc" class="toc2">
@@ -1077,6 +1080,23 @@ Its structure is as follows:</p>
 </thead>
 <tbody>
 <tr>
+<td class="tableblock halign-center valign-top" rowspan="4"><p class="tableblock"><code>AtCrd</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>last</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Only last geometry if multiple present.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>first</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Only the first geometry if multiple present.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>all</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All geometries should be extracted.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>scan</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Geometries relative to a scan procedure</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-center valign-top" rowspan="2"><p class="tableblock"><code>DipStr</code></p></td>
 <td class="tableblock halign-center valign-top"><p class="tableblock"><code>H</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Harmonic dipole strength</p></td>
@@ -1096,7 +1116,7 @@ Its structure is as follows:</p>
 </tr>
 <tr>
 <td class="tableblock halign-center valign-top" rowspan="2"><p class="tableblock"><code>3xx</code></p></td>
-<td class="tableblock halign-center valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>0</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Data for all incident frequencies</p></td>
 </tr>
 <tr>
@@ -1104,38 +1124,85 @@ Its structure is as follows:</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Data for <em>N</em>-th incident frequency</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top" rowspan="2"><p class="tableblock"><code>FCDat</code></p></td>
-<td class="tableblock halign-center valign-top"><p class="tableblock">JMat</p></td>
+<td class="tableblock halign-center valign-top" rowspan="18"><p class="tableblock"><code>FCDat</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>SimInf</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Simulation information/parameters</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>JMat</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Duschinsky matrix</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock">KVec</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>JMatF</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Duschinsky matrix (full dimension if red-dim requested)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>KVec</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Shift vector</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock">SRAMat</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>SRAMat</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Sharp and Rosenstock A matrix</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">SRBVec</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>SRBVec</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Sharp and Rosenstock B vector</p></td>
-<td class="tableblock halign-center valign-top"><p class="tableblock">SRCMat</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>SRCMat</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Sharp and Rosenstock C matrix</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock">SRDVec</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>SRDVec</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Sharp and Rosenstock D vector</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">SREMat</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Sharp and Rosenstock E matrix</p>
-<p class="tableblock">.2+</p></td>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>VPTDat</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">XMat</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>SREMat</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sharp and Rosenstock E matrix</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock">Anharmonic \$bb"chi"\$</p></td>
-<td class="tableblock halign-center valign-top"><p class="tableblock">GMat</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>GeomIS</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Initial-state geometry</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>GeomFS</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Final-state geometry</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>GeomMS</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Intermediate geometry</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>ExGeom</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Extrapolated geometry</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>Spec</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Spectrum/spectra</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>SpcLeg</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Spectrum legend</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>BShape</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Band-shape broadening method and parameters</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>Conv</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Convergence Data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>Assign</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Assignment data</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top" rowspan="2"><p class="tableblock"><code>VPTDat</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>XMat</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Anharmonic \$bb{chi}\$ matrix</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code>GMat</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Variational correction matrix (for <em>Generalized</em>&#8230;&#8203;)</p></td>
 </tr>
 </tbody>
@@ -1161,23 +1228,23 @@ Its structure is as follows:</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Default (<code>0</code>)</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>0</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code><code>0</code></code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Reference value (e.g., equilibrium value)</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>1</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code><code>1</code></code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">First derivative of the quantity</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>2</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code><code>2</code></code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Second derivative of the quantity</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>3</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code><code>3</code></code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Third derivative of the quantity</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>4</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code><code>4</code></code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Fourth derivative of the quantity</p></td>
 </tr>
 </tbody>
@@ -1203,19 +1270,19 @@ Its structure is as follows:</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Default (<code>X</code>)</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>X</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code><code>X</code></code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Derivatives with respect to Cartesian coordinates</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>Q</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code><code>Q</code></code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Derivatives with respect to normal coordinates</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>I</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code><code>I</code></code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Derivatives with respect to internal coordinates</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>QX</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code><code>QX</code></code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Derivatives in ixed normal-Cartesian coordinates</p></td>
 </tr>
 </tbody>
@@ -1242,15 +1309,15 @@ It can be either a single &#8220;state&#8221; value (integer or string) or 2 &#8
 <td class="tableblock halign-left valign-top"><p class="tableblock">Default (current state)</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>c</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code><code>c</code></code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Current state (i.e. the root for excited electronic state)</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>a</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code><code>a</code></code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">All available electronic states</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>0</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock"><code><code>0</code></code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Ground electronic states</p></td>
 </tr>
 <tr>
@@ -1304,6 +1371,20 @@ Raises:</p>
 </dl>
 </div>
 </dd>
+<dt class="hdlist1"><code>version</code></dt>
+<dd>
+<p>Should return a tuple with</p>
+<div class="ulist">
+<ul>
+<li>
+<p>The name of the program used to generate the file or the file type for &#8216;standard&#8217; exchange formats (ex: PDB, XYZ), as a string</p>
+</li>
+<li>
+<p>A dictionary with program/format versions if relevant (<code>None</code> otherwise)</p>
+</li>
+</ul>
+</div>
+</dd>
 </dl>
 </div>
 </dd>
@@ -1324,8 +1405,8 @@ This routine is internally called by the parsing methods.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Version 19.11.10<br>
-Last updated 2019-11-11 03:15:00 +0100
+Version 20.09.02<br>
+Last updated 2020-09-03 11:03:22 +0200
 </div>
 </div>
 <script type="text/x-mathjax-config">
@@ -1341,16 +1422,8 @@ MathJax.Hub.Config({
     ignoreClass: "nostem|noasciimath"
   },
   TeX: { equationNumbers: { autoNumber: "none" } }
-})
-MathJax.Hub.Register.StartupHook("AsciiMath Jax Ready", function () {
-  MathJax.InputJax.AsciiMath.postfilterHooks.Add(function (data, node) {
-    if ((node = data.script.parentNode) && (node = node.parentNode) && node.classList.contains('stemblock')) {
-      data.math.root.display = "block"
-    }
-    return data
-  })
-})
+});
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_HTMLorMML"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_HTMLorMML"></script>
 </body>
 </html>

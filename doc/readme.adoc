@@ -1,6 +1,6 @@
 = ESTAMPES: A prototypical program for spectral analysis
 :email: julien.bloino@sns.it
-:revnumber: 19.11.10
+:revnumber: 20.09.02
 :revremark: Introduction
 :toc: left
 :toclevels: 1
@@ -153,7 +153,7 @@ A label-specific option.
 |====
 | Label | Option | Description
 
-.2+| `AtCrd` | `last` | Only last geometry if multiple present.
+.4+| `AtCrd` | `last` | Only last geometry if multiple present.
 | `first` <| Only the first geometry if multiple present.
 | `all`   <| All geometries should be extracted.
 | `scan`  <| Geometries relative to a scan procedure
@@ -164,30 +164,30 @@ A label-specific option.
 .2+| `RotStr` | `H` | Harmonic rotatory strength
 | `A` <| Anharmonic rotatory strength
 
-.2+| `3xx` | 0 | Data for all incident frequencies
+.2+| `3xx` | `0` | Data for all incident frequencies
 | _N_ <| Data for _N_-th incident frequency
 
-.2+| `FCDat` | SimInf | Simulation information/parameters
-| JMat   <| Duschinsky matrix
-| JMatF  <| Duschinsky matrix (full dimension if red-dim requested)
-| KVec   <| Shift vector
-| SRAMat <| Sharp and Rosenstock A matrix
-| SRBVec <| Sharp and Rosenstock B vector
-| SRCMat <| Sharp and Rosenstock C matrix
-| SRDVec <| Sharp and Rosenstock D vector
-| SREMat <| Sharp and Rosenstock E matrix
-| GeomIS <| Initial-state geometry
-| GeomFS <| Final-state geometry
-| GeomMS <| Intermediate geometry
-| ExGeom <| Extrapolated geometry
-| Spec   <| Spectrum/spectra
-| SpcLeg <| Spectrum legend
-| BShape <| Band-shape broadening method and parameters
-| Conv   <| Convergence Data
-| Assign <| Assignment data
+.18+| `FCDat` | `SimInf` | Simulation information/parameters
+| `JMat`   <| Duschinsky matrix
+| `JMatF`  <| Duschinsky matrix (full dimension if red-dim requested)
+| `KVec`   <| Shift vector
+| `SRAMat` <| Sharp and Rosenstock A matrix
+| `SRBVec` <| Sharp and Rosenstock B vector
+| `SRCMat` <| Sharp and Rosenstock C matrix
+| `SRDVec` <| Sharp and Rosenstock D vector
+| `SREMat` <| Sharp and Rosenstock E matrix
+| `GeomIS` <| Initial-state geometry
+| `GeomFS` <| Final-state geometry
+| `GeomMS` <| Intermediate geometry
+| `ExGeom` <| Extrapolated geometry
+| `Spec`   <| Spectrum/spectra
+| `SpcLeg` <| Spectrum legend
+| `BShape` <| Band-shape broadening method and parameters
+| `Conv`   <| Convergence Data
+| `Assign` <| Assignment data
 
-.2+ | `VPTDat` | XMat | Anharmonic stem:[bb"chi"]
-| GMat <| Variational correction matrix (for _Generalized_...)
+.2+| `VPTDat` | `XMat` | Anharmonic stem:[bb{chi}] matrix
+| `GMat` <| Variational correction matrix (for _Generalized_...)
 |====
 
 
@@ -201,11 +201,11 @@ An integer, specifying the derivative order.
 | Value | Description
 
 |  None | Default (`0`)
-|     0 | Reference value (e.g., equilibrium value)
-|     1 | First derivative of the quantity
-|     2 | Second derivative of the quantity
-|     3 | Third derivative of the quantity
-|     4 | Fourth derivative of the quantity
+|   `0` | Reference value (e.g., equilibrium value)
+|   `1` | First derivative of the quantity
+|   `2` | Second derivative of the quantity
+|   `3` | Third derivative of the quantity
+|   `4` | Fourth derivative of the quantity
 
 |====
 
@@ -220,10 +220,10 @@ The possible coordinates are:
 | Value | Description
 
 |  None | Default (`X`)
-|    X  | Derivatives with respect to Cartesian coordinates
-|    Q  | Derivatives with respect to normal coordinates
-|    I  | Derivatives with respect to internal coordinates
-|    QX | Derivatives in ixed normal-Cartesian coordinates
+|  `X`  | Derivatives with respect to Cartesian coordinates
+|  `Q`  | Derivatives with respect to normal coordinates
+|  `I`  | Derivatives with respect to internal coordinates
+|  `QX` | Derivatives in ixed normal-Cartesian coordinates
 
 |====
 
@@ -238,9 +238,9 @@ It can be either a single "`state`" value (integer or string) or 2 "`state`" val
 | Value | Description
 
 |  None | Default (current state)
-|     c | Current state (i.e. the root for excited electronic state)
-|     a | All available electronic states
-|     0 | Ground electronic states
+|   `c` | Current state (i.e. the root for excited electronic state)
+|   `a` | All available electronic states
+|   `0` | Ground electronic states
 |   _N_ | __N__th excited electronic state
 
 |====
