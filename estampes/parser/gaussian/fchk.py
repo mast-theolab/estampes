@@ -956,7 +956,7 @@ def parse_data(qdict: TypeQInfo,
         if qtag == 'natoms':
             data[qlabel] = int(datablocks[kword])
         elif qtag in ('atcrd', 2):
-            data[qlabel] = ep.reshape_dblock(datablocks[kword], (0, 3))
+            data[qlabel] = ep.reshape_dblock(datablocks[kword], (3, ))
         elif qtag in ('atmas', 'atnum'):
             data[qlabel] = datablocks[kword]
         elif qtag == 'swopt':
