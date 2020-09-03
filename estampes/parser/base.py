@@ -506,7 +506,7 @@ class DataFile(object):
         if ftype in ('fchk', 'fch'):
             self._dfile = fchk.FChkIO(filename)
             self._parser = fchk
-        if ftype in ('glog', 'log', 'out'):
+        elif ftype in ('glog', 'log', 'out'):
             self._dfile = glog.GLogIO(filename)
             self._parser = glog
         elif ftype == 'xyz':
