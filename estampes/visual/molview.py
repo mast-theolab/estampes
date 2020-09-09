@@ -197,7 +197,7 @@ class Molecule(Qt3DCore.QEntity):
         ArgumentError
             Incorrect argument types.
         """
-        self.__material = Qt3DExtras.QDiffuseSpecularMaterial(self)
+        self.__material = Qt3DExtras.QDiffuseSpecularMaterial
         self.__optview = {
             'col_bond': col_bond_as_atom,
             'rad_atom': rad_atom_as_bond,
@@ -212,7 +212,7 @@ class Molecule(Qt3DCore.QEntity):
             _molcol = list(molcol)
         self.__optview['molcol'] = _molcol
         if not col_bond_as_atom:
-            self.__bo_mat = self.__material
+            self.__bo_mat = self.__material(self)
             self.__bo_mat.setAmbient(QtGui.QColor(BONDDATA['rgb']))
         else:
             self.__bo_mat = None
@@ -266,8 +266,7 @@ class Molecule(Qt3DCore.QEntity):
                 r, g, b = self.__atdata[atom]['rgb']
             else:
                 r, g, b = __molcol
-            # self.__at_mat[atom] = self.__material
-            self.__at_mat[atom] = Qt3DExtras.QDiffuseSpecularMaterial(self)
+            self.__at_mat[atom] = self.__material(self)
             self.__at_mat[atom].setAmbient(QtGui.QColor(r, g, b))
             if self.__optview['rad_atom']:
                 rval = self.__bo_rad
