@@ -167,9 +167,9 @@ def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
     # Vibrationally-resolved electronic spectroscopy
     pvel = psubs.add_parser('vibronic', aliases=['FCHT', 'l718'],
                             help='Vibronic specroscopy')
-    fmt = 'Quantity to show.  Possible values:\n{}'
     pvel.add_argument('-o', '--output',
                       help='Output file.')
+    fmt = 'Quantity to show.  Possible values:\n{}'
     pvel.add_argument('-q', '--quantity', type=str.lower,
                       choices=[item.lower() for item in FCHT_QTIES],
                       default='mols',
@@ -277,6 +277,10 @@ def mode_vibronic(dfile: DataFile,
             fig.set_size_inches(figsize)
             if qty == 'jmat':
                 mat = np.array(data[dkeys['JMat']])
+                plot = plot_jmat(mat, subp)
+                fig.colorbar(plot)
+            elif qty == 'fulljmat':
+                mat = np.array(data[dkeys['JFul']])
                 plot = plot_jmat(mat, subp)
                 fig.colorbar(plot)
             elif qty == 'cmat':

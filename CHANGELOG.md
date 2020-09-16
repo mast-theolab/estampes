@@ -17,11 +17,19 @@ Other blocks are:
 
 ## Unreleased
 
+## [0.1.3] - 2020-09-16
+
+### Fixed
+
+- **ESP** - Diplay of full J matrix in vibronic spectra.
+
+
 ## [0.1.2] - 2020-09-09
 
 ### Changed
 
 - Changed versioning system from calendar to semantic.
+
 
 ## [0.1.1] - 2020-09-03
 
