@@ -48,7 +48,7 @@ def plot_spec_2D(axes: tp.Dict[str, tp.Sequence[float]],
         * one 'x' key
         * one or more 'y'/'yX' keys for the y axis/axes (X=1+ digits.)
     canvas
-        Matplotlib plotting frame
+        Matplotlib plotting frame.
     xlabel
         Label for the X axis.
         If `None`, the function tries to generate it from `Legends`.
@@ -116,9 +116,9 @@ def plot_spec_2D(axes: tp.Dict[str, tp.Sequence[float]],
             if legends is not None and keys[key] in legends:
                 data['label'] = legends[keys[key]]
             if colors is not None and keys[key] in colors:
-                data['colors'] = colors[keys[key]]
+                data['color'] = colors[keys[key]]
             else:
-                data['colors'] = 'C{:d}'.format(i)
+                data['color'] = 'C{:d}'.format(i)
                 i += 1
             if is_stick:
                 zeros = np.zeros(len(axes[keys[key]]))

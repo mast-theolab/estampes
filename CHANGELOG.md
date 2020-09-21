@@ -17,11 +17,18 @@ Other blocks are:
 
 ## Unreleased
 
+
+## [0.1.4] - 2020-09-21
+
+### Fixed
+
+- **VIZ** - Fixed errors with the definition of colors in 2D spectra.
+
 ## [0.1.3] - 2020-09-16
 
 ### Fixed
 
-- **ESP** - Diplay of full J matrix in vibronic spectra.
+- **ESP** - Display of full J matrix in vibronic spectra.
 
 
 ## [0.1.2] - 2020-09-09
