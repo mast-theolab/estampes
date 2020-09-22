@@ -1,0 +1,116 @@
+= Ballast: A simple builder to display multiple spectra.
+:email: julien.bloino@sns.it
+:revnumber: 0.2.0
+:revremark: Introduction
+:toc: left
+:toclevels: 1
+:icons: font
+:stem:
+////:source-highlighter: pygments  ////
+:pygments-style: native
+
+:Gaussian: pass:q[G[small]##AUSSIAN##]
+:Estampes: pass:q[E[small]##STAMPES##]
+:ESParser: pass:q[ESP[small]##ARSER##]
+:Ballast: pass:q[B[small]##ALLAST##]
+
+== Preamble
+
+{Ballast} helps construct figures involving multiple spectra
+
+== Overview
+
+== Requirements
+
+* This mode depends heavily on *Matplotlib* for the display of the spectra.
+
+== Command-line arguments
+
+== Option file
+
+An INI file can be given in place of arguments.
+Its structure is divided in 2 blocks:
+
+`figure`::
+    Figure parameters.
+`layout`::
+    Layout of the spectrum.
+`curve`::
+    Parameters of a curve, *must* be followed by an identifier, separated by a '`:`' (ex: `curve:1`).
+
+=== Figure parameters
+
+`geometry`::
+    Geometry of the figure, as '`width, height`'
+
+
+=== Layout parameters
+
+`title`::
+    Title of the spectrum
+`xleft` | _alt_: `xmin`::
+    Left bound of the X axis.
+    `xmin` can be used instead but is misleading if a decreasing X axis is desired.
+`xright` | _alt_: `xmax`::
+    Right bound of the X axis.
+    `xmax` can be used instead but is misleading if a decreasing X axis is desired.
+`ytop` | _alt_: `ymax`::
+    Top bound of the Y axis.
+    `ymax` can be used instead but is misleading if a decreasing Y axis is desired.
+`ybottom` | _alt_: `ymin`::
+    Bottom bound of the Y axis.
+    `ymin` can be used instead but is misleading if a decreasing Y axis is desired.
+`xscale`::
+    Scale for the X axis. +
+    Possible values: `linear` (default), `log`, `log2`, `log10`.
+`yscale`::
+    Scale for the Y axis. +
+    Possible values: `linear` (default), `log`, `log2`, `log10`.
+`legend`::
+    Display legend. +
+    Possible values: `No`, `auto` (default), any supported value for the position of the legend in *Matplotlib*.
+`legend_cols`::
+    Number of columns to use in the legend.
+`xlabel`::
+    Label for the X axis.
+`ylabel`::
+    Label for the Y axis
+
+=== Curve definition
+
+`file`::
+    Name of the file containing the data.
+`spectroscopy`::
+    Type of spectroscopy (acronym).
+`level`::
+    Level of theory. +
+    Accepted values: `E` (`Ele`, `Electronic`), `H` (`Harm`, `Harmonic`), `A` (`Anh`, `Anharm`, `Anaharmonic`)
+`label`::
+    Label to display in the legend.
+`color`::
+    Color definition (passed directly *Matplotlib*).
+`linestyle`::
+    Line style (passed directly to *Matplotlib*).
+`xshift`::
+    Shift value applied to the curve along the X axis.
+`yshift`::
+    Shift value applied to the curve along the Y axis. +
+    `baseline` is accepted to correct a shift of the baseline
+`xscale`::
+    Scaling factor to be applied to the X axis (after shift).
+`yscale`::
+    Scaling factor to be applied to the Y axis (after shift).
+`normalize`::
+    Normalize the spectrum.
+`show`::
+    Boolean (`yes`/`no`) indicating if a spectrum must be displayed or not.
+`broaden`::
+    Boolean (`yes`/`no`) if a broadening must be applied (may not be applied).
+`function`::
+    Function to apply for the broadening.
+`HWHM`::
+    Half-width at half-maximum of the broadening function (of `broaden` is `yes`).
+`yaxis`::
+    Y axis of interest if multiple present (`1` by default).
+
+== Usage

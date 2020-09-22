@@ -8,7 +8,9 @@ ESTAMPES API is divided in 3 components:
 - **VIZ**: visualization API.  It depends on visualization library, like `Qt` or `Matplotlib`
 
 Tools have each one their own trigram
-- **ESP**: _ESParser-
+- **APP**: Estampes Suite Program (new program)
+- **BLS**: _Ballast_
+- **ESP**: _ESParser_
 - **GUI**: Main graphical interface
 
 Other blocks are:
@@ -17,8 +19,12 @@ Other blocks are:
 
 ## Unreleased
 
+
+## [0.2.0] - 2020-09-22
+
 ### Added
 
+- **APP** - Added new program `Ballast` (available as `esballast` through **pip**).
 - **VIZ** - Added `SpecLayout` class to manipulate the layout information of spectra.
 - **LIB** - Added broadening function
 - **LIB** - Added Gaussian and Lorentzian distribution functions.
