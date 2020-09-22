@@ -1,0 +1,86 @@
+= ESTAMPES: Data format of the API
+:email: julien.bloino@sns.it
+:revnumber: 0.2.0
+:revremark: Introduction
+:toc: left
+:toclevels: 3
+:icons: font
+:stem:
+:pygments-style: native
+
+:Gaussian: pass:q[G[small]##AUSSIAN##]
+:Estampes: pass:q[E[small]##STAMPES##]
+
+== Preamble
+
+{Estampes} provides an internal data structure to facilitate the handling of data, which may come from different sources.
+
+There are 2 data structures used to communicate with the `DataFile` object provided by the internal parser:
+
+* In input, to choose the data to extract, the *quantity label* (_qlabel_).
+* In output, the extracted data, as dictionary (see below).
+
+
+== Input: the quantity label
+
+While the API can handle some simple and unequivocal cases of labels, it is recommended to pass through the label generator, `build_qlabel`, provided by the parser.
+This special type of composite label (quantity label, _qlabel_) is used to fully specify the quantity of interest.
+
+
+=== Interface
+
+The parser provides 2 functions to build and parse the *quantity labels*.
+
+`build_qlabel`::
+    This function builds a _qlabel_.
+    It adds default parameters to prevent the risk of arbitrary operations.
+`parse_qlabel`::
+    A simple function which parses a _qlabel_ and returns a tuple of the different components and fill missing elements.
+    This routine is internally called by the parsing methods.
+
+
+=== Format
+
+include::dfmt_qlab.adoc[]
+
+
+
+== Output: the data
+
+Because of the variety of data which can be retrieved, the structure is more flexible, but a *dictionary* is returned for each quantity.
+
+[NOTE]
+====
+the `get_data` method provided by the `DataFile` class return a dictionary of the form: +
+`data[`_qlabel_`] = {`_key_`: `value`}`
+
+The part of interest here is `{`_key_`: `value`}`
+====
+
+=== Conventions
+
+As much as possible, data should be returned in atomic units (except the mass, in atomic mass units), except where a different convention is commonly adopted.
+In practice, basic quantities provided by electronic structure calculations methods should be in a.u., higher level structure (e.g., dipole strengths, intensities, frequencies/wavenumbers), can be in more suitable formats.
+
+Some default keys:
+
+`data`::
+    For basic quantities, where the data are unique, the key `data` should be used to refer to the block of data.
+`unit`::
+    _Alternatives_: `unitx`, `unity` (for spectroscopy) +
+    Can be provided to specify units.
+    If not present, the atomic units or a common unit will be assumed (see below).
+    To avoid any misinterpretation, the units should be provided for any non-a.u. format.
+    If the quantity does not have a unit, the value `False` can be provided.
+    A value of `None` means that the unit is undefined, which can be used by developers to override (ex: CSV files will often have unknown units, or the units are difficult to parse in the file.)
+`format`::
+    Can be used to specify storage formats (typically Fortran/C). +
+--
+NOTE: If the format is not obvious to parse, it is recommended to provide it in a less ambiguous format, for instance directly as a multi-dim array
+--
+`shape`::
+    Shapes should be the ones recommended below (either 1D or a chosen structure), but in some cases, different shapes may be preferred, and can be specified this way.
+
+=== Format
+
+include::dfmt_data.adoc[]

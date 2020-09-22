@@ -128,10 +128,10 @@ class GLogIO(object):
             keydata.append((key, link, skips, re.compile(fmt), num, end))
         ndata, data = self.read_data(*keydata)
         data = parse_data(qtydata, key2blk, ndata, data)
-        self.__route = data['route']
+        self.__route = data['route']['data']
         self.__links = sorted(set([int(item[0]) for item in self.__route]))
         self.__gversion = data['swver']
-        self.__rte_opt = data['swopt']
+        self.__rte_opt = data['swopt']['data']
         # Look at verbosity level of output
         i = self.__rte_opt.index('#') + 1
         if i >= len(self.__rte_opt):
@@ -512,7 +512,14 @@ def qlab_to_linkdata(qtag: TypeQTag,
         fmt = r'^ (?P<val>Gaussian (?:\d\d|DV):\s.*)$'
         num = 0
     elif qtag == 'fcdat':
-        if qopt == 'JMat':
+        if qopt == 'SimInf':
+            lnk = -718
+            key = '               Information on the Simulation'
+            sub = 2
+            def end(s): return s.startswith('     ====')
+            fmt = r'^\s+(?P<val>.*\w.*)\s*$'
+            num = 0
+        elif qopt == 'JMat':
             lnk = (-718, -718)
             key = (' Duschinsky matrix', ' Final Duschinsky matrix')
             sub = (2, 2)
@@ -583,21 +590,12 @@ def qlab_to_linkdata(qtag: TypeQTag,
             fmt = r'^\s+(?P<val>(?:-?\d+.\d+)' \
                 + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3})+)\s*$'
             num = 0
-        elif qopt == 'SpcLeg':
-            lnk = 718
-            key = '                       Final Spectrum'
-            sub = ' ------'
-            def end(s): return s.startswith(' -----------')
-            fmt = r'^\s+(?P<val>.*: .*)\s*$'
-            num = 0
-        elif qopt == 'BShape':
+        elif qopt == 'SpcPar':
             lnk = 718
             key = '                       Final Spectrum'
             sub = 3
-            def end(s): return not s.strip()
-            # sub = 2
-            # def end(s): return s.startswith(' Legend')
-            fmt = r'^\s+(?P<val>.*\w.*)\s*$'  # The \w is to exclude empty lines
+            def end(s): return s.startswith(' -----------')
+            fmt = r'^\s+(?P<val>.*\w.*)\s*$'  # \w to exclude empty lines
             num = 0
         elif qopt == 'Conv':
             # 2 sets, one for the main one, one to extract the FCF (HT)
@@ -628,12 +626,16 @@ def qlab_to_linkdata(qtag: TypeQTag,
             fmt = r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$'
             num = 0
         elif qopt == 'GeomFS':
-            lnk = 718
-            key = '              New orientation in final state'
-            sub = 5
-            def end(s): return s.startswith(' ------')
-            fmt = r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$'
-            num = 0
+            # The second block is for my working
+            lnk = (718, 718)
+            key = ('              New orientation in final state',
+                   '               New orientation in final state')
+            sub = (5, 5)
+            end = (lambda s: s.startswith(' ------'),
+                   lambda s: s.startswith(' ------'))
+            fmt = (r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$',
+                   r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$')
+            num = (0, 0)
         elif qopt == 'GeomMS':
             lnk = 718
             key = '              New orientation in intermediate state'
@@ -807,11 +809,12 @@ def parse_data(qdict: TypeQInfo,
             else:
                 data[qlabel] = None
                 continue
+        data[qlabel] = {}
         # Basic Properties/Quantities
         # ---------------------------
         if qtag == 'route':
             fmt = '{:d}{:02d}'
-            data[qlabel] = []
+            _dat = []
             for num, line in enumerate(datablocks[iref]):
                 ov, iops, links = line.split('/')
                 if '(' in links:
@@ -822,30 +825,32 @@ def parse_data(qdict: TypeQInfo,
                 iops = tuple(iops.split(','))
                 for link in links.split(','):
                     fulllink = fmt.format(int(ov), int(link))
-                    data[qlabel].append((fulllink, num+1, iops, toline))
+                    _dat.append((fulllink, num+1, iops, toline))
+            data[qlabel]['data'] = _dat
         elif qtag == 'natoms':
-            data[qlabel] = int(datablocks[iref][0])
+            data[qlabel]['data'] = int(datablocks[iref][0])
         elif qtag == 'atcrd' or qtag == 2:
-            data[qlabel] = []
+            _dat = []
             # By default, we choose the standard orientation if present
             if datablocks[last]:
                 i = last
             else:
                 i = first
             for line in datablocks[i]:
-                data[qlabel].append([float(item)*__ang2au
-                                     for item in line.split()])
+                _dat.append([float(item)*__ang2au for item in line.split()])
+            data[qlabel]['data'] = _dat
         elif qtag == 'atmas':
-            data[qlabel] = []
+            _dat = []
             for line in datablocks[iref]:
-                data[qlabel].extend(float(item) for item in line.split())
+                _dat.extend(float(item) for item in line.split())
+            data[qlabel]['data'] = _dat
         elif qtag in ('atnum',):
-            data[qlabel] = []
+            data[qlabel]['data'] = []
             for line in datablocks[iref]:
-                data[qlabel].extend(int(item) for item in line.split())
+                data[qlabel]['data'].extend(int(item) for item in line.split())
         elif qtag == 'swopt':
             # The last line are the final dashes
-            data[qlabel] = ' '.join(datablocks[iref][:-1])
+            data[qlabel]['data'] = ' '.join(datablocks[iref][:-1])
         elif qtag == 'molsym':
             raise NotImplementedError()
         elif qtag == 'swver':
@@ -860,97 +865,116 @@ def parse_data(qdict: TypeQInfo,
         # Technically state should be checked but considered irrelevant.
         elif qtag == 'nvib':
             if iref >= 0:
-                data[qlabel] = int(datablocks[iref])
+                data[qlabel]['data'] = int(datablocks[iref])
             else:
                 # For a robust def of nvib, we need the symmetry and
                 #   the number of frozen atoms. For now, difficult to do.
                 raise NotImplementedError()
         elif qtag in ('hessvec', 'hessval'):
             if iref >= 0:
-                data[qlabel] = datablocks[iref]
+                data[qlabel]['data'] = datablocks[iref]
         # Vibronic Information
         # --------------------
         elif qtag == 'fcdat':
-            if qopt == 'JMat':
+            if qopt == 'SimInf':
+                def getval(s):
+                    return s.split(':', maxsplit=1)[-1].strip().title()
+                for line in datablocks[iref]:
+                    if 'Temperature' in line:
+                        if 'not' in line:
+                            val = None
+                        else:
+                            val = float(line.split()[-1][:-1])
+                        data[qlabel]['temp'] = val
+                    elif 'framework' in line:
+                        data[qlabel]['frame'] = getval(line)
+                    elif 'Spectroscopy' in line:
+                        data[qlabel]['spec'] = getval(line)
+                    elif 'Model' in line:
+                        data[qlabel]['model'] = getval(line)
+                    elif 'electronic transition moment' in line:
+                        data[qlabel]['tmom'] = \
+                            line.split(':', maxsplit=1)[-1].strip()
+            elif qopt == 'JMat':
                 if datablocks[last]:
                     i = last
                 else:
                     i = first
                 if 'diagonal' in datablocks[i]:
-                    data[qlabel] = []
+                    data[qlabel]['data'] = []
                 else:
-                    data[qlabel] = []
+                    data[qlabel]['data'] = []
                     N = 0
                     for line in datablocks[i]:
                         cols = line.split()
                         irow = int(cols[0]) - 1
                         if irow == N:
-                            data[qlabel].append([])
+                            data[qlabel]['data'].append([])
                             N += 1
-                        data[qlabel][irow].extend(
+                        data[qlabel]['data'][irow].extend(
                             [float(item.replace('D', 'e'))
                              for item in cols[1:]])
             elif qopt == 'JMatF':
                 if 'diagonal' in datablocks[iref]:
-                    data[qlabel] = []
+                    data[qlabel]['data'] = []
                 else:
-                    data[qlabel] = []
+                    data[qlabel]['data'] = []
                     N = 0
                     for line in datablocks[iref]:
                         cols = line.split()
                         irow = int(cols[0]) - 1
                         if irow == N:
-                            data[qlabel].append([])
+                            data[qlabel]['data'].append([])
                             N += 1
-                        data[qlabel][irow].extend(
+                        data[qlabel]['data'][irow].extend(
                             [float(item.replace('D', 'e'))
                              for item in cols[1:]])
             elif qopt == 'KVec':
-                data[qlabel] = []
+                data[qlabel]['data'] = []
                 for line in datablocks[iref]:
-                    data[qlabel].append(float(line.replace('D', 'e')))
+                    data[qlabel]['data'].append(float(line.replace('D', 'e')))
             elif qopt == 'SRAMat':
-                data[qlabel] = []
+                data[qlabel]['data'] = []
                 N = 0
                 for line in datablocks[iref]:
                     cols = line.split()
                     irow = int(cols[0]) - 1
                     if irow == N:
-                        data[qlabel].append([])
+                        data[qlabel]['data'].append([])
                         N += 1
-                    data[qlabel][irow].extend(
+                    data[qlabel]['data'][irow].extend(
                         [float(item.replace('D', 'e'))
                             for item in cols[1:]])
             elif qopt == 'SRBVec':
-                data[qlabel] = []
+                data[qlabel]['data'] = []
                 for line in datablocks[iref]:
-                    data[qlabel].append(float(line.replace('D', 'e')))
+                    data[qlabel]['data'].append(float(line.replace('D', 'e')))
             elif qopt == 'SRCMat':
-                data[qlabel] = []
+                data[qlabel]['data'] = []
                 N = 0
                 for line in datablocks[iref]:
                     cols = line.split()
                     irow = int(cols[0]) - 1
                     if irow == N:
-                        data[qlabel].append([])
+                        data[qlabel]['data'].append([])
                         N += 1
-                    data[qlabel][irow].extend(
+                    data[qlabel]['data'][irow].extend(
                         [float(item.replace('D', 'e'))
                             for item in cols[1:]])
             elif qopt == 'SRDVec':
-                data[qlabel] = []
+                data[qlabel]['data'] = []
                 for line in datablocks[iref]:
-                    data[qlabel].append(float(line.replace('D', 'e')))
+                    data[qlabel]['data'].append(float(line.replace('D', 'e')))
             elif qopt == 'SREMat':
-                data[qlabel] = []
+                data[qlabel]['data'] = []
                 N = 0
                 for line in datablocks[iref]:
                     cols = line.split()
                     irow = int(cols[0]) - 1
                     if irow == N:
-                        data[qlabel].append([])
+                        data[qlabel]['data'].append([])
                         N += 1
-                    data[qlabel][irow].extend(
+                    data[qlabel]['data'][irow].extend(
                         [float(item.replace('D', 'e'))
                             for item in cols[1:]])
             elif qopt == 'Spec':
@@ -969,20 +993,49 @@ def parse_data(qdict: TypeQInfo,
                     data[qlabel]['x'].append(cols[0])
                     for i, item in enumerate(cols[1:]):
                         data[qlabel][yfmt.format(idy=i+1)].append(item)
-            elif qopt == 'SpcLeg':
-                data[qlabel] = {}
-                if len(datablocks[iref]) <= 3:
+            elif qopt == 'SpcPar':
+                if 'Legend' in datablocks[iref][1]:
+                    offset = 2
+                    if 'No' in datablocks[iref][0]:
+                        data[qlabel]['func'] = 'stick'
+                        data[qlabel]['hwhm'] = None
+                    else:
+                        raise IndexError('Unrecognized broadening function.')
+                elif 'Legend' in datablocks[iref][2]:
+                    offset = 3
+                    func = datablocks[iref][0].split()[-3].lower()
+                    hwhm = float(datablocks[iref][1].split()[-2])
+                    data[qlabel]['func'] = func
+                    data[qlabel]['hwhm'] = hwhm
+                else:
+                    raise IndexError('Unrecognized broadening definition.')
+                # offset: num. lines for legend block + legend section title
+                if len(datablocks[iref]) <= 3 + offset:
                     # X, Y, Int, don't use numbering
                     yfmt = 'y'
                 else:
                     yfmt = 'y{{idy:0{}d}}'.format(
                         len(str(len(datablocks[iref])-2)))
-                for line in datablocks[iref]:
+                for line in datablocks[iref][offset:]:
                     key, title = line.split(':')
                     if key.strip() == '1st col.':
                         _key = 'x'
+                        txt = title.rsplit('in ', maxsplit=1)[1].\
+                            replace(')', '').strip()
+                        data[qlabel]['unitx'] = txt
                     elif key.strip() == 'Intensity':
                         _key = 'I'
+                        txt = title.rsplit('in ', maxsplit=1)[1].\
+                            replace(')', '').strip()
+                        if data[qlabel]['func'] == 'stick':
+                            _desc = 'II:'
+                            # Fix a stupidity in the unit in some versions
+                            #   for the stick spectrum
+                            if txt == 'dm^3.mol^-1.cm^-1':
+                                txt = 'dm^3.mol^-1'
+                        else:
+                            _desc = 'I:'
+                        data[qlabel]['unity'] = _desc + txt
                     else:
                         try:
                             idy = int(key.strip()[0]) - 1
@@ -991,40 +1044,28 @@ def parse_data(qdict: TypeQInfo,
                                              key)
                         _key = yfmt.format(idy=idy)
                     data[qlabel][_key] = title.strip()
-            elif qopt == 'BShape':
-                if len(datablocks[iref]) == 1:
-                    if 'No' in datablocks[iref][0]:
-                        data[qlabel] = {'func': 'stick', 'HWHM': None}
-                    else:
-                        raise IndexError('Unrecognized broadening function.')
-                elif len(datablocks[iref]) == 2:
-                    func = datablocks[iref][0].split()[-3].lower()
-                    hwhm = float(datablocks[iref][1].split()[-2])
-                    data[qlabel] = {'func': func, 'HWHM': hwhm}
-                else:
-                    raise IndexError('Unrecognized broadening definition.')
             elif qopt == 'Conv':
                 raise NotImplementedError()
             elif qopt == 'Assign':
                 raise NotImplementedError()
             elif qopt == 'GeomIS':
-                data[qlabel] = []
+                data[qlabel]['data'] = []
                 # By default, we choose the standard orientation if present
                 for line in datablocks[iref]:
-                    data[qlabel].append([float(item)*__ang2au
-                                         for item in line.split()])
+                    data[qlabel]['data'].append([float(item)*__ang2au
+                                                 for item in line.split()])
             elif qopt == 'GeomFS':
-                data[qlabel] = []
+                data[qlabel]['data'] = []
                 # By default, we choose the standard orientation if present
                 for line in datablocks[iref]:
-                    data[qlabel].append([float(item)*__ang2au
-                                         for item in line.split()])
+                    data[qlabel]['data'].append([float(item)*__ang2au
+                                                 for item in line.split()])
             elif qopt == 'ExGeom':
-                data[qlabel] = []
+                data[qlabel]['data'] = []
                 # By default, we choose the standard orientation if present
                 for line in datablocks[iref]:
-                    data[qlabel].append([float(item)*__ang2au
-                                         for item in line.split()])
+                    data[qlabel]['data'].append([float(item)*__ang2au
+                                                 for item in line.split()])
         # Anharmonic Information
         # ----------------------
         elif qtag == 'vptdat':

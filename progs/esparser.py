@@ -51,9 +51,7 @@ FCHT_QTIES = {
     },
     'spec': {
         'Spec': build_qlabel('fcdat', 'Spec'),
-        'Leg': build_qlabel('fcdat', 'SpcLeg'),
-        'Broad': build_qlabel('fcdat', 'BShape')
-
+        'Pars': build_qlabel('fcdat', 'SpcPar'),
     }
 }
 
@@ -238,29 +236,30 @@ def mode_vibronic(dfile: DataFile,
         print('Quantity not supported. Someone was lazy...')
         sys.exit(1)
     if qty == 'mols':
-        if not data[dkeys['IniS']]:
+        if data[dkeys['IniS']] is None:
             print('Data not available in file.')
             sys.exit()
         # Check with geometry to use for the final state
         # If extrapolated geometry available (VH, VG), uses it
         # If intermediate state defined, RR, so use it
         # Otherwise, use standard final state definition.
-        if data[dkeys['ExtG']]:
+        if data[dkeys['ExtG']] is not None:
             fs = 'ExtG'
-        elif data[dkeys['MidS']]:
+        elif data[dkeys['MidS']] is not None:
             fs = 'MidS'
         else:
             fs = 'FinS'
-        if not data[dkeys[fs]]:
+        if not data[dkeys[fs]].get('data', False):
             print('ERROR: Something went wrong, final-state geom. missing.')
+            sys.exit()
         atlabs = []
         atcrds = []
         bonds = []
         molcols = []
         i = 0
         for sta in ('IniS', fs):
-            atlabs.append(convert_labsymb(True, *data[dkeys['atnum']]))
-            atcrds.append(np.array(data[dkeys[sta]])*PHYSFACT.bohr2ang)
+            atlabs.append(convert_labsymb(True, *data[dkeys['atnum']]['data']))
+            atcrds.append(np.array(data[dkeys[sta]]['data'])*PHYSFACT.bohr2ang)
             bonds.append(list_bonds(atlabs[-1], atcrds[-1], 1.2))
             molcols.append(MOLCOLS[i])
             i += 1
@@ -269,34 +268,36 @@ def mode_vibronic(dfile: DataFile,
         view.show()
         sys.exit(app.exec_())
     else:
-        if qty == 'jmat' and not data[dkeys['JMat']]:
+        if qty == 'jmat' and not data[dkeys['JMat']]['data']:
             print('J is the identity matrix.')
         else:
             figsize = (10, 8)
             fig, subp = plt.subplots(1, 1)
             fig.set_size_inches(figsize)
             if qty == 'jmat':
-                mat = np.array(data[dkeys['JMat']])
+                mat = np.array(data[dkeys['JMat']]['data'])
                 plot = plot_jmat(mat, subp)
                 fig.colorbar(plot)
             elif qty == 'fulljmat':
-                mat = np.array(data[dkeys['JFul']])
+                mat = np.array(data[dkeys['JFul']]['data'])
                 plot = plot_jmat(mat, subp)
                 fig.colorbar(plot)
             elif qty == 'cmat':
-                mat = np.array(data[dkeys['CMat']])
+                mat = np.array(data[dkeys['CMat']]['data'])
                 norm, plot = plot_cmat(mat, subp)
                 print('Normalization factor: {:15.6e}'.format(norm))
                 fig.colorbar(plot)
             elif qty == 'kvec':
-                mat = np.array(data[dkeys['KVec']])
+                mat = np.array(data[dkeys['KVec']]['data'])
                 plot = plot_kvec(mat, subp)
             elif qty == 'spec':
-                if 'y1' in data[dkeys['Leg']]:
-                    leg = data[dkeys['Leg']]
+                if 'y1' in data[dkeys['Pars']]:
+                    leg = {y: data[dkeys['Pars']][y]
+                           for y in data[dkeys['Pars']]
+                           if y.startswith('y')}
                 else:
                     leg = None
-                stick = data[dkeys['Broad']]['func'].lower() == 'stick'
+                stick = data[dkeys['Pars']]['func'].lower() == 'stick'
                 bounds = plot_spec_2D(data[dkeys['Spec']], subp, legends=leg,
                                       is_stick=stick)
             plt.show()

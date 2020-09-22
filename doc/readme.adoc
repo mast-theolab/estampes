@@ -1,16 +1,16 @@
 = ESTAMPES: A prototypical program for spectral analysis
 :email: julien.bloino@sns.it
-:revnumber: 20.09.02
+:revnumber: 0.2.0
 :revremark: Introduction
 :toc: left
 :toclevels: 1
 :icons: font
 :stem:
-:source-highlighter: pygments
 :pygments-style: native
 
 :Gaussian: pass:q[G[small]##AUSSIAN##]
 :Estampes: pass:q[E[small]##STAMPES##]
+
 
 == Preamble
 
@@ -28,6 +28,7 @@
 *User interfaces*::
     graphical and textual tools for the data analysis.
 
+
 == Requirements
 
 * *Python*:
@@ -42,7 +43,9 @@
     tested on version 5.11.
     Only necessary for some _user interface_.
 
+
 == Data parsing
+
 
 === Supported file formats
 
@@ -53,203 +56,14 @@ The program currently supports:
 --
 NOTE: Due to the inherent modularity of {Gaussian}, the support of {Gaussian} log files is limited and may fail on some versions of {Gaussian}.
 --
-
-=== The _qlabel_ format
-
-Internally, the program uses a special type of composite label (quantity label, _qlabel_) to differentiate the quantity of interest.
-Its structure is as follows:
-
-[example]
-.structure
-====
-`id|label`[:[`subopt`][:[`ord`][:[`coord`][:[`state(s)`]]]]]
-====
-
-`id` or `label`::
-    quantity identifier (see below) or textual label
-`subopt`::
-    sub-option (e.g., gauge, specific components)
-`ord`::
-    derivative order
-`coord`::
-    reference coordinates (derivatives)
-`state(s)`::
-    reference electronic state or transition (as `i->j`)
-
-
-==== Quantity specification
-
-This is the basic identifier of the quantity
-
-[cols="^20m,<80",option=header,frame=topbot]
-|====
-| Value | Description
-
-2+^e| Special labels
-| Title   | Title of the job
-| NAtoms  | Number of atoms
-| NVib    | Number of vibrations
-| AtMas   | Atomic masses
-| AtNum   | Atomic numbers
-| AtLab   | Atomic labels
-| MolSym  | Symmetry
-| Charge  | Charge
-| Multip  | Multiplicity
-| AtCrd   | Coordinates
-| Atoms   | Atoms (can be numbers or labels)
-| HessVec | Hessian eigenvectors
-| HessVal | Hessian eigenvalues
-| SWOpt   | Software runtime options
-| SWVer   | Software version
-| DipStr  | Dipole strength
-| RotStr  | Rotatory strength
-| RamAct  | Raman activity
-| ROAAct  | ROA activity
-| VPTDat  | VPT-related data
-| FCDat   | Franck-Condon data
-2+^e| Basic properties
-|     1 | Energy
-|     2 | Coordinates
-2+^e| Special electronic properties
-|    50 | Non-adiabatic couplings
-2+^e| Special quantities
-|    91 | Coriolis Couplings
-|    92 | Rotation Matrix
-|    93 | Transition vector
-2+^e| Static electric/mixed-field properties
-|   101 | Electric dipole
-|   102 | Magnetic dipole
-|   103 | Polarizability tensor
-|   104 | Optical rotations
-|   105 | Dipole-quadrupole polarizability
-|   106 | Hyperpolarizability
-|   107 | Quadrupole
-2+^e| Magnetic-field properties
-|   201 | Magnetic susceptibility
-|   202 | Fake rotational g-Tensor
-|   203 | NMR shielding tensors
-|   204 | Spin-rotation tensors
-|   205 | Anisotropic hyperfine tensors
-|   206 | Isotropic (Fermi) terms
-|   207 | ESR g-tensor
-|   208 | Nuclear quadrupole tensors
-|   209 | Isotropic Spin-Spin coupling
-2+^e| Dynamic (frequency-dependent) properties
-|   301 | Polarizability Alpha(-w,w)
-|   302 | Optical rotations
-|   303 | Polarizability Alpha(w,0)
-|   304 | Dipole-quadrupole polarizability
-|   305 | Hyperpolarizability Beta(-w,w,0)
-|   306 | Hyperpolarizability Beta(w,w,-2w)
-
-|====
-
-
-==== Quantity-related option specification
-
-A label-specific option.
-
-[cols="^10,^10,<80",option=header,frame=topbot]
-|====
-| Label | Option | Description
-
-.4+| `AtCrd` | `last` | Only last geometry if multiple present.
-| `first` <| Only the first geometry if multiple present.
-| `all`   <| All geometries should be extracted.
-| `scan`  <| Geometries relative to a scan procedure
-
-.2+| `DipStr` | `H` | Harmonic dipole strength
-| `A` <| Anharmonic dipole strength
-
-.2+| `RotStr` | `H` | Harmonic rotatory strength
-| `A` <| Anharmonic rotatory strength
-
-.2+| `3xx` | `0` | Data for all incident frequencies
-| _N_ <| Data for _N_-th incident frequency
-
-.18+| `FCDat` | `SimInf` | Simulation information/parameters
-| `JMat`   <| Duschinsky matrix
-| `JMatF`  <| Duschinsky matrix (full dimension if red-dim requested)
-| `KVec`   <| Shift vector
-| `SRAMat` <| Sharp and Rosenstock A matrix
-| `SRBVec` <| Sharp and Rosenstock B vector
-| `SRCMat` <| Sharp and Rosenstock C matrix
-| `SRDVec` <| Sharp and Rosenstock D vector
-| `SREMat` <| Sharp and Rosenstock E matrix
-| `GeomIS` <| Initial-state geometry
-| `GeomFS` <| Final-state geometry
-| `GeomMS` <| Intermediate geometry
-| `ExGeom` <| Extrapolated geometry
-| `Spec`   <| Spectrum/spectra
-| `SpcLeg` <| Spectrum legend
-| `BShape` <| Band-shape broadening method and parameters
-| `Conv`   <| Convergence Data
-| `Assign` <| Assignment data
-
-.2+| `VPTDat` | `XMat` | Anharmonic stem:[bb{chi}] matrix
-| `GMat` <| Variational correction matrix (for _Generalized_...)
-|====
-
-
-==== Derivative orders specifications
-
-An integer, specifying the derivative order.
-
-[cols="^20m,<80",option=header,frame=topbot]
-|====
-
-| Value | Description
-
-|  None | Default (`0`)
-|   `0` | Reference value (e.g., equilibrium value)
-|   `1` | First derivative of the quantity
-|   `2` | Second derivative of the quantity
-|   `3` | Third derivative of the quantity
-|   `4` | Fourth derivative of the quantity
-
-|====
-
-
-==== Derivative coordinate specification
-
-The possible coordinates are:
-
-[cols="^20m,<80",option=header,frame=topbot]
-|====
-
-| Value | Description
-
-|  None | Default (`X`)
-|  `X`  | Derivatives with respect to Cartesian coordinates
-|  `Q`  | Derivatives with respect to normal coordinates
-|  `I`  | Derivatives with respect to internal coordinates
-|  `QX` | Derivatives in ixed normal-Cartesian coordinates
-
-|====
-
-==== Electronic state or transition specification
-
-Sets the electronic state(s).
-It can be either a single "`state`" value (integer or string) or 2 "`state`" values separated by `->` for an electronic transition moment
-
-[cols="^20m,<80",option=header,frame=topbot]
-|====
-
-| Value | Description
-
-|  None | Default (current state)
-|   `c` | Current state (i.e. the root for excited electronic state)
-|   `a` | All available electronic states
-|   `0` | Ground electronic states
-|   _N_ | __N__th excited electronic state
-
-|====
+* CSV, Text file for spectral data.
+* XYZ file format.
 
 
 === Interfaces
 
 The parsing facilities are available in the *parser* module.
-The module provides a high-level class, *`DataFile`*, and 2 basic functions, `build_qlabel` and `parse_qlabel`, which ensure that the _label_ is correctly formed.
+The module provides a high-level class, *`DataFile`*, and 2 basic functions, `build_qlabel` and `parse_qlabel`, which ensure that the quantity identifier (_qlabel_) is correctly formed.
 
 `DataFile`::
     A basic class acting as a wrapper to lower-level format-specific parsing classes.
@@ -274,8 +88,5 @@ The module provides a high-level class, *`DataFile`*, and 2 basic functions, `bu
 
         * The name of the program used to generate the file or the file type for '`standard`' exchange formats (ex: PDB, XYZ), as a string
         * A dictionary with program/format versions if relevant (`None` otherwise)
-`parse_qlabel`::
-    A simple function which parses a _qlabel_ and returns a tuple of the different components and fill missing elements.
-    This routine is internally called by the parsing methods.
-`build_qlabel`::
-    This function builds a _qlabel_.
+
+Information on the generation of the _qlabel_ and the structure of the data returned by `get_data` can be found link:data_format.html[here].

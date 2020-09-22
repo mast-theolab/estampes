@@ -17,27 +17,27 @@ types
 Attributes
 ----------
 TypeQTag : :obj:`typing.TypeVar`
-    Static type for quantity tag
+    Static type for quantity tag.
 TypeQOpt : :obj:`typing.Optional`
-    Static type for quantity option
+    Static type for quantity option.
 TypeDOrd : :obj:`typing.Optional`
-    Static type for derivative order (0: property)
+    Static type for derivative order (0: property).
 TypeDCrd : :obj:`typing.Optional`
-    Static type for derivative coordinate
+    Static type for derivative coordinate.
 TypeRSta : :obj:`typing.Optional`
-    Static type for reference state/transition
+    Static type for reference state/transition.
 TypeQLab : :obj:`typing.Tuple`
-    Static type for quantity label
+    Static type for quantity label.
 TypeData : :obj:`typing.Dict`
-    Static type for data returned by parsers
+    Static type for data returned by parsers.
 TypeAtData : :obj:`typing.Dict`
-    Static type for atom data
+    Static type for atom data.
 TypeQInfo : :obj:`typing.Dict`
-    Static type for dictionary of quantity full labels
+    Static type for dictionary of quantity full labels.
 TypeDFChk : :obj:`typing.Dict`
-    Static type for data from Gaussian fchk file
+    Static type for data from Gaussian fchk file.
 TypeDGLog : :obj:`typing.List`
-    Static type for data from Gaussian log file
+    Static type for data from Gaussian log file.
 
 Classes
 -------

@@ -17,6 +17,13 @@ Other blocks are:
 
 ## Unreleased
 
+### Changed
+
+- **API** - Changed data structure to be always a dictionary.  The new structure is more flexible this way.
+- **API** - Added quantity identifier `AnySpc` to store generic spectral data (spectrum, axis information).
+- **API** - Added quantity identifier `VTrans` to store vibrational transition information.
+- **API** - `FCDat:SpcLeg` and `FCDat:BShape` are merged into `FCDat:SpcPar` to facilitate the construction of correct parameters (ex: integrated intensity vs broadened intensity).
+
 
 ## [0.1.4] - 2020-09-21
 

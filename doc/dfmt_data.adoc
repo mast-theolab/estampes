@@ -1,0 +1,96 @@
+The data format expected for each type of quantity are listed below, sorted by quantity or group of quantities.
+While the data formats are relatively free, following the recommendations below will improve the compatibility and provide a more versatile interface.
+
+==== Spectra
+
+Spectra refer to fully generated spectra, for instance vibronic, where storing all transitions could be too large, or for data file with the generated spectra (ex: CSV files).
+
+===== Spectral data
+
+[TIP]
+._qlabel_
+====
+* `FCDat:Spec:...`
+* `AnySpc:Spec:...`
+====
+
+
+[cols="1,2,12",grid=rows,stripes=none]
+|====
+.4+| `x`
+2+s| X axis values.
+| _Type_     | `list`
+| _Accepted_ | numeric values
+| `None`     | No X axis found
+
+.4+| `y`
+2+s| Y axis values, if only 1 axis is present.
+| _Type_     | `list`
+| _Accepted_ | numeric values
+| `None`     | No Y axis found
+
+.4+| `y__N__`
+2+s| Values of the _N_-th Y axis.
+     The number of digits should be constant, so `y1` if less than 10 Y axes, `y01` between 10 and 99 Y axes...
+| _Type_     | `list`
+| _Accepted_ | numeric values
+| `None`     | No Y axis found
+|====
+
+
+===== Spectral parameters
+
+[TIP]
+._qlabel_
+====
+* `FCDat:SpcPar:...`
+* `AnySpc:SpcPar:...`
+====
+
+[cols="1,2,12",grid=rows,stripes=none]
+|====
+.4+| `func`
+2+s| Broadening function.
+| _Type_     | `str`
+| _Accepted_ | `'gaussian`', `'stick'`, `'lorentzian'`
+| `None`     | Unknown broadening function.
+
+.4+| `hwhm`
+2+s| Half-width at half-maximum.
+| _Type_     | `float`
+| _Accepted_ | positive numeric value
+| `None`     | Unknown half-width at half-maximum.
+
+.5+| `unitx`
+2+s| Unit used for the X axis.
+| _Type_     | `str`
+| _Accepted_ | string compatible with `convert_x` in `estampes.visual.plotspec`
+| `None`     | Unknown unit.
+| `False`    | No unit.
+
+.5+| `unity`
+2+s| Unit used for the Y axis/axes.
+| _Type_     | `str`
+| _Accepted_ | string compatible with `convert_y` in `estampes.visual.plotspec`
+| `None`     | Unknown unit.
+| `False`    | No unit.
+
+.4+| `x`
+2+s| Label for Y.
+| _Type_     | `str`
+| _Accepted_ | Any string
+| `None`     | Label not found/available.
+
+.4+| `y`, `y__N__`
+2+s| Label for Y/Y~N~.
+| _Type_     | `str`
+| _Accepted_ | Any string
+| `None`     | Label not found/available.
+
+.4+| `I`
+2+s| Label for the intensity.
+| _Type_     | `str`
+| _Accepted_ | Any string
+| `None`     | Label not found/available.
+| *Note*     | This unit field can be free, as `unity` should be used for conversion purposes.
+|====

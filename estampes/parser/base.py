@@ -29,8 +29,8 @@ Notes
 import os
 import re
 import typing as tp
-from estampes.parser.gaussian import fchk, glog
-from estampes.parser import xyz
+from estampes.parser.gaussian import glog, fchk
+from estampes.parser import csv, xyz
 from estampes.base import TypeQLab, TypeRSta
 
 
@@ -91,10 +91,12 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
      HessVal    Hessian eigenvalues
      SWOpt      Software runtime options
      SWVer      Software version
+     VTrans     Vibrational transitions
      DipStr     Dipole strength
      RotStr     Rotatory strength
      RamAct     Raman activity
      ROAAct     ROA activity
+     AnySpc     Generic quantity for spectra (e.g., for CSV files)
      FCDat      Franck-Condon-related data
      VPTDat     VPT2-related data
             *Basic properties*
@@ -143,6 +145,9 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     ========  ========  =========================================
      Option     Sub      Description
     ========  ========  =========================================
+     VTrans      H      Vibrational transitions: harmonic states
+                 A      Vibrational transitions: anharm. states
+    -------------------------------------------------------------
      DipStr      H      Harmonic dipole strength
                  A      Anharmonic dipole strength
     -------------------------------------------------------------
@@ -163,8 +168,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                ExGeom    Extrapolated geometry
                SimInf    Simulation information
                 Spec     Final spectrum/a
-               SpcLeg    Spectrum legend
-               BShape    Band-shape broadening
+               SpcPar    Spectrum parameters
                 Conv     Intensity convergence/spectrum progress
                Assign    Transition assignment data
     -------------------------------------------------------------
@@ -205,7 +209,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     except ValueError:
         qty_tag = qlist[0].lower()
     # Label-specific keyword (sub-option)
-    if qty_tag in ('dipstr', 'rotstr'):
+    if qty_tag in ('dipstr', 'rotstr', 'vtrans'):
         if qlist[1] is None:
             qty_opt = 'H'
         else:
@@ -219,6 +223,17 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
         else:
             if qlist[1].lower() in ('all', 'last', 'first', 'scan'):
                 qty_opt = qlist[1].lower()
+            else:
+                raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
+    elif qty_tag == 'anyspc':
+        if qlist[1] is None:
+            qty_opt = 'Spec'
+        else:
+            val = qlist[1].upper()
+            if val in ('SPEC', 'SPECTRUM', 'SPECTRA'):
+                qty_opt = 'Spec'
+            elif val in ('SPCPAR', 'SPCPARS', 'SPCPARAMS', 'SPCPARAMETERS'):
+                qty_opt = 'SpcPar'
             else:
                 raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
     elif qty_tag == 'fcdat':
@@ -258,10 +273,8 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                 qty_opt = 'ExGeom'
             elif val in ('SIMINF', 'SIMINFO', 'INFO'):
                 qty_opt = 'SimInf'
-            elif val in ('SPCLEG', 'LEGEND', 'SPCLEGEND', 'SPECLEGEND'):
-                qty_opt = 'SpcLeg'
-            elif val in ('BSHAPE', 'BANDSHAPE', 'BROADENING'):
-                qty_opt = 'BShape'
+            elif val in ('SPCPAR', 'SPCPARS', 'SPCPARAMS', 'SPCPARAMETERS'):
+                qty_opt = 'SpcPar'
             else:
                 raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
     elif qty_tag == 'vptdat':
@@ -488,6 +501,8 @@ class DataFile(object):
 
     Attributes
     ----------
+    filename
+        Name of the file used to extract data.
     version : tuple
         1. Program used to generate file/exchange format
         2. Program/Format-specific version information
@@ -509,11 +524,19 @@ class DataFile(object):
         elif ftype in ('glog', 'log', 'out'):
             self._dfile = glog.GLogIO(filename)
             self._parser = glog
+        elif ftype in ('csv', 'txt'):
+            self._dfile = csv.FileCSV(filename)
+            self._parser = csv
         elif ftype == 'xyz':
             self._dfile = xyz.FileXYZ(filename)
             self._parser = xyz
         else:
             raise NotImplementedError('Unsupported filetype')
+
+    @property
+    def filename(self) -> str:
+        """Returns the name of the file."""
+        return self._dfile.filename
 
     @property
     def version(self) -> tp.Tuple[str, tp.Any]:

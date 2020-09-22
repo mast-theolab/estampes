@@ -1,4 +1,4 @@
-"""Basic module to parse XYZ files
+"""Basic module to parse XYZ files.
 
 This module provides basic classes and methods to parse XYZ files.
 
@@ -19,7 +19,7 @@ from estampes.base import ParseDataError, ParseKeyError, TypeData
 import estampes.parser as ep
 from estampes.tools.atom import convert_labsymb
 from estampes.data.physics import PHYSFACT
-# from estampes.parser import parse_qlabel
+
 
 # ================
 # Module Constants
@@ -27,10 +27,10 @@ from estampes.data.physics import PHYSFACT
 
 __ang2au = 1.0 / PHYSFACT.bohr2ang
 
+
 # ==============
 # Module Classes
 # ==============
-
 
 class FileXYZ(object):
     """Main class to handle XYZ files.
@@ -61,7 +61,7 @@ class FileXYZ(object):
     @filename.setter
     def filename(self, name: str) -> None:
         if not os.path.exists(name):
-            raise FileNotFoundError('Formatted checkpoint not found')
+            raise FileNotFoundError('XYZ file not found')
         self.__fname = name
 
     @property
@@ -116,27 +116,30 @@ class FileXYZ(object):
                         fmt = 'File ended while parsing geometry {}'
                         raise ParseDataError(fmt.format(self.__ngeoms))
 
-    def read_data(self, *to_find: tp.Tuple[str],
+    def read_data(self, *to_find: tp.Sequence[str],
                   geom: tp.Optional[int] = 1,
                   raise_error: bool = True) -> tp.Dict[str, tp.Any]:
         """Extracts data corresponding to the keys to find.
 
         Parameters
         ----------
-        to_find : list
+        to_find
             List of keys to find.
+        geom
+            Geometry block of interest.
         raise_error : bool
             Only raises error if `True`, otherwise proceeds silently.
         """
+        ls_keys = set(to_find)
         datlist = {}
         if geom > self.__ngeoms:
             raise ValueError('Structure {} not available'.format(geom))
         if 'natoms' in to_find:
             datlist['natoms'] = self.__natoms
-        rest = set(to_find) - {'natoms', 'title', 'atoms', 'atcrd'}
-        if len(rest) > 0:
+        rest = ls_keys - {'natoms', 'title', 'atoms', 'atcrd'}
+        if len(rest) > 0 and raise_error:
             raise ParseKeyError(rest[0])
-        if {'title', 'atoms', 'atcrd'} & set(to_find):
+        if {'title', 'atoms', 'atcrd'} & ls_keys:
             with open(self.__fname, 'r') as fobj:
                 for _ in range((geom-1)*(self.__natoms+2)):
                     line = fobj.readline()
@@ -144,7 +147,7 @@ class FileXYZ(object):
                 line = fobj.readline()
                 if 'title' in to_find:
                     datlist['title'] = line.strip()
-                if {'atoms', 'atcrd'} & set(to_find):
+                if {'atoms', 'atcrd'} & ls_keys:
                     atoms = []
                     coord = []
                     for _ in range(self.__natoms):
@@ -166,6 +169,7 @@ class FileXYZ(object):
 
 def get_data(dfobj: FileXYZ,
              *qlabels: str,
+             error_noqty: bool = True,
              geom: int = 1) -> TypeData:
     """Gets data from a XYZ file for each quantity label.
 
@@ -178,6 +182,8 @@ def get_data(dfobj: FileXYZ,
         Data file object.
     *qlabels
         List of full quantity labels to parse.
+    error_noqty
+        If True, error is raised if the quantity is not found.
     geom
         Geometry of interest (starting from 1).
 
@@ -218,12 +224,13 @@ def get_data(dfobj: FileXYZ,
     # ---------------
     # Use of set to remove redundant keywords
     datablocks = dfobj.read_data(*list(set(qty_dict.values())), geom=geom,
-                                 raise_error=True)
+                                 raise_error=error_noqty)
     data = {}
     for qlabel in qlabels:
+        key = qty_dict[qlabel]
         if qlabel in ('atnum', 'atlab'):
-            data[qlabel] = convert_labsymb(qlabel == 'atlab',
-                                           datablocks[qty_dict[qlabel]])
+            data[qlabel]['data'] = convert_labsymb(qlabel == 'atlab',
+                                                   datablocks[key])
         else:
-            data[qlabel] = datablocks[qty_dict[qlabel]]
+            data[qlabel]['data'] = datablocks[key]
     return data

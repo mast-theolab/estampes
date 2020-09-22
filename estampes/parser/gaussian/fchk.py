@@ -903,7 +903,7 @@ def parse_data(qdict: TypeQInfo,
                qlab2kword: tp.Dict[str, str],
                datablocks: TypeDFChk,
                gver: tp.Optional[tp.Tuple[str, str]] = None,
-               raise_error: bool = True) -> TypeQData:
+               raise_error: bool = True) -> TypeData:
     """Parses data arrays to extract specific quantity.
 
     Parses data array to extract relevant information for each quantity.
@@ -951,16 +951,17 @@ def parse_data(qdict: TypeQInfo,
             else:
                 data[qlabel] = None
                 continue
+        data[qlabel] = {}
         # Basic Properties/Quantities
         # ---------------------------
         if qtag == 'natoms':
-            data[qlabel] = int(datablocks[kword])
+            data[qlabel]['data'] = int(datablocks[kword])
         elif qtag in ('atcrd', 2):
-            data[qlabel] = ep.reshape_dblock(datablocks[kword], (3, ))
+            data[qlabel]['data'] = ep.reshape_dblock(datablocks[kword], (3, ))
         elif qtag in ('atmas', 'atnum'):
-            data[qlabel] = datablocks[kword]
+            data[qlabel]['data'] = datablocks[kword]
         elif qtag == 'swopt':
-            data[qlabel] = ' '.join(datablocks[kword])
+            data[qlabel]['data'] = ' '.join(datablocks[kword])
         elif qtag == 'molsym':
             raise NotImplementedError()
         elif qtag == 'swver':
@@ -973,14 +974,14 @@ def parse_data(qdict: TypeQInfo,
         # Technically state should be checked but considered irrelevant.
         elif qtag == 'nvib':
             if kword in datablocks:
-                data[qlabel] = int(datablocks[kword])
+                data[qlabel]['data'] = int(datablocks[kword])
             else:
                 # For a robust def of nvib, we need the symmetry and
                 #   the number of frozen atoms. For now, difficult to do.
                 raise NotImplementedError()
         elif qtag in ('hessvec', 'hessval'):
             if kword in datablocks:
-                data[qlabel] = datablocks[kword]
+                data[qlabel]['data'] = datablocks[kword]
         # Vibronic Information
         # --------------------
         elif qtag == 'fcdat':
@@ -995,8 +996,9 @@ def parse_data(qdict: TypeQInfo,
             # Transition moments
             # ^^^^^^^^^^^^^^^^^^
             if type(rsta) is tuple:
-                data[qlabel] = _parse_electrans_data(qtag, datablocks, kword,
-                                                     qopt, dord, dcrd, rsta)
+                data[qlabel]['data'] = _parse_electrans_data(qtag, datablocks,
+                                                             kword, qopt, dord,
+                                                             dcrd, rsta)
             # States-specific Quantities
             # ^^^^^^^^^^^^^^^^^^^^^^^^^^
             else:
@@ -1023,34 +1025,35 @@ def parse_data(qdict: TypeQInfo,
                             offset = 7*ndat
                         else:
                             offset = 8*ndat
-                        data[qlabel] = datablocks[kword][offset:offset+ndat]
+                        data[qlabel]['data'] = \
+                            datablocks[kword][offset:offset+ndat]
                     elif qtag == 1:
-                        data[qlabel] = datablocks[kword]
+                        data[qlabel]['data'] = datablocks[kword]
                     elif qtag == 92:
-                        data[qlabel] = datablocks[kword][:9]
+                        data[qlabel]['data'] = datablocks[kword][:9]
                     elif qtag == 93:
-                        data[qlabel] = datablocks[kword][9:]
+                        data[qlabel]['data'] = datablocks[kword][9:]
                     elif qtag in (50, 91):
                         raise NotImplementedError()
                     elif qtag == 101:
                         if dord in (0, 1):
-                            data[qlabel] = datablocks[kword]
+                            data[qlabel]['data'] = datablocks[kword]
                         else:
                             raise NotImplementedError()
                     elif qtag == 102:
                         if dord == 1:
-                            data[qlabel] = datablocks[kword]
+                            data[qlabel]['data'] = datablocks[kword]
                         else:
                             raise NotImplementedError()
                     elif qtag == 300:
                         if dord in (0, 1):
                             if qopt == 0:
-                                data[qlabel] = datablocks[kword]
+                                data[qlabel]['data'] = datablocks[kword]
                         else:
                             raise NotImplementedError()
                     elif qtag == 300:
                         if dord in (0, 1):
-                            data[qlabel] = datablocks[kword]
+                            data[qlabel]['data'] = datablocks[kword]
                         else:
                             raise NotImplementedError()
                     else:
