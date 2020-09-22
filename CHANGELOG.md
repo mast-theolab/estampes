@@ -19,6 +19,9 @@ Other blocks are:
 
 ### Added
 
+- **LIB** - Added broadening function
+- **LIB** - Added Gaussian and Lorentzian distribution functions.
+- **API** - Added `Spectrum` class in `estampes.base.spectrum` to handle extraction and processing of spectra-related data.
 - **API** - Added simple parser for CSV files containing spectroscopic data ("XY" files).
 
 ### Changed

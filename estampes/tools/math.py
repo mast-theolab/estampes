@@ -5,6 +5,10 @@ A basic module providing methods for some useful mathematical
 
 Methods
 -------
+f_gauss
+    Gaussian distribution function.
+f_lorentz
+    Lorentzian distribution function.
 square_ltmat
     Squares a lower-triangular matrix.
 superpose
@@ -13,15 +17,89 @@ vrotate_3D
     Rotates a vector in a 3D space.
 """
 
-from math import sqrt
-import numpy as np
+from math import exp, log, pi, sqrt
 import typing as tp
+
+import numpy as np
+
 from estampes.base import ArgumentError
 
 
 # ==============
 # Module Methods
 # ==============
+
+def f_gauss(x: float,
+            hwhm: float = 2.0,
+            x0: float = 0.0,
+            y0: float = 1.0) -> float:
+    """Value of a Gaussian broadening function at x.
+
+    Computes the value of Gaussian distribution function with an
+        integrated area of `y0` centered on position `x0` at `x`.
+
+    Parameters
+    ----------
+    x
+        Position at which the function must be computed.
+    hwhm
+        Half-width at half maximum.
+    x0
+        Center of the function.
+    y0
+        Total, integrated intensity
+
+    Returns
+    -------
+    float
+        Value of the Gaussian function in position x.
+
+    Raises
+    ------
+    ValueError
+        Wrong value for the HWHM.
+    """
+    if hwhm <= 0.0:
+        raise ValueError('Wrong HWHM.')
+    sigma2 = hwhm**2/log(2)  # technically, sigma2 = 2*sigma
+    # Normalization factor
+    norm = 1./sqrt(sigma2*pi)
+    return y0*norm*exp(-(x-x0)**2/sigma2)
+
+
+def f_lorentz(x: float,
+              hwhm: float = 2.0,
+              x0: float = 0.0,
+              y0: float = 1.0) -> float:
+    """Value of a Lorentzian broadening function at x.
+
+    Computes the value of Lorentzian distribution function with an
+        integrated area of `y0` centered on position `x0` at `x`.
+
+    Parameters
+    ----------
+    x
+        Position at which the function must be computed.
+    hwhm
+        Half-width at half maximum.
+    x0
+        Center of the function.
+    y0
+        Total, integrated intensity
+
+    Returns
+    -------
+    float
+        Value of the Lorentzian function in position x.
+
+    Raises
+    ------
+    ValueError
+        Wrong value for the HWHM.
+    """
+    norm = hwhm/pi
+    return y0*norm/((x-x0)**2+hwhm**2)
+
 
 def square_ltmat(ltmat: np.ndarray, what: str = 'symm') -> np.ndarray:
     """Squares a lower-triangular matrix.
