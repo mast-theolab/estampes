@@ -17,6 +17,10 @@ Other blocks are:
 
 ## Unreleased
 
+### Added
+
+- **API** - Added simple parser for CSV files containing spectroscopic data ("XY" files).
+
 ### Changed
 
 - **API** - Added type for color specification formats.
