@@ -20,12 +20,12 @@ from PySide2.Qt3DCore import Qt3DCore
 from PySide2.Qt3DRender import Qt3DRender
 from PySide2.Qt3DExtras import Qt3DExtras
 
-from estampes.base import QuantityError
+from estampes.base import QuantityError, TypeColor
 from estampes.parser import DataFile, build_qlabel
 from estampes.data.physics import PHYSFACT
 from estampes.tools.atom import convert_labsymb
 from estampes.visual.molview import list_bonds, Molecule, TypeAtLabM, \
-    TypeAtCrdM, TypeBondsM, TypeCol, MOLCOLS
+    TypeAtCrdM, TypeBondsM, MOLCOLS
 from estampes.visual.plotmat import plot_jmat, plot_cmat, plot_kvec
 from estampes.visual.plotspec import plot_spec_2D
 
@@ -85,7 +85,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
                  bonds: TypeBondsM,
                  col_bond_as_atom: bool = False,
                  rad_atom_as_bond: bool = False,
-                 molcols: tp.Optional[TypeCol] = None):
+                 molcols: tp.Optional[TypeColor] = None):
         super(MolWin, self).__init__()
 
         # Camera

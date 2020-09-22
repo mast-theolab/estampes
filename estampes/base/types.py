@@ -26,6 +26,8 @@ TypeDFChk : :obj:`typing.Dict`
     Static type for data from Gaussian fchk file.
 TypeDGLog : :obj:`typing.List`
     Static type for data from Gaussian log file.
+TypeColor : :obj:`typing.Union`
+    Static type for colors.
 
 Classes
 -------
@@ -84,3 +86,4 @@ TypeAtData = tp.Dict[str, tp.Dict[str, tp.List[tp.Any]]]
 TypeQInfo = tp.Dict[str, tp.List[tp.Any]]
 TypeDFChk = tp.Dict[str, tp.List[tp.Union[str, int, float]]]
 TypeDGLog = tp.List[tp.Union[tp.List[str], str]]
+TypeColor = tp.Union[tp.Sequence[int], float, str]

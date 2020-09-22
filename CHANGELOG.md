@@ -19,6 +19,7 @@ Other blocks are:
 
 ### Changed
 
+- **API** - Added type for color specification formats.
 - **API** - Changed data structure to be always a dictionary.  The new structure is more flexible this way.
 - **API** - Added quantity identifier `AnySpc` to store generic spectral data (spectrum, axis information).
 - **API** - Added quantity identifier `VTrans` to store vibrational transition information.

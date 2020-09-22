@@ -4,8 +4,6 @@ This module provides basic methods for the molecular visualization.
 
 Attributes
 ----------
-TypeCol
-    Static type for colors.
 TypeBonds
     Static type for bonds information.
 TypeAtLab
@@ -46,7 +44,7 @@ Molecule
 from math import sqrt, inf, tan, radians
 import typing as tp
 import numpy as np
-from estampes.base import ArgumentError
+from estampes.base import ArgumentError, TypeColor
 from estampes.data.atom import atomic_data
 from estampes.tools.math import vrotate_3D
 from PySide2 import QtCore, QtGui
@@ -59,7 +57,6 @@ from PySide2.Qt3DExtras import Qt3DExtras
 # Module Constants
 # ================
 
-TypeCol = tp.Union[tp.Sequence[int], str]
 TypeBonds = tp.List[tp.Tuple[int, int]]
 TypeAtLab = tp.Sequence[str]
 TypeAtCrd = np.ndarray
@@ -130,7 +127,7 @@ class Molecule(Qt3DCore.QEntity):
                  bonds: TypeBonds,
                  col_bond_as_atom: bool = False,
                  rad_atom_as_bond: bool = False,
-                 molcol: tp.Optional[TypeCol] = None,
+                 molcol: tp.Optional[TypeColor] = None,
                  rootEntity: tp.Optional[Qt3DCore.QEntity] = None):
         super(Molecule, self).__init__(rootEntity)
 
@@ -177,7 +174,7 @@ class Molecule(Qt3DCore.QEntity):
     def set_display_settings(self, *,
                              col_bond_as_atom: bool = False,
                              rad_atom_as_bond: bool = False,
-                             molcol: tp.Optional[TypeCol] = None
+                             molcol: tp.Optional[TypeColor] = None
                              ) -> tp.NoReturn:
         """Sets display settings for the molecule.
 

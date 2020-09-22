@@ -38,6 +38,8 @@ TypeDFChk : :obj:`typing.Dict`
     Static type for data from Gaussian fchk file.
 TypeDGLog : :obj:`typing.List`
     Static type for data from Gaussian log file.
+TypeColor : :obj:`typing.Union`
+    Static type for colors.
 
 Classes
 -------
@@ -55,9 +57,9 @@ QuantityError
 
 # flake8: noqa: F401
 
-from estampes.base.types import TypeAtData, TypeData, TypeDCrd, TypeDFChk, \
-    TypeDGLog, TypeDOrd, TypeQInfo, TypeQLab, TypeQOpt, TypeQTag, TypeRSta, \
-    ConstDict
+from estampes.base.types import TypeAtData, TypeColor, TypeData, TypeDCrd, \
+    TypeDFChk, TypeDGLog, TypeDOrd, TypeQInfo, TypeQLab, TypeQOpt, TypeQTag, \
+    TypeRSta, ConstDict
 
 from estampes.base.errors import ArgumentError, ParseDataError, \
     ParseKeyError, ParsingError, QuantityError
