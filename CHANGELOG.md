@@ -19,6 +19,7 @@ Other blocks are:
 
 ### Added
 
+- **VIZ** - Added `SpecLayout` class to manipulate the layout information of spectra.
 - **LIB** - Added broadening function
 - **LIB** - Added Gaussian and Lorentzian distribution functions.
 - **API** - Added `Spectrum` class in `estampes.base.spectrum` to handle extraction and processing of spectra-related data.

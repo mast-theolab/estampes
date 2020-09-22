@@ -5,12 +5,412 @@ This module provides simple function to display spectra.
 Methods
 -------
 plot_spec_2D
+    Plots 2D spectra.
+
+Classes
+-------
+SpecLayout
+    Class for the spectrum layout.
 """
 
 import typing as tp
 
 import numpy as np
 import matplotlib as mpl
+
+
+# ==============
+# Module Classes
+# ==============
+
+class SpecLayout(object):
+    """Class for the spectrum layout.
+
+    Class managing information for the spectrum layout.
+
+    Parameters
+    ----------
+    xleft
+        Leftmost bound (X axis).
+    xright
+        Rightmost bound (X axis).
+    ytop
+        Top bound (Y axis).
+    ybottom
+        Bottom bound (Y axis).
+    xscale
+        Scale for the X axis.
+        Acceptable values: linear
+    yscale
+        Scale for the Y axis.
+        Acceptable values: linear
+    xlabel
+        Label for the X axis.
+    ylabel
+        Label for the Y axis.
+    title
+        Title for the spectrum layout.
+    legpos
+        Legend position.
+
+    Attributes
+    ----------
+    xleft
+        Leftmost bound (X axis).
+    xright
+        Rightmost bound (X axis).
+    ytop
+        Top bound (Y axis).
+    ybottom
+        Bottom bound (Y axis).
+    xscale
+        Scale for the X axis.
+        Acceptable values: linear
+    yscale
+        Scale for the Y axis.
+        Acceptable values: linear
+    xlabel
+        Label for the X axis.
+    ylabel
+        Label for the Y axis.
+    title
+        Title for the spectrum layout.
+
+    Methods
+    -------
+    set_xbounds(*xaxes, desc=False)
+        Sets X bounds from a list of X axes.
+    set_ybounds(*yaxes, desc=False)
+        Sets Y bounds from a list of X axes.
+    legend(pos=None, ncols=1)
+        Sets the position and options of the legend.
+    set_plot(canvas)
+        Sets the spectrum parameters on a Matplotlib canvas.
+    """
+    def __init__(self,
+                 xleft: tp.Optional[float] = None,
+                 xright: tp.Optional[float] = None,
+                 ytop: tp.Optional[float] = None,
+                 ybottom: tp.Optional[float] = None,
+                 xscale: tp.Optional[str] = None,
+                 yscale: tp.Optional[str] = None,
+                 xlabel: tp.Optional[str] = None,
+                 ylabel: tp.Optional[str] = None,
+                 title: tp.Optional[str] = None,
+                 legpos: tp.Optional[str] = None):
+        self.__legpos = False
+        self.__legcol = False
+        self.xleft = xleft
+        self.xright = xright
+        self.ytop = ytop
+        self.ybottom = ybottom
+        self.xscale = xscale
+        self.yscale = yscale
+        self.xlabel = xlabel
+        self.ylabel = ylabel
+        self.title = title
+        self.legend(pos=legpos)
+
+    @property
+    def xleft(self) -> tp.Optional[float]:
+        """Gets or sets the X leftmost bound."""
+        return self.__xleft
+
+    @xleft.setter
+    def xleft(self, val: tp.Optional[tp.Any]) -> tp.NoReturn:
+        if val is None or val.lower() == 'auto':
+            self.__xleft = None
+        else:
+            self.__xleft = float(val)
+
+    @property
+    def xright(self) -> tp.Optional[float]:
+        """Gets or sets the X rightmost bound."""
+        return self.__xright
+
+    @xright.setter
+    def xright(self, val: tp.Optional[tp.Any]) -> tp.NoReturn:
+        if val is None or val.lower() == 'auto':
+            self.__xright = None
+        else:
+            self.__xright = float(val)
+
+    @property
+    def xmin(self) -> tp.Optional[float]:
+        """Returns lowest value along X."""
+        if self.__xleft is None and self.__xright is None:
+            return None
+        else:
+            return min([item for item in [self.__xleft, self.__xright]
+                        if item is not None])
+
+    @property
+    def xmax(self) -> tp.Optional[float]:
+        """Returns highest value along X."""
+        if self.__xleft is None and self.__xright is None:
+            return None
+        else:
+            return max([item for item in [self.__xleft, self.__xright]
+                        if item is not None])
+
+    @property
+    def ytop(self) -> tp.Optional[float]:
+        """Gets or sets the top limit along Y."""
+        return self.__ytop
+
+    @ytop.setter
+    def ytop(self, val: tp.Optional[tp.Any]) -> tp.NoReturn:
+        if val is None or val.lower() == 'auto':
+            self.__ytop = None
+        else:
+            self.__ytop = float(val)
+
+    @property
+    def ybottom(self) -> tp.Optional[float]:
+        """Gets or sets the bottom limit along Y."""
+        return self.__ybottom
+
+    @ybottom.setter
+    def ybottom(self, val: tp.Optional[tp.Any]) -> tp.NoReturn:
+        if val is None or val.lower() == 'auto':
+            self.__ybottom = None
+        else:
+            self.__ybottom = float(val)
+
+    @property
+    def ymin(self) -> tp.Optional[float]:
+        """Returns lowest value along Y."""
+        if self.__ytop is None and self.__ybottom is None:
+            return None
+        else:
+            return min([item for item in [self.__ytop, self.__ybottom]
+                        if item is not None])
+
+    @property
+    def ymax(self) -> tp.Optional[float]:
+        """Returns highest value along Y."""
+        if self.__ytop is None and self.__ybottom is None:
+            return None
+        else:
+            return max([item for item in [self.__ytop, self.__ybottom]
+                        if item is not None])
+
+    @property
+    def xlabel(self) -> tp.Optional[str]:
+        """Gets or sets the label for the X axis."""
+        return self.__xlabel
+
+    @xlabel.setter
+    def xlabel(self, val: tp.Optional[str]) -> tp.NoReturn:
+        self.__xlabel = val
+
+    @property
+    def ylabel(self) -> tp.Optional[str]:
+        """Gets or sets the label for the X axis."""
+        return self.__ylabel
+
+    @ylabel.setter
+    def ylabel(self, val: tp.Optional[str]) -> tp.NoReturn:
+        self.__ylabel = val
+
+    @property
+    def xscale(self) -> tp.Tuple[str, int]:
+        """Gets or sets the scale along the X axis."""
+        return self.__xscale
+
+    @xscale.setter
+    def xscale(self, val: tp.Optional[str]) -> tp.NoReturn:
+        if val is None:
+            self.__xscale = ('linear', 0)
+        else:
+            key = val.lower()
+            if key in ('lin', 'linear'):
+                self.__xscale = ('linear', 0)
+            elif key in ('log', 'log10'):
+                self.__xscale = ('log', 10)
+            elif key in ('ln', 'log2'):
+                self.__xscale = ('log', 2)
+            else:
+                raise IndexError('Unrecognized scale: {}'.format(val))
+
+    @property
+    def yscale(self) -> tp.Tuple[str, int]:
+        """Gets or sets the scale along the Y axis."""
+        return self.__yscale
+
+    @yscale.setter
+    def yscale(self, val: tp.Optional[str]) -> tp.NoReturn:
+        if val is None:
+            self.__yscale = ('linear', 0)
+        else:
+            key = val.lower()
+            if key in ('lin', 'linear'):
+                self.__yscale = ('linear', 0)
+            elif key in ('log', 'log10'):
+                self.__yscale = ('log', 10)
+            elif key in ('ln', 'log2'):
+                self.__yscale = ('log', 2)
+            else:
+                raise IndexError('Unrecognized scale: {}'.format(val))
+
+    @property
+    def title(self) -> str:
+        """Gets or sets the title of the spectrum."""
+        return self.__title
+
+    @title.setter
+    def title(self, val: tp.Optional[str]) -> tp.NoReturn:
+        self.__title = val
+
+    def set_xbounds(self, *xaxes: tp.List[float], desc: bool = False):
+        """Sets X bounds from a list of X axes.
+
+        Given a list of X values, sets the bounds.
+        By default, the bounds are set so that the the lower bound is on
+          the left.  This can be reversed with `desc` = True.
+
+        Parameters
+        ----------
+        xaxes
+            List of X axes.
+        desc
+            Sets X bounds so that the highest value is on the left.
+        """
+        xmin = []
+        xmax = []
+        for xaxis in xaxes:
+            xmin.append(min(xaxis))
+            xmax.append(max(xaxis))
+        if not desc:
+            self.__xleft = min(xmin)
+            self.__xright = max(xmax)
+        else:
+            self.__xright = min(xmin)
+            self.__xleft = max(xmax)
+
+    def set_ybounds(self, *yaxes: tp.List[float], desc: bool = False):
+        """Sets Y bounds from a list of Y axes.
+
+        Given a list of Y values, sets the bounds.
+        By default, the bounds are set so that the the lower bound is at
+          the bottom.  This can be reversed with `desc` = True.
+
+        Parameters
+        ----------
+        yaxes
+            List of Y axes.
+        desc
+            Sets Y bounds so that the highest value is at the bottom.
+        """
+        ymin = []
+        ymax = []
+        for yaxis in yaxes:
+            ymin.append(min(yaxis))
+            ymax.append(max(yaxis))
+        if not desc:
+            self.__ybottom = min(ymin)
+            self.__ytop = max(ymax)
+        else:
+            self.__ytop = min(ymin)
+            self.__ybottom = max(ymax)
+
+    def legend(self, pos: tp.Optional[tp.Union[str, int, bool]] = None,
+               ncols: tp.Optional[int] = None) -> tp.NoReturn:
+        """Sets the position and options of the legend.
+
+        Sets the position and some parameters of the legend.
+
+        Parameters
+        ----------
+        pos
+            Position of the legend.
+        ncols
+            Number of columns.
+
+        Raises
+        ------
+        IndexError
+            Unrecognized position label.
+        ValueError
+            Unsupported number of columns.
+        """
+        LEGPOS = ['best',
+                  'upper right',
+                  'upper left',
+                  'lower left',
+                  'lower right',
+                  'right',
+                  'center left',
+                  'center right',
+                  'lower center',
+                  'upper center',
+                  'center']
+        # Position definition
+        if pos is not None:
+            if isinstance(pos, int):
+                if pos == -1:
+                    self.__legpos = False
+                else:
+                    self.__legpos = LEGPOS[pos]
+            elif isinstance(pos, str):
+                if pos.lower() == 'no':
+                    self.__legpos = False
+                elif pos.lower() in LEGPOS:
+                    self.__legpos = pos.lower()
+                else:
+                    raise IndexError('Unrecognized position')
+            elif not pos:
+                self.__legpos = False
+            else:
+                raise IndexError('Unrecognized position definition.')
+        # Number of columns
+        if ncols is not None:
+            self.__legcol = int(ncols)
+            if self.__legcol < 1:
+                raise ValueError('Error in number of columns.')
+
+    def set_plot(self, canvas: mpl.axes.Axes) -> tp.NoReturn:
+        """Sets the spectrum parameters on a Matplotlib canvas.
+
+        Sets the parameters for the spectrum layout on a Matplotlib
+          canvas.
+
+        Parameters
+        ----------
+        canvas
+            Matplotlib plotting frame.
+        """
+        # X axis
+        pars = {}
+        if self.__xleft is not None:
+            pars['left'] = self.__xleft
+        if self.__xright is not None:
+            pars['right'] = self.__xright
+        if pars:
+            canvas.set_xlim(**pars)
+        canvas.set_xscale(self.__xscale[0], base=self.__xscale[1])
+        if self.__xlabel is not None:
+            canvas.set_xlabel(self.__xlabel)
+        # Y axis
+        pars = {}
+        if self.__ybottom is not None:
+            pars['bottom'] = self.__ybottom
+        if self.__ytop is not None:
+            pars['top'] = self.__ytop
+        if pars:
+            canvas.set_ylim(**pars)
+        canvas.set_yscale(self.__yscale[0], base=self.__yscale[1])
+        if self.__ylabel is not None:
+            canvas.set_ylabel(self.__ylabel)
+        # Legend
+        if self.__legpos:
+            pars = {'loc': self.__legpos}
+            if self.__legcol is not None:
+                pars['ncol'] = self.__legcol
+            canvas.legend(**pars)
+        # Title
+        if self.__title is not None:
+            canvas.title(self.__title)
 
 
 # ==============
