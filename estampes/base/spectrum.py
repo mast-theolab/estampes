@@ -169,6 +169,8 @@ class Spectrum():
         Gets/sets the line color.
     linestyle
         Gets/sets the line style.
+    linewidth
+        Gets/sets the line width.
 
     Methods
     -------
@@ -186,7 +188,7 @@ class Spectrum():
         Shows broadening data.
     set_broadening(hwhm, func, yunit, origin)
         Sets broadening data.
-    set_display(color, linestyle)
+    set_display(color, linestyle, linewidth)
         Sets display parameters.
 
     Raises
@@ -236,6 +238,7 @@ class Spectrum():
         self.reset()
         self.__linecol = None
         self.__linesty = None
+        self.__linewdt = None
 
     def load_data(self, ylabel: tp.Optional[str] = None) -> tp.NoReturn:
         """Loads data from data file.
@@ -506,7 +509,8 @@ class Spectrum():
         self.set_broadening(func=val)
 
     def set_display(self, color: tp.Optional[TypeColor] = None,
-                    linestyle: tp.Optional[str] = None) -> tp.NoReturn:
+                    linestyle: tp.Optional[str] = None,
+                    linewidth: tp.Optional[float] = None) -> tp.NoReturn:
         """Sets display parameters.
 
         Sets options related to display.
@@ -517,11 +521,23 @@ class Spectrum():
             Color of the curve.
         linestyle
             Linestyle of the curve.
+        linewidth
+            Linewidth of the curve.
+
+        Raises
+        ------
+        TypeError
+            Wrong type for input data.
         """
         if color is not None:
             self.__linecol = color
         if linestyle is not None:
             self.__linesty = linestyle
+        if linewidth is not None:
+            try:
+                self.__linewdt = float(linewidth)
+            except ValueError:
+                raise TypeError('Incorrect type for linewidth')
 
     @property
     def linecolor(self) -> tp.Optional[TypeColor]:
@@ -540,3 +556,12 @@ class Spectrum():
     @linestyle.setter
     def linestyle(self, val: str) -> tp.NoReturn:
         self.set_display(linestyle=val)
+
+    @property
+    def linewidth(self) -> tp.Optional[str]:
+        """Gets or sets the line width."""
+        return self.__linewdt
+
+    @linewidth.setter
+    def linewidth(self, val: str) -> tp.NoReturn:
+        self.set_display(linewidth=val)

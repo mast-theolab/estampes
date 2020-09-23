@@ -8,7 +8,6 @@ This is a simple program to combine and display spectra together.
 
 import sys
 import os
-import re
 import argparse
 import typing as tp
 import configparser as cfg
@@ -174,10 +173,12 @@ def parse_inifile(fname) -> tp.Tuple[tp.Dict[str, tp.Any],
                 if hwhm is not None:
                     hwhm = float(hwhm)
                 curves[key]['data'].set_broadening(hwhm, func, 'default')
-            col = curve.get('color', None)
-            lst = curve.get('linestyle', None)
-            if col is not None or lst is not None:
-                curves[key]['data'].set_display(col, lst)
+            vizdata = {}
+            for item in ('color', 'linestyle', 'linewidth'):
+                if curve.get(item, False):
+                    vizdata[item] = curve.get(item, False)
+            if vizdata:
+                curves[key]['data'].set_display(**vizdata)
             if curve.get('label', None) is not None:
                 curves[key]['data'].label = curve.get('label')
             curves[key]['xshift'] = curve.getfloat('xshift', fallback=None)
@@ -244,6 +245,8 @@ def main() -> tp.NoReturn:
             data['label'] = curves[key]['data'].label
         if curves[key]['data'].linecolor is not None:
             data['color'] = curves[key]['data'].linecolor
+        if curves[key]['data'].linewidth is not None:
+            data['linewidth'] = curves[key]['data'].linewidth
         if stick:
             zeros = np.zeros(len(yaxis))
             subp.vlines(xaxis, zeros, yaxis, **data)
@@ -254,6 +257,7 @@ def main() -> tp.NoReturn:
         subp.legend()
         spcdata.set_plot(subp)
     plt.show()
+
 
 if __name__ == '__main__':
     main()

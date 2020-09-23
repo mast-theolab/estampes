@@ -1,0 +1,30 @@
+= ESParser: A simple parser and proof of concept for ESTAMPES
+:email: julien.bloino@sns.it
+:revnumber: 0.2.0
+:revremark: Introduction
+:toc: left
+:toclevels: 1
+:icons: font
+:stem:
+////:source-highlighter: pygments  ////
+:pygments-style: native
+
+:Gaussian: pass:q[G[small]##AUSSIAN##]
+:Estampes: pass:q[E[small]##STAMPES##]
+:ESParser: pass:q[ESP[small]##ARSER##]
+
+== Preamble
+
+{ESParser} is a simple program to parse and visualize data related to the simulation of spectra.
+It also serves as a proof of concept for the API.
+
+== Overview
+
+{ESParser} has several operating modes:
+
+`spectra` | _alt_: `spec`, `spc`::
+    Spectra: compare multiple spectra
+
+== Mode: _Spectra_
+
+Not yet implemented.

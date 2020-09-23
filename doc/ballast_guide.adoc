@@ -91,6 +91,8 @@ Its structure is divided in 2 blocks:
     Color definition (passed directly *Matplotlib*).
 `linestyle`::
     Line style (passed directly to *Matplotlib*).
+`linewidth`::
+    Line width (passed directly to *Matplotlib*).
 `xshift`::
     Shift value applied to the curve along the X axis.
 `yshift`::

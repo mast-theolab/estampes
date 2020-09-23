@@ -21,7 +21,9 @@ Other blocks are:
 
 ### Added
 
+- **BLS** - Added the support of `linewidth` in the INI file.
 - **VIZ** - Added possibility to draw a grid on matrices (`plot_jmat`, `plot_cmat`) and vectors (`plot_kvec`) to improve readability.
+- **API** - The `Spectrum` class supports a linewidth parameter for the visualization aspect.
 
 ### Fixed
 
