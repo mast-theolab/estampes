@@ -25,6 +25,7 @@ Other blocks are:
 
 ### Fixed
 
+- **ESP** - `molview` in _ESParser_ was broken after update of the data structure.
 - **VIZ** - Format when following the cursor is improved on vectors or matrices.
 - **VIZ** - Fixed normal modes numbering to start at 1 for matrices and vectors.
 - **API** - Wrong corrected unit for the integrated intensities of vibronic calculations in `glog.py`.

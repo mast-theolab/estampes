@@ -201,8 +201,8 @@ def mode_molview(dfile: DataFile) -> tp.NoReturn:
         'atnum': build_qlabel('atnum')
     }
     data = dfile.get_data(*dkeys.values())
-    atlab = convert_labsymb(True, *data[dkeys['atnum']])
-    atcrd = np.array(data[dkeys['atcrd']])*PHYSFACT.bohr2ang
+    atlab = convert_labsymb(True, *data[dkeys['atnum']]['data'])
+    atcrd = np.array(data[dkeys['atcrd']]['data'])*PHYSFACT.bohr2ang
     bonds = list_bonds(atlab, atcrd, 1.2)
 
     app = QtGui.QGuiApplication(sys.argv)
