@@ -19,11 +19,22 @@ Other blocks are:
 
 ## Unreleased
 
+### Added
+
+- **VIZ** - Added possibility to draw a grid on matrices (`plot_jmat`, `plot_cmat`) and vectors (`plot_kvec`) to improve readability.
+
 ### Fixed
 
+- **VIZ** - Format when following the cursor is improved on vectors or matrices.
+- **VIZ** - Fixed normal modes numbering to start at 1 for matrices and vectors.
 - **API** - Wrong corrected unit for the integrated intensities of vibronic calculations in `glog.py`.
 - **LIB** - Units in `convert_y` are case-sensitive.
 - **LIB** - Fixed some inconsistencies in the aliasing of the units in `convert_y`.
+
+### Changed
+
+- **VIZ** - The numbering for the matrices start on the bottom right to be consistent with K vector-like representations.
+
 
 ## [0.2.0] - 2020-09-22
 
