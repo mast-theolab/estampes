@@ -165,36 +165,46 @@ def convert_y(specabbr: str,
         * `II` - integrated intensity
         * `DS` - dipole strength
         * `RS` - rotatory strength
-    * Units
-        * `M-1` or `/M` - dm^3/mol
-        * `M-1cm-1` or `/M/cm` - dm^3/mol/cm
+    * Units are case-sensitive to avoid ambiguities.
+      "/" and "." must be indicated correctly.
+        * `M-1` or `/M` -> dm^3/mol
+        * `M-1.cm-1` or `/M/cm` -> dm^3/mol/cm
+        * `M-1.cm-2` or `/M/cm2` -> dm^3/mol/cm^2
     """
     msgNYI = f'For {specabbr}: conversion from "{unit_from}" to "{unit_to}"' +\
         ' not yet implemented.'
     msgNA = f'Conversion from "{unit_from}" to "{unit_to}" not recognized ' +\
         f'for {specabbr}'
+    UNIT_EPS = {
+        '/M/cm1': ('M-1.cm-1', '/M/cm', 'dm3.mol-1.cm-1', 'dm3/mol/cm',
+                   'L.mol-1.cm-1', 'L/mol/cm', '')
+    }
+    UNIT_II = {
+        '/M/cm2': ('M-1.cm-2', '/M/cm2', 'dm3.mol-1.cm-2', 'dm3/mol/cm2',
+                   'L.mol-1.cm-2', 'L/mol/cm2')
+    }
     # Initial setup
     _spec = specabbr.upper()
     res = unit_to.split(':')
     if len(res) == 1:
         _dest_unit = ''
     else:
-        _dest_unit = res[1].lower().replace('.', '')
+        _dest_unit = res[1].replace('^', '')
     _dest_type = res[0].upper()
     res = unit_from.split(':')
     if len(res) == 1:
         _src_unit = ''
     else:
-        _src_unit = res[1].lower().replace('.', '')
+        _src_unit = res[1].replace('^', '')
     _src_type = res[0].upper()
     yfactor = 1.0
     xunit = 0
     # Test
     if _spec == 'OPA':
         if _dest_type == 'I':
-            if _dest_unit in ('', 'm-1l-1', '/m/cm'):
+            if _dest_unit in UNIT_EPS['/M/cm1']:
                 if _src_type == 'II':
-                    if _src_unit in ('m-1', '/m'):
+                    if _src_unit in UNIT_II['/M/cm2']:
                         yfactor = 1.0
                         xunit = 0
                     else:

@@ -19,6 +19,11 @@ Other blocks are:
 
 ## Unreleased
 
+### Fixed
+
+- **API** - Wrong corrected unit for the integrated intensities of vibronic calculations in `glog.py`.
+- **LIB** - Units in `convert_y` are case-sensitive.
+- **LIB** - Fixed some inconsistencies in the aliasing of the units in `convert_y`.
 
 ## [0.2.0] - 2020-09-22
 

@@ -1032,7 +1032,7 @@ def parse_data(qdict: TypeQInfo,
                             # Fix a stupidity in the unit in some versions
                             #   for the stick spectrum
                             if txt == 'dm^3.mol^-1.cm^-1':
-                                txt = 'dm^3.mol^-1'
+                                txt = 'dm^3.mol^-1.cm^-2'
                         else:
                             _desc = 'I:'
                         data[qlabel]['unity'] = _desc + txt
