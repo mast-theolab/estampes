@@ -19,6 +19,9 @@ Other blocks are:
 
 ## Unreleased
 
+
+## [0.2.1] - 2020-09-26
+
 ### Added
 
 - **BLS** - Added the support of `linewidth` in the INI file.
