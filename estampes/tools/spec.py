@@ -82,7 +82,7 @@ def broaden(xval: tp.Sequence[float],
     npoints = len(xaxis)
     if npoints == 0:
         raise IndexError('New X axis is empty')
-    yaxis = [0.0 for _ in npoints]
+    yaxis = [0.0 for _ in range(npoints)]
     if not truncate:
         for i in range(npoints):
             for x0, y0 in zip(xval, yval):

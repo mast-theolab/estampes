@@ -31,6 +31,7 @@ Other blocks are:
 - **VIZ** - Format when following the cursor is improved on vectors or matrices.
 - **VIZ** - Fixed normal modes numbering to start at 1 for matrices and vectors.
 - **API** - Wrong corrected unit for the integrated intensities of vibronic calculations in `glog.py`.
+- **LIB** - Fixed issues in the broadening code.
 - **LIB** - Units in `convert_y` are case-sensitive.
 - **LIB** - Fixed some inconsistencies in the aliasing of the units in `convert_y`.
 

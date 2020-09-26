@@ -471,15 +471,15 @@ class Spectrum():
                 _xmax = self.__xaxis[0][-1] - 4*self.__broad[_ids]['hwhm']
             if xres <= 0.0:
                 raise ValueError('Wrong value for `xres`.')
-            npoints = int(ceil((_xmax-xmin)/xres))
+            npoints = int(ceil((_xmax-_xmin)/xres))
             self.__xaxis[_ids] = [_xmin + i*xres for i in range(npoints)]
             if yunit.lower() in ('n', 'norm', 'normalized'):
-                _unit_dest = SPEC2DATA[self.__spec][self.__theory]['unit']
+                _unit_dest = SPEC2DATA[self.__spec]['unit']
                 _yunit = True
             else:
                 _yunit = False
                 if yunit.lower() == 'default':
-                    _unit_dest = SPEC2DATA[self.__spec][self.__theory]['unit']
+                    _unit_dest = SPEC2DATA[self.__spec]['unit']
                 else:
                     _unit_dest = yunit
             _yfac, _xpow = convert_y(self.__spec, _unit_dest, self.__yunit[0])
