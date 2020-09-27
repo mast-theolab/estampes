@@ -52,6 +52,8 @@ class SpecLayout(object):
         Title for the spectrum layout.
     legpos
         Legend position.
+    legcol
+        Number of columns in the legend.
 
     Attributes
     ----------
@@ -97,7 +99,8 @@ class SpecLayout(object):
                  xlabel: tp.Optional[str] = None,
                  ylabel: tp.Optional[str] = None,
                  title: tp.Optional[str] = None,
-                 legpos: tp.Optional[str] = None):
+                 legpos: tp.Optional[str] = None,
+                 legcol: tp.Optional[int] = None):
         self.__legpos = False
         self.__legcol = False
         self.xleft = xleft
@@ -109,7 +112,7 @@ class SpecLayout(object):
         self.xlabel = xlabel
         self.ylabel = ylabel
         self.title = title
-        self.legend(pos=legpos)
+        self.legend(pos=legpos, ncols=legcol)
 
     @property
     def xleft(self) -> tp.Optional[float]:
@@ -410,7 +413,7 @@ class SpecLayout(object):
             canvas.legend(**pars)
         # Title
         if self.__title is not None:
-            canvas.title(self.__title)
+            canvas.set_title(self.__title)
 
 
 # ==============

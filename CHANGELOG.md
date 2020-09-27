@@ -20,6 +20,19 @@ Other blocks are:
 ## Unreleased
 
 
+### Added
+
+- **BLS** - Support for multiple spectra in a figure.
+
+### Fixed
+
+- **API** - The number of columns is supported by the constructor of `SpecLayout`, so all supported properties can be given now when creating an object.
+- **API** - Fixed an error in the setup of the canvas title in class `SpecLayout`.
+
+### Changed
+
+- **BLS** - Tighter layout in the figures.
+
 ## [0.2.1] - 2020-09-26
 
 ### Added

@@ -1,13 +1,11 @@
 = Ballast: A simple builder to display multiple spectra.
 :email: julien.bloino@sns.it
-:revnumber: 0.2.0
+:revnumber: 0.2.2
 :revremark: Introduction
 :toc: left
 :toclevels: 1
 :icons: font
 :stem:
-////:source-highlighter: pygments  ////
-:pygments-style: native
 
 :Gaussian: pass:q[G[small]##AUSSIAN##]
 :Estampes: pass:q[E[small]##STAMPES##]
@@ -34,14 +32,32 @@ Its structure is divided in 2 blocks:
 `figure`::
     Figure parameters.
 `layout`::
-    Layout of the spectrum.
+    Layout of the spectrum. +
++
+NOTE: For multiple sub-plots, the keyword layout can be followed by '`:`' and either a '`row,column`' or '`subplot_id`' specification.
++
 `curve`::
     Parameters of a curve, *must* be followed by an identifier, separated by a '`:`' (ex: `curve:1`).
 
+[NOTE]
+====
+Subplots specifications can be given as '`rows,columns`' or '`id`'.
+In the latter case, the counting goes from left to right and top to bottom.
+The indexes start at *1*.
+====
+
 === Figure parameters
 
+`maintitle`::
+    Title of the figure.
 `geometry`::
-    Geometry of the figure, as '`width, height`'
+    Geometry of the figure, as '`width, height`'.
+`subplots`::
+    Enables multiple plots to be included as '`rows, columns`'.
+    A single value corresponds to the number of _rows_.
+`mergeaxes`::
+    Merge axes of subplots.  +
+    Accepted values: `X`, `Y`, `Both`, `None` (default)
 
 
 === Layout parameters
@@ -114,5 +130,7 @@ Its structure is divided in 2 blocks:
     Half-width at half-maximum of the broadening function (of `broaden` is `yes`).
 `yaxis`::
     Y axis of interest if multiple present (`1` by default).
+`subplot`::
+    Subplot where the curve should be displayed.
 
 == Usage
