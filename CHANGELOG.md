@@ -26,6 +26,7 @@ Other blocks are:
 
 ### Fixed
 
+- **API** - Unable to parse Gaussian version if the day of the release date was a single digit.
 - **API** - The number of columns is supported by the constructor of `SpecLayout`, so all supported properties can be given now when creating an object.
 - **API** - Fixed an error in the setup of the canvas title in class `SpecLayout`.
 

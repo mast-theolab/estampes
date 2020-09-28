@@ -854,7 +854,7 @@ def parse_data(qdict: TypeQInfo,
         elif qtag == 'molsym':
             raise NotImplementedError()
         elif qtag == 'swver':
-            txt = r'\s*Gaussian (\w+):\s+(\w+)-(\w{3})Rev([\w.+]+) ' \
+            txt = r'\s*Gaussian (\w+):\s+(\w+)-(\w{3})Rev([\w.+]+) {1,2}' \
                 + r'(\d+-\w{3}-\d{4})\s*'
             pattern = re.compile(txt)
             res = re.match(pattern, ''.join(datablocks[iref])).groups()
