@@ -272,7 +272,7 @@ def mode_vibronic(dfile: DataFile,
             print('J is the identity matrix.')
         else:
             figsize = (10, 8)
-            fig, subp = plt.subplots(1, 1)
+            fig, subp = plt.subplots(1, 1, tight_layout=True)
             fig.set_size_inches(figsize)
             if qty == 'jmat':
                 mat = np.array(data[dkeys['JMat']]['data'])

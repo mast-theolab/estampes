@@ -32,6 +32,7 @@ Other blocks are:
 
 ### Changed
 
+- **ESP** - Tighter layout in the figure.
 - **BLS** - Tighter layout in the figures.
 
 ## [0.2.1] - 2020-09-26
