@@ -44,6 +44,7 @@ NOTE: For multiple sub-plots, the keyword layout can be followed by '`:`' and ei
 Subplots specifications can be given as '`rows,columns`' or '`id`'.
 In the latter case, the counting goes from left to right and top to bottom.
 The indexes start at *1*.
+For curves, it is possible to specify a range of rows and/or columns.
 ====
 
 === Figure parameters
@@ -131,6 +132,8 @@ The indexes start at *1*.
 `yaxis`::
     Y axis of interest if multiple present (`1` by default).
 `subplot`::
-    Subplot where the curve should be displayed.
+    Subplot where the curve should be displayed. +
+    By default, the curves are printed over all subplots.
+    Ranges can be provided with '`-`' (ex: `1,1-3`).
 
 == Usage

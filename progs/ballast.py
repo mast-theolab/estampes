@@ -77,7 +77,9 @@ def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
     return parser.parse_args(args)
 
 
-def parse_subid(ident: str, ncols: int = 1) -> tp.Tuple[int, int]:
+def parse_subid(ident: str, ncols: int = 1
+                ) -> tp.Tuple[tp.Union[int, tp.Tuple[int, int]],
+                              tp.Union[int, tp.Tuple[int, int]]]:
     """Parses a subplot identifier.
 
     Takes a subplot identifier and returns the corresponding row and
@@ -92,20 +94,42 @@ def parse_subid(ident: str, ncols: int = 1) -> tp.Tuple[int, int]:
 
     Returns
     -------
-    int
-        Row index (starting from 1).
-    int
-        Column index (starting from 1).
+    int, tuple
+        Row index (starting from 1) or interval as tuple of integers.
+    int, tuple
+        Column index (starting from 1) or interval as tuple of integers.
 
     Raises
     ------
     ValueError
         Unable to parse the subplot specification.
     """
+    def split_coord(coord: str) -> tp.Union[int, tp.Tuple[int, int]]:
+        """Splits correctly a single coordinate."""
+        if not coord.strip():
+            return 1
+        else:
+            res = coord.split('-')
+            if len(res) == 2:
+                if not res[0].strip():
+                    i = 1
+                else:
+                    i = max(int(res[0]), 1)
+                if not res[1].strip():
+                    j = -1
+                else:
+                    j = max(int(res[1]), 1)
+                if i == j:
+                    return i
+                else:
+                    return (i, j)
+            else:
+                return max(int(res[0]), 1)
+
     grid = ident.split(',')
     if len(grid) == 2:
-        row = max(int(grid[0]), 1)
-        col = max(int(grid[1]), 1)
+        row = split_coord(grid[0])
+        col = split_coord(grid[1])
     elif len(grid) == 1:
         i = int(grid)
         row = max(int(ceil(i/ncols)), 1)
@@ -193,6 +217,8 @@ def parse_inifile(fname: str
         val = None
     if val is not None:
         figdat['subp'] = val
+    # nrows and ncols are needed for the subplot specifications,
+    # they must not be changed
     nrows, ncols = figdat['subp']
     figdat['nums'] = nrows * ncols
     spcdat = []
@@ -242,8 +268,11 @@ def parse_inifile(fname: str
         if sec.startswith('layout'):
             res = sec.split(':')
             if len(res) == 2:  # Ignore default case here
-                row, col = parse_subid(res[1], figdat['subp'][1])
-                if row > figdat['subp'][0] or col > figdat['subp'][1]:
+                row, col = parse_subid(res[1], ncols)
+                if isinstance(row, tuple) or isinstance(col, tuple):
+                    msg = 'Subplot ranges not supported in layout specs.'
+                    raise ValueError(msg)
+                if row > nrows or col > ncols:
                     break
                 # correct to Python indexes
                 row -= 1
@@ -258,8 +287,8 @@ def parse_inifile(fname: str
                     else:
                         val[key] = spcbase[key]
                 spcdat[row][col] = SpecLayout(**val)
-    for row in range(figdat['subp'][0]):
-        for col in range(figdat['subp'][1]):
+    for row in range(nrows):
+        for col in range(ncols):
             if spcdat[row][col] is None:
                 spcdat[row][col] = SpecLayout(**spcbase)
     # If axes merged, removed unnecessary labels
@@ -290,12 +319,26 @@ def parse_inifile(fname: str
             # Subplot - check if subplot within range
             res = optsec.get('subplot', fallback=None)
             if res is not None:
-                row, col = parse_subid(res, figdat['subp'][1])
-                if row > figdat['subp'][0] or col > figdat['subp'][1]:
+                coord = parse_subid(res, ncols)
+                cnew = [[None, None], [None, None]]
+                for i, item in enumerate(coord):
+                    if isinstance(item, int):
+                        cnew[i] = (item-1, item-1)
+                    else:
+                        cnew[i][0] = item[0] - 1
+                        if item[1] == -1:
+                            if i == 0:
+                                cnew[i][1] = nrows - 1
+                            else:
+                                cnew[i][1] = ncols - 1
+                        else:
+                            cnew[i][1] = item[1] - 1
+                row, col = cnew
+                if row[-1] >= nrows or col[-1] >= ncols:
                     continue
-                curves[key] = {'subplot': (row-1, col-1)}
+                curves[key] = {'subplot': (row, col)}
             else:
-                curves[key] = {'subplot': (-1, -1)}
+                curves[key] = {'subplot': ((0, nrows-1), (0, ncols-1))}
             if 'file' not in optsec:
                 print(f'WARNING: Missing file for "{sec}". Ignoring.')
                 continue
@@ -365,12 +408,12 @@ def main() -> tp.NoReturn:
     nrows, ncols = figdata['subp']
     pars = {'tight_layout': True}
     res = figdata['shareaxes']
-    if res == 'X' or res == True:
+    if res == 'X' or res is True:
         pars['sharex'] = True
         if 'gridspec_kw' not in pars:
             pars['gridspec_kw'] = {}
         pars['gridspec_kw']['hspace'] = 0.0
-    if res == 'Y' or res == True:
+    if res == 'Y' or res is True:
         pars['sharey'] = True
         if 'gridspec_kw' not in pars:
             pars['gridspec_kw'] = {}
@@ -389,8 +432,8 @@ def main() -> tp.NoReturn:
             else:
                 sub = subp
             for key in curves:
-                i, j = curves[key]['subplot']
-                if (i == row or i == -1) and (j == col or j == -1):
+                irow, icol = curves[key]['subplot']
+                if irow[0] <= row <= irow[1] and icol[0] <= col <= icol[1]:
                     xaxis = np.array(curves[key]['data'].xaxis)
                     if curves[key]['xshift'] is not None:
                         xaxis += curves[key]['xshift']

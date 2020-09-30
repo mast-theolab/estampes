@@ -22,6 +22,7 @@ Other blocks are:
 
 ### Added
 
+- **BLS** - Ranges of subplots are supported in the definition of the curves.
 - **BLS** - Support for multiple spectra in a figure.
 
 ### Fixed
