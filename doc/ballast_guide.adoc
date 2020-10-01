@@ -1,7 +1,7 @@
 = Ballast: A simple builder to display multiple spectra.
 :email: julien.bloino@sns.it
 :revnumber: 0.2.2
-:revremark: Added panel labels.
+:revremark: Keyword for figure size proportional to number of rows/columns.
 :toc: left
 :toclevels: 1
 :icons: font
@@ -41,7 +41,7 @@ NOTE: For multiple sub-plots, the keyword layout can be followed by "`:`" and ei
 
 [NOTE]
 ====
-Subplots specifications can be given as '`rows,columns`' or '`id`'.
+Subplots specifications can be given as "`rows,columns`" or "`id`".
 In the latter case, the counting goes from left to right and top to bottom.
 The indexes start at *1*.
 For curves, it is possible to specify a range of rows and/or columns.
@@ -49,94 +49,105 @@ For curves, it is possible to specify a range of rows and/or columns.
 
 === Figure parameters
 
-`maintitle`::
+`maintitle` | [underline]#Default#: _none_::
     Title of the figure.
-`geometry`::
-    Geometry of the figure, as '`width, height`'.
-`subplots`::
+`geometry` | [underline]#Default#: _automatic_::
+    Geometry of the figure, as "`width, height`". +
+    The geometry can be defined as proportional to the number of columns/rows, by adding `*` or `+`. +
++
+====
+`16*,8` means that the width is "`16 times the number of subplots on a single row`".
+====
++
+`subplots` | [underline]#Default#: `1,`::
     Enables multiple plots to be included as '`rows, columns`'.
     A single value corresponds to the number of _rows_.
-`mergeaxes`::
+`mergeaxes` | [underline]#Default#: _none_::
     Merge axes of subplots.  +
-    Accepted values: `X`, `Y`, `Both`, `None` (default)
+    **Accepted values**: `X`, `Y`, `Both`, `None`
 
 
 === Layout parameters
 
-`title`::
-    Title of the spectrum
-`xleft` | _alt_: `xmin`::
+`title` | [underline]#Default#: _none_::
+    Title of the spectrum.
+`xleft` | [underline]#Alt.#: `xmin` | [underline]#Default#: _automatic_::
     Left bound of the X axis.
     `xmin` can be used instead but is misleading if a decreasing X axis is desired.
-`xright` | _alt_: `xmax`::
+`xright` | [underline]#Alt.#: `xmax` | [underline]#Default#: _automatic_::
     Right bound of the X axis.
     `xmax` can be used instead but is misleading if a decreasing X axis is desired.
-`ytop` | _alt_: `ymax`::
+`ytop` | [underline]#Alt.#: `ymax` | [underline]#Default#: _automatic_::
     Top bound of the Y axis.
     `ymax` can be used instead but is misleading if a decreasing Y axis is desired.
-`ybottom` | _alt_: `ymin`::
+`ybottom` | [underline]#Alt.#: `ymin` | [underline]#Default#: _automatic_::
     Bottom bound of the Y axis.
     `ymin` can be used instead but is misleading if a decreasing Y axis is desired.
-`xscale`::
+`xscale` | [underline]#Default#: `linear`::
     Scale for the X axis. +
-    Possible values: `linear` (default), `log`, `log2`, `log10`.
-`yscale`::
+    **Accepted values**: `linear`, `log`, `log2`, `log10`.
+`yscale` | [underline]#Default#: `linear`::
     Scale for the Y axis. +
-    Possible values: `linear` (default), `log`, `log2`, `log10`.
-`legend`::
+    **Accepted values**: `linear`, `log`, `log2`, `log10`.
+`legend` | [underline]#Default#: `auto`::
     Display legend. +
-    Possible values: `No`, `auto` (default), any supported value for the position of the legend in *Matplotlib*.
-`legend_cols`::
+    **Accepted values**: `No`, `auto`, any supported value for the position of the legend in *Matplotlib*.
+`legend_cols` | [underline]#Default#: `1`::
     Number of columns to use in the legend.
-`xlabel`::
+`xlabel` | [underline]#Default#: _automatic_::
     Label for the X axis.
-`ylabel`::
-    Label for the Y axis
-`panel`::
+`ylabel` | [underline]#Default#: _automatic_::
+    Label for the Y axis.
+`panel` | [underline]#Default#: `top left`::
     Add a panel in the angle of a plot, in the format `text [@ position]`. +
-    `position` can be `upper`/`top`, `lower`/`bottom`, `left`, or `right` (*default*: `top left`)
+    **Accepted values**: `position` can be a combination of `upper`/`top` or `lower`/`bottom` and `left`, or `right`
 
 === Curve definition
 
-`file`::
-    Name of the file containing the data.
-`spectroscopy`::
+`file` | [underline]#Mandatory#::
+    Name of the file containing the data. +
+`spectroscopy` | [underline]#Mandatory#::
     Type of spectroscopy (acronym).
-`level`::
+`level` | [underline]#Mandatory#::
     Level of theory. +
-    Accepted values: `E` (`Ele`, `Electronic`), `H` (`Harm`, `Harmonic`), `A` (`Anh`, `Anharm`, `Anaharmonic`)
-`label`::
+    **Accepted values**: `E` (`Ele`, `Electronic`), `H` (`Harm`, `Harmonic`), `A` (`Anh`, `Anharm`, `Anaharmonic`)
+`label` | [underline]#Default#: _none_::
     Label to display in the legend.
-`color`::
+`color` | [underline]#Default#: _automatic_::
     Color definition (passed directly *Matplotlib*).
-`linestyle`::
+`linestyle` | [underline]#Default#: _automatic_::
     Line style (passed directly to *Matplotlib*).
-`linewidth`::
+`linewidth` | [underline]#Default#: _automatic_::
     Line width (passed directly to *Matplotlib*).
-`xshift`::
+`xshift` | [underline]#Default#: `0`::
     Shift value applied to the curve along the X axis.
-`yshift`::
+`yshift` | [underline]#Default#: `0`::
     Shift value applied to the curve along the Y axis. +
-    `baseline` is accepted to correct a shift of the baseline
-`xscale`::
+    `baseline` is accepted to correct a shift of the baseline.
+`xscale` | [underline]#Default#: `1`::
     Scaling factor to be applied to the X axis (after shift).
-`yscale`::
+`yscale` | [underline]#Default#: `1`::
     Scaling factor to be applied to the Y axis (after shift).
-`normalize`::
-    Normalize the spectrum.
-`show`::
+`normalize` | [underline]#Default#: `no`::
+    Normalize the spectrum (`yes`/`no`).
+`show` | [underline]#Default#: `yes`::
     Boolean (`yes`/`no`) indicating if a spectrum must be displayed or not.
-`broaden`::
+`broaden` | [underline]#Default#: `no`::
     Boolean (`yes`/`no`) if a broadening must be applied (may not be applied).
-`function`::
-    Function to apply for the broadening.
-`HWHM`::
-    Half-width at half-maximum of the broadening function (of `broaden` is `yes`).
-`yaxis`::
-    Y axis of interest if multiple present (`1` by default).
-`subplot`::
-    Subplot where the curve should be displayed. +
-    By default, the curves are printed over all subplots.
-    Ranges can be provided with '`-`' (ex: `1,1-3`).
+`function` | [underline]#Default#: `gaussian`::
+    Function to apply for the broadening  (only read if `broaden` is `yes`). +
+    **Accepted values**: `Gaussian`, `Lorentzian`.
+`HWHM` | [underline]#Default#: `10`::
+    Half-width at half-maximum of the broadening function (only read if `broaden` is `yes`).
+`yaxis` | [underline]#Default#: `1`::
+    Y axis of interest if multiple present.
+`subplot` | [underline]#Default#: `-,-`::
+    Subplot where the curve should be displayed.
+    Ranges can be provided with '`-`'. +
++
+====
+`1,1-3` prints the curve on the first row and the first to third column.
+====
+
 
 == Usage

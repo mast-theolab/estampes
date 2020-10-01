@@ -195,14 +195,6 @@ def parse_inifile(fname: str
         else:
             raise ValueError('Unrecognized value for MergeAxes')
         figdat['shareaxes'] = val
-        optkey = optsec.get('geometry', None)
-        if optkey is not None:
-            res = optkey.replace('(', '').replace(')', '').split(',')
-            if len(res) == 1:
-                raise ValueError('Incorrect value for geometry.')
-            else:
-                val = (float(res[0]), float(res[1]))
-            figdat['geom'] = val
         optkey = optsec.get('subplots', None)
         if optkey is not None:
             res = optkey.replace('(', '').replace(')', '').split(',')
@@ -220,6 +212,23 @@ def parse_inifile(fname: str
     # they must not be changed
     nrows, ncols = figdat['subp']
     figdat['nums'] = nrows * ncols
+    # Check geometry now since it may be proportional to the number of rows/cols
+    if 'figure' in secs:
+        optkey = optsec.get('geometry', None)
+        if optkey is not None:
+            res = optkey.replace('(', '').replace(')', '').split(',')
+            if len(res) == 1:
+                raise ValueError('Incorrect value for geometry.')
+            if '*' in res[0] or 'x' in res[0]:
+                val1 = float(res[0].replace('x', '').replace('*', ''))*ncols
+            else:
+                val1 = float(res[0])
+            if '*' in res[1] or 'x' in res[1]:
+                val2 = float(res[1].replace('x', '').replace('*', ''))*nrows
+            else:
+                val2 = float(res[1])
+            val = (val1, val2)
+            figdat['geom'] = val
     spcdat = []
     for _ in range(nrows):
         spcdat.append([None for j in range(ncols)])
@@ -320,21 +329,21 @@ def parse_inifile(fname: str
             # Subplot - check if subplot within range
             res = optsec.get('subplot', fallback=None)
             if res is not None:
-                coord = parse_subid(res, ncols)
-                cnew = [[None, None], [None, None]]
-                for i, item in enumerate(coord):
+                val1 = parse_subid(res, ncols)
+                val = [[None, None], [None, None]]
+                for i, item in enumerate(val1):
                     if isinstance(item, int):
-                        cnew[i] = (item-1, item-1)
+                        val[i] = (item-1, item-1)
                     else:
-                        cnew[i][0] = item[0] - 1
+                        val[i][0] = item[0] - 1
                         if item[1] == -1:
                             if i == 0:
-                                cnew[i][1] = nrows - 1
+                                val[i][1] = nrows - 1
                             else:
-                                cnew[i][1] = ncols - 1
+                                val[i][1] = ncols - 1
                         else:
-                            cnew[i][1] = item[1] - 1
-                row, col = cnew
+                            val[i][1] = item[1] - 1
+                row, col = val
                 if row[-1] >= nrows or col[-1] >= ncols:
                     continue
                 curves[key] = {'subplot': (row, col)}
