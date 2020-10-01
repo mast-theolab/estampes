@@ -212,7 +212,7 @@ def parse_inifile(fname: str
     # they must not be changed
     nrows, ncols = figdat['subp']
     figdat['nums'] = nrows * ncols
-    # Check geometry now since it may be proportional to the number of rows/cols
+    # Check geometry now since it may be proportional to number of rows/cols
     if 'figure' in secs:
         optkey = optsec.get('geometry', None)
         if optkey is not None:
@@ -431,6 +431,65 @@ def main() -> tp.NoReturn:
     fig, subp = plt.subplots(nrows, ncols, **pars)
     if figdata['geom'] is not None:
         fig.set_size_inches(figdata['geom'])
+    # Build the curves, one at a time and then include in all relevant
+    #   plot to avoid multiple iterations of heavy operations like broaden.
+    for idcurve, key in enumerate(curves):
+        xaxis = np.array(curves[key]['data'].xaxis)
+        if curves[key]['xshift'] is not None:
+            xaxis += curves[key]['xshift']
+        if curves[key]['xscale'] is not None:
+            xaxis *= curves[key]['xscale']
+        yaxis = np.array(curves[key]['data'].yaxis)
+        if curves[key]['yshift'] is not None:
+            if curves[key]['yshift'] == 'base':
+                ymin = np.min(yaxis)
+                ymax = np.max(yaxis)
+                if ymin*ymax >= 0:
+                    if ymin >= 0:
+                        yshift = - ymin
+                    else:
+                        yshift = + ymax
+                else:
+                    yshift = 0
+            else:
+                yshift = curves[key]['yshift']
+            yaxis += yshift
+        if curves[key]['ynorm']:
+            yaxis /= np.max(np.abs(yaxis))
+        if curves[key]['yscale'] is not None:
+            yaxis *= curves[key]['yscale']
+        stick = curves[key]['data'].get_broadening('func') == 'stick'
+        data = {}
+        if curves[key]['data'].label is not None:
+            data['label'] = curves[key]['data'].label
+        if curves[key]['data'].linecolor is not None:
+            data['color'] = curves[key]['data'].linecolor
+        elif stick:
+            # stick is done with vertical lines, always black by default
+            # For this reason, we set a color.  Otherwise, let the normal
+            #   plotting tools select automatically.
+            data['color'] = 'C{:d}'.format(idcurve)
+        if curves[key]['data'].linewidth is not None:
+            data['linewidth'] = curves[key]['data'].linewidth
+        if not stick and curves[key]['data'].linestyle is not None:
+            data['linestyle'] = curves[key]['data'].linestyle
+        irow, icol = curves[key]['subplot']
+        for row in range(irow[0], min(irow[1]+1, nrows)):
+            for col in range(icol[0], min(icol[1]+1, ncols)):
+                if nrows > 1 and ncols > 1:
+                    sub = subp[row, col]
+                elif nrows > 1:
+                    sub = subp[row]
+                elif ncols > 1:
+                    sub = subp[col]
+                else:
+                    sub = subp
+                if stick:
+                    zeros = np.zeros(len(yaxis))
+                    sub.vlines(xaxis, zeros, yaxis, **data)
+                else:
+                    sub.plot(xaxis, yaxis, **data)
+    # Now set the plot grid.
     for row in range(nrows):
         for col in range(ncols):
             if nrows > 1 and ncols > 1:
@@ -441,43 +500,8 @@ def main() -> tp.NoReturn:
                 sub = subp[col]
             else:
                 sub = subp
-            for key in curves:
-                irow, icol = curves[key]['subplot']
-                if irow[0] <= row <= irow[1] and icol[0] <= col <= icol[1]:
-                    xaxis = np.array(curves[key]['data'].xaxis)
-                    if curves[key]['xshift'] is not None:
-                        xaxis += curves[key]['xshift']
-                    if curves[key]['xscale'] is not None:
-                        xaxis *= curves[key]['xscale']
-                    yaxis = np.array(curves[key]['data'].yaxis)
-                    if curves[key]['yshift'] is not None:
-                        if curves[key]['yshift'] == 'base':
-                            yshift = - np.min(yaxis)
-                        else:
-                            yshift = curves[key]['yshift']
-                        yaxis += yshift
-                    if curves[key]['ynorm']:
-                        yaxis /= np.max(np.abs(yaxis))
-                    if curves[key]['yscale'] is not None:
-                        yaxis *= curves[key]['yscale']
-                    stick = curves[key]['data'].get_broadening('func') \
-                        == 'stick'
-                    data = {}
-                    if curves[key]['data'].label is not None:
-                        data['label'] = curves[key]['data'].label
-                    if curves[key]['data'].linecolor is not None:
-                        data['color'] = curves[key]['data'].linecolor
-                    if curves[key]['data'].linewidth is not None:
-                        data['linewidth'] = curves[key]['data'].linewidth
-                    if stick:
-                        zeros = np.zeros(len(yaxis))
-                        sub.vlines(xaxis, zeros, yaxis, **data)
-                    else:
-                        if curves[key]['data'].linestyle is not None:
-                            data['linestyle'] = curves[key]['data'].linestyle
-                        sub.plot(xaxis, yaxis, **data)
-                    sub.legend()
-                    spcdata[row][col].set_plot(sub)
+            sub.legend()
+            spcdata[row][col].set_plot(sub)
     if figdata['title'] is not None:
         fig.suptitle(figdata['title'], fontweight='bold')
     plt.show()
