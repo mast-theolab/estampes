@@ -1,7 +1,7 @@
 = Ballast: A simple builder to display multiple spectra.
 :email: julien.bloino@sns.it
 :revnumber: 0.2.2
-:revremark: Introduction
+:revremark: Added panel labels.
 :toc: left
 :toclevels: 1
 :icons: font
@@ -14,7 +14,7 @@
 
 == Preamble
 
-{Ballast} helps construct figures involving multiple spectra
+{Ballast} helps construct figures involving multiple spectra.
 
 == Overview
 
@@ -34,10 +34,10 @@ Its structure is divided in 2 blocks:
 `layout`::
     Layout of the spectrum. +
 +
-NOTE: For multiple sub-plots, the keyword layout can be followed by '`:`' and either a '`row,column`' or '`subplot_id`' specification.
+NOTE: For multiple sub-plots, the keyword layout can be followed by "`:`" and either a "`row,column`" or "`subplot_id`" specification.
 +
 `curve`::
-    Parameters of a curve, *must* be followed by an identifier, separated by a '`:`' (ex: `curve:1`).
+    Parameters of a curve, *must* be followed by an identifier, separated by a "`:`" (ex: `curve:1`).
 
 [NOTE]
 ====
@@ -92,6 +92,9 @@ For curves, it is possible to specify a range of rows and/or columns.
     Label for the X axis.
 `ylabel`::
     Label for the Y axis
+`panel`::
+    Add a panel in the angle of a plot, in the format `text [@ position]`. +
+    `position` can be `upper`/`top`, `lower`/`bottom`, `left`, or `right` (*default*: `top left`)
 
 === Curve definition
 

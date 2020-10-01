@@ -5,7 +5,6 @@
 This is a simple program to combine and display spectra together.
 """
 
-
 import sys
 import os
 import argparse
@@ -241,7 +240,8 @@ def parse_inifile(fname: str
         'xlabel': ('xlabel', ),
         'ylabel': ('ylabel', ),
         'legpos': ('legend', ),
-        'legcol': ('legend_cols', )
+        'legcol': ('legend_cols', ),
+        'plottag': ('panel', )
     }
     spcbase = {
         'title': None,
@@ -254,7 +254,8 @@ def parse_inifile(fname: str
         'xlabel': None,
         'ylabel': None,
         'legpos': 'best',
-        'legcol': 1
+        'legcol': 1,
+        'plottag': None
     }
     if 'layout' in secs:
         optsec = opts[secs['layout']]

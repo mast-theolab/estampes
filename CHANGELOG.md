@@ -22,6 +22,7 @@ Other blocks are:
 
 ### Added
 
+- **BLS** - Added option to add a panel label.
 - **BLS** - Ranges of subplots are supported in the definition of the curves.
 - **BLS** - Support for multiple spectra in a figure.
 - **VIZ** - Simple mechanism to add a panel label in an angle of a spectrum in `SpecLayout`.
