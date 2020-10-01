@@ -18,6 +18,8 @@ import typing as tp
 import numpy as np
 import matplotlib as mpl
 
+from estampes.base import ArgumentError
+
 
 # ==============
 # Module Classes
@@ -54,6 +56,8 @@ class SpecLayout(object):
         Legend position.
     legcol
         Number of columns in the legend.
+    plottag
+        Tag (panel label) for the plot.
 
     Attributes
     ----------
@@ -88,21 +92,25 @@ class SpecLayout(object):
         Sets the position and options of the legend.
     set_plot(canvas)
         Sets the spectrum parameters on a Matplotlib canvas.
+    def_panel(desc, **kwargs)
+        Defines the parameters for a panel label on a canvas.
     """
     def __init__(self,
-                 xleft: tp.Optional[float] = None,
-                 xright: tp.Optional[float] = None,
-                 ytop: tp.Optional[float] = None,
-                 ybottom: tp.Optional[float] = None,
+                 xleft: tp.Optional[tp.Union[int, float, str]] = None,
+                 xright: tp.Optional[tp.Union[int, float, str]] = None,
+                 ytop: tp.Optional[tp.Union[int, float, str]] = None,
+                 ybottom: tp.Optional[tp.Union[int, float, str]] = None,
                  xscale: tp.Optional[str] = None,
                  yscale: tp.Optional[str] = None,
                  xlabel: tp.Optional[str] = None,
                  ylabel: tp.Optional[str] = None,
                  title: tp.Optional[str] = None,
                  legpos: tp.Optional[str] = None,
-                 legcol: tp.Optional[int] = None):
+                 legcol: tp.Optional[tp.Union[int, str]] = None,
+                 plottag: tp.Optional[str] = None):
         self.__legpos = False
         self.__legcol = False
+        self.__plottag = False
         self.xleft = xleft
         self.xright = xright
         self.ytop = ytop
@@ -113,6 +121,7 @@ class SpecLayout(object):
         self.ylabel = ylabel
         self.title = title
         self.legend(pos=legpos, ncols=legcol)
+        self.def_panel(plottag)
 
     @property
     def xleft(self) -> tp.Optional[float]:
@@ -414,6 +423,64 @@ class SpecLayout(object):
         # Title
         if self.__title is not None:
             canvas.set_title(self.__title)
+        # Panel tag
+        if self.__plottag:
+            canvas.text(**self.__plottag, transform=canvas.transAxes)
+
+    def def_panel(self, desc: tp.Optional[str] = None,
+                  **kwargs) -> tp.NoReturn:
+        """Defines the parameters for a panel label on a canvas.
+
+        Sets the parameters necessary to include a Places a label `text`
+          in one of the corner of a canvas.
+
+        Parameters
+        ----------
+        text
+            Text to print with position as `text @ position`.
+        kwargs
+            Matplotlib Text properties (advanced usage).
+            This can be used to override any properties, including
+              the text.
+
+        Raises
+        ------
+        ArgumentError
+            Position specification in `desc` not recognized.
+        """
+        if desc is not None:
+            self.__plottag = {
+                'verticalalignment': 'center',
+                'fontweight': 'semibold',
+                'fontsize': 'x-large'
+            }
+            res = desc.split('@')
+            self.__plottag['s'] = res[0].strip()
+            if len(res) == 1:
+                pos = 'top left'
+            else:
+                pos = res[1].strip().lower()
+            if 'right' in pos:
+                self.__plottag['x'] = 0.95
+                self.__plottag['horizontalalignment'] = 'right'
+                pos = pos.replace('right', '')
+            else:
+                self.__plottag['x'] = 0.05
+                self.__plottag['horizontalalignment'] = 'left'
+                pos = pos.replace('left', '')
+            if 'bottom' in pos or 'lower' in pos:
+                self.__plottag['y'] = 0.05
+                pos = pos.replace('bottom', '')
+                pos = pos.replace('lower', '')
+            else:
+                self.__plottag['y'] = 0.95
+                pos = pos.replace('top', '')
+                pos = pos.replace('upper', '')
+            if pos.strip():
+                raise ArgumentError('position in "desc"')
+            if kwargs:
+                for key in kwargs:
+                    self.__plottag[key] = kwargs[key]
 
 
 # ==============
