@@ -34,14 +34,25 @@ SPEC2DATA = {
     'IR': {
         'name': 'Infrared',
         'unit': 'I:/M/cm',
-        'H': {},
-        'A': {}
+        'H': {'freq': ep.build_qlabel('vlevel', 'H'),
+              'int': ep.build_qlabel('dipstr', 'H'),
+              'assign': ep.build_qlabel('vtrans', 'H')},
+        'A': {'freq': ep.build_qlabel('vlevel', 'A'),
+              'int': ep.build_qlabel('dipstr', 'A'),
+              'assign': ep.build_qlabel('vtrans', 'A')},
+        'DS': 'Dipole strength',
+        'II': 'Integrated intensity'
     },
     'VCD': {
         'name': 'Vibrational Circular Dichroism',
         'unit': 'I:/M/cm',
-        'H': {},
-        'A': {}
+        'H': {'freq': ep.build_qlabel('vlevel', 'H'),
+              'int': ep.build_qlabel('rotstr', 'H'),
+              'assign': ep.build_qlabel('vtrans', 'H')},
+        'A': {'freq': ep.build_qlabel('vlevel', 'A'),
+              'int': ep.build_qlabel('rotstr', 'A'),
+              'assign': ep.build_qlabel('vtrans', 'A')},
+        'RS': 'Rotatory strength'
     },
     'RS': {
         'name': 'Raman Scattering',
@@ -253,7 +264,6 @@ class Spectrum():
         ------
         KeyError
             `ylabel` not found.
-
         """
         if self.__spec not in SPEC2DATA:
             raise IndexError('Unsupported spectroscopy: '+self.__spec)
@@ -273,31 +283,56 @@ class Spectrum():
             if not qkeys:
                 raise NotImplementedError('Keywords not available')
         data = self.__dfile.get_data(*qkeys.values())
-        self.__xaxis[0] = data[qkeys['spc']]['x']
-        self.__xlabel[0] = data[qkeys['par']]['x']
-        self.__xunit[0] = data[qkeys['par']]['unitx']
-        _yindexes = [y for y in data[qkeys['spc']] if y.startswith('y')]
-        _yindexes.sort()
-        self.__ytags = {y: data[qkeys['par']] for y in _yindexes}
-        if ylabel is None:
-            _ylab = _yindexes[0]
+        if 'spc' in qkeys:
+            self.__xaxis[0] = data[qkeys['spc']]['x']
+            self.__xlabel[0] = data[qkeys['par']]['x']
+            self.__xunit[0] = data[qkeys['par']]['unitx']
+            _yindexes = [y for y in data[qkeys['spc']] if y.startswith('y')]
+            _yindexes.sort()
+            self.__ytags = {y: data[qkeys['par']] for y in _yindexes}
+            if ylabel is None:
+                _ylab = _yindexes[0]
+            else:
+                try:
+                    _id = [y.lower() for y in _yindexes].index(ylabel.lower())
+                except ValueError:
+                    raise KeyError('Non-existent Y label')
+                _ylab = _yindexes[_id]
+            self.__yaxis[0] = data[qkeys['spc']][_ylab]
+            self.__ylabel[0] = data[qkeys['par']][_ylab]
+            self.__yunit[0] = data[qkeys['par']]['unity']
+            self.__label = self.__yunit[0]
+            self.__broad[0]['func'] = data[qkeys['par']]['func']
+            self.__broad[0]['hwhm'] = data[qkeys['par']]['hwhm']
+            self.__broad_ok = self.__broad[0]['func'] == 'stick'
+            if 'info' in qkeys:
+                self.__info = data[qkeys['info']]
+            else:
+                self.__info = None
+        elif 'freq' in qkeys:
+            modes = []
+            for key in data[qkeys['freq']]:
+                if isinstance(key, int):
+                    modes.append(key)
+            modes.sort()
+            self.__xaxis[0] = []
+            self.__yaxis[0] = []
+            for mode in modes:
+                if isinstance(data[qkeys['freq']][mode], float) and \
+                    isinstance(data[qkeys['int']][mode], float):
+                    self.__xaxis[0].append(data[qkeys['freq']][mode])
+                    self.__yaxis[0].append(data[qkeys['int']][mode])
+            self.__xlabel[0] = 'Wavenumbers'
+            self.__xunit[0] = data[qkeys['freq']]['unit']
+            self.__yunit[0] = data[qkeys['int']]['unit']
+            self.__ylabel[0] = \
+                SPEC2DATA[self.__spec][self.__yunit[0].split(':')[0]]
+            self.__label = self.__yunit[0]
+            self.__broad[0]['func'] = 'stick'
+            self.__broad[0]['hwhm'] = None
+            self.__broad_ok = self.__broad[0]['func'] == 'stick'
         else:
-            try:
-                _id = [y.lower() for y in _yindexes].index(ylabel.lower())
-            except ValueError:
-                raise KeyError('Non-existent Y label')
-            _ylab = _yindexes[_id]
-        self.__yaxis[0] = data[qkeys['spc']][_ylab]
-        self.__ylabel[0] = data[qkeys['par']][_ylab]
-        self.__yunit[0] = data[qkeys['par']]['unity']
-        self.__label = self.__yunit[0]
-        self.__broad[0]['func'] = data[qkeys['par']]['func']
-        self.__broad[0]['hwhm'] = data[qkeys['par']]['hwhm']
-        self.__broad_ok = self.__broad[0]['func'] == 'stick'
-        if 'info' in qkeys:
-            self.__info = data[qkeys['info']]
-        else:
-            self.__info = None
+            raise NotImplementedError()
 
     def get_yaxes(self) -> tp.Dict[str, str]:
         """Returns all available Y axes in data file."""

@@ -21,6 +21,7 @@ Other blocks are:
 
 ## Added
 
+- **API** - Added partial support of VCD and IR spectroscopies in the `Spectrum` class.
 - **API** - Added parsing of dipole and rotatory strengths, frequencies and vibrational transition levels in Gaussian log file.
 
 
