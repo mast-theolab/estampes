@@ -10,10 +10,11 @@ convert_y
     Returns parameters for the broadening to convert Y units.
 """
 
-from math import ceil
+from math import ceil, log, pi
 import typing as tp
 
 from estampes.tools.math import f_gauss, f_lorentz
+from estampes.data.physics import PHYSCNST
 
 
 # ==============
@@ -183,6 +184,12 @@ def convert_y(specabbr: str,
         '/M/cm2': ('M-1.cm-2', '/M/cm2', 'dm3.mol-1.cm-2', 'dm3/mol/cm2',
                    'L.mol-1.cm-2', 'L/mol/cm2')
     }
+    UNIT_DS = {
+        'esu2.cm2': ('statC2.cm2', 'esu2.cm2')
+    }
+    UNIT_RS = {
+        'esu2.cm2': ('statA2.cm2', 'esu2.cm2')
+    }
     # Initial setup
     _spec = specabbr.upper()
     res = unit_to.split(':')
@@ -200,7 +207,39 @@ def convert_y(specabbr: str,
     yfactor = 1.0
     xunit = 0
     # Test
-    if _spec == 'OPA':
+    if _spec == 'IR':
+        if _dest_type == 'I':
+            if _dest_unit in UNIT_EPS['/M/cm1']:
+                if _src_type == 'DS':
+                    if _src_unit in UNIT_DS['esu2.cm2']:
+                        yfactor = 8*pi**3*PHYSCNST.avogadro * 1.0e-7 / \
+                            (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
+                        xunit = 1
+                    else:
+                        raise NotImplementedError(msgNYI)
+                else:
+                    raise NotImplementedError(msgNYI)
+            else:
+                raise IndexError(msgNA)
+        else:
+            raise IndexError(msgNA)
+    elif _spec == 'VCD':
+        if _dest_type == 'I':
+            if _dest_unit in UNIT_EPS['/M/cm1']:
+                if _src_type == 'RS':
+                    if _src_unit in UNIT_RS['esu2.cm2']:
+                        yfactor = 32*pi**3*PHYSCNST.avogadro * 1.0e-7 / \
+                            (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
+                        xunit = 1
+                    else:
+                        raise NotImplementedError(msgNYI)
+                else:
+                    raise NotImplementedError(msgNYI)
+            else:
+                raise IndexError(msgNA)
+        else:
+            raise IndexError(msgNA)
+    elif _spec == 'OPA':
         if _dest_type == 'I':
             if _dest_unit in UNIT_EPS['/M/cm1']:
                 if _src_type == 'II':
