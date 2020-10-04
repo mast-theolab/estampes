@@ -20,6 +20,8 @@ Other blocks are:
 ## Unreleased
 
 
+## [0.2.2] - 2020-10-04
+
 ### Added
 
 - **ESP** - Added support of title on figures related to vibronic spectroscopies.
