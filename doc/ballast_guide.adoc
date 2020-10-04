@@ -139,6 +139,12 @@ For curves, it is possible to specify a range of rows and/or columns.
     **Accepted values**: `Gaussian`, `Lorentzian`.
 `HWHM` | [underline]#Default#: `10`::
     Half-width at half-maximum of the broadening function (only read if `broaden` is `yes`).
+`Grain` | [underline]#Default#: `4`::
+    Distance between two points along X for the discretization of the spectrum (only read if `broaden` is `yes`).
+`NewXMin` | [underline]#Default#: _automatic_::
+    Lowest value of X in the broadened spectra (only read if `broaden` is `yes`).
+`NewXMax` | [underline]#Default#: _automatic_::
+    Highest value of X in the broadened spectra (only read if `broaden` is `yes`).
 `yaxis` | [underline]#Default#: `1`::
     Y axis of interest if multiple present.
 `subplot` | [underline]#Default#: `-,-`::

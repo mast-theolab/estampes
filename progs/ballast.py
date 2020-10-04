@@ -365,10 +365,12 @@ def parse_inifile(fname: str
             curves[key]['data'] = Spectrum(optsec['file'], spc, lvl, yid)
             if optsec.getboolean('broaden', fallback=False):
                 func = optsec.get('function', None)
-                hwhm = optsec.get('hwhm', None)
-                if hwhm is not None:
-                    hwhm = float(hwhm)
-                curves[key]['data'].set_broadening(hwhm, func, 'default')
+                hwhm = optsec.getfloat('hwhm', fallback=10.)
+                xmin = optsec.getfloat('newxmin', fallback=None)
+                xmax = optsec.getfloat('newxmax', fallback=None)
+                xres = optsec.getfloat('grain', fallback=4.)
+                curves[key]['data'].set_broadening(hwhm, func, 'default', xres,
+                                                   xmin, xmax)
             vizdata = {}
             for item in ('color', 'linestyle', 'linewidth'):
                 if optsec.get(item, False):
