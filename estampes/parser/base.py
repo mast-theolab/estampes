@@ -92,6 +92,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
      SWOpt      Software runtime options
      SWVer      Software version
      VTrans     Vibrational transitions
+     VLevel     Vibrational energy levels
      DipStr     Dipole strength
      RotStr     Rotatory strength
      RamAct     Raman activity
@@ -145,6 +146,9 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     ========  ========  =========================================
      Option     Sub      Description
     ========  ========  =========================================
+     VLevel      H      Vibrational harmonic energy levels
+                 A      Vibrational anharmonic energy levels
+    -------------------------------------------------------------
      VTrans      H      Vibrational transitions: harmonic states
                  A      Vibrational transitions: anharm. states
     -------------------------------------------------------------
@@ -209,7 +213,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     except ValueError:
         qty_tag = qlist[0].lower()
     # Label-specific keyword (sub-option)
-    if qty_tag in ('dipstr', 'rotstr', 'vtrans'):
+    if qty_tag in ('dipstr', 'rotstr', 'vtrans', 'vlevel'):
         if qlist[1] is None:
             qty_opt = 'H'
         else:

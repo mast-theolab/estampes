@@ -19,6 +19,10 @@ Other blocks are:
 
 ## Unreleased
 
+## Added
+
+- **API** - Added parsing of dipole and rotatory strengths, frequencies and vibrational transition levels in Gaussian log file.
+
 
 ## [0.2.3] - 2020-10-04
 

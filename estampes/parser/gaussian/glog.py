@@ -179,6 +179,43 @@ class GLogIO(object):
         * The system treats each item in to_find separately.
           Post-processing routines should take care of aliases.
         """
+        def del_block(iblock: int,
+                      block2id: tp.Sequence[tp.Sequence[int]],
+                      nocc: tp.Sequence[int],
+                      dataid: tp.Sequence[int],
+                      blockskp: tp.Sequence[tp.Union[str, int]],
+                      blockfmt: tp.Sequence[tp.Pattern],
+                      blockend: tp.Callable[[str], bool]) -> int:
+            """Deletes a block in the lookup tables.
+
+            Returns
+            -------
+            int
+                Status, as integer
+                0: block removed
+                1: keylist item removed"""
+            istat = 0
+            if nocc[iblock] == 0:
+                i, j = block2id[iblock]
+                del keydata[i][j]
+                if not keydata[i]:
+                    del keydata[i]
+                    del keylist[i]
+                    istat = 1
+                for k in range(len(block2id)):
+                    a, b = block2id[k]
+                    if a > i:
+                        block2id[k][0] -= 1
+                    elif a == i and b > j:
+                        block2id[k][1] -= 1
+            del block2id[iblock]
+            del dataid[iblock]
+            del blockskp[iblock]
+            del blockfmt[iblock]
+            del nocc[iblock]
+            del blockend[iblock]
+            return istat
+
         n_tofind = len(to_find)
         keylist = []  # List of keywords to search
         keydata = []  # Data associated to each keyword
@@ -233,24 +270,38 @@ class GLogIO(object):
             nocc = []  # number of occurrences to extract, used to drop search
             dataid = []  # stores the indexes for the data list
             with open(self.filename, 'r') as fobj:
-                # line = fobj.readline()
                 for line in fobj:
-                    for i, kword in enumerate(keylist):
+                    i = -1
+                    for kword in keylist:
+                        skip = False
+                        i += 1
                         if line.startswith(kword):
-                            for j, block in enumerate(keydata[i]):
-                                # Save data to correct block in keydata
-                                block2id.append([i, j])
-                                dataid.append(block[0])
-                                blockskp.append(block[1])
-                                blockfmt.append(block[2])
-                                nocc.append(block[3])
-                                blockend.append(block[4])
-                                if nocc[-1] > 0:
-                                    datlist[dataid[-1]].append([])
-                                    ndatblk[dataid[-1]] += 1
+                            iblock = 0
+                            while iblock < len(block2id):
+                                if block2id[iblock][0] == i:
+                                    res = del_block(iblock, block2id, nocc,
+                                                    dataid, blockskp, blockfmt,
+                                                    blockend)
+                                    if res == 1:  # keylist empty
+                                        i -= 1
+                                        skip = True
                                 else:
-                                    datlist[dataid[-1]] = []
-                                    ndatblk[dataid[-1]] = 1
+                                    iblock += 1
+                            if not skip:
+                                for j, block in enumerate(keydata[i]):
+                                    # Save data to correct block in keydata
+                                    block2id.append([i, j])
+                                    dataid.append(block[0])
+                                    blockskp.append(block[1])
+                                    blockfmt.append(block[2])
+                                    nocc.append(block[3])
+                                    blockend.append(block[4])
+                                    if nocc[-1] > 0:
+                                        datlist[dataid[-1]].append([])
+                                        ndatblk[dataid[-1]] += 1
+                                    else:
+                                        datlist[dataid[-1]] = []
+                                        ndatblk[dataid[-1]] = 1
 
                     if block2id:
                         lblock = len(block2id)
@@ -269,24 +320,9 @@ class GLogIO(object):
                                         datlist[dataid[iblock]].append(
                                             res.groupdict()['val'])
                                 if blockend[iblock](line):
-                                    if nocc[iblock] == 0:
-                                        i, j = block2id[iblock]
-                                        del keydata[i][j]
-                                        if not keydata[i]:
-                                            del keydata[i]
-                                            del keylist[i]
-                                        for k in range(lblock):
-                                            a, b = block2id[k]
-                                            if a > i:
-                                                block2id[k][0] -= 1
-                                            elif a == i and b > j:
-                                                block2id[k][1] -= 1
-                                    del block2id[iblock]
-                                    del dataid[iblock]
-                                    del blockskp[iblock]
-                                    del blockfmt[iblock]
-                                    del nocc[iblock]
-                                    del blockend[iblock]
+                                    res = del_block(iblock, block2id, nocc,
+                                                    dataid, blockskp, blockfmt,
+                                                    blockend)
                                     lblock -= 1
                                 else:
                                     iblock += 1
@@ -652,17 +688,145 @@ def qlab_to_linkdata(qtag: TypeQTag,
             num = 0
     elif qtag == 'vptdat':
         raise NotImplementedError()
-    elif qtag in ('dipstr', 'rotstr'):
-        raise NotImplementedError()
+    elif qtag == 'vtrans':
+        if qopt == 'H':
+            lnk = (-716, 716, -717)
+            key = (' and normal coordinates:',
+                   ' and normal coordinates:',
+                   '        Dipole strengths (DS)')
+            sub = (1, 1, 4)
+            end = (lambda s: s.startswith(' - Thermochemistry'),
+                   lambda s: s.startswith(' - Thermochemistry'),
+                   lambda s: s.startswith(' -----'))
+            fmt = (r'^\s{16}(?P<val>(?:\s+\d+){1,5})\s*$',
+                   r'^\s{16}(?P<val>(?:\s+\d+){1,3})\s*$',
+                   r'^\s+(?P<val>\d+\(\d+\))\s+'
+                   + r'(?:\s+-?\d+\.\d+|\s+\*+){4}\s*$')
+            num = (0, -1, 0)
+        elif qopt == 'A':
+            lnk = 717
+            key = '        Dipole strengths (DS)'
+            sub = 3
+            def end(s): return s.startswith('     =====')
+            fmt = r'^\s+(?P<val>(?:\s*\d+\(\d+\)){1,3}|\d+)\s+' \
+                  + r'(?:-?\d+\.\d+\s+|\*+\s+){2}.*\s*$'
+            num = 0
+        else:
+            raise NotImplementedError()
+    elif qtag == 'vlevel':
+        if qopt == 'H':
+            lnk = (-716, 716, -717)
+            key = (' and normal coordinates:',
+                   ' and normal coordinates:',
+                   '        Dipole strengths (DS)')
+            sub = (1, 1, 4)
+            end = (lambda s: s.startswith(' - Thermochemistry'),
+                   lambda s: s.startswith(' - Thermochemistry'),
+                   lambda s: s.startswith(' -----'))
+            fmt = (r'^\s+Frequencies --- \s*(?P<val>\d.*)\s*$',
+                   r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$',
+                   r'^\s+\d+\(\d+\)\s+(?P<val>-?\d+\.\d+)'
+                   + r'(?:\s+-?\d+\.\d+|\s+\*+){3}\s*$')
+            num = (0, -1, 0)
+        elif qopt == 'A':
+            lnk = 717
+            key = '        Dipole strengths (DS)'
+            sub = 3
+            def end(s): return s.startswith('     =====')
+            fmt = r'^\s+(?:(?:\d+\(\d+\)){1,3}|\d+)\s+' \
+                  + r'(?:-?\d+\.\d+|\*+)\s+(?P<val>-?\d+\.\d+|\*+).*\s*$'
+            num = 0
+        else:
+            raise NotImplementedError()
     else:
-        raise NotImplementedError()
-        # if type(rsta) is tuple:
-        #     raise NotImplementedError()
+        lnk0 = -914
+        key0 = ' Excitation energies and oscillator strengths:'
+        sub0 = 2
+        def end0(s): return s.startswith(' End of Minotr F.D. properties file')
+        fmt0 = r'^\s+(?P<val>Excited State\s+\d+: .*|' +\
+            r'This state for optimization.*)\s*$'
+        num0 = 0
+        if type(rsta) is tuple:
+            raise NotImplementedError()
         #     if qtag == 1 and dord == 0:
         #         keywords = ['ETran scalars', 'SCF Energy']
-        # else:
-        #     raise NotImplementedError()
-        #     if qtag == 1:
+        else:
+            if rsta == 'c':
+                lnk1 = [lnk0]
+                key1 = [key0]
+                sub1 = [sub0]
+                end1 = [end0]
+                fmt1 = [fmt0]
+                num1 = [num0]
+            elif isinstance(rsta, int):
+                lnk1 = []
+                key1 = []
+                sub1 = []
+                end1 = []
+                fmt1 = []
+                num1 = []
+            else:
+                raise NotImplementedError()
+            if qtag == 1:
+                raise NotImplementedError()
+            elif qtag == 'dipstr':
+                if qopt == 'H':
+                    lnk1.extend([-716, 716, -717])
+                    key1.extend([' and normal coordinates:',
+                                 ' and normal coordinates:',
+                                 '        Dipole strengths (DS)'])
+                    sub1.extend([1, 1, 4])
+                    end1.extend([
+                        lambda s: s.startswith(' - Thermochemistry'),
+                        lambda s: s.startswith(' - Thermochemistry'),
+                        lambda s: s.startswith(' -----')])
+                    fmt1.extend([r'^\s+Dipole strength  --- \s*'
+                                 + r'(?P<val>\d.*)\s*$',
+                                 r'^\s+Dip. str.   -- \s*(?P<val>\d.*)\s*$',
+                                 r'^\s+\d+\(\d+\)\s+'
+                                 + r'(?:-?\d+\.\d+\s+|\*+\s+){2}'
+                                 + r'(?P<val>-?\d+\.\d+|\*+)\s+'
+                                 + r'(?:-?\d+\.\d+|\*+)\s*$'])
+                    num1.extend([0, -1, 0])
+                elif qopt == 'A':
+                    lnk1.append(717)
+                    key1.append('        Dipole strengths (DS)')
+                    sub1.append(3)
+                    end1.append(lambda s: s.startswith('     ====='))
+                    fmt1.append(r'^\s+(?:(?:\d+\(\d+\)){1,3}|\d+)\s+'
+                                + r' .*\s+(?P<val>-?\d+\.\d+|\*+)\s*$')
+                    num1.append(0)
+                else:
+                    raise NotImplementedError()
+            elif qtag == 'rotstr':
+                if qopt == 'H':
+                    lnk1.extend([-716, 716, -717])
+                    key1.extend([' and normal coordinates:',
+                                 ' and normal coordinates:',
+                                 '        Rotational strengths (RS)'])
+                    sub1.extend([1, 1, 4])
+                    end1.extend([
+                        lambda s: s.startswith(' Harmonic frequencies'),
+                        lambda s: s.startswith(' - Thermochemistry'),
+                        lambda s: s.startswith(' -----')])
+                    fmt1.extend([r'^\s+Rot. strength --- \s*'
+                                 + r'(?P<val>-?\d.*)\s*$',
+                                 r'^\s+Rot. str.   -- \s*(?P<val>-?\d.*)\s*$',
+                                 r'^\s+\d+\(\d+\)\s+'
+                                 + r'(?:-?\d+\.\d+\s+|\*+\s+){2}'
+                                 + r'(?P<val>-?\d+\.\d+|\*+)\s+'
+                                 + r'(?:-?\d+\.\d+|\*+)\s*$'])
+                    num1.extend([0, -1, 0])
+                elif qopt == 'A':
+                    lnk1.append(717)
+                    key1.append('        Rotational strengths (RS)')
+                    sub1.append(3)
+                    end1.append(lambda s: s.startswith('     ====='))
+                    fmt1.append(r'^\s+(?:(?:\d+\(\d+\)){1,3}|\d+)\s+'
+                                + r' .*\s+(?P<val>-?\d+\.\d+|\*+)\s*$')
+                    num1.append(0)
+                else:
+                    raise NotImplementedError()
         #         if dord == 0:
         #             if rsta == 'c':
         #                 del keywords[:]
@@ -737,6 +901,12 @@ def qlab_to_linkdata(qtag: TypeQTag,
         #         raise NotImplementedError()
         #     else:
         #         raise QuantityError('Unknown quantity')
+        lnk = tuple(lnk1)
+        key = tuple(key1)
+        sub = tuple(sub1)
+        end = tuple(end1)
+        fmt = tuple(fmt1)
+        num = tuple(num1)
 
     return lnk, key, sub, fmt, end, num
 
@@ -1066,6 +1236,65 @@ def parse_data(qdict: TypeQInfo,
                 for line in datablocks[iref]:
                     data[qlabel]['data'].append([float(item)*__ang2au
                                                  for item in line.split()])
+        # Vibrational transitions
+        # -----------------------
+        elif qtag == 'vlevel':
+            if qopt == 'H':
+                for i in range(last, first-1, -1):
+                    if datablocks[i]:
+                        iref = i
+                        break
+                else:
+                    raise ParseKeyError('Missing quantity in file')
+                data[qlabel]['unit'] = 'cm-1'
+                i = 0
+                for line in datablocks[iref]:
+                    for col in line.strip().split():
+                        i += 1
+                        try:
+                            data[qlabel][i] = float(col)
+                        except ValueError:
+                            data[qlabel][i] = float('inf')
+            elif qopt == 'A':
+                data[qlabel]['unit'] = 'cm-1'
+                i = 0
+                for line in datablocks[iref]:
+                    i += 1
+                    try:
+                        data[qlabel][i] = float(line)
+                    except ValueError:
+                        data[qlabel][i] = float('inf')
+            else:
+                raise NotImplementedError()
+        elif qtag == 'vtrans':
+            if qopt == 'H':
+                for i in range(last, first-1, -1):
+                    if datablocks[i]:
+                        iref = i
+                        break
+                else:
+                    raise ParseKeyError('Missing quantity in file')
+                i = 0
+                for line in datablocks[iref]:
+                    for col in line.strip().split():
+                        i += 1
+                        res = col.split('(')
+                        data[qlabel][i] = [((0, 0), ), ((int(res[0]), 1), )]
+            elif qopt == 'A':
+                i = 0
+                for line in datablocks[iref]:
+                    i += 1
+                    val = []
+                    for col in line.strip().split():
+                        res = col.split('(')
+                        if len(res) == 1:
+                            val.append((int(res[0]), 0))
+                        else:
+                            val.append((int(res[0]),
+                                        int(res[1].replace(')', ''))))
+                        data[qlabel][i] = [((0, 0), ), tuple(val)]
+            else:
+                raise NotImplementedError()
         # Anharmonic Information
         # ----------------------
         elif qtag == 'vptdat':
@@ -1073,15 +1302,75 @@ def parse_data(qdict: TypeQInfo,
         # State(s)-dependent quantities
         # -----------------------------
         else:
-            raise NotImplementedError()
-            # # Transition moments
-            # # ^^^^^^^^^^^^^^^^^^
-            # if type(rsta) is tuple:
-            #     data[qlabel] = _parse_electrans_data(qtag, datablocks, kword,
-            #                                          qopt, dord, dcrd, rsta)
-            # # States-specific Quantities
-            # # ^^^^^^^^^^^^^^^^^^^^^^^^^^
-            # else:
+            # Transition moments
+            # ^^^^^^^^^^^^^^^^^^
+            if type(rsta) is tuple:
+                pass
+            # States-specific Quantities
+            # ^^^^^^^^^^^^^^^^^^^^^^^^^^
+            else:
+                if rsta != 'c':
+                    # we should check if the state is the right one.
+                    raise NotImplementedError()
+                if qtag == 1:
+                    raise NotImplementedError()
+                elif qtag == 'dipstr':
+                    if qopt == 'H':
+                        for i in range(last, first-1, -1):
+                            if datablocks[i]:
+                                iref = i
+                                break
+                        else:
+                            raise ParseKeyError('Missing quantity in file')
+                        data[qlabel]['unit'] = 'DS:esu^2.cm^2'
+                        i = 0
+                        for line in datablocks[iref]:
+                            for col in line.strip().split():
+                                i += 1
+                                try:
+                                    data[qlabel][i] = float(col)*1.0e-40
+                                except ValueError:
+                                    data[qlabel][i] = float('inf')
+                    elif qopt == 'A':
+                        data[qlabel]['unit'] = 'DS:esu^2.cm^2'
+                        i = 0
+                        for line in datablocks[iref]:
+                            i += 1
+                            try:
+                                data[qlabel][i] = float(line)*1.0e-40
+                            except ValueError:
+                                data[qlabel][i] = float('inf')
+                    else:
+                        raise NotImplementedError()
+                elif qtag == 'rotstr':
+                    if qopt == 'H':
+                        for i in range(last, first-1, -1):
+                            if datablocks[i]:
+                                iref = i
+                                break
+                        else:
+                            raise ParseKeyError('Missing quantity in file')
+                        data[qlabel]['unit'] = 'RS:esu^2.cm^2'
+                        i = 0
+                        for line in datablocks[iref]:
+                            for col in line.strip().split():
+                                i += 1
+                                try:
+                                    data[qlabel][i] = float(col)*1.0e-44
+                                except ValueError:
+                                    data[qlabel][i] = float('inf')
+                    elif qopt == 'A':
+                        data[qlabel]['unit'] = 'RS:esu^2.cm^2'
+                        i = 0
+                        for line in datablocks[iref]:
+                            i += 1
+                            try:
+                                data[qlabel][i] = float(line)*1.0e-44
+                            except ValueError:
+                                data[qlabel][i] = float('inf')
+                    else:
+                        raise NotImplementedError()
+
             #     key = 'ETran scalars'
             #     if key in datablocks:
             #         (nstates, ndata, _, _, iroot,

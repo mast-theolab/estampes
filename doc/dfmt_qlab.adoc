@@ -100,6 +100,9 @@ A label-specific option.
 | `all`   <| All geometries should be extracted.
 | `scan`  <| Geometries relative to a scan procedure
 
+.2+| `VLevel` | `H` | Vibrational harmonic energy levels
+| `A` <| Vibrational anharmonic energy levels
+
 .2+| `VTrans` | `H` | Vibrational transitions between harmonic states
 | `A` <| Vibrational transitions between anharmonic states
 

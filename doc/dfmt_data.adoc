@@ -1,6 +1,46 @@
 The data format expected for each type of quantity are listed below, sorted by quantity or group of quantities.
 While the data formats are relatively free, following the recommendations below will improve the compatibility and provide a more versatile interface.
 
+
+==== Vibrational transitions
+
+
+===== Vibrational transitions assignment
+
+[NOTE]
+====
+To facilitate the relation between different quantities, 
+====
+
+[TIP]
+._qlabel_
+====
+* `VTrans:`
+====
+
+[cols="1,2,12",grid=rows,stripes=none]
+|====
+.4+| `__N__`
+2+s| Assignment data, in the form "`[__initial__, __final__]`", with each state defined as "`((mode1, quanta1), (mode2, quanta2)...)`"
+| _Type_     | `list`
+| _Accepted_ | lists of lists integers
+| `None`     | No band assignment
+
+[NOTE]
+====
+* `__N__` is the index of the state/transition when read, for consistency with other data, starting from 1.
+* For anharmonic or ground states, "`__quanta__`" is set to 0.
+====
+
+
+.5+| `unitx`
+2+s| Unit used for the X axis.
+| _Type_     | `str`
+| _Accepted_ | string compatible with `convert_x` in `estampes.visual.plotspec`
+| `None`     | Unknown unit.
+| `False`    | No unit.
+
+
 ==== Spectra
 
 Spectra refer to fully generated spectra, for instance vibronic, where storing all transitions could be too large, or for data file with the generated spectra (ex: CSV files).
