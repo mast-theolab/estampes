@@ -20,6 +20,10 @@ Other blocks are:
 ## Unreleased
 
 
+### Fixed
+
+- **API** - Fixed issues in the definition of the bounds of the X axis for the broadening in the `set_broadening` method of the `Spectrum` class.
+
 ## [0.2.2] - 2020-10-04
 
 ### Added

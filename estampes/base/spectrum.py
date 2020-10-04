@@ -464,13 +464,17 @@ class Spectrum():
             if self.__broad[_ids]['hwhm'] is None:
                 raise ValueError('HWHM not set for the broadening.')
             if xmin is None:
-                _xmin = self.__xaxis[0][0] - 4*self.__broad[_ids]['hwhm']
+                _xmin = self.__xaxis[0][0] - 10*self.__broad[_ids]['hwhm']
             else:
                 _xmin = xmin
             if xmax is None:
-                _xmax = self.__xaxis[0][-1] - 4*self.__broad[_ids]['hwhm']
+                _xmax = self.__xaxis[0][-1] + 10*self.__broad[_ids]['hwhm']
+            else:
+                _xmax = xmax
             if xres <= 0.0:
                 raise ValueError('Wrong value for `xres`.')
+            if _xmax < _xmin:
+                _xmin, _xmax = _xmax, _xmin
             npoints = int(ceil((_xmax-_xmin)/xres))
             self.__xaxis[_ids] = [_xmin + i*xres for i in range(npoints)]
             if yunit.lower() in ('n', 'norm', 'normalized'):
