@@ -22,6 +22,7 @@ Other blocks are:
 
 ### Added
 
+- **ESP** - Added support of title on figures related to vibronic spectroscopies.
 - **BLS** - Geometry can be defined proportionally to the number of rows/columns.
 - **BLS** - Added option to add a panel label.
 - **BLS** - Ranges of subplots are supported in the definition of the curves.

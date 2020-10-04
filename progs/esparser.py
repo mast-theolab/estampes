@@ -173,6 +173,8 @@ def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
                       default='mols',
                       help=fmt.format(', '.join([item.lower()
                                                  for item in FCHT_QTIES])))
+    pvel.add_argument('-t', '--title',
+                      help='Title for the figure.')
     pvel.add_argument('datafile',
                       help='Data file.')
     pvel.set_defaults(mode='vel')
@@ -212,7 +214,8 @@ def mode_molview(dfile: DataFile) -> tp.NoReturn:
 
 
 def mode_vibronic(dfile: DataFile,
-                  qty: str) -> tp.NoReturn:
+                  qty: str,
+                  **kwargs: tp.Dict[str, tp.Any]) -> tp.NoReturn:
     """Molview Mode.
 
     Main function managing molecule viewer.
@@ -223,6 +226,8 @@ def mode_vibronic(dfile: DataFile,
         `ep.DataFile` object.
     qty
         Quantity of interest.
+    kwargs
+        Keyword-type arguments.
     """
     # For geometries, some data may not be available
     error_noqty = qty != 'mols'
@@ -300,6 +305,8 @@ def mode_vibronic(dfile: DataFile,
                 stick = data[dkeys['Pars']]['func'].lower() == 'stick'
                 bounds = plot_spec_2D(data[dkeys['Spec']], subp, legends=leg,
                                       is_stick=stick)
+            if kwargs['title'] is not None:
+                subp.set_title(kwargs['title'])
             plt.show()
 
 
@@ -337,7 +344,7 @@ def main() -> tp.NoReturn:
             print(f'ERROR: File "{fname}"" not found.')
             sys.exit(2)
         dfile = DataFile(fname)
-        mode_vibronic(dfile, args.quantity)
+        mode_vibronic(dfile, args.quantity, **args.__dict__)
 
 
 if __name__ == '__main__':
