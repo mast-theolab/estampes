@@ -154,6 +154,13 @@ For curves, it is possible to specify a range of rows and/or columns.
 ====
 `1,1-3` prints the curve on the first row and the first to third column.
 ====
-
++
+`outputfile` | [underline]#Default#: _None_::
+    The final (shifted, scaled, broadened) spectra will be saved as a CSV file with the name given as value. +
+    `{curve}` can be used as a field to be replaced by the curve name given in the section title. +
++
+--
+NOTE: Generally used for the default value.  For instance `molA_{curve}_IR_L002.csv` will have a different name for each unique curve section.
+--
 
 == Usage

@@ -396,6 +396,9 @@ def parse_inifile(fname: str
             curves[key]['yscale'] = optsec.getfloat('yscale', fallback=None)
             curves[key]['ynorm'] = optsec.getboolean('normalize',
                                                      fallback=False)
+            if 'outputfile' in optsec:
+                curves[key]['outfile'] = \
+                    optsec.get('outputfile').format(curve=key)
 
     return figdat, spcdat, curves
 
@@ -461,6 +464,11 @@ def main() -> tp.NoReturn:
         if curves[key]['yscale'] is not None:
             yaxis *= curves[key]['yscale']
         stick = curves[key]['data'].get_broadening('func') == 'stick'
+        if 'outfile' in curves[key]:
+            fmt = '{:12.5f}, {:15.6e}\n'
+            with open(curves[key]['outfile'], 'w') as fobj:
+                for i in range(len(xaxis)):
+                    fobj.write(fmt.format(xaxis[i], yaxis[i]))
         data = {}
         if curves[key]['data'].label is not None:
             data['label'] = curves[key]['data'].label
