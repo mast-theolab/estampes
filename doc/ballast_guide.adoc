@@ -65,6 +65,12 @@ For curves, it is possible to specify a range of rows and/or columns.
 `mergeaxes` | [underline]#Default#: _none_::
     Merge axes of subplots.  +
     **Accepted values**: `X`, `Y`, `Both`, `None`
+`ImageFile` | [underline]#Default#: _none_::
+    Name of the file where the figure will be saved. +
++
+--
+WARNING: The file extension must be supported by *Matplotlib*.
+--
 
 
 === Layout parameters
@@ -155,7 +161,7 @@ For curves, it is possible to specify a range of rows and/or columns.
 `1,1-3` prints the curve on the first row and the first to third column.
 ====
 +
-`outputfile` | [underline]#Default#: _None_::
+`outputfile` | [underline]#Default#: _none_::
     The final (shifted, scaled, broadened) spectra will be saved as a CSV file with the name given as value. +
     `{curve}` can be used as a field to be replaced by the curve name given in the section title. +
 +

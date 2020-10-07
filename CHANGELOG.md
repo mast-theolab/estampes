@@ -21,6 +21,7 @@ Other blocks are:
 
 ## Added
 
+- **BLS** - The final figure can be saved in BALLAST.
 - **BLS** - Generated curves in BALLAST can now be saved to CSV files.
 - **LIB** - Added broadening data for VCD and IR from rotational/dipole strengths.
 - **API** - Added partial support of VCD and IR spectroscopies in the `Spectrum` class.

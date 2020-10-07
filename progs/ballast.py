@@ -179,10 +179,12 @@ def parse_inifile(fname: str
         'geom': None,
         'shareaxes': False,
         'subp': (1, 1),
+        'fname': None
     }
     if 'figure' in secs:
         optsec = opts[secs['figure']]
         figdat['title'] = optsec.get('maintitle', fallback=None)
+        figdat['fname'] = optsec.get('imagefile', fallback=None)
         res = optsec.get('mergeaxes', fallback='None').lower()
         if res == 'none':
             val = False
@@ -514,6 +516,8 @@ def main() -> tp.NoReturn:
             spcdata[row][col].set_plot(sub)
     if figdata['title'] is not None:
         fig.suptitle(figdata['title'], fontweight='bold')
+    if figdata['fname'] is not None:
+        plt.savefig(figdata['fname'], bbox_inches='tight')
     plt.show()
 
 
