@@ -70,8 +70,11 @@ For curves, it is possible to specify a range of rows and/or columns.
 +
 --
 WARNING: The file extension must be supported by *Matplotlib*.
+    Name of the file where the figure will be saved. +
 --
-
++
+`ShowFigure` | [underline]#Default#: `True`::
+    Show final figures in a separate window.
 
 === Layout parameters
 

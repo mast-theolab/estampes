@@ -21,6 +21,7 @@ Other blocks are:
 
 ## Added
 
+- **BLS** - Added possibility to deactivate the display of the figure in a new window.
 - **BLS** - The final figure can be saved in BALLAST.
 - **BLS** - Generated curves in BALLAST can now be saved to CSV files.
 - **LIB** - Added broadening data for VCD and IR from rotational/dipole strengths.
