@@ -1167,21 +1167,22 @@ def parse_data(qdict: TypeQInfo,
                     for i, item in enumerate(cols[1:]):
                         data[qlabel][yfmt.format(idy=i+1)].append(item)
             elif qopt == 'SpcPar':
-                if 'Legend' in datablocks[iref][1]:
-                    offset = 2
-                    if 'No' in datablocks[iref][0]:
-                        data[qlabel]['func'] = 'stick'
-                        data[qlabel]['hwhm'] = None
-                    else:
-                        raise IndexError('Unrecognized broadening function.')
-                elif 'Legend' in datablocks[iref][2]:
-                    offset = 3
-                    func = datablocks[iref][0].split()[-3].lower()
-                    hwhm = float(datablocks[iref][1].split()[-2])
+                i = 0
+                while datablocks[iref][i].strip() != 'Legend:':
+                    i += 1
+                    if i >= len(datablocks[iref]):
+                        raise IndexError('Legend not found')
+                if 'No' in datablocks[iref][i-1]:
+                    data[qlabel]['func'] = 'stick'
+                    data[qlabel]['hwhm'] = None
+                elif 'broadening' in datablocks[iref][i-2]:
+                    func = datablocks[iref][i-2].split()[-3].lower()
+                    hwhm = float(datablocks[iref][i-1].split()[-2])
                     data[qlabel]['func'] = func
                     data[qlabel]['hwhm'] = hwhm
                 else:
-                    raise IndexError('Unrecognized broadening definition.')
+                    raise IndexError('Unrecognized broadening function.')
+                offset = i + 1
                 # offset: num. lines for legend block + legend section title
                 if len(datablocks[iref]) <= 3 + offset:
                     # X, Y, Int, don't use numbering

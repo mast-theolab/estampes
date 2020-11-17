@@ -28,6 +28,9 @@ Other blocks are:
 - **API** - Added partial support of VCD and IR spectroscopies in the `Spectrum` class.
 - **API** - Added parsing of dipole and rotatory strengths, frequencies and vibrational transition levels in Gaussian log file.
 
+### Fixed
+
+- **API** - Parsing of broadening parameters in Gaussian output files for vibronic calculations with low progressions or any WARNING message.
 
 ## [0.2.3] - 2020-10-04
 
