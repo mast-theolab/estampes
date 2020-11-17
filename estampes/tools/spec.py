@@ -118,7 +118,7 @@ def broaden(xval: tp.Sequence[float],
     if ynorm:
         ymax = max(yaxis, key=abs)
         for i in range(npoints):
-            yaxis /= ymax
+            yaxis[i] /= ymax
     return yaxis
 
 
