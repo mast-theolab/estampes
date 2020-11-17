@@ -729,13 +729,16 @@ def qlab_to_linkdata(qtag: TypeQTag,
                    + r'(?:\s+-?\d+\.\d+|\s+\*+){3}\s*$')
             num = (0, -1, 0)
         elif qopt == 'A':
-            lnk = 717
-            key = '        Dipole strengths (DS)'
-            sub = 3
-            def end(s): return s.startswith('     =====')
-            fmt = r'^\s+(?:(?:\d+\(\d+\)){1,3}|\d+)\s+' \
-                  + r'(?:-?\d+\.\d+|\*+)\s+(?P<val>-?\d+\.\d+|\*+).*\s*$'
-            num = 0
+            lnk = (717, 717)
+            key = ('        Dipole strengths (DS)',
+                   '        Dipole strengths (DS)')
+            sub = (3, 3)
+            end = (lambda s: s.startswith('     ====='),
+                   lambda s: s.startswith('     ====='))
+            fmt = (r'^\s+(?:\s*\d+\(\d+\)){1,3}\s+'
+                   + r'(?:-?\d+\.\d+|\*+)\s+(?P<val>-?\d+\.\d+|\*+).*\s*$',
+                   r'^\s+(?:\d+)\s+(?P<val>-?\d+\.\d+|\*+)\s+.*\s*$')
+            num = (0, 0)
         else:
             raise NotImplementedError()
     else:
@@ -793,7 +796,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                     key1.append('        Dipole strengths (DS)')
                     sub1.append(3)
                     end1.append(lambda s: s.startswith('     ====='))
-                    fmt1.append(r'^\s+(?:(?:\d+\(\d+\)){1,3}|\d+)\s+'
+                    fmt1.append(r'^\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'
                                 + r' .*\s+(?P<val>-?\d+\.\d+|\*+)\s*$')
                     num1.append(0)
                 else:
@@ -822,7 +825,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                     key1.append('        Rotational strengths (RS)')
                     sub1.append(3)
                     end1.append(lambda s: s.startswith('     ====='))
-                    fmt1.append(r'^\s+(?:(?:\d+\(\d+\)){1,3}|\d+)\s+'
+                    fmt1.append(r'^\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'
                                 + r' .*\s+(?P<val>-?\d+\.\d+|\*+)\s*$')
                     num1.append(0)
                 else:
@@ -1256,6 +1259,10 @@ def parse_data(qdict: TypeQInfo,
                         except ValueError:
                             data[qlabel][i] = float('inf')
             elif qopt == 'A':
+                if datablocks[last]:
+                    iref = last
+                else:
+                    iref = first
                 data[qlabel]['unit'] = 'cm-1'
                 i = 0
                 for line in datablocks[iref]:

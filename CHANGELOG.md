@@ -19,7 +19,7 @@ Other blocks are:
 
 ## Unreleased
 
-## Added
+### Added
 
 - **BLS** - Added possibility to deactivate the display of the figure in a new window.
 - **BLS** - The final figure can be saved in BALLAST.
