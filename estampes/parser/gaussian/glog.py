@@ -707,7 +707,8 @@ def qlab_to_linkdata(qtag: TypeQTag,
             lnk = 717
             key = '        Dipole strengths (DS)'
             sub = 3
-            def end(s): return s.startswith('     =====')
+            def end(s): return s.startswith('     =====') or \
+                               s.startswith(' GradGrad')
             fmt = r'^\s+(?P<val>(?:\s*\d+\(\d+\)){1,3}|\d+)\s+' \
                   + r'(?:-?\d+\.\d+\s+|\*+\s+){2}.*\s*$'
             num = 0
@@ -722,7 +723,8 @@ def qlab_to_linkdata(qtag: TypeQTag,
             sub = (1, 1, 4)
             end = (lambda s: s.startswith(' - Thermochemistry'),
                    lambda s: s.startswith(' - Thermochemistry'),
-                   lambda s: s.startswith(' -----'))
+                   lambda s: s.startswith(' -----') or
+                             s.startswith(' GradGrad'))
             fmt = (r'^\s+Frequencies --- \s*(?P<val>\d.*)\s*$',
                    r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$',
                    r'^\s+\d+\(\d+\)\s+(?P<val>-?\d+\.\d+)'
@@ -734,7 +736,8 @@ def qlab_to_linkdata(qtag: TypeQTag,
                    '        Dipole strengths (DS)')
             sub = (3, 3)
             end = (lambda s: s.startswith('     ====='),
-                   lambda s: s.startswith('     ====='))
+                   lambda s: s.startswith('     =====') or
+                             s.startswith(' GradGrad'))
             fmt = (r'^\s+(?:\s*\d+\(\d+\)){1,3}\s+'
                    + r'(?:-?\d+\.\d+|\*+)\s+(?P<val>-?\d+\.\d+|\*+).*\s*$',
                    r'^\s+(?:\d+)\s+(?P<val>-?\d+\.\d+|\*+)\s+.*\s*$')
@@ -795,7 +798,8 @@ def qlab_to_linkdata(qtag: TypeQTag,
                     lnk1.append(717)
                     key1.append('        Dipole strengths (DS)')
                     sub1.append(3)
-                    end1.append(lambda s: s.startswith('     ====='))
+                    end1.append(lambda s: s.startswith('     =====') or
+                                          s.startswith(' GradGrad'))
                     fmt1.append(r'^\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'
                                 + r' .*\s+(?P<val>-?\d+\.\d+|\*+)\s*$')
                     num1.append(0)
