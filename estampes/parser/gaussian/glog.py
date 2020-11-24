@@ -1161,7 +1161,7 @@ def parse_data(qdict: TypeQInfo,
                     yfmt = 'y'
                     data[qlabel]['y'] = []
                 else:
-                    yfmt = 'y{{idy:0{}d}}'.format(ny)
+                    yfmt = 'y{{idy:0{}d}}'.format(len(str(ny)))
                     for i in range(ny):
                         data[qlabel][yfmt.format(idy=i+1)] = []
                 for line in datablocks[iref]:
