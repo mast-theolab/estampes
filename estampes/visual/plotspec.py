@@ -562,14 +562,14 @@ def plot_spec_2D(axes: tp.Dict[str, tp.Sequence[float]],
     # -----------------
     if xlabel is not None:
         _xlab = xlabel.strip()
-    elif legends is not None and keys['x'] in legends:
-        _xlab = legends[keys['x']].strip()
+    elif legends is not None and 'x' in legends:
+        _xlab = legends['x'].strip()
     else:
         _xlab = 'Energy / a.u.'
     if ylabel is not None:
         _ylab = ylabel.strip()
-    elif legends is not None and keys['i'] in legends:
-        _ylab = legends[keys['i']].strip()
+    elif legends is not None and 'I' in legends:
+        _ylab = legends['I'].strip()
     else:
         _ylab = 'Intensity / a.u.'
 

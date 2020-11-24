@@ -30,6 +30,7 @@ Other blocks are:
 
 ### Fixed
 
+- **ESP** - Vibronic TD spectra were incorrectly processed.
 - **API** - Parsing of broadening parameters in Gaussian output files for vibronic calculations with low progressions or any WARNING message.
 
 ## [0.2.3] - 2020-10-04

@@ -297,9 +297,7 @@ def mode_vibronic(dfile: DataFile,
                 plot = plot_kvec(mat, subp)
             elif qty == 'spec':
                 if 'y1' in data[dkeys['Pars']]:
-                    leg = {y: data[dkeys['Pars']][y]
-                           for y in data[dkeys['Pars']]
-                           if y.startswith('y')}
+                    leg = data[dkeys['Pars']]
                 else:
                     leg = None
                 stick = data[dkeys['Pars']]['func'].lower() == 'stick'
