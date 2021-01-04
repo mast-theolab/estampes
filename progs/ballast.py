@@ -425,6 +425,7 @@ def main() -> tp.NoReturn:
         figdata, spcdata, curves = parse_inifile(args.optfile)
 
     nrows, ncols = figdata['subp']
+    y0lines = np.full((nrows, ncols), False)
     pars = {'tight_layout': True}
     res = figdata['shareaxes']
     if res == 'X' or res is True:
@@ -449,10 +450,12 @@ def main() -> tp.NoReturn:
         if curves[key]['xscale'] is not None:
             xaxis *= curves[key]['xscale']
         yaxis = np.array(curves[key]['data'].yaxis)
+        ymin = np.min(yaxis)
+        ymax = np.max(yaxis)
+        add_y0 = ymin*ymax < 0 and (
+            min(abs(ymin), ymax)/max(abs(ymin), ymax) > .1)
         if curves[key]['yshift'] is not None:
             if curves[key]['yshift'] == 'base':
-                ymin = np.min(yaxis)
-                ymax = np.max(yaxis)
                 if ymin*ymax >= 0:
                     if ymin >= 0:
                         yshift = - ymin
@@ -490,6 +493,7 @@ def main() -> tp.NoReturn:
         irow, icol = curves[key]['subplot']
         for row in range(irow[0], min(irow[1]+1, nrows)):
             for col in range(icol[0], min(icol[1]+1, ncols)):
+                y0lines[row, col] = y0lines[row, col] or add_y0
                 if nrows > 1 and ncols > 1:
                     sub = subp[row, col]
                 elif nrows > 1:
@@ -515,6 +519,8 @@ def main() -> tp.NoReturn:
             else:
                 sub = subp
             sub.legend()
+            if y0lines[row, col]:
+                sub.axhline(0, c='.5', zorder=-10.0)
             spcdata[row][col].set_plot(sub)
     if figdata['title'] is not None:
         fig.suptitle(figdata['title'], fontweight='bold')

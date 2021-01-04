@@ -10,6 +10,7 @@ ESTAMPES API is divided in 3 components:
 Tools have each one their own trigram
 - **APP**: Estampes Suite Program (new program)
 - **BLS**: _Ballast_
+- **BRS**: _Bars_
 - **ESP**: _ESParser_
 - **GUI**: Main graphical interface
 
@@ -24,6 +25,7 @@ Other blocks are:
 - **BLS** - Added possibility to deactivate the display of the figure in a new window.
 - **BLS** - The final figure can be saved in BALLAST.
 - **BLS** - Generated curves in BALLAST can now be saved to CSV files.
+- **BLS** - Automatic inclusion of a line at Y=0 if visible positive and negative bands are detected in a spectrum.
 - **LIB** - Added broadening data for VCD and IR from rotational/dipole strengths.
 - **API** - Added partial support of VCD and IR spectroscopies in the `Spectrum` class.
 - **API** - Added parsing of dipole and rotatory strengths, frequencies and vibrational transition levels in Gaussian log file.
