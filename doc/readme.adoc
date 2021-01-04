@@ -1,6 +1,6 @@
 = ESTAMPES: A prototypical program for spectral analysis
 :email: julien.bloino@sns.it
-:revnumber: 0.2.0
+:revnumber: 0.3.0
 :revremark: Introduction
 :toc: left
 :toclevels: 1

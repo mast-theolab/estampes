@@ -1,0 +1,144 @@
+= Bars: A simple tool for anharmonic benchmark analysis.
+:email: julien.bloino@sns.it
+:revnumber: 0.3.0
+:revremark: First version.
+:toc: left
+:toclevels: 1
+:icons: font
+:stem:
+
+:Gaussian: pass:q[G[small]##AUSSIAN##]
+:Estampes: pass:q[E[small]##STAMPES##]
+:ESParser: pass:q[ESP[small]##ARSER##]
+:Bars: pass:q[B[small]##ars##]
+
+== Preamble
+
+{Bars} helps construct diagrams to compare and plot sets of anharmonic calculations with respect to a set of reference data.
+
+== Overview
+
+== Requirements
+
+* This script depends heavily on *Matplotlib* for the display of the plots.
+
+== Usage
+
+----
+esbars.py [options] [mode] [optmode] optfile reffile
+----
+
+with
+
+`options`::
+    Command-line arguments for all modes.
+`mode`::
+    Operating mode:
+    `mean`:::
+        (**default**) Computes averages.
+    `dist`:::
+        Shows averages.
+`optmode`::
+    Option specific to the operating mode.
+`optfile`::
+    Option file.
+`reffile`::
+    File with reference data.
+
+
+[WARNING]
+====
+For anharmonic data, only VPT2 data expressed with respect to the harmonic vibrational state basis are accepted.
+====
+
+== Command-line arguments
+
+=== Main options
+
+`--fontsize` | _default_: system-dependent::
+    Font size for the plot.
+`--level` | _default_: `both`::
+    Level of theory used for the vibrational energies. +
+    _Accepted values_:
+    `h`, `harm`:::
+        Harmonic level.
+    `a`, `anh`, `anharm`:::
+        Anharmonic level.
+    `b`, `both`:::
+        Both harmonic and anharmonic levels.
+`-m`, `--mol`::
+    Molecule of interest for the analysis. +
+    _Special keywords_:
+    `all`:::
+        Includes all molecules with available data, in a single analysis.
+    `each`:::
+        Includes all molecules with available data, but analyses are separated per molecule.
+`-o`, `--output`::
+    Output file for the results.
+`-s`, `--sort` | _default_: `file`::
+    Sorting order of the molecules in the output. +
+    _Accepted values_:
+    `file`:::
+        Follows the order of the molecules in the reference file.
+    `alpha`:::
+        Uses alphabetical order.
+
+=== Options for the _distribution_ mode
+
+`--absval`::
+    Uses absolute values in the distribution plots.
+`--lw`, `--linewidth`::
+    Line width of the curves.
+`-x`, `--xscale` | _default_: `linear`::
+    Scale for the X axis. +
+    _Accepted values_:
+    `linear`:::
+        Linear scale.
+    `range`:::
+        Range (NYI).
+    `index`:::
+        Vibration index.
+
+== Option file
+
+The option file contains lines with blocks separated by semi-colons (`;`).
+Each line contains:
+
+. The name of the molecule (case-sensitive)
+. The electronic structure method/functional for display.
+. The name of the basis set for display.
+. The file name with the computed data to extract.
+. (**optional**) A color code to be associated to this level of calculation.
+
+.Example of file
+----
+ Water   ; B2    ; ATZGV   ; la_H2O_b01_GV.log
+ H2CO    ; B2    ; ATZGV   ; lc_H2CO_b01_GV.log
+----
+
+== Reference file
+
+The file contains blocks of data of the form:
+
+----
+Molecule[:]
+    num  value
+----
+
+`Molecule` is the name of the molecule (case-sensitive), which can be followed by a colon (`:`).
+After each molecule name, the vibrations are listed, one per line as "`Index_of_vibration   Energy`".
+Spaces are not relevant, and the order of the vibrations is not important.
+
+.Example of file
+----
+Water
+    1    1595
+    2    3657
+    3    3756
+H2S
+    1    1182.7
+    2    2614.41
+    3    2628.46
+----
+
+== Examples

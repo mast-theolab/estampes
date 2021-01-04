@@ -1,6 +1,6 @@
 = Ballast: A simple builder to display multiple spectra.
 :email: julien.bloino@sns.it
-:revnumber: 0.2.2
+:revnumber: 0.3.0
 :revremark: Keyword for figure size proportional to number of rows/columns.
 :toc: left
 :toclevels: 1
@@ -16,13 +16,20 @@
 
 {Ballast} helps construct figures involving multiple spectra.
 
+
 == Overview
+
 
 == Requirements
 
-* This mode depends heavily on *Matplotlib* for the display of the spectra.
+* This script depends heavily on *Matplotlib* for the display of the spectra.
+
+
+== Usage
+
 
 == Command-line arguments
+
 
 == Option file
 
@@ -172,4 +179,5 @@ WARNING: The file extension must be supported by *Matplotlib*.
 NOTE: Generally used for the default value.  For instance `molA_{curve}_IR_L002.csv` will have a different name for each unique curve section.
 --
 
-== Usage
+
+== Examples

@@ -1,6 +1,6 @@
 = ESTAMPES: Data format of the API
 :email: julien.bloino@sns.it
-:revnumber: 0.2.0
+:revnumber: 0.3.0
 :revremark: Introduction
 :toc: left
 :toclevels: 3

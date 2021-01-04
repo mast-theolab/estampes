@@ -7,7 +7,7 @@ short_desc = 'A simple API to parse and process data for computational' +\
 
 setuptools.setup(
     name='estampes',
-    version='0.2.3',
+    version='0.3.0',
     author='Julien Bloino',
     author_email='julien.bloino@gmail.com',
     description=short_desc,
@@ -17,7 +17,8 @@ setuptools.setup(
     license='MIT',
     packages=setuptools.find_packages(include=['estampes', 'estampes.*',
                                                'progs.esparser',
-                                               'progs.ballast']),
+                                               'progs.ballast',
+                                               'progs.bars']),
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Programming Language :: Python :: 3',
@@ -31,6 +32,7 @@ setuptools.setup(
         'console_scripts': [
             'esparser=progs.esparser:main',
             'esballast=progs.ballast:main',
+            'esbars=progs.bars:main',
         ],
     },
 )
