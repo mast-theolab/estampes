@@ -389,11 +389,12 @@ def parse_inifile(fname: str
             if res is not None:
                 try:
                     val = float(res)
-                except ValueError:
+                except ValueError as e:
                     if res.lower() in ('base', 'baseline'):
                         val = 'base'
                     else:
-                        raise ValueError('Unsupported value for YShift')
+                        msg = 'Unsupported value for YShift'
+                        raise ValueError(msg) from None
             else:
                 val = None
             curves[key]['yshift'] = val
