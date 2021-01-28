@@ -29,14 +29,14 @@ from estampes.data.physics import PHYSFACT
 
 __ang2au = 1.0 / PHYSFACT.bohr2ang
 
-__tpStrInt = tp.TypeVar('_tp_StrInt', str, int)
+_tp_StrInt = tp.TypeVar('_tp_StrInt', str, int)
 # TypeSBloc = tp.Optional[tp.Tuple[str, int]]
 # TypeQInfos = tp.Tuple[list, tp.List[str, int, TypeSBloc]]
 TypeQData = tp.Dict[str, tp.Optional[tp.Any]]
 TypeQKwrd = tp.Tuple[
     tp.Union[int, tp.List[int]],  # Link
     tp.Union[str, tp.List[str]],  # Keyword
-    tp.Union[__tpStrInt, tp.List[__tpStrInt]],  # Jump/Skip function
+    tp.Union[_tp_StrInt, tp.List[_tp_StrInt]],  # Jump/Skip function
     tp.Union[str, tp.List[str]],  # Matching pattern for data to extract
     #  Block end condition
     tp.Union[tp.Callable[[str], bool], tp.List[tp.Callable[[str], bool]]],
@@ -45,7 +45,7 @@ TypeQKwrd = tp.Tuple[
 TypeKData = tp.Tuple[
     str,  # Keyword
     int,  # Link
-    __tpStrInt,  # Information on lines to skip after keyword
+    _tp_StrInt,  # Information on lines to skip after keyword
     tp.Pattern,  # Data extraction matching pattern (compiled)
     int,  # which occurrences to extract
     tp.Callable[[str], bool]
