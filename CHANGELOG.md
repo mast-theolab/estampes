@@ -20,6 +20,10 @@ Other blocks are:
 
 ## Unreleased
 
+### Fixed
+
+- **API** - Anharmonic vibrational energies correctly extracted in absence of intensities (DCPT2, HDCPT2).
+
 ## [0.3.0] - 2021-01-04
 
 ### Added

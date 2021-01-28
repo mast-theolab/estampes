@@ -693,24 +693,30 @@ def qlab_to_linkdata(qtag: TypeQTag,
             lnk = (-716, 716, -717)
             key = (' and normal coordinates:',
                    ' and normal coordinates:',
-                   '        Dipole strengths (DS)')
-            sub = (1, 1, 4)
+                   ' NOTE: Transition energies are given with')
+            sub = (1, 1, 8)
             end = (lambda s: s.startswith(' - Thermochemistry'),
                    lambda s: s.startswith(' - Thermochemistry'),
-                   lambda s: s.startswith(' -----'))
+                   lambda s: s.startswith('     ====='))
             fmt = (r'^\s{16}(?P<val>(?:\s+\d+){1,5})\s*$',
                    r'^\s{16}(?P<val>(?:\s+\d+){1,3})\s*$',
-                   r'^\s+(?P<val>\d+\(\d+\))\s+'
-                   + r'(?:\s+-?\d+\.\d+|\s+\*+){4}\s*$')
+                   r'^\s+\w?\s+(?P<val>\s*\d+\(\d+\))\s+\w+\s+'
+                   + r'(?:\s+-?\d+\.\d+|\*+){4}.*\s*$')
             num = (0, -1, 0)
         elif qopt == 'A':
             lnk = 717
-            key = '        Dipole strengths (DS)'
-            sub = 3
-            def end(s): return s.startswith('     =====') or \
-                               s.startswith(' GradGrad')
+            key = ' NOTE: Transition energies are given with'
+            sub = 8
+            def end(s): return s.startswith('     =====')
             fmt = r'^\s+(?P<val>(?:\s*\d+\(\d+\)){1,3}|\d+)\s+' \
                   + r'(?:-?\d+\.\d+\s+|\*+\s+){2}.*\s*$'
+            num = 0
+            lnk = 717
+            key = ' NOTE: Transition energies are given with'
+            sub = 8
+            def end(s): return s.startswith('     =====')
+            fmt = r'^\s+\w?\s+(?P<val>(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'\
+                  + r'(?:\w+)?\s+(?:\s*-?\d+\.\d+|\*+\s+){4,5}.*\s*$'
             num = 0
         else:
             raise NotImplementedError()
@@ -719,29 +725,25 @@ def qlab_to_linkdata(qtag: TypeQTag,
             lnk = (-716, 716, -717)
             key = (' and normal coordinates:',
                    ' and normal coordinates:',
-                   '        Dipole strengths (DS)')
-            sub = (1, 1, 4)
+                   ' NOTE: Transition energies are given with')
+            sub = (1, 1, 8)
             end = (lambda s: s.startswith(' - Thermochemistry'),
                    lambda s: s.startswith(' - Thermochemistry'),
-                   lambda s: s.startswith(' -----') or
-                             s.startswith(' GradGrad'))
+                   lambda s: s.startswith('     ====='))
             fmt = (r'^\s+Frequencies --- \s*(?P<val>\d.*)\s*$',
                    r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$',
-                   r'^\s+\d+\(\d+\)\s+(?P<val>-?\d+\.\d+)'
-                   + r'(?:\s+-?\d+\.\d+|\s+\*+){3}\s*$')
+                   r'^\s+\w?\s+(?:\s*\d+\(\d+\))\s+\w+\s+'
+                   + r'(?P<val>-?\d+\.\d+|\*+)(?:\s+-?\d+\.\d+|\*+){4}.*\s*$')
             num = (0, -1, 0)
         elif qopt == 'A':
-            lnk = (717, 717)
-            key = ('        Dipole strengths (DS)',
-                   '        Dipole strengths (DS)')
-            sub = (3, 3)
-            end = (lambda s: s.startswith('     ====='),
-                   lambda s: s.startswith('     =====') or
-                             s.startswith(' GradGrad'))
-            fmt = (r'^\s+(?:\s*\d+\(\d+\)){1,3}\s+'
-                   + r'(?:-?\d+\.\d+|\*+)\s+(?P<val>-?\d+\.\d+|\*+).*\s*$',
-                   r'^\s+(?:\d+)\s+(?P<val>-?\d+\.\d+|\*+)\s+.*\s*$')
-            num = (0, 0)
+            lnk = 717
+            key = ' NOTE: Transition energies are given with'
+            sub = 8
+            def end(s): return s.startswith('     =====')
+            fmt = r'^\s+\w?\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+(?:\w+)?\s+' \
+                  + r'(?:-?\d+\.\d+|\*+)?\s+(?P<val>-?\d+\.\d+|\*+)' \
+                  + r'(?:\s*-?\d+\.\d+|\*+){3}.*\s*$'
+            num = 0
         else:
             raise NotImplementedError()
     else:
