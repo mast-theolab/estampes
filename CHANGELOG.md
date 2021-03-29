@@ -23,6 +23,7 @@ Other blocks are:
 ### Fixed
 
 - **API** - Anharmonic vibrational energies correctly extracted in absence of intensities (DCPT2, HDCPT2).
+= **API** - Support numbers like `2e6` as floating point numbers.
 
 ## [0.3.0] - 2021-01-04
 

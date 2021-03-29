@@ -27,7 +27,7 @@ import estampes.parser as ep
 # ================
 
 txt_I = r'^\s*\b[+-]?\d+\b\s*$'
-txt_F = r'^\s*[+-]?(?P<int>\d+)?[\.,](?P<dec>(?(int)\d*|\d+))' \
+txt_F = r'^\s*[+-]?(?P<int>\d+)?[\.,]?(?P<dec>(?(int)\d*|\d+))' \
     + r'(?P<exp>[DdEe])?(?(exp)[+-]?\d+|)\s*$'
 PATTERN_I = re.compile(txt_I)
 PATTERN_F = re.compile(txt_F)
@@ -134,10 +134,10 @@ class FileCSV(object):
             while True:
                 cols = line.rstrip().split(c_sep)
                 for item in cols:
-                    if PATTERN_F.match(item):
-                        fstr_F = item
-                    elif PATTERN_I.match(item):
+                    if PATTERN_I.match(item):
                         fstr_I = item
+                    elif PATTERN_F.match(item):
+                        fstr_F = item
                 if fstr_F is None:
                     if fstr_I is None and iline == 1:
                         header = line
@@ -176,7 +176,7 @@ class FileCSV(object):
                 raise IndexError('Header seems inconsistent')
         elif self.__headers['comments']:
             for line in self.__headers['comments']:
-                cols = line.replace(c_com, '', count=1).strip().split(c_sep)
+                cols = line.replace(c_com, '', 1).strip().split(c_sep)
                 if len(cols) != self.__ncols:
                     cols = None
                 else:
