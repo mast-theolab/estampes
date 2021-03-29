@@ -289,6 +289,7 @@ def vrotate_3D(vec: np.ndarray,
 
     Returns the rotation matrix for `vec` to match the orientation of a
       reference vector `ref`.
+    https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d/476311#476311
 
     Parameters
     ----------
