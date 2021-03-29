@@ -107,13 +107,16 @@ Each line contains:
 . The name of the molecule (case-sensitive)
 . The electronic structure method/functional for display.
 . The name of the basis set for display.
+. The level of theory for the vibrations to use: `A` (anharmonic), `H` (harmonic), `B` (both), `X` (auto/any).
+An empty string is equal to `X`
 . The file name with the computed data to extract.
+. (**optional**) A label to replace the one automatically generated as "`ESCM/basis`"
 . (**optional**) A color code to be associated to this level of calculation.
 
 .Example of file
 ----
- Water   ; B2    ; ATZGV   ; la_H2O_b01_GV.log
- H2CO    ; B2    ; ATZGV   ; lc_H2CO_b01_GV.log
+ Water   ; B2    ; ATZGV   ; A ; la_H2O_b01_GV.log ; GVPT2
+ H2CO    ; B2    ; ATZGV   ;   ; lc_H2CO_b01_GV.log
 ----
 
 == Reference file

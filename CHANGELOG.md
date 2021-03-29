@@ -20,6 +20,11 @@ Other blocks are:
 
 ## Unreleased
 
+
+### Added
+
+- **BRS** - Support of hybrid schemes and composite analyses mixing different level of calculation.
+
 ### Fixed
 
 - **LIB** - Fixed deprecation warning from `Matplotlib` on X/Y scale.
