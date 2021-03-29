@@ -233,15 +233,15 @@ class SpecLayout(object):
     @xscale.setter
     def xscale(self, val: tp.Optional[str]) -> tp.NoReturn:
         if val is None:
-            self.__xscale = ('linear', 0)
+            self.__xscale = {'value': 'linear'}
         else:
             key = val.lower()
             if key in ('lin', 'linear'):
-                self.__xscale = ('linear', 0)
+                self.__xscale = {'value': 'linear'}
             elif key in ('log', 'log10'):
-                self.__xscale = ('log', 10)
+                self.__xscale = {'value': 'log', 'base': 10}
             elif key in ('ln', 'log2'):
-                self.__xscale = ('log', 2)
+                self.__xscale = {'value': 'log', 'base': 2}
             else:
                 raise IndexError('Unrecognized scale: {}'.format(val))
 
@@ -253,15 +253,15 @@ class SpecLayout(object):
     @yscale.setter
     def yscale(self, val: tp.Optional[str]) -> tp.NoReturn:
         if val is None:
-            self.__yscale = ('linear', 0)
+            self.__yscale = {'value': 'linear'}
         else:
             key = val.lower()
             if key in ('lin', 'linear'):
-                self.__yscale = ('linear', 0)
+                self.__yscale = {'value': 'linear'}
             elif key in ('log', 'log10'):
-                self.__yscale = ('log', 10)
+                self.__yscale = {'value': 'log', 'base': 10}
             elif key in ('ln', 'log2'):
-                self.__yscale = ('log', 2)
+                self.__yscale = {'value': 'log', 'base': 2}
             else:
                 raise IndexError('Unrecognized scale: {}'.format(val))
 
@@ -400,7 +400,7 @@ class SpecLayout(object):
             pars['right'] = self.__xright
         if pars:
             canvas.set_xlim(**pars)
-        canvas.set_xscale(self.__xscale[0], base=self.__xscale[1])
+        canvas.set_xscale(**self.__xscale)
         if self.__xlabel is not None:
             canvas.set_xlabel(self.__xlabel)
         # Y axis
@@ -411,7 +411,7 @@ class SpecLayout(object):
             pars['top'] = self.__ytop
         if pars:
             canvas.set_ylim(**pars)
-        canvas.set_yscale(self.__yscale[0], base=self.__yscale[1])
+        canvas.set_yscale(**self.__yscale)
         if self.__ylabel is not None:
             canvas.set_ylabel(self.__ylabel)
         # Legend
