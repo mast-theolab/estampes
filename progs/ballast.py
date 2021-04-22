@@ -7,16 +7,57 @@ This is a simple program to combine and display spectra together.
 
 import sys
 import os
+import re
 import argparse
 import typing as tp
 import configparser as cfg
-from math import ceil
+from math import *
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 from estampes.base.spectrum import Spectrum
 from estampes.visual.plotspec import SpecLayout
+
+
+def fscale(expr: str, var: str) -> tp.Callable[[float], float]:
+    """Returns a scaling function.
+
+    Analyzes the mathematical expression in `expr` and returns a
+      function compatible with `var`.
+
+    Parameters
+    ----------
+    expr
+        Mathematical expression.
+    var
+        Variable of interest.
+
+    Returns
+    -------
+    function
+        Mathematical function
+
+    Raises
+    ------
+    NameError
+        Unsupported mathematical function.
+    """
+    _expr = expr.strip().replace('log', 'log10').replace('ln', 'log')
+    if not re.search(r'\b'+var+r'\b', _expr):
+        char = _expr[-1]
+        if char in '+-*/^':
+            _expr += var
+        else:
+            _expr += '*' + var
+    pattern = r'\^([-\+]\d*' + var + r'?)'
+    if '^' in _expr:
+        # Replace case without protecting parentheses (ex: 10^-3)
+        _expr = re.sub(pattern, r'**(\1)', _expr)
+        # Replace other cases
+        _expr = _expr.replace('^', '**')
+
+    return eval('lambda {}: {}'.format(var, _expr))
 
 
 def build_opts(parser: argparse.ArgumentParser) -> tp.NoReturn:
@@ -384,12 +425,32 @@ def parse_inifile(fname: str
             if optsec.get('label', None) is not None:
                 curves[key]['data'].label = optsec.get('label')
             curves[key]['xshift'] = optsec.getfloat('xshift', fallback=None)
-            curves[key]['xscale'] = optsec.getfloat('xscale', fallback=None)
+            res = optsec.get('xscale', None)
+            if res is not None:
+                data = res.split(',')
+                try:
+                    curves[key]['xscale'] = fscale(data[-1], 'x')
+                except NameError:
+                    msg = 'Incorrect scaling factor for X'
+                    raise ValueError(msg) from None
+                if len(data) > 1:
+                    val = data[0].lower()
+                    if val in ('rel', 'relative'):
+                        curves[key]['xrelscale'] = True
+                    elif val in ('abs', 'absolute'):
+                        curves[key]['xrelscale'] = False
+                    else:
+                        msg = 'Incorrect scaling method for X'
+                        raise ValueError(msg)
+                else:
+                    curves[key]['xrelscale'] = False
+            else:
+                curves[key]['xscale'] = None
             res = optsec.get('yshift', None)
             if res is not None:
                 try:
                     val = float(res)
-                except ValueError as e:
+                except ValueError:
                     if res.lower() in ('base', 'baseline'):
                         val = 'base'
                     else:
@@ -398,7 +459,27 @@ def parse_inifile(fname: str
             else:
                 val = None
             curves[key]['yshift'] = val
-            curves[key]['yscale'] = optsec.getfloat('yscale', fallback=None)
+            res = optsec.get('yscale', None)
+            if res is not None:
+                data = res.split(',')
+                try:
+                    curves[key]['yscale'] = fscale(data[-1], 'y')
+                except NameError:
+                    msg = 'Incorrect scaling factor for Y'
+                    raise ValueError(msg) from None
+                if len(data) > 1:
+                    val = data[0].lower()
+                    if val in ('rel', 'relative'):
+                        curves[key]['yrelscale'] = True
+                    elif val in ('abs', 'absolute'):
+                        curves[key]['yrelscale'] = False
+                    else:
+                        msg = 'Incorrect scaling method for Y'
+                        raise ValueError(msg)
+                else:
+                    curves[key]['yrelscale'] = True
+            else:
+                curves[key]['yscale'] = None
             curves[key]['ynorm'] = optsec.getboolean('normalize',
                                                      fallback=False)
             if 'outputfile' in optsec:
@@ -446,15 +527,35 @@ def main() -> tp.NoReturn:
     #   plot to avoid multiple iterations of heavy operations like broaden.
     for idcurve, key in enumerate(curves):
         xaxis = np.array(curves[key]['data'].xaxis)
+        if curves[key]['xscale'] is not None:
+            if curves[key]['xrelscale']:
+                shift = min(xaxis, key=lambda x: abs(x))
+                xaxis -= shift
+            func = np.vectorize(curves[key]['xscale'])
+            xaxis = func(xaxis)
+            if curves[key]['xrelscale']:
+                xaxis += func(shift)
         if curves[key]['xshift'] is not None:
             xaxis += curves[key]['xshift']
-        if curves[key]['xscale'] is not None:
-            xaxis *= curves[key]['xscale']
         yaxis = np.array(curves[key]['data'].yaxis)
         ymin = np.min(yaxis)
         ymax = np.max(yaxis)
         add_y0 = ymin*ymax < 0 and (
             min(abs(ymin), ymax)/max(abs(ymin), ymax) > .1)
+        if curves[key]['yscale'] is not None:
+            if curves[key]['yrelscale']:
+                shift = min(yaxis, key=lambda x: abs(x))
+                yaxis -= shift
+            func = np.vectorize(curves[key]['yscale'])
+            yaxis = func(yaxis)
+            if curves[key]['yrelscale']:
+                yaxis += func(shift)
+        if curves[key]['ynorm']:
+            yshift = min(yaxis, key=lambda x: abs(x))
+            yaxis -= yshift
+            ymax = np.max(np.abs(yaxis))
+            yaxis /= ymax
+            yaxis += yshift/ymax
         if curves[key]['yshift'] is not None:
             if curves[key]['yshift'] == 'base':
                 if ymin*ymax >= 0:
@@ -467,10 +568,6 @@ def main() -> tp.NoReturn:
             else:
                 yshift = curves[key]['yshift']
             yaxis += yshift
-        if curves[key]['ynorm']:
-            yaxis /= np.max(np.abs(yaxis))
-        if curves[key]['yscale'] is not None:
-            yaxis *= curves[key]['yscale']
         stick = curves[key]['data'].get_broadening('func') == 'stick'
         if 'outfile' in curves[key]:
             fmt = '{:12.5f}, {:15.6e}\n'

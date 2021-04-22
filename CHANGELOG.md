@@ -18,18 +18,23 @@ Other blocks are:
 - **ETC**: Miscellaneous features
 - **DOC**: Documentation
 
-## Unreleased
 
+## Unreleased
 
 ### Added
 
 - **BRS** - Support of hybrid schemes and composite analyses mixing different level of calculation.
+- **BLS** - Scaling now supports more operations (see documentation).
 
 ### Fixed
 
 - **LIB** - Fixed deprecation warning from `Matplotlib` on X/Y scale.
 - **API** - Anharmonic vibrational energies correctly extracted in absence of intensities (DCPT2, HDCPT2).
 - **API** - Support numbers like `2e6` as floating point numbers.
+
+### Changed
+- **BLS** - Scaling is now done *before* shifting.
+
 
 ## [0.3.0] - 2021-01-04
 

@@ -140,12 +140,38 @@ WARNING: The file extension must be supported by *Matplotlib*.
 `yshift` | [underline]#Default#: `0`::
     Shift value applied to the curve along the Y axis. +
     `baseline` is accepted to correct a shift of the baseline.
-`xscale` | [underline]#Default#: `1`::
-    Scaling factor to be applied to the X axis (after shift).
-`yscale` | [underline]#Default#: `1`::
-    Scaling factor to be applied to the Y axis (after shift).
+`xscale` | [underline]#Default#: `abs, 1`::
+    Scaling factor to be applied to the X axis.
++
+--
+NOTE: Scaling is done *before* the shift.
+It is possible to specify if the scaling is relative (`rel`) or absolute (`abs`).
+In the former case, the axis is shifted so the closest value to 0 is set to 0.
+The full form is: +
+    `xscale = [_abs_, ] _op_` +
+`_op_` supports different operations, with the keyword `x` used to refer to the x value (ex: `10^-x`).
+`^` can be used for the exponentiation, `log` refers to the decimal logarithm, `ln` to the natural one.
+If absent, the variable is appended at the end of the equation, as `x` or `*x`, depending if it ends with an operation symbol or not.
+
+--
++
+`yscale` | [underline]#Default#: `rel, 1`::
+    Scaling factor to be applied to the Y axis.
++
+--
+NOTE: Scaling is done *before* the shift.
+See `xscale` for details, with the variable `y` used instead of `x`.
+The default scaling method is relative (`rel`), with the Y axis shifted toward the origin.
+
+--
++
 `normalize` | [underline]#Default#: `no`::
-    Normalize the spectrum (`yes`/`no`).
+    Normalize the spectrum (`yes`/`no`). +
++
+--
+CAUTION: Normalization is applied after scaling to properly apply potential transformation (1/y, log(y)...).
+--
++
 `show` | [underline]#Default#: `yes`::
     Boolean (`yes`/`no`) indicating if a spectrum must be displayed or not.
 `broaden` | [underline]#Default#: `no`::
