@@ -29,6 +29,7 @@ Other blocks are:
 - **VIZ** - New function `format_label` in `visual/plotspec.py` to format unit labels for display.
 - **LIB** - New `xunit` and `yunit` attributes in class `Spectrum`.
 - **API** - Support of electronic energies in Gaussian log.
+- **DOC** - Initial documentation for _ESParser_.
 
 ### Fixed
 

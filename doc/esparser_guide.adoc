@@ -1,6 +1,6 @@
 = ESParser: A simple parser and proof of concept for ESTAMPES
 :email: julien.bloino@sns.it
-:revnumber: 0.2.0
+:revnumber: 0.3.1
 :revremark: Introduction
 :toc: left
 :toclevels: 1
@@ -22,9 +22,103 @@ It also serves as a proof of concept for the API.
 
 {ESParser} has several operating modes:
 
-`spectra` | _alt_: `spec`, `spc`::
-    Spectra: compare multiple spectra
+// `spectra` | _alt_: `spec`, `spc`::
+//     Spectra: compare multiple spectra
+`vibrational` | _alt_: `vib`, `l717`::
+    Vibrational spectroscopy.
+`vibronic` | _alt_: `FCHT`, `l718`::
+    Vibronic spectroscopy.
 
-== Mode: _Spectra_
 
-Not yet implemented.
+== Requirements
+
+`PySide2`::
+    For 3D visualization of molecular geometries.
+
+== Usage
+
+[subs="+attributes"]
+----
+esparser <mode> [options] file
+----
+
+== Mode: _Vibrational_
+
+Vibrational spectra and related options.
+
+Available keywords:
+
+`-b`, `--broaden` | _default_: `stick`::
+    Broadening function.
++
+--
+[horizontal]
+    `gaussian`:::
+        Gaussian distribution function.
+    `lorentzian`:::
+        Lorentzian distribution function.
+    `stick`:::
+        No broadening
+--
+`-l`, `--level` | _default_: `A`::
+    Level of theory for the vibrational motion.
++
+--
+[horizontal]
+    `H`:::
+        Harmonic level.
+    `A`:::
+        Anharmonic level.
+--
+`-o`, `--output` | _type_: string | _default_: N/A::
+    Output file. +
+    By default, no file is saved.
+    If a `csv`, `txt`, `xy` extension is used, the final CSV file is saved.+
+    Otherwise, the program tried to save an image in the chosen format.
+`-s`, `--spec` | _default_: `IR`::
+    Type of spectroscopy.
++
+--
+[horizontal]
+    `IR`:::
+        Infrared.
+    `RS`:::
+        Raman scattering.
+    `ROA`:::
+        Raman optical activity.
+    `VCD`:::
+        Vibrational circular dichroism.
+--
+`--xmin` | _type_: float | _default_: 0.0::
+    Lower bound for the X axis.
+`--xmax` | _type_: float | _default_: 4000.0::
+    Upper bound for the X axis.
+`--xres` | _type_: float | _default_: 5.0::
+    Resolution for the discretization of the X axis.
+`-w`, `--hwhm` | _type_: float | _default_: 5.0::
+    Half-width at half-maximum for the convolution of the spectrum.
+    
+
+== Mode: _Vibronic_
+
+`-o`, `--output` | _type_: string::
+    Output file.
+`-q`, `--quantity` | _default_: `mols`::
+    Quantity to display.
++
+--
+[horizontal]
+    `cmat`:::
+        Sharp and Rosenstock C matrix.
+    `fulljmat`:::
+        Full-dimensional Duschinsky matrix. +
+        Different from `jmat` if a reduced-dimension scheme was applied.
+    `jmat`:::
+        Final Duschinsky matrix.
+    `kvec`:::
+        Shift vector from the Duschinsky transformation.
+    `mols`:::
+        Overlapped molecules, in 3D (requires **PySide2**).
+    `spec`:::
+        Final spectrum
+--
