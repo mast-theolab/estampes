@@ -21,13 +21,14 @@ from PySide2.Qt3DRender import Qt3DRender
 from PySide2.Qt3DExtras import Qt3DExtras
 
 from estampes.base import QuantityError, TypeColor
+from estampes.base.spectrum import VSPC2DATA, Spectrum
 from estampes.parser import DataFile, build_qlabel
 from estampes.data.physics import PHYSFACT
 from estampes.tools.atom import convert_labsymb
 from estampes.visual.molview import list_bonds, Molecule, TypeAtLabM, \
     TypeAtCrdM, TypeBondsM, MOLCOLS
 from estampes.visual.plotmat import plot_jmat, plot_cmat, plot_kvec
-from estampes.visual.plotspec import plot_spec_2D
+from estampes.visual.plotspec import format_label, plot_spec_2D
 
 FCHT_QTIES = {
     'mols': {
@@ -156,12 +157,37 @@ def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
     pmol.add_argument('datafile',
                       help='Data file.')
     pmol.set_defaults(mode='mol')
+
     # Vibrational spectroscopy
     pvib = psubs.add_parser('vibrational', aliases=['vib', 'l717'],
                             help='Vibrational spectroscopy')
     pvib.add_argument('datafile', help='Data file.')
-
+    pvib.add_argument('-b', '--broaden',
+                      choices=('gaussian', 'lorentzian', 'stick'),
+                      default='stick',
+                      help='Broadening function')
+    pvib.add_argument('-l', '--level', choices=('H', 'A'),
+                      default='A',
+                      help='Vibrational level of theory: H(arm), A(nharm)')
+    pvib.add_argument('-o', '--output',
+                      help='Output file.')
+    pvib.add_argument('-s', '--spec', choices=VSPC2DATA.keys(),
+                      default='IR',
+                      help='Type of spectroscopy')
+    pvib.add_argument('--xmin', type=float,
+                      default=0.0,
+                      help='Lower bound')
+    pvib.add_argument('--xmax', type=float,
+                      default=4000.0,
+                      help='Upper bound')
+    pvib.add_argument('--xres', type=float,
+                      default=5.0,
+                      help='Resolution')
+    pvib.add_argument('-w', '--hwhm', type=float,
+                      default=5.0,
+                      help='Half-width at half-maximum')
     pvib.set_defaults(mode='vib')
+
     # Vibrationally-resolved electronic spectroscopy
     pvel = psubs.add_parser('vibronic', aliases=['FCHT', 'l718'],
                             help='Vibronic specroscopy')
@@ -178,6 +204,42 @@ def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
     pvel.add_argument('datafile',
                       help='Data file.')
     pvel.set_defaults(mode='vel')
+    # Vibrationally-resolved electronic spectroscopy
+    pspc = psubs.add_parser('spectra', aliases=['spec', 'spc'],
+                            help='Printing and comparison of spectra')
+    pspc.add_argument('optfile', nargs='?',
+                      help='Option file (INI style).')
+    # pspc.add_argument('-o', '--output',
+    #                   help='Output file.')
+    pspc.add_argument('-c', '--colors', action='append',
+                      help='Spectral colors.')
+    msg = '''\
+Colors of the spectra.  By default, it follows the order of input files.
+It is possible to change the order by putting a number followed by ":".
+Ex. '3:Test' means that the label 'Test' is for the 3rd file (start at 1).
+'r'/'e'/'0' refers to the reference data.
+'''
+    pspc.add_argument('-i', '--inpfile', action='append',
+                      help='Input data file.')
+    msg = '''\
+Labels for the legend.  By default, it follows the order of input files.
+It is possible to change the order by putting a number followed by ":".
+Ex. '3:Test' means that the label 'Test' is for the 3rd file (start at 1).
+'r'/'e'/'0' refers to the reference data.
+'''
+    pspc.add_argument('-l', '--label', action='append',
+                      help=msg)
+    pspc.add_argument('-r', '--refdata',
+                      help='Reference spectrum file.')
+    fmt = '''Type of spectra:
+{}
+Default for vibrational spectroscopy: IR
+Default for vibronic spectroscopy is extracted from the log.'''
+    spc = ('auto', 'IR', 'VCD', 'Raman', 'ROA', 'OPA', 'OPE', 'ECD', 'CPL',
+           'RR', 'RROA')
+    pspc.add_argument('-t', '--type', choices=spc, default='auto',
+                      help=fmt.format(', '.join(spc)))
+    pspc.set_defaults(mode='spc')
     # Vibrationally-resolved electronic spectroscopy
     pgui = psubs.add_parser('gui', aliases=['GUI', 'main'],
                             help='General interface')
@@ -216,9 +278,9 @@ def mode_molview(dfile: DataFile) -> tp.NoReturn:
 def mode_vibronic(dfile: DataFile,
                   qty: str,
                   **kwargs: tp.Dict[str, tp.Any]) -> tp.NoReturn:
-    """Molview Mode.
+    """Vibrational-spectroscopy Mode.
 
-    Main function managing molecule viewer.
+    Main function managing vibratonal spectroscopy.
 
     Parameters
     ----------
@@ -308,7 +370,8 @@ def mode_vibronic(dfile: DataFile,
             plt.show()
 
 
-def mode_vibspec(dfile) -> tp.NoReturn:
+def mode_vibspec(dfile: DataFile,
+                 **kwargs: tp.Dict[str, tp.Any]) -> tp.NoReturn:
     """Vibrational-spectroscopy Mode.
 
     Main function managing vibratonal spectroscopy.
@@ -316,10 +379,45 @@ def mode_vibspec(dfile) -> tp.NoReturn:
     Parameters
     ----------
     dfile
-        ep.DataFile object
+        `ep.DataFile` object.
+    kwargs
+        Keyword-type arguments.
     """
-    print('ERROR: Vibrational spectroscopy not yet available.')
-    sys.exit(1)
+
+    # For geometries, some data may not be available
+    data = Spectrum(dfile, kwargs['spec'], kwargs['level'], None)
+    stick = kwargs['broaden'] == 'stick'
+    if not stick:
+        data.set_broadening(kwargs['hwhm'], kwargs['broaden'], 'default',
+                            kwargs['xres'], kwargs['xmin'], kwargs['xmax'])
+    outfile = kwargs['output'] or False
+    if outfile:
+        ext = os.path.splitext(outfile)[1][1:].lower()
+        if ext in ('csv', 'xy', 'txt'):
+            save_img = False
+            fmt = '{:12.5f}, {:15.6e}\n'
+            with open(outfile, 'w') as fobj:
+                for i in range(len(data.xaxis)):
+                    fobj.write(fmt.format(data.xaxis[i], data.yaxis[i]))
+        else:
+            save_img = True
+    figsize = (10, 8)
+    fig, subp = plt.subplots(1, 1, tight_layout=True)
+    fig.set_size_inches(figsize)
+    xunit = format_label(data.xunit)
+    yunit = format_label(data.yunit)
+    bounds = plot_spec_2D({'x': data.xaxis, 'y': data.yaxis}, subp,
+                          xlabel=xunit, ylabel=yunit, is_stick=stick)
+    if save_img:
+        plt.savefig(outfile, bbox_inches='tight')
+    # if kwargs['title'] is not None:
+    #     subp.set_title(kwargs['title'])
+    plt.show()
+
+
+def mode_spectra(optfile: tp.Optional[str] = None) -> tp.NoReturn:
+    """
+    """
 
 
 def main() -> tp.NoReturn:
@@ -343,6 +441,22 @@ def main() -> tp.NoReturn:
             sys.exit(2)
         dfile = DataFile(fname)
         mode_vibronic(dfile, args.quantity, **args.__dict__)
+    elif args.mode == 'vib':
+        fname = args.datafile
+        if not os.path.exists(fname):
+            print(f'ERROR: File "{fname}"" not found.')
+            sys.exit(2)
+        dfile = DataFile(fname)
+        mode_vibspec(dfile, **args.__dict__)
+    elif args.mode == 'spc':
+        if not args.inpfile and not args.optfile:
+            print('ERROR: Missing files or option file.')
+            sys.exit(2)
+        elif args.inpfile and args.optfile:
+            msg = 'ERROR: Option file and single files cannot be treated' \
+                + ' together'
+            print(msg)
+            sys.exit(2)
 
 
 if __name__ == '__main__':

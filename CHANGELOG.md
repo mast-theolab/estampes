@@ -23,6 +23,7 @@ Other blocks are:
 
 ### Added
 
+- **ESP** - Added support of vibrational spectroscopies.
 - **BRS** - Support of hybrid schemes and composite analyses mixing different level of calculation.
 - **BLS** - Scaling now supports more operations (see documentation).
 - **VIZ** - New function `format_label` in `visual/plotspec.py` to format unit labels for display.
