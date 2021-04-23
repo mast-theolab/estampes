@@ -211,13 +211,16 @@ class Spectrum():
     IndexError
         Unrecognized spectroscopy
     """
-    def __init__(self, fname: str,
+    def __init__(self, fname: tp.Union[str, ep.DataFile],
                  specabbr: str,
                  level: str,
                  ylabel: tp.Optional[str] = None,
                  load_data: bool = True,
                  ftype: tp.Optional[str] = None):
         # Initialization internal parameters
+        if isinstance(fname, ep.DataFile):
+            self.__dfile = fname
+        else:
         self.__dfile = ep.DataFile(fname, ftype)
         self.__spec = specabbr.upper()
         _level = level.upper()

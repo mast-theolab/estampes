@@ -34,6 +34,7 @@ Other blocks are:
 
 ### Changed
 
+- **LIB** - Class `Spectrum` can now support `DataFile` objects in the instance creation.
 - **LIB** - Dictionaries for quantities related to spectroscopies separated by types (electronic, vibrational...)
 - **BLS** - Scaling is now done *before* shifting.
 
