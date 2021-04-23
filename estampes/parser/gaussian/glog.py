@@ -783,7 +783,31 @@ def qlab_to_linkdata(qtag: TypeQTag,
             else:
                 raise NotImplementedError()
             if qtag == 1:
-                raise NotImplementedError()
+                if dord == 0:
+                    if rsta == 'c':
+                        lnk1.extend((0, 0))
+                        key1.extend((' SCF Done:', ' E2'))
+                        sub1.extend((0, 0))
+                        end1.extend((lambda s: True, lambda s: True))
+                        fmt1.extend(
+                            (r'^ SCF Done:\s+' +
+                             r'(?P<val>E\(.+?\)\s+=\s+-?\d+\.\d+' +
+                             r'(?:D[+-]\d+)?)\s*',
+                             r'^\s+E2.*=.*' +
+                             r'(?P<val>E\(?.+?\)?\s+=\s+-?\d+\.\d+' +
+                             r'(?:D[+-]\d+)?)\s*'))
+                        if qopt == 'first':
+                            num1.extend((0, 0))
+                        elif qopt == 'last':
+                            num1.extend((-1, -1))
+                        else:
+                            num1.extend((1, 1))
+                    elif type(rsta) is int:
+                        raise NotImplementedError()
+                elif dord == 1:
+                    raise NotImplementedError()
+                elif dord == 2:
+                    raise NotImplementedError()
             elif qtag == 'dipstr':
                 if qopt == 'H':
                     lnk1.extend([-716, 716, -717])
@@ -843,24 +867,6 @@ def qlab_to_linkdata(qtag: TypeQTag,
                     num1.append(0)
                 else:
                     raise NotImplementedError()
-        #         if dord == 0:
-        #             if rsta == 'c':
-        #                 del keywords[:]
-        #                 raise NotImplementedError()
-        #             elif type(rsta) is int:
-        #                 if rsta == 0:
-        #                     keyword = 'SCF Energy'
-        #                 else:
-        #                     keyword = 'ETran state values'
-        #                 keywords.append('Total Energy', 'ETran scalars')
-        #         elif dord == 1:
-        #             if dcrd is None or dcrd == 'X':
-        #                 if rsta == 'c' or type(rsta) is int:
-        #                     keyword = 'Cartesian Gradient'
-        #         elif dord == 2:
-        #             if dcrd is None or dcrd == 'X':
-        #                 if rsta == 'c' or type(rsta) is int:
-        #                     keyword = 'Cartesian Force Constants'
         #     elif qtag == 50:
         #         raise NotImplementedError()
         #     elif qtag == 91:
@@ -1222,10 +1228,10 @@ def parse_data(qdict: TypeQInfo,
                             y = yfmt.format(idy=i+1)
                             yax[y] = data[qlabel][y]
                     for line in datablocks[iref][bloc]:
-                    cols = [float(item.replace('D', 'e'))
-                            for item in line.split()]
+                        cols = [float(item.replace('D', 'e'))
+                                for item in line.split()]
                         xax.append(cols[0])
-                    for i, item in enumerate(cols[1:]):
+                        for i, item in enumerate(cols[1:]):
                             yax[yfmt.format(idy=i+1)].append(item)
             elif qopt == 'SpcPar':
                 # Look for last blocks first, which should contain all blocks:
@@ -1316,7 +1322,7 @@ def parse_data(qdict: TypeQInfo,
                         data[qlabel][_key] = title.strip()
                     else:
                         if _key[0] == 'I':
-                    data[qlabel][_key] = title.strip()
+                            data[qlabel][_key] = title.strip()
                         else:
                             data[qlabel][_key] = [title.strip()]
                 # More than 1 block, read the new ones
@@ -1443,7 +1449,35 @@ def parse_data(qdict: TypeQInfo,
                     # we should check if the state is the right one.
                     raise NotImplementedError()
                 if qtag == 1:
-                    raise NotImplementedError()
+                    if dord == 0:
+                        if rsta == 'c':
+
+                            def conv(s):
+                                return float(s.split('=')[1].replace('D','e'))
+
+                            # 1st element is actually transition information
+                            # Ignored as we look for the pure energies
+                            fmt = re.compile('E\(?(.*?)\)?\s+')
+                            iref = first + 1
+                            N = 2 if datablocks[last] else 1
+                            nblocks = len(datablocks[iref])
+                            for i in range(iref, iref+N):
+                                if nblocks > 1:
+                                    txt = datablocks[i][0][0]
+                                    val = [conv(item[0])
+                                           for item in datablocks[i]]
+                                else:
+                                    txt = datablocks[i][0]
+                                    val = conv(txt)
+                                res = fmt.search(txt)
+                                try:
+                                    tag = res.group(1)
+                                except AttributeError:
+                                    msg = 'Unsupported energy formag'
+                                    raise ParseKeyError(msg) from None
+                                data[qlabel][tag] = val
+                            data[qlabel]['data'] = data[qlabel][tag]
+                            data[qlabel]['unit'] = 'Eh'
                 elif qtag == 'dipstr':
                     if qopt == 'H':
                         for i in range(last, first-1, -1):

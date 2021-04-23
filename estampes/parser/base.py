@@ -221,7 +221,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                 qty_opt = qlist[1][0].upper()
             else:
                 raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
-    elif qty_tag == 'atcrd':
+    elif qty_tag in ('atcrd', 1):
         if qlist[1] is None:
             qty_opt = 'last'
         else:
