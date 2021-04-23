@@ -221,7 +221,7 @@ class Spectrum():
         if isinstance(fname, ep.DataFile):
             self.__dfile = fname
         else:
-        self.__dfile = ep.DataFile(fname, ftype)
+            self.__dfile = ep.DataFile(fname, ftype)
         self.__spec = specabbr.upper()
         _level = level.upper()
         if _level in ('H', 'HARM', 'HARMONIC'):
@@ -426,6 +426,32 @@ class Spectrum():
             return self.__yaxis[0]
     yaxis = property(get_yaxis)
 
+    def get_xunit(self, origin: bool = False) -> str:
+        """Gets X unit.
+
+        Parameter
+        ---------
+        origin
+            Use unit for original X axis instead of current one.
+        """
+        i = self.__idref if not origin else 0
+        return '{} / {}'.format(self.__xlabel[i],
+                                self.__xunit[i].split(':')[-1])
+    xunit = property(get_xunit)
+
+    def get_yunit(self, origin: bool = False) -> str:
+        """Gets Y unit.
+
+        Parameter
+        ---------
+        origin
+            Use unit for original Y axis instead of current one.
+        """
+        i = self.__idref if not origin else 0
+        return '{} / {}'.format(self.__ylabel[i],
+                                self.__yunit[i].split(':')[-1])
+    yunit = property(get_yunit)
+
     @property
     def label(self) -> str:
         """Gets or sets label for the spectrum."""
@@ -566,6 +592,10 @@ class Spectrum():
                                          self.__broad[_ids]['hwhm'],
                                          _yfac, _xpow, _yunit, False)
             self.__idref = 1
+            self.__xunit[self.__idref] = self.__xunit[0]
+            self.__xlabel[self.__idref] = self.__xlabel[0]
+            self.__yunit[self.__idref] = _unit_dest
+            self.__ylabel[self.__idref] = self.__ylabel[0]
 
     @property
     def hwhm(self) -> tp.Optional[float]:

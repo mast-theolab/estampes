@@ -23,6 +23,7 @@ Other blocks are:
 
 ### Added
 
+- **LIB** - New `xunit` and `yunit` attributes in class `Spectrum`.
 - **BRS** - Support of hybrid schemes and composite analyses mixing different level of calculation.
 - **BLS** - Scaling now supports more operations (see documentation).
 
