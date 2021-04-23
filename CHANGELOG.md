@@ -23,9 +23,10 @@ Other blocks are:
 
 ### Added
 
-- **LIB** - New `xunit` and `yunit` attributes in class `Spectrum`.
 - **BRS** - Support of hybrid schemes and composite analyses mixing different level of calculation.
 - **BLS** - Scaling now supports more operations (see documentation).
+- **VIZ** - New function `format_label` in `visual/plotspec.py` to format unit labels for display.
+- **LIB** - New `xunit` and `yunit` attributes in class `Spectrum`.
 - **API** - Support of electronic energies in Gaussian log.
 
 ### Fixed
@@ -37,9 +38,9 @@ Other blocks are:
 
 ### Changed
 
+- **BLS** - Scaling is now done *before* shifting.
 - **LIB** - Class `Spectrum` can now support `DataFile` objects in the instance creation.
 - **LIB** - Dictionaries for quantities related to spectroscopies separated by types (electronic, vibrational...)
-- **BLS** - Scaling is now done *before* shifting.
 
 
 ## [0.3.0] - 2021-01-04

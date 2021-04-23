@@ -13,6 +13,7 @@ SpecLayout
     Class for the spectrum layout.
 """
 
+import re
 import typing as tp
 
 import numpy as np
@@ -486,6 +487,29 @@ class SpecLayout(object):
 # ==============
 # Module Methods
 # ==============
+
+def format_label(label: str, full: bool = False) -> str:
+    """Formats label.
+
+    Parameters
+    ----------
+    label
+        Original label
+    full
+        Full label, as 'label / unit'
+    """
+    if full:
+        text, unit = label.rsplit('/', maxsplit=1)
+    else:
+        text, unit = False, label
+    unit = re.sub(r'\^?([-+]?\d+)', r'$^{\1}$', unit)
+    unit = re.sub(r'/(\w+)', r'\1$^{-1}$', unit)
+    if text:
+        res = '{} / {}'.format(text, unit)
+    else:
+        res = unit
+    return res
+
 
 def plot_spec_2D(axes: tp.Dict[str, tp.Sequence[float]],
                  canvas: mpl.axes.Axes,
