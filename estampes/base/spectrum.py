@@ -30,7 +30,7 @@ from estampes.tools.spec import broaden, convert_y
 # unit: default unit for the broadening
 # qlabels for the spectroscopies
 
-SPEC2DATA = {
+VSPC2DATA = {
     'IR': {
         'name': 'Infrared',
         'unit': 'I:/M/cm',
@@ -65,7 +65,10 @@ SPEC2DATA = {
         'unit': None,
         'H': {},
         'A': {}
-    },
+    }
+}
+
+ESPC2DATA = {
     'OPA': {
         'name': 'One-Photon Absorption',
         'unit': 'I:/M/cm',
@@ -116,6 +119,7 @@ SPEC2DATA = {
     },
 }
 
+SPEC2DATA = {**VSPC2DATA, **ESPC2DATA}
 
 # ==============
 # Module Classes

@@ -33,6 +33,8 @@ Other blocks are:
 - **API** - Support numbers like `2e6` as floating point numbers.
 
 ### Changed
+
+- **LIB** - Dictionaries for quantities related to spectroscopies separated by types (electronic, vibrational...)
 - **BLS** - Scaling is now done *before* shifting.
 
 
