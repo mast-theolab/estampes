@@ -619,20 +619,27 @@ def qlab_to_linkdata(qtag: TypeQTag,
                 + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$'
             num = 0
         elif qopt == 'Spec':
-            lnk = -718
-            key = '                       Final Spectrum'
-            sub = ' -----------'
-            def end(s): return not s.strip()
-            fmt = r'^\s+(?P<val>(?:-?\d+.\d+)' \
-                + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3})+)\s*$'
-            num = 0
+            lnk = (-718, -718)
+            key = ('                       Final Spectrum',
+                   ' Legend:')
+            sub = (' -----------', ' -----------')
+            end = (lambda s: not s.strip(),
+                   lambda s: 'Legend:' in s or not s.strip())
+            fmt = (r'^\s+(?P<val>(?:-?\d+.\d+)'
+                   + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3})+)\s*$',
+                   r'^\s+(?P<val>(?:-?\d+.\d+)'
+                   + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3})+)\s*$')
+            num = (0, 1)
         elif qopt == 'SpcPar':
-            lnk = 718
-            key = '                       Final Spectrum'
-            sub = 3
-            def end(s): return s.startswith(' -----------')
-            fmt = r'^\s+(?P<val>.*\w.*)\s*$'  # \w to exclude empty lines
-            num = 0
+            lnk = (718, 718)
+            key = ('                       Final Spectrum',
+                   ' Legend:')
+            sub = (3, 0)
+            end = (lambda s: s.startswith(' -----------'),
+                   lambda s: s.startswith(' -----------'))
+            fmt = (r'^\s+(?P<val>.*\w.*)\s*$',  # \w to exclude empty lines
+                   r'^\s+(?P<val>.*\w.*)\s*$')
+            num = (0, 1)
         elif qopt == 'Conv':
             # 2 sets, one for the main one, one to extract the FCF (HT)
             lnk = (-718, -718)
@@ -1157,22 +1164,96 @@ def parse_data(qdict: TypeQInfo,
                         [float(item.replace('D', 'e'))
                             for item in cols[1:]])
             elif qopt == 'Spec':
+                # Look for last blocks first, which should contain all blocks:
+                discard = []
+                if last != first:
+                    nblocks = 0
+                    nyaxes = 0
+                    for i, bloc in enumerate(datablocks[last]):
+                        lbloc = len(bloc)
+                        if lbloc > 1:
+                            # 3 for: Legend title, X axis, Intensity unit
+                            nblocks += 1
+                            nyaxes += len(bloc[0].split()) - 1
+                        else:
+                            # Incorrect bloc
+                            discard.append(i)
+                else:
+                    nblocks = 1
+                    nyaxes = 0
+                if nblocks == 0:
+                    msg = 'Inconsistency in spectral data. ' +\
+                        + 'This should not happen!'
+                    raise IndexError(msg)
+                if discard:
+                    discard.reverse()
+                    for i in discard:
+                        del(datablocks[last][i])
+                # First block contains the full initial legend block
+                # Necessary for the different parameters
+                iref = first
                 data[qlabel] = {'x': []}
-                ny = len(datablocks[iref][0].split()) - 1
-                if ny == 1:
+                if nyaxes == 0:
+                    nyaxes = len(datablocks[iref][0].split()) - 1
+                if nyaxes == 1:
                     yfmt = 'y'
                     data[qlabel]['y'] = []
                 else:
-                    yfmt = 'y{{idy:0{}d}}'.format(len(str(ny)))
-                    for i in range(ny):
+                    yfmt = 'y{{idy:0{}d}}'.format(len(str(nyaxes)))
+                    for i in range(nyaxes):
                         data[qlabel][yfmt.format(idy=i+1)] = []
-                for line in datablocks[iref]:
+                # If multiple blocks, the reading with first parsing method
+                #   is wrong since it combines all blocks together
+                # We fix it by only considering the last one which should be
+                #   always right.
+                iref = last
+                for bloc in range(nblocks):
+                    yax = {}
+                    if nblocks > 1:
+                        data[qlabel]['x'].append([])
+                        xax = data[qlabel]['x'][-1]
+                        for i in range(nyaxes):
+                            y = yfmt.format(idy=i+1)
+                            data[qlabel][y].append([])
+                            yax[y] = data[qlabel][y][-1]
+                    else:
+                        xax = data[qlabel]['x']
+                        for i in range(nyaxes):
+                            y = yfmt.format(idy=i+1)
+                            yax[y] = data[qlabel][y]
+                    for line in datablocks[iref][bloc]:
                     cols = [float(item.replace('D', 'e'))
                             for item in line.split()]
-                    data[qlabel]['x'].append(cols[0])
+                        xax.append(cols[0])
                     for i, item in enumerate(cols[1:]):
-                        data[qlabel][yfmt.format(idy=i+1)].append(item)
+                            yax[yfmt.format(idy=i+1)].append(item)
             elif qopt == 'SpcPar':
+                # Look for last blocks first, which should contain all blocks:
+                discard = []
+                if last != first:
+                    nblocks = 0
+                    nyaxes = 0
+                    for i, bloc in enumerate(datablocks[last]):
+                        lbloc = len(bloc)
+                        if lbloc > 3:
+                            # 3 for: Legend title, X axis, Intensity unit
+                            nblocks += 1
+                            nyaxes += lbloc - 3
+                        else:
+                            # Incorrect bloc
+                            discard.append(i)
+                else:
+                    nblocks = 1
+                    nyaxes = 0
+                if nblocks == 0:
+                    nblocks = 1
+                if discard:
+                    discard.reverse()
+                    for i in discard:
+                        del(datablocks[last][i])
+                # First block contains the full initial legend block
+                # Necessary for the different parameters
+                iref = first
                 i = 0
                 while datablocks[iref][i].strip() != 'Legend:':
                     i += 1
@@ -1190,14 +1271,22 @@ def parse_data(qdict: TypeQInfo,
                     raise IndexError('Unrecognized broadening function.')
                 offset = i + 1
                 # offset: num. lines for legend block + legend section title
-                if len(datablocks[iref]) <= 3 + offset:
+                if nyaxes == 0:
+                    nyaxes = len(datablocks[iref]) - offset - 2
+                if nyaxes <= 1:
                     # X, Y, Int, don't use numbering
                     yfmt = 'y'
                 else:
-                    yfmt = 'y{{idy:0{}d}}'.format(
-                        len(str(len(datablocks[iref])-2)))
+                    yfmt = 'y{{idy:0{}d}}'.format(len(str(nyaxes)))
                 for line in datablocks[iref][offset:]:
-                    key, title = line.split(':')
+                    res = line.split(':', 1)
+                    if len(res) == 2:
+                        key, title = res
+                    elif 'intensity' in res[0]:
+                        title = res[0]
+                        key = 'Intensity'
+                    else:
+                        raise NotImplementedError('Unrecognized legend')
                     if key.strip() == '1st col.':
                         _key = 'x'
                         txt = title.rsplit('in ', maxsplit=1)[1].\
@@ -1223,7 +1312,34 @@ def parse_data(qdict: TypeQInfo,
                             raise IndexError('Unrecognized key in spc leg.: ' +
                                              key)
                         _key = yfmt.format(idy=idy)
+                    if nblocks == 1:
+                        data[qlabel][_key] = title.strip()
+                    else:
+                        if _key[0] == 'I':
                     data[qlabel][_key] = title.strip()
+                        else:
+                            data[qlabel][_key] = [title.strip()]
+                # More than 1 block, read the new ones
+                for bloc in range(1, nblocks):
+                    for line in datablocks[last][bloc][1:]:
+                        res = line.split(':', 1)
+                        if len(res) == 2:
+                            key, title = res
+                        elif 'intensity' in res[0]:
+                            title = res[0]
+                            key = 'Intensity'
+                        else:
+                            raise NotImplementedError('Unrecognized legend')
+                        if key.strip() == '1st col.':
+                            _key = 'x'
+                        elif 'col.' in key:
+                            try:
+                                idy = int(key.strip()[0]) - 1
+                            except ValueError:
+                                msg = 'Unrecognized key in spc leg.: ' + key
+                                raise IndexError(msg)
+                            _key = yfmt.format(idy=idy)
+                        data[qlabel][_key].append(title.strip())
             elif qopt == 'Conv':
                 raise NotImplementedError()
             elif qopt == 'Assign':

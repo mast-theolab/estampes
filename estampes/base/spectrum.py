@@ -291,6 +291,37 @@ class Spectrum():
                 raise NotImplementedError('Keywords not available')
         data = self.__dfile.get_data(*qkeys.values())
         if 'spc' in qkeys:
+            if isinstance(data[qkeys['par']]['x'], list):
+                # Post-processing if multiple blocks:
+                nblocks = len(data[qkeys['par']]['x'])
+                if len(data[qkeys['spc']]['x']) != nblocks:
+                    msg = 'Inconsistency between spectral ranges and ' +\
+                        + 'parameters.'
+                    raise IndexError(msg)
+                # X axis should always be the same
+                data[qkeys['spc']]['x'] = data[qkeys['spc']]['x'][0]
+                data[qkeys['par']]['x'] = data[qkeys['par']]['x'][0]
+                # Y format
+                nidx = len([y for y in data[qkeys['spc']]
+                            if y.startswith('y')][0]) - 1
+                yfmt = 'y{{:0{:d}d}}'.format(nidx)
+                offset = 0
+                _tmpy = {}
+                _tmpax = {}
+                for bloc in range(nblocks):
+                    ylabels = [item for \
+                               item in data[qkeys['par']].keys()
+                               if (item[0] == 'y' and
+                                   len(data[qkeys['par']]) > bloc)]
+                    for yax in ylabels:
+                        i = int(yax[1:])
+                        y = yfmt.format(i+offset)
+                        _tmpax[y] = data[qkeys['par']][yax][bloc]
+                        _tmpy[y] = data[qkeys['spc']][yax][bloc]
+                    offset += len(ylabels)
+                for yax in _tmpax:
+                    data[qkeys['spc']][yax] = _tmpy[yax]
+                    data[qkeys['par']][yax] = _tmpax[yax]
             self.__xaxis[0] = data[qkeys['spc']]['x']
             self.__xlabel[0] = data[qkeys['par']]['x']
             self.__xunit[0] = data[qkeys['par']]['unitx']
