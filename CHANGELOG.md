@@ -21,6 +21,9 @@ Other blocks are:
 
 ## Unreleased
 
+
+## [0.3.1] - 2021-04-23
+
 ### Added
 
 - **ESP** - Added support of vibrational spectroscopies.
