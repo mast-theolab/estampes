@@ -21,6 +21,9 @@ Other blocks are:
 
 ## Unreleased
 
+### Fixed
+- **API** - Fixed error in definition of electronic transition in `parse_qlabel`.
+
 
 ## [0.3.1] - 2021-04-23
 

@@ -333,7 +333,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     # State(s)
     if qlist[4] is not None:
         key = r'(?P<start>[aAcC]|\d+)?' \
-            + r'(.*(?<=->)(?P<end>(?(start)([aAcC]?|\d*)|([aAcC]|\d+)))|)'
+            + r'(.*(?<=->)(?P<end>(?(start)([aAcC]?|\d*)|([aAcC]|\d+)))|)\s*$'
         res = re.match(key, qlist[4])
         if res is None:
             raise ValueError('Incorrect state specification')
@@ -354,12 +354,12 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
             if data['end'] == '':
                 val2 = 'c'  # type: tp.Union[str, int]
             elif data['end'].lower() in ('c', 'a'):
-                val2 = data['start'].lower()
+                val2 = data['end'].lower()
             else:
                 try:
-                    val1 = int(data['end'])
+                    val2 = int(data['end'])
                 except ValueError:
-                    raise ValueError('Incorrect reference state definition')
+                    raise ValueError('Incorrect final state definition')
             if val2 == val1:
                 raise ValueError('Equivalent states in transition')
             ref_sta = (val1, val2)
