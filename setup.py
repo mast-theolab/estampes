@@ -7,7 +7,7 @@ short_desc = 'A simple API to parse and process data for computational' +\
 
 setuptools.setup(
     name='estampes',
-    version='0.3.2',
+    version='0.4.0',
     author='Julien Bloino',
     author_email='julien.bloino@gmail.com',
     description=short_desc,

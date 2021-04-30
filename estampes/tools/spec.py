@@ -28,7 +28,7 @@ def broaden(xval: tp.Sequence[float],
             funcname: str,
             hwhm: float,
             yfactor: float = 1.0,
-            xpower: int = 1,
+            xfunc: tp.Optional[tp.Callable[[float], float]] = None,
             ynorm: bool = False,
             truncate: bool = False) -> tp.List[float]:
     """Broadens a stick spectra with a given broadening function.
@@ -37,7 +37,7 @@ def broaden(xval: tp.Sequence[float],
       two separate arrays, `xval` and `yval`.
     Returns the broadened spectrum for each point in `xaxis`.
     `yaxis` is computed as:
-    yax[i] = sum_j yf*yv[j]*xax[i]**xpow*f(xax[i]-xv[j])
+    yax[i] = sum_j yf*yv[j]*xfunc(xax[i])*f(xax[i]-xv[j])
     * yax: `yaxis`
     * jf: `yfactor`
     * yv: `yval`
@@ -60,8 +60,8 @@ def broaden(xval: tp.Sequence[float],
         Half-width at half-maximum (in unit of X).
     yfactor
         Scaling factor for the Y axis.
-    xpower
-        Power of X to include to the final Y value.
+    xfunc
+        Transformation of X to be included into the final Y value.
     ynorm
         Normalize Y (in this case, `yfactor` is ignored).
     truncate
@@ -113,9 +113,9 @@ def broaden(xval: tp.Sequence[float],
                 imax = min(i0 + nhwpoints, npoints-1)
                 for i in range(imin, imax+1):
                     yaxis[i] += func(xaxis[i], hwhm, x0, y0*yfactor)
-    if xpower > 0:
+    if xfunc is not None:
         for i in range(npoints):
-            yaxis[i] *= xaxis[i]**xpower
+            yaxis[i] *= xfunc(xaxis[i])
     if ynorm:
         ymax = max(yaxis, key=abs)
         for i in range(npoints):
@@ -150,8 +150,8 @@ def convert_y(specabbr: str,
     -------
     float
         Scaling factor on the Y unit.
-    int
-        Power of X to include to the final Y value.
+    xfunc
+        Function to transform X in calculation of Y value.
 
     Raises
     ------
@@ -206,7 +206,7 @@ def convert_y(specabbr: str,
         _src_unit = res[1].replace('^', '')
     _src_type = res[0].upper()
     yfactor = 1.0
-    xunit = 0
+    xfunc = None
     # Test
     if _spec == 'IR':
         if _dest_type == 'I':
@@ -215,7 +215,7 @@ def convert_y(specabbr: str,
                     if _src_unit in UNIT_DS['esu2.cm2']:
                         yfactor = 8*pi**3*PHYSCNST.avogadro * 1.0e-7 / \
                             (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
-                        xunit = 1
+                        def xfunc(x): return x
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -231,7 +231,7 @@ def convert_y(specabbr: str,
                     if _src_unit in UNIT_RS['esu2.cm2']:
                         yfactor = 32*pi**3*PHYSCNST.avogadro * 1.0e-7 / \
                             (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
-                        xunit = 1
+                        def xfunc(x): return x
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -246,7 +246,6 @@ def convert_y(specabbr: str,
                 if _src_type == 'II':
                     if _src_unit in UNIT_II['/M/cm2']:
                         yfactor = 1.0
-                        xunit = 0
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -258,4 +257,4 @@ def convert_y(specabbr: str,
     else:
         raise NotImplementedError(msgNYI)
 
-    return yfactor, xunit
+    return yfactor, xfunc

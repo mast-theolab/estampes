@@ -585,12 +585,12 @@ class Spectrum():
                     _unit_dest = SPEC2DATA[self.__spec]['unit']
                 else:
                     _unit_dest = yunit
-            _yfac, _xpow = convert_y(self.__spec, _unit_dest, self.__yunit[0])
+            _yfac, _xfun = convert_y(self.__spec, _unit_dest, self.__yunit[0])
             self.__yaxis[_ids] = broaden(self.__xaxis[0], self.__yaxis[0],
                                          self.__xaxis[_ids],
                                          self.__broad[_ids]['func'],
                                          self.__broad[_ids]['hwhm'],
-                                         _yfac, _xpow, _yunit, False)
+                                         _yfac, _xfun, _yunit, False)
             self.__idref = 1
             self.__xunit[self.__idref] = self.__xunit[0]
             self.__xlabel[self.__idref] = self.__xlabel[0]
