@@ -21,6 +21,9 @@ Other blocks are:
 
 ## Unreleased
 
+
+## [0.3.2] - 2021-04-30
+
 ### Added
 - **API** - Added support of electronic dipole strengths and rotatory strengths from Gaussian log files.
 
