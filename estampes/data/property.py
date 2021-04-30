@@ -12,6 +12,7 @@ property_data
 """
 
 import typing as tp
+
 from estampes.base import TypeQOpt, TypeQTag
 
 

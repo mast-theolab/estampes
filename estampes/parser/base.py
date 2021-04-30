@@ -29,9 +29,10 @@ Notes
 import os
 import re
 import typing as tp
-from estampes.parser.gaussian import glog, fchk
-from estampes.parser import csv, xyz
+
 from estampes.base import TypeQLab, TypeRSta
+from estampes.parser import csv, xyz
+from estampes.parser.gaussian import glog, fchk
 
 
 def parse_qlabel(qlabel: str) -> TypeQLab:

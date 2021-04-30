@@ -17,7 +17,8 @@ GLogIO
 import os  # Used for file existence check
 import re  # Used to find keys in log file
 import typing as tp
-import estampes.parser as ep
+
+from estampes import parser as ep
 from estampes.base import ParseKeyError, QuantityError, TypeData, TypeDCrd, \
     TypeDGLog, TypeDOrd, TypeQInfo, TypeQOpt, TypeQTag, TypeRSta
 from estampes.data.physics import PHYSFACT

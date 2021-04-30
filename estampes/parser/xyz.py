@@ -15,8 +15,9 @@ FileXYZ
 
 import os
 import typing as tp
+
+from estampes import parser as ep
 from estampes.base import ParseDataError, ParseKeyError, TypeData
-import estampes.parser as ep
 from estampes.tools.atom import convert_labsymb
 from estampes.data.physics import PHYSFACT
 

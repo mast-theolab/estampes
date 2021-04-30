@@ -21,6 +21,10 @@ Other blocks are:
 
 ## Unreleased
 
+### Fixed
+
+- **PY** - Changed all import aliases inside ESTAMPES to have the form `from xxx import yyy as zzz`.  This should reduce the number of problems with *PIP* installations.
+
 
 ## [0.3.2] - 2021-04-30
 

@@ -17,6 +17,7 @@ phys_fact
 """
 
 from math import pi, sqrt
+
 from estampes.base import ConstDict
 
 

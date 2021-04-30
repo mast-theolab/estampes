@@ -34,11 +34,12 @@ from tempfile import TemporaryFile
 from shutil import copyfileobj
 import typing as tp
 from math import ceil
-import estampes.parser as ep
+
+from estampes import parser as ep
 from estampes.base import ArgumentError, ParseDataError, ParseKeyError, \
     QuantityError, TypeData, TypeDCrd, TypeDFChk, TypeDOrd, TypeQInfo, \
     TypeQOpt, TypeQTag, TypeRSta
-import estampes.data.property as edpr
+from estampes.data import property as edpr
 
 # ================
 # Module Constants

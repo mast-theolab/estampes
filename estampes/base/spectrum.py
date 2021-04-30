@@ -16,8 +16,8 @@ Spectrum
 from math import ceil
 import typing as tp
 
+from estampes import parser as ep
 from estampes.base import TypeColor
-import estampes.parser as ep
 from estampes.tools.spec import broaden, convert_y
 
 

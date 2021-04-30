@@ -19,8 +19,8 @@ import os
 import re
 import typing as tp
 
+from estampes import parser as ep
 from estampes.base import TypeData, ParseKeyError, QuantityError
-import estampes.parser as ep
 
 # ================
 # Module Constants

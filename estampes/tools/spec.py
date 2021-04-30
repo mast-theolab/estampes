@@ -13,8 +13,9 @@ convert_y
 from math import ceil, log, pi
 import typing as tp
 
+from estampes.base import ArgumentError
 from estampes.tools.math import f_gauss, f_lorentz
-from estampes.data.physics import PHYSCNST
+from estampes.data.physics import PHYSFACT, PHYSCNST, phys_fact
 
 
 # ==============
