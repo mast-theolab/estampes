@@ -21,6 +21,9 @@ Other blocks are:
 
 ## Unreleased
 
+### Added
+- **API** - Added support of electronic dipole strengths and rotatory strengths from Gaussian log files.
+
 ### Fixed
 - **API** - Fixed error in definition of electronic transition in `parse_qlabel`.
 

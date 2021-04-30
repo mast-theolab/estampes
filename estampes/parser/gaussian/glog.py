@@ -762,6 +762,62 @@ def qlab_to_linkdata(qtag: TypeQTag,
             r'This state for optimization.*)\s*$'
         num0 = 0
         if type(rsta) is tuple:
+            Si, Sf = rsta
+            if qtag == 1:
+                if dord == 0:
+                    if Si == 0:
+                        lnk = 0
+                        key = ' Excitation energies and oscillator strengths:'
+                        sub = 1
+                        def end(s): return s.startswith(' ****')
+                        if isinstance(Sf, int):
+                            txt = str(Sf)
+                        elif Sf == 'a':
+                            txt = r'\d+'
+                        else:
+                            raise ValueError('Unsupported final state')
+                        fmt = r'^ Excited State\s+' + txt \
+                            + r':\s+\S+\s+(?P<val>\d+\.\d+)\b\s+eV.*$'
+                        num = -1
+                    else:
+                        raise NotImplementedError()
+            elif qtag == 'dipstr':
+                if Si == 0:
+                    lnk = 0
+                    key = ' Ground to excited state transition electric ' \
+                        + 'dipole moments (Au):'
+                    if isinstance(Sf, int):
+                        sub = Sf + 1
+                        def end(s): return True
+                    elif Sf == 'a':
+                        sub = 1
+                        def end(s): return s[1] != ' '
+                    else:
+                        raise ValueError('Unsupported final state')
+                    fmt = r'^\s+\d+(?:\s+-?\d+\.\d+){3}\s+' \
+                        + r'(?P<val>-?\d+\.\d+)\s+-?\d+\.\d+\s*$'
+                    num = -1
+                else:
+                    raise NotImplementedError()
+            elif qtag == 'rotstr':
+                if Si == 0:
+                    lnk = 0
+                    key = ' Rotatory Strengths (R) in cgs (10**-40 erg-esu-cm'\
+                        + '/Gauss)'
+                    if isinstance(Sf, int):
+                        sub = Sf+1
+                        def end(s): return True
+                    elif Sf == 'a':
+                        sub = 1
+                        def end(s): return s[1] != ' '
+                    else:
+                        raise ValueError('Unsupported final state')
+                    num = -1
+                    fmt = r'^\s+\d+(?:\s+-?\d+\.\d+){3}\s+' \
+                        + r'(?P<val>-?\d+\.\d+)\s+-?\d+\.\d+\s*$'
+                else:
+                    raise NotImplementedError()
+            else:
             raise NotImplementedError()
         #     if qtag == 1 and dord == 0:
         #         keywords = ['ETran scalars', 'SCF Energy']
@@ -1441,6 +1497,44 @@ def parse_data(qdict: TypeQInfo,
             # Transition moments
             # ^^^^^^^^^^^^^^^^^^
             if type(rsta) is tuple:
+                Si, Sf = rsta
+                if qtag == 1:
+                    if dord == 0:
+                        if Si == 0:
+                            if isinstance(Sf, int):
+                                data[qlabel]['data'] = float(datablocks[iref])
+                                data[qlabel]['unit'] = 'eV'
+                            else:
+                                data[qlabel]['unit'] = 'eV'
+                                data[qlabel]['data'] = \
+                                    [float(item) for item in datablocks[iref]]
+                        else:
+                            pass
+                    else:
+                        pass
+                elif qtag == 'dipstr':
+                    if Si == 0:
+                        if isinstance(Sf, int):
+                            data[qlabel]['data'] = float(datablocks[iref])
+                            data[qlabel]['unit'] = 'DS:au'
+                        else:
+                            data[qlabel]['unit'] = 'DS:au'
+                            data[qlabel]['data'] = \
+                                [float(item) for item in datablocks[iref]]
+                    else:
+                        pass
+                elif qtag == 'rotstr':
+                    if Si == 0:
+                        if isinstance(Sf, int):
+                            data[qlabel]['data'] = float(datablocks[iref])
+                            data[qlabel]['unit'] = 'RS:10^-40 esu^2.cm^2'
+                        else:
+                            data[qlabel]['unit'] = 'RS:10^-40 esu^2.cm^2'
+                            data[qlabel]['data'] = \
+                                [float(item) for item in datablocks[iref]]
+                    else:
+                        pass
+                else:
                 pass
             # States-specific Quantities
             # ^^^^^^^^^^^^^^^^^^^^^^^^^^
