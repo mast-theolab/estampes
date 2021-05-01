@@ -14,6 +14,8 @@ TypeDCrd : :obj:`typing.Optional`
     Static type for derivative coordinate.
 TypeRSta : :obj:`typing.Optional`
     Static type for reference state/transition.
+TypeQLvl : :obj:`typing.Optional`
+    Static type for level of theory used to compute quantity.
 TypeQLab : :obj:`typing.Tuple`
     Static type for quantity label.
 TypeData : :obj:`typing.Dict`
@@ -73,14 +75,16 @@ class ConstDict(dict):
 # Module Attributes
 # =================
 
-_tp_StrInt = tp.TypeVar('_tp_StrInt', str, int)
+# _tp_StrInt = tp.TypeVar('_tp_StrInt', str, int)
+_tp_StrInt = tp.Union[str, int]
 
 TypeQTag = _tp_StrInt
 TypeQOpt = tp.Optional[_tp_StrInt]
 TypeDOrd = tp.Optional[int]
 TypeDCrd = tp.Optional[str]
 TypeRSta = tp.Optional[tp.Union[str, int, tp.Tuple[_tp_StrInt, _tp_StrInt]]]
-TypeQLab = tp.Tuple[TypeQTag, TypeQOpt, TypeDOrd, TypeDCrd, TypeRSta]
+TypeQLvl = tp.Optional[str]
+TypeQLab = tp.Tuple[TypeQTag, TypeQOpt, TypeDOrd, TypeDCrd, TypeRSta, TypeQLvl]
 TypeData = tp.Dict[str, tp.Dict[str, tp.Any]]
 TypeAtData = tp.Dict[str, tp.Dict[str, tp.List[tp.Any]]]
 TypeQInfo = tp.Dict[str, tp.List[tp.Any]]

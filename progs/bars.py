@@ -364,8 +364,8 @@ def get_energies(dfname: str,
     for item in levels:
         level = item[-1]
         dkey = {
-            'assign': build_qlabel('vtrans', level),
-            'freq': build_qlabel('vlevel', level),
+            'assign': build_qlabel('vtrans', level=level),
+            'freq': build_qlabel('vlevel', level=level),
         }
     # keys = [item for key in dkeys for item in dkeys[key].values()]
         # Extract relevant data
@@ -740,7 +740,7 @@ def build_mean_data(op_mol: str,
                                     ha="right")
             ax1.legend((r'$|$MAX$|$ ($\omega$)', r'MAE ($\omega$)',
                         r'$|$MAX$|$ ($\nu$)', r'MAE ($\nu$)'),
-                        loc='best', ncol=2)
+                       loc='best', ncol=2)
 
             if imgfile is not None:
                 plt.savefig(imgfile, bbox_inches='tight')
@@ -756,7 +756,7 @@ def build_mean_data(op_mol: str,
             for key in labels:
                 dmue.append(full_dmue[key][lvl]/full_nvib[key][lvl])
                 amax.append(full_amax[key][lvl])
-
+            figsize = (11, 7)
             fig = plt.figure(figid, figsize=figsize, dpi=300)
             fig.subplots_adjust(hspace=0.001)
 

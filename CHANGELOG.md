@@ -25,12 +25,15 @@ Other blocks are:
 * This version introduces a number of breaking changes to the library and API.  Updates of external programs are likely necessary.  Be warned:
     * `convert_y` returns a function for the contribution of x to y.
     * `broaden` expects a function (or `None`) to include contributions from x into the definition of y.
+    * The internal *qlabel* has changed: the old sub-option is now divided into a quantity-specific option and the level of theory (`H`, `A`).
 
 ### Fixed
 - **PY** - Changed all import aliases inside ESTAMPES to have the form `from xxx import yyy as zzz`.  This should reduce the number of problems with *PIP* installations.
 
 ### Changed
 - **LIB** - `convert_y` (`tools/spec`) now returns a function or `None* for the inclusion of x in the definition of y.  This gives more flexibility than the previous power exponent.
+- **API** - Change in the definition of *qlabel* to give more flexibility: quantity-specific options and level of theory are now separated.
+
 
 ## [0.3.2] - 2021-04-30
 

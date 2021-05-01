@@ -20,7 +20,7 @@ import typing as tp
 
 from estampes import parser as ep
 from estampes.base import ParseKeyError, QuantityError, TypeData, TypeDCrd, \
-    TypeDGLog, TypeDOrd, TypeQInfo, TypeQOpt, TypeQTag, TypeRSta
+    TypeDGLog, TypeDOrd, TypeQInfo, TypeQLvl, TypeQOpt, TypeQTag, TypeRSta
 from estampes.data.physics import PHYSFACT
 
 
@@ -122,7 +122,7 @@ class GLogIO(object):
         key2blk = {}
         i = 0
         for item in ('route', 'swopt', 'swver'):
-            qtydata[item] = (item, None, None, None, None)
+            qtydata[item] = ep.parse_qlabel(ep.build_qlabel(item))
             key2blk[item] = (i, i)
             i += 1
             link, key, skips, fmt, end, num = qlab_to_linkdata(item)
@@ -387,6 +387,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                      dord: TypeDOrd = None,
                      dcrd: TypeDCrd = None,
                      rsta: TypeRSta = None,
+                     qlvl: TypeQLvl = None,
                      gver: tp.Optional[str] = None) -> TypeQKwrd:
     """Returns the keyword(s) relevant for a given quantity.
 
@@ -424,6 +425,8 @@ def qlab_to_linkdata(qtag: TypeQTag,
         Reference state or transition:
         * scalar: reference state
         * tuple: transition
+    qlvl
+        Level of theory use to generate the quantity.
     gver
         Gaussian version.
 
@@ -697,7 +700,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
     elif qtag == 'vptdat':
         raise NotImplementedError()
     elif qtag == 'vtrans':
-        if qopt == 'H':
+        if qlvl == 'H':
             lnk = (-716, 716, -717)
             key = (' and normal coordinates:',
                    ' and normal coordinates:',
@@ -711,14 +714,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                    r'^\s+\w?\s+(?P<val>\s*\d+\(\d+\))\s+\w+\s+'
                    + r'(?:\s+-?\d+\.\d+|\*+){4}.*\s*$')
             num = (0, -1, 0)
-        elif qopt == 'A':
-            lnk = 717
-            key = ' NOTE: Transition energies are given with'
-            sub = 8
-            def end(s): return s.startswith('     =====')
-            fmt = r'^\s+(?P<val>(?:\s*\d+\(\d+\)){1,3}|\d+)\s+' \
-                  + r'(?:-?\d+\.\d+\s+|\*+\s+){2}.*\s*$'
-            num = 0
+        elif qlvl == 'A':
             lnk = 717
             key = ' NOTE: Transition energies are given with'
             sub = 8
@@ -729,7 +725,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
         else:
             raise NotImplementedError()
     elif qtag == 'vlevel':
-        if qopt == 'H':
+        if qlvl == 'H':
             lnk = (-716, 716, -717)
             key = (' and normal coordinates:',
                    ' and normal coordinates:',
@@ -743,7 +739,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                    r'^\s+\w?\s+(?:\s*\d+\(\d+\))\s+\w+\s+'
                    + r'(?P<val>-?\d+\.\d+|\*+)(?:\s+-?\d+\.\d+|\*+){4}.*\s*$')
             num = (0, -1, 0)
-        elif qopt == 'A':
+        elif qlvl == 'A':
             lnk = 717
             key = ' NOTE: Transition energies are given with'
             sub = 8
@@ -819,9 +815,9 @@ def qlab_to_linkdata(qtag: TypeQTag,
                 else:
                     raise NotImplementedError()
             else:
-            raise NotImplementedError()
-        #     if qtag == 1 and dord == 0:
-        #         keywords = ['ETran scalars', 'SCF Energy']
+                raise NotImplementedError()
+            #     if qtag == 1 and dord == 0:
+            #         keywords = ['ETran scalars', 'SCF Energy']
         else:
             if rsta == 'c':
                 lnk1 = [lnk0]
@@ -866,7 +862,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                 elif dord == 2:
                     raise NotImplementedError()
             elif qtag == 'dipstr':
-                if qopt == 'H':
+                if qlvl == 'H':
                     lnk1.extend([-716, 716, -717])
                     key1.extend([' and normal coordinates:',
                                  ' and normal coordinates:',
@@ -884,19 +880,19 @@ def qlab_to_linkdata(qtag: TypeQTag,
                                  + r'(?P<val>-?\d+\.\d+|\*+)\s+'
                                  + r'(?:-?\d+\.\d+|\*+)\s*$'])
                     num1.extend([0, -1, 0])
-                elif qopt == 'A':
+                elif qlvl == 'A':
                     lnk1.append(717)
                     key1.append('        Dipole strengths (DS)')
                     sub1.append(3)
-                    end1.append(lambda s: s.startswith('     =====') or
-                                          s.startswith(' GradGrad'))
+                    end1.append(lambda s: s.startswith('     =====')
+                                or s.startswith(' GradGrad'))
                     fmt1.append(r'^\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'
                                 + r' .*\s+(?P<val>-?\d+\.\d+|\*+)\s*$')
                     num1.append(0)
                 else:
                     raise NotImplementedError()
             elif qtag == 'rotstr':
-                if qopt == 'H':
+                if qlvl == 'H':
                     lnk1.extend([-716, 716, -717])
                     key1.extend([' and normal coordinates:',
                                  ' and normal coordinates:',
@@ -914,11 +910,41 @@ def qlab_to_linkdata(qtag: TypeQTag,
                                  + r'(?P<val>-?\d+\.\d+|\*+)\s+'
                                  + r'(?:-?\d+\.\d+|\*+)\s*$'])
                     num1.extend([0, -1, 0])
-                elif qopt == 'A':
+                elif qlvl == 'A':
                     lnk1.append(717)
                     key1.append('        Rotational strengths (RS)')
                     sub1.append(3)
                     end1.append(lambda s: s.startswith('     ====='))
+                    fmt1.append(r'^\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'
+                                + r' .*\s+(?P<val>-?\d+\.\d+|\*+)\s*$')
+                    num1.append(0)
+                else:
+                    raise NotImplementedError()
+            elif qtag == 'ramact':
+                if qlvl == 'H':
+                    lnk1.extend([-716, 716, -717])
+                    key1.extend([' and normal coordinates:',
+                                 ' and normal coordinates:',
+                                 '        Raman activity (RA)'])
+                    sub1.extend([1, 1, 4])
+                    end1.extend([
+                        lambda s: s.startswith(' Harmonic frequencies'),
+                        lambda s: s.startswith(' - Thermochemistry'),
+                        lambda s: s.startswith(' -----')])
+                    fmt1.extend([r'^\s+Raman Activities --- \s*'
+                                 + r'(?P<val>-?\d.*)\s*$',
+                                 r'^\s+Raman Activ -- \s*(?P<val>-?\d.*)\s*$',
+                                 r'^\s+\d+\(\d+\)\s+'
+                                 + r'(?:-?\d+\.\d+\s+|\*+\s+){2}'
+                                 + r'(?P<val>-?\d+\.\d+|\*+)\s+'
+                                 + r'(?:-?\d+\.\d+|\*+)\s*$'])
+                    num1.extend([0, -1, 0])
+                elif qlvl == 'A':
+                    lnk1.append(717)
+                    key1.append('        Raman activity (RA)')
+                    sub1.append(3)
+                    end1.append(lambda s: s.startswith('     =====')
+                                or 'dipole moment' in s)
                     fmt1.append(r'^\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'
                                 + r' .*\s+(?P<val>-?\d+\.\d+|\*+)\s*$')
                     num1.append(0)
@@ -980,12 +1006,12 @@ def qlab_to_linkdata(qtag: TypeQTag,
         #         raise NotImplementedError()
         #     else:
         #         raise QuantityError('Unknown quantity')
-        lnk = tuple(lnk1)
-        key = tuple(key1)
-        sub = tuple(sub1)
-        end = tuple(end1)
-        fmt = tuple(fmt1)
-        num = tuple(num1)
+            lnk = tuple(lnk1)
+            key = tuple(key1)
+            sub = tuple(sub1)
+            end = tuple(end1)
+            fmt = tuple(fmt1)
+            num = tuple(num1)
 
     return lnk, key, sub, fmt, end, num
 
@@ -1037,7 +1063,7 @@ def parse_data(qdict: TypeQInfo,
             (qtag == 'fcdat' and qopt in ('JMat', 'JMatF'))
     data = {}
     for qlabel in qdict:
-        qtag, qopt, dord, dcrd, rsta = qdict[qlabel]
+        qtag, qopt, dord, dcrd, rsta, qlvl = qdict[qlabel]
         first, last = key2blocks[qlabel]
         # Basic Check: property available
         # -----------
@@ -1428,7 +1454,7 @@ def parse_data(qdict: TypeQInfo,
         # Vibrational transitions
         # -----------------------
         elif qtag == 'vlevel':
-            if qopt == 'H':
+            if qlvl == 'H':
                 for i in range(last, first-1, -1):
                     if datablocks[i]:
                         iref = i
@@ -1444,7 +1470,7 @@ def parse_data(qdict: TypeQInfo,
                             data[qlabel][i] = float(col)
                         except ValueError:
                             data[qlabel][i] = float('inf')
-            elif qopt == 'A':
+            elif qlvl == 'A':
                 if datablocks[last]:
                     iref = last
                 else:
@@ -1460,7 +1486,7 @@ def parse_data(qdict: TypeQInfo,
             else:
                 raise NotImplementedError()
         elif qtag == 'vtrans':
-            if qopt == 'H':
+            if qlvl == 'H':
                 for i in range(last, first-1, -1):
                     if datablocks[i]:
                         iref = i
@@ -1473,7 +1499,7 @@ def parse_data(qdict: TypeQInfo,
                         i += 1
                         res = col.split('(')
                         data[qlabel][i] = [((0, 0), ), ((int(res[0]), 1), )]
-            elif qopt == 'A':
+            elif qlvl == 'A':
                 i = 0
                 for line in datablocks[iref]:
                     i += 1
@@ -1536,7 +1562,7 @@ def parse_data(qdict: TypeQInfo,
                     else:
                         pass
                 else:
-                pass
+                    pass
             # States-specific Quantities
             # ^^^^^^^^^^^^^^^^^^^^^^^^^^
             else:
@@ -1548,11 +1574,11 @@ def parse_data(qdict: TypeQInfo,
                         if rsta == 'c':
 
                             def conv(s):
-                                return float(s.split('=')[1].replace('D','e'))
+                                return float(s.split('=')[1].replace('D', 'e'))
 
                             # 1st element is actually transition information
                             # Ignored as we look for the pure energies
-                            fmt = re.compile('E\(?(.*?)\)?\s+')
+                            fmt = re.compile(r'E\(?(.*?)\)?\s+')
                             iref = first + 1
                             N = 2 if datablocks[last] else 1
                             nblocks = len(datablocks[iref])
@@ -1574,7 +1600,7 @@ def parse_data(qdict: TypeQInfo,
                             data[qlabel]['data'] = data[qlabel][tag]
                             data[qlabel]['unit'] = 'Eh'
                 elif qtag == 'dipstr':
-                    if qopt == 'H':
+                    if qlvl == 'H':
                         for i in range(last, first-1, -1):
                             if datablocks[i]:
                                 iref = i
@@ -1590,7 +1616,7 @@ def parse_data(qdict: TypeQInfo,
                                     data[qlabel][i] = float(col)*1.0e-40
                                 except ValueError:
                                     data[qlabel][i] = float('inf')
-                    elif qopt == 'A':
+                    elif qlvl == 'A':
                         data[qlabel]['unit'] = 'DS:esu^2.cm^2'
                         i = 0
                         for line in datablocks[iref]:
@@ -1602,7 +1628,7 @@ def parse_data(qdict: TypeQInfo,
                     else:
                         raise NotImplementedError()
                 elif qtag == 'rotstr':
-                    if qopt == 'H':
+                    if qlvl == 'H':
                         for i in range(last, first-1, -1):
                             if datablocks[i]:
                                 iref = i
@@ -1618,13 +1644,44 @@ def parse_data(qdict: TypeQInfo,
                                     data[qlabel][i] = float(col)*1.0e-44
                                 except ValueError:
                                     data[qlabel][i] = float('inf')
-                    elif qopt == 'A':
+                    elif qlvl == 'A':
                         data[qlabel]['unit'] = 'RS:esu^2.cm^2'
                         i = 0
                         for line in datablocks[iref]:
                             i += 1
                             try:
                                 data[qlabel][i] = float(line)*1.0e-44
+                            except ValueError:
+                                data[qlabel][i] = float('inf')
+                    else:
+                        raise NotImplementedError()
+                elif qtag == 'ramact':
+                    if qlvl == 'H':
+                        for i in range(last, first-1, -1):
+                            if datablocks[i]:
+                                iref = i
+                                break
+                        else:
+                            raise ParseKeyError('Missing quantity in file')
+                        if iref == last:
+                            data[qlabel]['unit'] = 'RA:Ang^6'
+                        else:
+                            data[qlabel]['unit'] = 'RA:amu.Ang^4'
+                        i = 0
+                        for line in datablocks[iref]:
+                            for col in line.strip().split():
+                                i += 1
+                                try:
+                                    data[qlabel][i] = float(col)
+                                except ValueError:
+                                    data[qlabel][i] = float('inf')
+                    elif qlvl == 'A':
+                        data[qlabel]['unit'] = 'RA:Ang^6'
+                        i = 0
+                        for line in datablocks[iref]:
+                            i += 1
+                            try:
+                                data[qlabel][i] = float(line)
                             except ValueError:
                                 data[qlabel][i] = float('inf')
                     else:

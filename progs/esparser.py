@@ -33,26 +33,26 @@ from estampes.visual.plotspec import format_label, plot_spec_2D
 FCHT_QTIES = {
     'mols': {
         'atnum': build_qlabel('atnum'),
-        'IniS': build_qlabel('fcdat', 'GeomIS'),
-        'FinS': build_qlabel('fcdat', 'GeomFS'),
-        'MidS': build_qlabel('fcdat', 'GeomMS'),
-        'ExtG': build_qlabel('fcdat', 'ExGeom')
+        'IniS': build_qlabel('fcdat', qopt='GeomIS'),
+        'FinS': build_qlabel('fcdat', qopt='GeomFS'),
+        'MidS': build_qlabel('fcdat', qopt='GeomMS'),
+        'ExtG': build_qlabel('fcdat', qopt='ExGeom')
     },
     'jmat': {
-        'JMat': build_qlabel('fcdat', 'JMat')
+        'JMat': build_qlabel('fcdat', qopt='JMat')
     },
     'fulljmat': {
-        'JFul': build_qlabel('fcdat', 'JMatF')
+        'JFul': build_qlabel('fcdat', qopt='JMatF')
     },
     'cmat': {
-        'CMat': build_qlabel('fcdat', 'CMat')
+        'CMat': build_qlabel('fcdat', qopt='CMat')
     },
     'kvec': {
-        'KVec': build_qlabel('fcdat', 'KVec')
+        'KVec': build_qlabel('fcdat', qopt='KVec')
     },
     'spec': {
-        'Spec': build_qlabel('fcdat', 'Spec'),
-        'Pars': build_qlabel('fcdat', 'SpcPar'),
+        'Spec': build_qlabel('fcdat', qopt='Spec'),
+        'Pars': build_qlabel('fcdat', qopt='SpcPar'),
     }
 }
 
@@ -261,7 +261,7 @@ def mode_molview(dfile: DataFile) -> tp.NoReturn:
         `ep.DataFile` object.
     """
     dkeys = {
-        'atcrd': build_qlabel('atcrd', 'last'),
+        'atcrd': build_qlabel('atcrd', qopt='last'),
         'atnum': build_qlabel('atnum')
     }
     data = dfile.get_data(*dkeys.values())
@@ -363,8 +363,8 @@ def mode_vibronic(dfile: DataFile,
                 else:
                     leg = None
                 stick = data[dkeys['Pars']]['func'].lower() == 'stick'
-                bounds = plot_spec_2D(data[dkeys['Spec']], subp, legends=leg,
-                                      is_stick=stick)
+                _ = plot_spec_2D(data[dkeys['Spec']], subp, legends=leg,
+                                 is_stick=stick)
             if kwargs['title'] is not None:
                 subp.set_title(kwargs['title'])
             plt.show()
@@ -406,8 +406,8 @@ def mode_vibspec(dfile: DataFile,
     fig.set_size_inches(figsize)
     xunit = format_label(data.xunit)
     yunit = format_label(data.yunit)
-    bounds = plot_spec_2D({'x': data.xaxis, 'y': data.yaxis}, subp,
-                          xlabel=xunit, ylabel=yunit, is_stick=stick)
+    _ = plot_spec_2D({'x': data.xaxis, 'y': data.yaxis}, subp,
+                     xlabel=xunit, ylabel=yunit, is_stick=stick)
     if save_img:
         plt.savefig(outfile, bbox_inches='tight')
     # if kwargs['title'] is not None:

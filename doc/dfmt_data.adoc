@@ -25,6 +25,7 @@ To facilitate the relation between different quantities,
 | _Type_     | `list`
 | _Accepted_ | lists of lists integers
 | `None`     | No band assignment
+|====
 
 [NOTE]
 ====

@@ -38,7 +38,7 @@ from math import ceil
 from estampes import parser as ep
 from estampes.base import ArgumentError, ParseDataError, ParseKeyError, \
     QuantityError, TypeData, TypeDCrd, TypeDFChk, TypeDOrd, TypeQInfo, \
-    TypeQOpt, TypeQTag, TypeRSta
+    TypeQLvl, TypeQOpt, TypeQTag, TypeRSta
 from estampes.data import property as edpr
 
 # ================
@@ -476,7 +476,8 @@ def qlab_to_kword(qtag: TypeQTag,
                   qopt: TypeQOpt = None,
                   dord: TypeDOrd = None,
                   dcrd: TypeDCrd = None,
-                  rsta: TypeRSta = None) -> TypeQKwrd:
+                  rsta: TypeRSta = None,
+                  qlvl: TypeQLvl = None) -> TypeQKwrd:
     """Returns the keyword(s) relevant for a given quantity.
 
     Returns the keyword corresponding to the block containing the
@@ -497,6 +498,8 @@ def qlab_to_kword(qtag: TypeQTag,
         Reference state or transition:
         - scalar: reference state
         - tuple: transition
+    qlvl
+        Level of theory use to generate the quantity.
 
     Returns
     -------
@@ -550,7 +553,7 @@ def qlab_to_kword(qtag: TypeQTag,
         raise NotImplementedError()
     elif qtag in ('dipstr', 'rotstr'):
         keywords = ['ETran scalars']
-        if type(rsta) is int or rsta == 'c':
+        if isinstance(rsta, int) or rsta == 'c':
             if qopt == 'H':
                 keyword = 'Vib-E2'
                 keywords.append('Number of Normal Modes')
@@ -560,7 +563,7 @@ def qlab_to_kword(qtag: TypeQTag,
         else:
             keyword = 'ETran state values'
     else:
-        if type(rsta) is tuple:
+        if isinstance(rsta, tuple):
             keyword = 'ETran state values'
             if qtag == 1 and dord == 0:
                 keywords = ['ETran scalars', 'SCF Energy']
@@ -942,7 +945,7 @@ def parse_data(qdict: TypeQInfo,
         return qtag == 'nvib'
     data = {}
     for qlabel in qdict:
-        qtag, qopt, dord, dcrd, rsta = qdict[qlabel]
+        qtag, qopt, dord, dcrd, rsta, qlvl = qdict[qlabel]
         kword = qlab2kword[qlabel]
         # Basic Check: main property present
         # -----------
@@ -1015,7 +1018,7 @@ def parse_data(qdict: TypeQInfo,
                 # Data for current electronic states
                 elif curr_sta:
                     if qtag in ('dipstr', 'rotstr'):
-                        if qopt == 'H':
+                        if qlvl == 'H':
                             key = 'Number of Normal Modes'
                         else:
                             key = 'Anharmonic Number of Normal Modes'

@@ -34,31 +34,36 @@ VSPC2DATA = {
     'IR': {
         'name': 'Infrared',
         'unit': 'I:/M/cm',
-        'H': {'freq': ep.build_qlabel('vlevel', 'H'),
-              'int': ep.build_qlabel('dipstr', 'H'),
-              'assign': ep.build_qlabel('vtrans', 'H')},
-        'A': {'freq': ep.build_qlabel('vlevel', 'A'),
-              'int': ep.build_qlabel('dipstr', 'A'),
-              'assign': ep.build_qlabel('vtrans', 'A')},
+        'H': {'freq': ep.build_qlabel('vlevel', level='H'),
+              'int': ep.build_qlabel('dipstr', level='H'),
+              'assign': ep.build_qlabel('vtrans', level='H')},
+        'A': {'freq': ep.build_qlabel('vlevel', level='A'),
+              'int': ep.build_qlabel('dipstr', level='A'),
+              'assign': ep.build_qlabel('vtrans', level='A')},
         'DS': 'Dipole strength',
         'II': 'Integrated intensity'
     },
     'VCD': {
         'name': 'Vibrational Circular Dichroism',
         'unit': 'I:/M/cm',
-        'H': {'freq': ep.build_qlabel('vlevel', 'H'),
-              'int': ep.build_qlabel('rotstr', 'H'),
-              'assign': ep.build_qlabel('vtrans', 'H')},
-        'A': {'freq': ep.build_qlabel('vlevel', 'A'),
-              'int': ep.build_qlabel('rotstr', 'A'),
-              'assign': ep.build_qlabel('vtrans', 'A')},
+        'H': {'freq': ep.build_qlabel('vlevel', level='H'),
+              'int': ep.build_qlabel('rotstr', level='H'),
+              'assign': ep.build_qlabel('vtrans', level='H')},
+        'A': {'freq': ep.build_qlabel('vlevel', level='A'),
+              'int': ep.build_qlabel('rotstr', level='A'),
+              'assign': ep.build_qlabel('vtrans', level='A')},
         'RS': 'Rotatory strength'
     },
     'RS': {
         'name': 'Raman Scattering',
-        'unit': None,
-        'H': {},
-        'A': {}
+        'unit': 'I:cm3/mol/sr',
+        'H': {'freq': ep.build_qlabel('vlevel', level='H'),
+              'int': ep.build_qlabel('ramact', level='H'),
+              'assign': ep.build_qlabel('vtrans', level='H')},
+        'A': {'freq': ep.build_qlabel('vlevel', level='A'),
+              'int': ep.build_qlabel('ramact', level='A'),
+              'assign': ep.build_qlabel('vtrans', level='A')},
+        'RA': 'Raman activity'
     },
     'ROA': {
         'name': 'Raman Optical Activity',
@@ -72,54 +77,57 @@ ESPC2DATA = {
     'OPA': {
         'name': 'One-Photon Absorption',
         'unit': 'I:/M/cm',
-        'E': {},
-        'H': {'spc': ep.build_qlabel('fcdat', 'Spec'),
-              'par': ep.build_qlabel('fcdat', 'SpcPar'),
-              'info': ep.build_qlabel('fcdat', 'SimInf')}
+        'E': {'ener': ep.build_qlabel(1, state=(0, 'a')),
+              'int': ep.build_qlabel('dipstr', state=(0, 'a'))},
+        'H': {'spc': ep.build_qlabel('fcdat', qopt='Spec'),
+              'par': ep.build_qlabel('fcdat', qopt='SpcPar'),
+              'info': ep.build_qlabel('fcdat', qopt='SimInf')}
     },
     'OPE': {
         'name': 'One-Photon Emission',
         'unit': 'I:uJ/mol',
         'E': {},
-        'H': {'spc': ep.build_qlabel('fcdat', 'Spec'),
-              'par': ep.build_qlabel('fcdat', 'SpcPar'),
-              'info': ep.build_qlabel('fcdat', 'SimInf')}
+        'H': {'spc': ep.build_qlabel('fcdat', qopt='Spec'),
+              'par': ep.build_qlabel('fcdat', qopt='SpcPar'),
+              'info': ep.build_qlabel('fcdat', qopt='SimInf')}
     },
     'ECD': {
         'name': 'Electronic Circular Dichroism',
         'unit': 'I:/M/cm',
-        'E': {},
-        'H': {'spc': ep.build_qlabel('fcdat', 'Spec'),
-              'par': ep.build_qlabel('fcdat', 'SpcPar'),
-              'info': ep.build_qlabel('fcdat', 'SimInf')}
+        'E': {'ener': ep.build_qlabel(1, state=(0, 'a')),
+              'int': ep.build_qlabel('rotstr', state=(0, 'a'))},
+        'H': {'spc': ep.build_qlabel('fcdat', qopt='Spec'),
+              'par': ep.build_qlabel('fcdat', qopt='SpcPar'),
+              'info': ep.build_qlabel('fcdat', qopt='SimInf')}
     },
     'CPL': {
         'name': 'Circularly Polarized Luminescence',
         'unit': 'I:uJ/mol',
         'E': {},
-        'H': {'spc': ep.build_qlabel('fcdat', 'Spec'),
-              'par': ep.build_qlabel('fcdat', 'SpcPar'),
-              'info': ep.build_qlabel('fcdat', 'SimInf')}
+        'H': {'spc': ep.build_qlabel('fcdat', qopt='Spec'),
+              'par': ep.build_qlabel('fcdat', qopt='SpcPar'),
+              'info': ep.build_qlabel('fcdat', qopt='SimInf')}
     },
     'RR': {
         'name': 'Resonance Raman',
         'unit': None,
         'E': {},
-        'H': {'spc': ep.build_qlabel('fcdat', 'Spec'),
-              'par': ep.build_qlabel('fcdat', 'SpcPar'),
-              'info': ep.build_qlabel('fcdat', 'SimInf')}
+        'H': {'spc': ep.build_qlabel('fcdat', qopt='Spec'),
+              'par': ep.build_qlabel('fcdat', qopt='SpcPar'),
+              'info': ep.build_qlabel('fcdat', qopt='SimInf')}
     },
     'RROA': {
         'name': 'Resonance Raman Optical Activity',
         'unit': None,
         'E': {},
-        'H': {'spc': ep.build_qlabel('fcdat', 'Spec'),
-              'par': ep.build_qlabel('fcdat', 'SpcPar'),
-              'info': ep.build_qlabel('fcdat', 'SimInf')}
+        'H': {'spc': ep.build_qlabel('fcdat', qopt='Spec'),
+              'par': ep.build_qlabel('fcdat', qopt='SpcPar'),
+              'info': ep.build_qlabel('fcdat', qopt='SimInf')}
     },
 }
 
 SPEC2DATA = {**VSPC2DATA, **ESPC2DATA}
+
 
 # ==============
 # Module Classes
@@ -281,8 +289,8 @@ class Spectrum():
             ylabel = self.__ylab
         if self.__dfile.version[0] == 'CSV':
             qkeys = {
-                'spc': ep.build_qlabel('anyspc', 'Spec'),
-                'par': ep.build_qlabel('anyspc', 'SpcPar')
+                'spc': ep.build_qlabel('anyspc', qopt='Spec'),
+                'par': ep.build_qlabel('anyspc', qopt='SpcPar')
             }
         else:
             qkeys = SPEC2DATA[self.__spec][self.__theory]
@@ -309,7 +317,7 @@ class Spectrum():
                 _tmpy = {}
                 _tmpax = {}
                 for bloc in range(nblocks):
-                    ylabels = [item for \
+                    ylabels = [item for
                                item in data[qkeys['par']].keys()
                                if (item[0] == 'y' and
                                    len(data[qkeys['par']]) > bloc)]
@@ -356,8 +364,8 @@ class Spectrum():
             self.__xaxis[0] = []
             self.__yaxis[0] = []
             for mode in modes:
-                if isinstance(data[qkeys['freq']][mode], float) and \
-                    isinstance(data[qkeys['int']][mode], float):
+                if (isinstance(data[qkeys['freq']][mode], float) and
+                        isinstance(data[qkeys['int']][mode], float)):
                     self.__xaxis[0].append(data[qkeys['freq']][mode])
                     self.__yaxis[0].append(data[qkeys['int']][mode])
             self.__xlabel[0] = 'Wavenumbers'

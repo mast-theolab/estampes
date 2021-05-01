@@ -39,7 +39,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     """Parses a quantity label and returns a list of items.
 
     Parses a label in the form:
-        id|label[:[subopt][:[ord][:[coord][:[state(s)]]]]]
+        id|label[:[subopt][:[ord][:[coord][:[state(s)][:[level]]]]]
     with
         id|label
             quantity identifier (see below) or textual label
@@ -51,6 +51,9 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
             reference coordinates
         state(s)
             reference electronic state or transition (as `i->j`)
+        level
+            Level of theory use to generate the quantity.
+            ex: vibrational (harm, anharm), electronic...
 
     Parameters
     ----------
@@ -68,6 +71,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
         5. reference state or transition
            `a`: refers to all available electronic states
            `c`: refers to the current electronic state
+        6. level of theory: vibrational (harm, anharm), electronic...
 
     Notes
     -----
@@ -147,17 +151,14 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     ========  ========  =========================================
      Option     Sub      Description
     ========  ========  =========================================
-     VLevel      H      Vibrational harmonic energy levels
-                 A      Vibrational anharmonic energy levels
     -------------------------------------------------------------
-     VTrans      H      Vibrational transitions: harmonic states
-                 A      Vibrational transitions: anharm. states
+     DipStr     Len     length-gauge dipole strength
+                Vel      Velocity-gaue dipole strength
     -------------------------------------------------------------
-     DipStr      H      Harmonic dipole strength
-                 A      Anharmonic dipole strength
-    -------------------------------------------------------------
-     RotStr      H      Harmonic rotatory strength
-                 A      Anharmonic rotatory strength
+     RamAct    None     Static Raman activity
+                All     Dynamic Raman activity for all inc. freq.
+               <any>    Dynamic Raman activity for <any> freq.
+                        A string is expected to avoid num. limit.
     -------------------------------------------------------------
      FCDat      JMat     Duschinsky matrix
                 JMatF    Duschinsky matrix (full, only for reddim)
@@ -184,8 +185,12 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                 last     Only the last geometry if more present
                first     Only the first geometry
                 scan     Extract scan-related data
+    -------------------------------------------------------------
+        1       all      All present geometries (scan, opt)
+                last     Only the last geometry if more present
+               first     Only the first geometry
+                scan     Extract scan-related data
     ========  ========  =========================================
-
 
     Possible coordinates:
     =========  ==================================================
@@ -208,17 +213,19 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     der_ord = 0  # type: int
     der_crd = None  # type: tp.Union[str, None]
     ref_sta = 'c'  # type: TypeRSta
+    qty_lvl = None  # type: tp.Union[str, None]
     # Main label
     try:
         qty_tag = int(qlist[0])
     except ValueError:
         qty_tag = qlist[0].lower()
     # Label-specific keyword (sub-option)
-    if qty_tag in ('dipstr', 'rotstr', 'vtrans', 'vlevel'):
-        if qlist[1] is None:
-            qty_opt = 'H'
-        else:
-            if qlist[1][0].upper() in ('H', 'A'):
+    if qty_tag in ('ramact', 'roaact'):
+        if qlist[1] is None or not qlist[1].strip():
+            qty_opt = None
+        elif qlist[1].lower() == 'all':
+            qty_opt = 'all'
+            if qlist[5][0].upper() in ('H', 'A'):
                 qty_opt = qlist[1][0].upper()
             else:
                 raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
@@ -317,7 +324,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     else:
         qty_opt = qlist[1]
     # Derivative order
-    if qlist[2] is None:
+    if qlist[2] is None or not qlist[2].strip():
         der_ord = 0
     else:
         try:
@@ -325,7 +332,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
         except ValueError:
             raise ValueError('Incorrect derivative order')
     # Derivative coordinate
-    if qlist[3] is None:
+    if qlist[3] is None or not qlist[3].strip():
         der_crd = None
     else:
         der_crd = qlist[3].upper()
@@ -364,21 +371,46 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
             if val2 == val1:
                 raise ValueError('Equivalent states in transition')
             ref_sta = (val1, val2)
+    # Level of theory
+    if qlist[5] is None or not qlist[5].strip():
+        if qty_tag in ('dipstr', 'rotstr'):
+            if isinstance(ref_sta, tuple):
+                qty_lvl = 'E'
+            else:
+                qty_lvl = 'H'
+        elif qty_tag in ('ramact', 'roaact', 'vtrans', 'vlevel'):
+            qty_lvl = 'H'
+        elif qty_tag in ('fcdat', 'hessvec', 'hessval'):
+            qty_lvl = 'H'
+        elif qty_tag in ('vptdat'):
+            qty_lvl = 'A'
+        elif isinstance(qty_tag, int) or qty_tag in ('atcrd', ):
+            qty_lvl = 'E'
+        else:
+            qty_lvl = None
+    else:
+        lvl = qlist[5][0].upper()
+        if lvl not in ('E', 'H', 'A'):
+            raise ValueError('Incorrect level for {}'.format(qty_tag))
+        else:
+            qty_lvl = lvl
     # Return parse data
-    return qty_tag, qty_opt, der_ord, der_crd, ref_sta
+    return qty_tag, qty_opt, der_ord, der_crd, ref_sta, qty_lvl
 
 
 def build_qlabel(qtag: tp.Union[str, int],
                  qopt: tp.Optional[str] = None,
                  dord: int = 0,
                  dcrd: tp.Optional[str] = None,
-                 state: tp.Union[tp.Tuple[int], int, str] = 'c'
+                 state: tp.Union[tp.Tuple[int], int, str] = 'c',
+                 level: tp.Optional[str] = None
                  ) -> str:
     """Builds a `qlabel` from option elements.
 
     This is a very simple routine to quickly generate a *qlabel*.
     It should not be used without some control from `parse_qlabel`.
-    The full qlabel is generated: qtag:[qopt]:[dord]:[dcrd]:[state].
+    The full qlabel is generated:
+    qtag:[qopt]:[dord]:[dcrd]:[state]:[level].
 
     Parameters
     ----------
@@ -392,6 +424,8 @@ def build_qlabel(qtag: tp.Union[str, int],
         Derivation coordinate.
     state
         Reference electronic state or transition.
+    level
+        Level of theory used to generate the quantity.
 
     Returns
     -------
@@ -406,7 +440,8 @@ def build_qlabel(qtag: tp.Union[str, int],
         e = '{}->{}'.format(*state)
     else:
         e = str(state)
-    return '{}:{}:{}:{}:{}'.format(a, b, c, d, e)
+    f = level or ''
+    return '{}:{}:{}:{}:{}:{}'.format(a, b, c, d, e, f)
 
 
 def reshape_dblock(dblock: tp.Sequence[tp.Any],
