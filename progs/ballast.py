@@ -17,6 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from estampes.base.spectrum import Spectrum
+from estampes.tools.char import convert_expr
 from estampes.visual.plotspec import SpecLayout
 
 
@@ -43,19 +44,10 @@ def fscale(expr: str, var: str) -> tp.Callable[[float], float]:
     NameError
         Unsupported mathematical function.
     """
-    _expr = expr.strip().replace('log', 'log10').replace('ln', 'log')
-    if not re.search(r'\b'+var+r'\b', _expr):
-        char = _expr[-1]
-        if char in '+-*/^':
-            _expr += var
-        else:
-            _expr += '*' + var
-    pattern = r'\^([-\+]\d*' + var + r'?)'
-    if '^' in _expr:
-        # Replace case without protecting parentheses (ex: 10^-3)
-        _expr = re.sub(pattern, r'**(\1)', _expr)
-        # Replace other cases
-        _expr = _expr.replace('^', '**')
+    try:
+        _expr = convert_expr(expr, var, natural=True)
+    except ValueError:
+        return NameError('Wrong mathematical functions detected.')
 
     return eval('lambda {}: {}'.format(var, _expr))
 
