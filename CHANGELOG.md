@@ -28,6 +28,7 @@ Other blocks are:
     * The internal *qlabel* has changed: the old sub-option is now divided into a quantity-specific option and the level of theory (`H`, `A`).
 
 ### Fixed
+- **API** - `parse_qlabel` correctly parses the sub-option of `qty_tag=2` (same as `atcrd`).
 - **PY** - Changed all import aliases inside ESTAMPES to have the form `from xxx import yyy as zzz`.  This should reduce the number of problems with *PIP* installations.
 
 ### Changed
