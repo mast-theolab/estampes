@@ -382,7 +382,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
             qty_lvl = 'H'
         elif qty_tag in ('fcdat', 'hessvec', 'hessval'):
             qty_lvl = 'H'
-        elif qty_tag in ('vptdat'):
+        elif qty_tag in ('vptdat', ):
             qty_lvl = 'A'
         elif isinstance(qty_tag, int) or qty_tag in ('atcrd', ):
             qty_lvl = 'E'

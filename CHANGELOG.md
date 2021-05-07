@@ -22,6 +22,10 @@ Other blocks are:
 ## Unreleased
 
 
+### Fixed
+- **API** - Incorrect definition of a tuple in `parse_qlabel`.
+
+
 ## [0.4.0] - 2021-05-07
 
 ### Notice
