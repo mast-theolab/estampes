@@ -9,11 +9,15 @@ Methods
 -------
 property_data
     Gets property data.
+property_units
+    Returns conversion factors and unit labels.
 """
 
+from math import *
 import typing as tp
 
 from estampes.base import TypeQOpt, TypeQTag
+from estampes.data.physics import PHYSCNST, PHYSFACT, phys_fact
 
 
 # ================
@@ -205,6 +209,54 @@ def property_data(qlabel: TypeQTag,
         raise IndexError('Unrecognized property')
 
     return QBaseInfo(name=qname, dim=qdim, der=qder, d1q=qd1q, unit=qunit)
+
+
+def property_units(qtag: str, unit: str = 'SI') -> tp.Tuple[float, str]:
+    """Returns conversion factors and unit labels.
+
+    Returns the conversion factor from atomic unit to new unit, as well
+      as the label.
+
+    Parameters
+    ----------
+    qtag
+        Quantity label.
+    unit
+        Destination unit.
+        SI: international unit system
+        cgs: centimeter-gram-second unit
+
+    Returns
+    -------
+    float
+        Conversion unit from atomic unit.
+    str
+        Unit label.
+
+    Raises
+    ------
+    ValueError
+        Unsupported unit system.
+    """
+    _unit = unit.lower()
+    if qtag == '101':
+        if _unit == 'si':  # Conversion to C.m
+            # conv = phys_fact('au2deb') * 100./PHYSCNST.slight * 1.0e-21
+            conv = PHYSFACT.e2C * PHYSFACT.bohr2ang * 1.0e-10
+            new_unit = 'C.m'
+        elif _unit == 'cgs':  # Conversion to statC.cm
+            conv = PHYSFACT.e2C*PHYSCNST.slight/10. * PHYSFACT.bohr2ang * 1.e-8
+            new_unit = 'statC.cm'
+    elif qtag == '102':
+        # Note that we compute the nuclear magnetic dipole (not electronic)
+        if _unit == 'si':  # Conversion to A.m^2 == J/T
+            conv = PHYSCNST.planck/(2*pi) * PHYSFACT.e2C / PHYSFACT.amu2kg
+            new_unit = 'A.m^2'
+        elif _unit == 'cgs':  # Conversion to statA.cm^2
+            conv = 1.0e4 * PHYSCNST.planck/(2*pi) \
+                * (PHYSFACT.e2C*PHYSCNST.slight/10.) / PHYSFACT.amu2kg
+            new_unit = 'statA.cm^2'
+    return conv, new_unit
 
 
 # ==============
