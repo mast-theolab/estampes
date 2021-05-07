@@ -51,7 +51,10 @@ PHYSCNST = ConstDict([
 # ==============
 
 def phys_fact(factor: str) -> float:
-    """Adaptation of Gaussian [DinFac] function.
+    """Physical conversion factor.
+
+    Returns some common conversion factors, especially for quantities
+      often used in spectroscopy.
 
     Parameters
     ----------
