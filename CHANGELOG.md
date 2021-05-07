@@ -28,6 +28,7 @@ Other blocks are:
     * The internal *qlabel* has changed: the old sub-option is now divided into a quantity-specific option and the level of theory (`H`, `A`).
 
 ### Added
+- **LIB** - `convert_y` (tools/spec) now supports scaling factors in units.
 - **LIB** - New function `property_units` in `data/property` to convert quantities between common unit systems (e.g., SI, cgs).
 - **LIB** - New function `convert_expr` in `tools/char` to convert simple "human" mathematical expressions to Python-valid ones.
 - **LIB** - New submodule `char` in `tools/` for string-related operations.

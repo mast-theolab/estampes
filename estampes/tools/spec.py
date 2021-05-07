@@ -14,6 +14,7 @@ from math import ceil, log, pi
 import typing as tp
 
 from estampes.base import ArgumentError
+from estampes.tools.char import convert_expr
 from estampes.tools.math import f_gauss, f_lorentz
 from estampes.data.physics import PHYSFACT, PHYSCNST, phys_fact
 
@@ -125,7 +126,7 @@ def broaden(xval: tp.Sequence[float],
 
 def convert_y(specabbr: str,
               unit_to: str,
-              unit_from: str) -> tp.Tuple[float, int]:
+              unit_from: str) -> tp.Tuple[float, tp.Optional[tp.Callable[[float], float]]]:
     """Returns parameters for the conversion of Y units.
 
     Returns the scaling factor and the power of X needed to convert the
@@ -194,16 +195,30 @@ def convert_y(specabbr: str,
     # Initial setup
     _spec = specabbr.upper()
     res = unit_to.split(':')
+    dfact = 1.0
+    sfact = 1.0
     if len(res) == 1:
         _dest_unit = ''
     else:
-        _dest_unit = res[1].replace('^', '')
+        dunit = res[1].split()
+        if len(dunit) == 1:
+            _dest_unit = res[1].strip().replace('^', '')
+            dfact = 1.0
+        else:
+            _dest_unit = dunit[1].strip().replace('^', '')
+            dfact = eval(convert_expr(dunit[0], None))
     _dest_type = res[0].upper()
     res = unit_from.split(':')
     if len(res) == 1:
         _src_unit = ''
     else:
-        _src_unit = res[1].replace('^', '')
+        sunit = res[1].split()
+        if len(sunit) == 1:
+            _src_unit = res[1].strip().replace('^', '')
+            sfact = 1.0
+        else:
+            _src_unit = sunit[1].strip().replace('^', '')
+            sfact = eval(convert_expr(sunit[0], None))
     _src_type = res[0].upper()
     yfactor = 1.0
     xfunc = None
@@ -215,6 +230,7 @@ def convert_y(specabbr: str,
                     if _src_unit in UNIT_DS['esu2.cm2']:
                         yfactor = 8*pi**3*PHYSCNST.avogadro * 1.0e-7 / \
                             (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
+
                         def xfunc(x): return x
                     else:
                         raise NotImplementedError(msgNYI)
@@ -231,6 +247,7 @@ def convert_y(specabbr: str,
                     if _src_unit in UNIT_RS['esu2.cm2']:
                         yfactor = 32*pi**3*PHYSCNST.avogadro * 1.0e-7 / \
                             (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
+
                         def xfunc(x): return x
                     else:
                         raise NotImplementedError(msgNYI)
@@ -257,4 +274,4 @@ def convert_y(specabbr: str,
     else:
         raise NotImplementedError(msgNYI)
 
-    return yfactor, xfunc
+    return yfactor*sfact/dfact, xfunc
