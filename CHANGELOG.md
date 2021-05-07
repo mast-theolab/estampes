@@ -21,9 +21,12 @@ Other blocks are:
 
 ## Unreleased
 
+### Added
+- **API** - `parser/xyz`: New function `parse_xyz` to simply parse a single configuration in an opened XYZ file.
 
 ### Fixed
 - **API** - Incorrect definition of a tuple in `parse_qlabel`.
+- **API** - `parser/xyz`: Fixed a problem of reference to a private variable in a module.
 - **API** - `parser/xyz`: Fixed incorrect construction of the data in `get_data`.
 
 ## [0.4.0] - 2021-05-07

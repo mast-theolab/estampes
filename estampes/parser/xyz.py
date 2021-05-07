@@ -143,29 +143,73 @@ class FileXYZ(object):
         if {'title', 'atoms', 'atcrd'} & ls_keys:
             with open(self.__fname, 'r') as fobj:
                 for _ in range((geom-1)*(self.__natoms+2)):
-                    line = fobj.readline()
-                line = fobj.readline()
-                line = fobj.readline()
-                if 'title' in to_find:
-                    datlist['title'] = line.strip()
-                if {'atoms', 'atcrd'} & ls_keys:
-                    atoms = []
-                    coord = []
-                    for _ in range(self.__natoms):
-                        line = fobj.readline()
-                        cols = line.split()
-                        atoms.append(cols[0])
-                        coord.append([float(item)*__ang2au
-                                      for item in cols[1:]])
-                    if 'atoms' in to_find:
-                        datlist['atoms'] = atoms
-                    if 'atcrd' in to_find:
-                        datlist['atcrd'] = coord
+                    _ = fobj.readline()
+                datlist = parse_xyz(fobj, to_find)
         return datlist
 
 # ================
 # Module Functions
 # ================
+
+
+def parse_xyz(fobj: tp.IO, what: tp.Sequence[str]) -> tp.Dict[str, tp.Any]:
+    """Parses a XYZ configuration.
+
+    Parses an xyz configuration, assuming the first line to read is the
+      number of atoms.
+    On return, the pointer to `fobj` is on the last line of the
+      configuration.
+
+    Parameters
+    ----------
+    fobj
+        File object: file already opened.
+    what
+        Data to extract: natoms, atoms, atcrd, atoms
+
+    Returns
+    -------
+    dict
+        Extracted data
+
+    Raises
+    ------
+    ValueError
+        Unexpected data
+    EOFError
+        End-of-file reached while reading the configuration
+    """
+    # Initialize
+    data = {}
+    if 'natoms' in what:
+        data['natoms'] = 0
+    if 'title' in what:
+        data['title'] = ''
+    if 'atoms' in what:
+        data['atoms'] = []
+    if 'atcrd' in what:
+        data['atcrd'] = []
+    # Line 1: number of atoms
+    line = fobj.readline()
+    natoms = int(line)
+    if 'natoms' in data:
+        data['natoms'] = natoms
+    # Line 2: title
+    line = fobj.readline()
+    if 'title' in data:
+        data['title'] = line.strip()
+    # line 3-: geometry
+    for _ in range(natoms):
+        line = fobj.readline()
+        cols = line.split()
+        atom = cols[0]
+        coord = [float(item)*__ang2au for item in cols[1:]]
+        if 'atoms' in data:
+            data['atoms'].append(atom)
+        if 'atcrd' in data:
+            data['atcrd'].append(coord)
+    # Termination
+    return data
 
 
 def get_data(dfobj: FileXYZ,
