@@ -1,0 +1,32 @@
+= ESTAMPES: Units Conversion
+:email: julien.bloino@sns.it
+:revnumber: 0.4.0
+:revremark: Introduction
+:toc: left
+:toclevels: 3
+:icons: font
+:stem:
+:pygments-style: native
+
+:Gaussian: pass:q[G[small]##AUSSIAN##]
+:Estampes: pass:q[E[small]##STAMPES##]
+
+
+
+== Preamble
+
+The aim of this document is to provide a centralized place where information on units and unit conversions are gathered.
+
+It is divided in 3 parts:
+
+1. Basic constants and conversion factors provided by {Estampes}.
+2. Units and conversion factors for the properties supported by {Estampes}.
+3. Conversion factors related to spectroscopic observables.
+
+include::lib/unit_basic.adoc[]
+
+include::lib/unit_quantity.adoc[]
+
+include::lib/unit_spectro.adoc[]
+
+

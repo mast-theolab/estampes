@@ -38,6 +38,7 @@ Other blocks are:
 - **PY** - Changed all import aliases inside ESTAMPES to have the form `from xxx import yyy as zzz`.  This should reduce the number of problems with *PIP* installations.
 
 ### Changed
+- **DOC** - Added more documentation.  The `doc/` folder has also been reorganized to be clearer.
 - **LIB** - `convert_y` (`tools/spec`) now returns a function or `None* for the inclusion of x in the definition of y.  This gives more flexibility than the previous power exponent.
 - **API** - Change in the definition of *qlabel* to give more flexibility: quantity-specific options and level of theory are now separated.
 

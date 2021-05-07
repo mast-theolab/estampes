@@ -1,0 +1,17 @@
+Symbols commonly used in the document and their description
+
+[cols="10<,90<",option=header]
+|====
+| Symbol | Description
+
+| stem:[c] |
+    Speed of light
+| stem:[h] |
+    Planck constant
+| stem:[Q] |
+    Mass-weighted normal coordinates
+| stem:[q] |
+    dimensionless normal coordinates
+| stem:[V] |
+    Potential energy
+|====

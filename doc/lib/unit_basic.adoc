@@ -1,0 +1,144 @@
+== Units and equivalences
+
+{Estampes} being primarily intended for spectroscopy-related applications, it readily supports 3 unit systems:
+
+* *Atomic units* (__au__): they are the core unit system, and should be preferred when manipulating core data from electronic structure calculations.
+* *International system of units* (__SI__)
+* *centimeter-gram-second system of units* (__cgs__), more precisely the *Gaussian* system of units, commonly used in spectroscopy.
+
+
+=== Equivalences and definitions
+
+To facilitate conversions, some equivalences between units or definitions of commonly used terms (e.g., "`esu`") are reported below.
+
+
+==== Atomic units.
+
+[%autowidth,cols="^20,<80",option=header]
+|====
+| Unit | Equivalence
+
+| stem:[a_0] | Bohr radius (atomic unit of length)
+|====
+
+
+==== International unit system
+
+[%autowidth,cols="<20,<80",option=header]
+|====
+| Unit | Equivalence
+
+| 1 C | 1 A.s
+| 1 J | 1 kg.m^2^.s^-2^
+| 1 statA | 1 g^1/2^.cm^3/2^.s^-2^
+| 1 statC | 1 g^1/2^.cm^3/2^.s^-1^
+|====
+
+
+=== Physical constants and conversion factors
+
+
+==== Available elements in the API/library
+
+Basic physical constants and conversion factors are provided by the module `data.physics` as 2 constants and 1 function:
+
+`PHYSCNST`::
+    Basic physical constants.
+`PHYSFACT`::
+    Conversion factors for basic units.
+`phys_fact()`::
+    Physical conversion factors, primarily for convenience: they can be provided by more basic constants, but are often needed.
+
+==== Constants
+
+[WARNING]
+====
+Note that, for convenience, the speed of light is given in "`cm/s`", not in the international system of unit!
+====
+
+[cols="<10,<30,<30,<30",option=header]
+|====
+| Symbol | Name | Value | {Estampes}
+
+| stem:[cc{N}_A] | Avogadro number |
+    6.02214179 * 10^23^ mol^-1^ |
+    `PHYSCNST.avogadro`
+| stem:[k_B] | Boltzmann constant |
+    1.3806504 * 10^-23^ J.K^-1^ |
+    `PHYSCNST.boltzmann`
+| stem:[g_e] | (free) electron g-factor |
+    2.0023193043622 |
+    `PHYSCNST.gfactor`
+| stem:[mu_e] | electron magnetic moment |
+    -9.28476377 * 10^-24^ J.T^-1^ |
+    `PHYSCNST.emagmom`
+| stem:[alpha] | fine structure constant |
+    1/137.035999679 |
+    `PHYSCNST.finestruct`
+| stem:[V_m] | molar volume (273.15K, 1 atm) |
+    22.413996 * 10^-3^ m^3^.mol^-1^ |
+    `PHYSCNST.molvol`
+| stem:[h] | Planck constant |
+    6.62606896 * 10^-34^ J.s |
+    `PHYSCNST.planck`
+| stem:[m_p] | proton rest mass |
+    1.672621637 * 10^-27^ kg |
+    `PHYSCNST.prestmass`
+| stem:[c] | speed of light |
+    2.99792458 * 10^10^ cm.s^-1^ |
+    `PHYSCNST.slight`
+|====
+
+
+==== Conversion factor for physical constants
+
+[cols="<10,<10,<30,<50",option=header]
+|====
+| From | To | Value | {Estampes}
+
+| _a_~0~ | Å  | 0.52917720859         | `PHYSFACT.bohr2ang`
+| amu    | kg | 1.660538782 * 10^-27^ | `PHYSFACT.amu2kg`
+| _e_    | C  | 1.602176487 * 10^-19^ | `PHYSFACT.e2C`
+| cal    | J  | 4.184                 | `PHYSFACT.cal2J`
+| _E_~h~ | J  | 4.35974394 * 10^-18^  | `PHYSFACT.Eh2J`
+|====
+
+
+==== Additional conversion factors
+
+[IMPORTANT]
+====
+*From* -> *To* represent typical example of conversions, but not limited to it.
+
+====
+
+[cols="<10m,<15,^5,<15,^5,<15,<35",option=header]
+|====
+| Label | Formula 2+^| From 2+^| To | Note
+
+| 'fac0au' |
+    stem:[1/{hc}] |
+    stem:[V] | _E_~h~ |
+    stem:[V] | cm^-1^ |
+    Energy conversion
+| 'fac1au' |
+    stem:[1/{hc} sqrt{h/{4 pi^2 c}] |
+    stem:[{d V}/{d Q}] | _E_~h~/(amu^1/2^.Å) |
+    stem:[{d V}/{d q}] | cm^-3/2^ |
+    stem:[1/sqrt{omega_i}] for full conversion
+| 'fac2au' |
+    stem:[1/{hc} {h}/{4 pi^2 c}] |
+    stem:[{d^2 V}/{d Q^2}] | _E_~h~/(amu.Å^2^) |
+    stem:[{d^2 V}/{d q^2}] | cm^-2^ |
+    stem:[1/sqrt{omega_i omega_j}] for full conversion
+| 'fac3au' |
+    stem:[1/{hc} ({h}/{4 pi^2 c})^{3/2}] |
+    stem:[{d^3 V}/{d Q^3}] | _E_~h~/(amu^3/2^.Å^3^) |
+    stem:[{d^3 V}/{d q^3}] | cm^-5/2^ |
+    stem:[1/sqrt{omega_i omega_j omega_k}] for full conversion
+| 'fac4au' |
+    stem:[1/{hc} ({h}/{4 pi^2 c})^2] |
+    stem:[{d^4 V}/{d Q^4}] | _E_~h~/(amu^2^.Å^4^) |
+    stem:[{d^4 V}/{d q^4}] | cm^-3^ |
+    stem:[1/sqrt{omega_i omega_j omega_k omega_l}] for full conversion
+|====

@@ -1,0 +1,15 @@
+
+[cols="10<,90<",option=header]
+|====
+| Symbol | Description
+
+| _a_~0~ | Bohr radius, or *atomic unit of length*
+| C | Coulomb
+| _e_ | elementary charge, or *atomic unit of charge*
+| _E_~h~ | Hartree, or *atomic unit of energy*
+| _m_~e~ | electron mass, or *atomic unit of mass*
+| _m_~u~ | atomic mass constant, or *atomic mass unit*
+| statC | statcoulomb
+| u | unified atomic mass unit (1 u = 1 _m_~u~)
+
+|====

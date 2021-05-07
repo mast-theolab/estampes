@@ -41,7 +41,7 @@ The parser provides 2 functions to build and parse the *quantity labels*.
 
 === Format
 
-include::dfmt_qlab.adoc[]
+include::api/dfmt_qlabel.adoc[]
 
 
 
@@ -72,15 +72,23 @@ Some default keys:
     If not present, the atomic units or a common unit will be assumed (see below).
     To avoid any misinterpretation, the units should be provided for any non-a.u. format.
     If the quantity does not have a unit, the value `False` can be provided.
-    A value of `None` means that the unit is undefined, which can be used by developers to override (ex: CSV files will often have unknown units, or the units are difficult to parse in the file.)
+    A value of `None` means that the unit is undefined, which can be used by developers to override (ex: CSV files will often have unknown units, or the units are difficult to parse in the file.) +
+    *General format*: "`[scale ]unit`", with
+    scale:::
+        scale factor, e.g., `10^-44`
+    unit:::
+        unit, without spaces, where dots (`.`) can be used as separators (multipliers, `/` for divisors).
+        * `^` and `**` are both accepted as exponentiation symbols (e.g., `dm\^3.mol^-1`).
+        * If unequivocal, they can be omitted (e.g., `dm3/mol`, `dm3.mol-1`).
 `format`::
     Can be used to specify storage formats (typically Fortran/C). +
 --
 NOTE: If the format is not obvious to parse, it is recommended to provide it in a less ambiguous format, for instance directly as a multi-dim array
+
 --
 `shape`::
     Shapes should be the ones recommended below (either 1D or a chosen structure), but in some cases, different shapes may be preferred, and can be specified this way.
 
 === Format
 
-include::dfmt_data.adoc[]
+include::api/dfmt_data.adoc[]

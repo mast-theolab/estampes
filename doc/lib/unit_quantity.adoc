@@ -1,0 +1,57 @@
+== Conversion of quantities
+
+=== Introduction
+
+Modules of interest:
+
+* `data.property`
+
+Conversion available through:
+
+* `property_units()` (`data.property`)
+
+=== Electric dipole
+
+[horizontal]
+*Symbol*::
+    stem:[bb{mu}]
+
+[cols="<10,<10,<80",option=header]
+|====
+| Sys. | Unit | Conversion from au
+
+| *au* | _e_._a_~0~ |
+| *SI* | C.m |
+    `PHYSFACT.e2C` * (`PHYSFACT.bohr2ang` * 1.0 * 10^-10^)
+| *cgs* | statC.cm |
+    (`PHYSFACT.e2C`*`PHYSCNST.slight`/10.) * (`PHYSFACT.bohr2ang` * 1.0 * 10^-8^)
+|====
+
+=== Magnetic dipole
+
+[horizontal]
+*Symbol*::
+    stem:[bb{m}]
+
+[CAUTION]
+=====
+As is the case with many computational chemistry packages, the atomic mass unit is used as reference instead of the atomic unit of mass.
+=====
+
+[NOTE]
+=====
+There exists two definitions of the magnetic dipole, electronic or nuclear.
+For the use here, the nuclear magnetic dipole is of interest.
+The difference is on the reference mass.
+=====
+
+[cols="<10,<10,<80",option=header]
+|====
+| Sys. | Unit | Conversion from au
+
+| *au* | __e__ℏ/__m__~u~ |
+| *SI* | A.m^2^ |
+    (`PHYSFACT.e2C`) * [`PHYSCNST.planck`/(2*π)] / (`PHYSFACT.amu2kg`)
+| *cgs* | statA.cm^2^ |
+    (`PHYSFACT.e2C`*`PHYSCNST.slight`/10.)  [10^7^ * `PHYSCNST.planck`/(2*π)] / (`PHYSFACT.amu2kg`*10^3^)
+|====

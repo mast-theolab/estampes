@@ -1,0 +1,16 @@
+= ESTAMPES: Library
+:email: julien.bloino@sns.it
+:revnumber: 0.4.0
+:revremark: Creation placeholder for Makefile
+:toc: left
+:toclevels: 3
+:icons: font
+:stem:
+:pygments-style: native
+
+:Gaussian: pass:q[G[small]##AUSSIAN##]
+:Estampes: pass:q[E[small]##STAMPES##]
+
+== Preamble
+
+TODO

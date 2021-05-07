@@ -1,6 +1,6 @@
 = Ballast: A simple builder to display multiple spectra.
 :email: julien.bloino@sns.it
-:revnumber: 0.3.0
+:revnumber: 0.4.0
 :revremark: Keyword for figure size proportional to number of rows/columns.
 :toc: left
 :toclevels: 1

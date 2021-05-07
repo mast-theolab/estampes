@@ -1,0 +1,202 @@
+== Conversion of intensities
+
+=== Infrared (IR)
+
+
+==== Dipole strength [[IR_D]]
+
+[horizontal]
+*Symbol*::
+    stem:[D]
+*Standard unit*::
+     10^-40^ esu^2^.cm^2^ = 10^-40^ statC^2^.cm^2^
+
+[stem]
+++++
+D = | bb{mu} |^2
+++++
+
+[TIP]
+====
+`data.property.property_units()` provides the necessary conversion factors.
+====
+
+===== Conversion to SI [[IR_D_SI]]
+
+The dipole strength is conventionally not defined in SI.
+Nevertheless, a conversion to stem:[| bb{mu} |^2] can be done by simply reverting to C^2^.m^2^.
+
+[stem]
+++++
+| bb{mu} |^2 = D * [(10/c) * (10^-2)]^2
+++++
+
+[cols="<15,<85",option=header]
+|====
+|Term | Description
+
+| stem:[10/c] | Conversion from "`statC`" to "`C`"
+| stem:[10^{-2}] | Conversion from "`cm`" to "`m`"
+|====
+
+
+==== Molar Absorption coefficient [[IR_I]]
+
+[horizontal]
+*Symbol*::
+    stem:[epsilon]
+*Standard unit*::
+    dm^3^.mol.cm^-1^
+
+
+===== Definition in cgs [[IR_I_cgs]]
+
+[stem]
+++++
+epsilon = 10^{-3} {8 pi^3 cc{N}_A}/{3 (10^7 h) c ln(10)} omega | bb{mu} |^2 delta(omega - omega_{IF})
+++++
+
+[cols="<15,<85",option=header]
+|====
+|Term | Description
+
+| stem:[omega] | Incident energy, in "`cm^-1^`"
+| stem:[10^{-3}] | Conversion from "`cm^2^.mol^-1^`" to "`dm^3^.cm^-1^.mol^-1^`".
+| stem:[h] | Plank constant, in *kg.m^2^.s^-1^* (10^7^ to convert to g.cm^2^.s^-1^)
+| stem:[c] | Speed of light, in cm.s^-1^
+| stem:[bb{mu}] | electric dipole, in statC.cm == g^1/2^.cm^5/2^.s^-1^
+| stem:[ln(10)] | Term related to the Beer-Lambert law
+| stem:[delta] | Dirac function, in cm
+|====
+
+
+===== Definition in SI [[IR_I_SI]]
+
+[stem]
+++++
+epsilon = 10 {8 pi^3 cc{N}_A}/{3 h c (4 pi epsilon_0) ln(10)} omega | bb{mu} |^2 delta(omega - omega_{IF})
+++++
+
+[cols="<15,<85",option=header]
+|====
+|Term | Description
+
+| stem:[omega] | Incident energy, in cm^-1^
+| stem:[10] | Conversion from m^2^.mol^-1^ to dm^3^.cm^-1^.mol^-1^.
+| stem:[h] | Plank constant, in kg.m^2^.s^-1^
+| stem:[c] | Speed of light, in m.s^-1^
+| stem:[epsilon_0] | Vacuum permittivity, in F.m^-1^ = A^2^.s^4^.kg^-1^.m^-3^ (stem:[epsilon_0 = 1/{4 * 10^{-7} pi c^2}])
+| stem:[bb{mu}] | electric dipole, in C.m = A.s.m
+| stem:[ln(10)] | Term related to the Beer-Lambert law
+|====
+
+
+=== Vibrational circular dichroism (VCD) [[VCD]]
+
+
+==== Rotatory strength [[VCD_R]]
+
+[horizontal]
+*Symbol*::
+    stem:[R]
+*Standard unit*::
+     10^-44^ esu^2^.cm^2^ = 10^-44^ statC^2^.cm^2^
+
+[stem]
+++++
+R = {fr{Im}(bb{mu} * bb{m})}/c
+++++
+
+[TIP]
+====
+`data.property.property_units()` provides the necessary conversion factors.
+====
+
+[cols="<15,<85",option=header]
+|====
+|Term | Description
+
+| stem:[c] | Speed of light, in cm.s^-1^
+|====
+
+===== Conversion to SI [[VCD_R_SI]]
+
+The rotatory strength is conventionally not defined in SI.
+The conversion to stem:[fr{Im}(bb{mu} * bb{m})] can take two forms:
+
+* Using stem:[R] and simply convert to C^2^.m^2^ as for <<IR_D_SI,D>>. +
+--
+CAUTION: In the formula in the SI (see <<VCD_SI,below>>), stem:[fr{Im}(bb{mu} * bb{m})] should be replaced with stem:[R*c], with stem:[c] in m.s^-1^.
+
+--
+* Converting back to stem:[fr{Im}(bb{mu} * bb{m})] +
+--
+[stem]
+++++
+fr{Im}(bb{mu} * bb{m}) = R * c * [(10/c) * (10^-2)] * [(10/c) * (10^-4)]
+++++
+--
+
+[cols="<15,<85",option=header]
+|====
+|Term | Description
+
+| stem:[c] | Speed of light, in cm.s^-1^
+| stem:[10/c] | Conversion from "`statC`" to "`C`", and "`statA`" to "`A`"
+| stem:[10^{-2}] | Conversion from "`cm`" to "`m`"
+| stem:[10^{-4}] | Conversion from "`cm^2^`" to "`m^2^`"
+|====
+
+
+
+==== Difference in molar absorption coefficient
+
+[horizontal]
+*Symbol*::
+    stem:[Delta epsilon]
+*Standard unit*::
+    dm^3^.mol.cm^-1^
+
+
+===== Definition in cgs
+
+[stem]
+++++
+Delta epsilon = 10^{-3} {32 pi^3 cc{N}_A}/{3 (10^7 h) c^2 ln(10)} omega fr{Im}(bb{mu} * bb{m}) delta(omega - omega_{IF})
+++++
+
+[cols="<15,<85",option=header]
+|====
+|Term | Description
+
+| stem:[omega] | Incident energy, in cm^-1^
+| stem:[10^{-3}] | Conversion from cm^2^.mol^-1^ to dm^3^.cm^-1^.mol^-1^.
+| stem:[h] | Plank constant, in kg.m^2^.s^-1^ (10^7^ to convert to g.cm^2^.s^-1^)
+| stem:[c] | Speed of light, in cm.s^-1^
+| stem:[bb{mu}] | electric dipole, in statC.cm == g^1/2^.cm^5/2^.s^-1^
+| stem:[bb{m}] | magnetic dipole, in statA.cm^2^ == g^1/2^.cm^7/2^.s^-2^
+| stem:[ln(10)] | Term related to the Beer-Lambert law
+| stem:[delta] | Dirac function, in cm
+|====
+
+
+===== Definition in SI [[VCD_SI]]
+
+[stem]
+++++
+Delta epsilon = 10 {32 pi^3 cc{N}_A}/{3 h c^2 (4 pi epsilon_0) ln(10)} omega fr{Im}(bb{mu} * bb{m}) delta(omega - omega_{IF})
+++++
+
+[cols="<15,<120",option=header]
+|====
+|Term | Description
+
+| stem:[omega] | Incident energy, in cm^-1^
+| stem:[10] | Conversion from m^2^.mol^-1^ to dm^3^.cm^-1^.mol^-1^.
+| stem:[h] | Plank constant, in kg.m^2^.s^-1^
+| stem:[c] | Speed of light, in m.s^-1^
+| stem:[epsilon_0] | Vacuum permittivity, in F.m^-1^ = A^2^.s^4^.kg^-1^.m^-3^ (stem:[epsilon_0 = 1/{4 * 10^{-7} pi c^2}])
+| stem:[bb{mu}] | electric dipole, in C.m = A.s.m
+| stem:[bb{m}] | magnetic dipole, in A.m^2^
+| stem:[ln(10)] | Term related to the Beer-Lambert law
+|====
