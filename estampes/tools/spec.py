@@ -126,7 +126,9 @@ def broaden(xval: tp.Sequence[float],
 
 def convert_y(specabbr: str,
               unit_to: str,
-              unit_from: str) -> tp.Tuple[float, tp.Optional[tp.Callable[[float], float]]]:
+              unit_from: str,
+              **subopts: tp.Dict[str, tp.Any]
+              ) -> tp.Tuple[float, tp.Optional[tp.Callable[[float], float]]]:
     """Returns parameters for the conversion of Y units.
 
     Returns the scaling factor and the power of X needed to convert the
@@ -146,6 +148,10 @@ def convert_y(specabbr: str,
         Final Y unit.
     unit_from
         Original Y unit.
+    subopts
+        Sub-options, dependent on quantity:
+        - 'incfreq': incident frequency for Raman, ROA (in cm^-1)
+                     if not present or None, use def. 532 nm.
 
     Returns
     -------
@@ -156,6 +162,8 @@ def convert_y(specabbr: str,
 
     Raises
     ------
+    ArgumentError
+        Error in sub-options.
     IndexError
         Unrecognized spectroscopy or unit.
     NotImplementedError
@@ -178,7 +186,7 @@ def convert_y(specabbr: str,
         ' not yet implemented.'
     msgNA = f'Conversion from "{unit_from}" to "{unit_to}" not recognized ' +\
         f'for {specabbr}'
-    UNIT_EPS = {
+    msgVal = 'Wrong value for option {subkey} in spectroscopy {specabbr}'
         '/M/cm1': ('M-1.cm-1', '/M/cm', 'dm3.mol-1.cm-1', 'dm3/mol/cm',
                    'L.mol-1.cm-1', 'L/mol/cm', '')
     }
