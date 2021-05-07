@@ -21,6 +21,9 @@ Other blocks are:
 
 ## Unreleased
 
+
+## [0.4.0] - 2021-05-07
+
 ### Notice
 * This version introduces a number of breaking changes to the library and API.  Updates of external programs are likely necessary.  Be warned:
     * `convert_y` returns a function for the contribution of x to y.
