@@ -1553,12 +1553,14 @@ def parse_data(qdict: TypeQInfo,
                 elif qtag == 'rotstr':
                     if Si == 0:
                         if isinstance(Sf, int):
-                            data[qlabel]['data'] = float(datablocks[iref])
-                            data[qlabel]['unit'] = 'RS:10^-40 esu^2.cm^2'
+                            data[qlabel]['data'] \
+                                = float(datablocks[iref])*1.0e-40
+                            data[qlabel]['unit'] = 'RS:esu^2.cm^2'
                         else:
-                            data[qlabel]['unit'] = 'RS:10^-40 esu^2.cm^2'
+                            data[qlabel]['unit'] = 'RS:esu^2.cm^2'
                             data[qlabel]['data'] = \
-                                [float(item) for item in datablocks[iref]]
+                                [float(item) * 1.0e-40
+                                 for item in datablocks[iref]]
                     else:
                         pass
                 else:
