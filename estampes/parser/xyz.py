@@ -229,6 +229,7 @@ def get_data(dfobj: FileXYZ,
     data = {}
     for qlabel in qlabels:
         key = qty_dict[qlabel]
+        data[qlabel] = {}
         if qlabel in ('atnum', 'atlab'):
             data[qlabel]['data'] = convert_labsymb(qlabel == 'atlab',
                                                    datablocks[key])

@@ -24,7 +24,7 @@ Other blocks are:
 
 ### Fixed
 - **API** - Incorrect definition of a tuple in `parse_qlabel`.
-
+- **API** - `parser/xyz`: Fixed incorrect construction of the data in `get_data`.
 
 ## [0.4.0] - 2021-05-07
 
