@@ -22,11 +22,13 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **API** - `parser/xyz`: Function `parse_xyz` can now ignore empty lines before a new configuration (not permitted by the parser itself, however).
 - **API** - `parser/xyz`: New function `parse_xyz` to simply parse a single configuration in an opened XYZ file.
 
 ### Fixed
 - **API** - Incorrect parsing of a *qlabel* made of a single keyword.
 - **API** - Incorrect definition of a tuple in `parse_qlabel`.
+- **API** - `parser/xyz`: Fixed error if XYZ file contained empty line in the end
 - **API** - `parser/xyz`: Fixed a problem of reference to a private variable in a module.
 - **API** - `parser/xyz`: Fixed incorrect construction of the data in `get_data`.
 

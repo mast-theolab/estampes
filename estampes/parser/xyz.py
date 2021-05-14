@@ -92,7 +92,8 @@ class FileXYZ(object):
             try:
                 self.__natoms = int(line.strip())
             except ValueError:
-                raise ValueError('1st line should contain the number of atoms')
+                msg = '1st line should contain the number of atoms'
+                raise ParseDataError(msg)
             line = fobj.readline()
             self.__title = line.strip()
             for _ in range(self.__natoms):
@@ -100,22 +101,27 @@ class FileXYZ(object):
                 if not line:
                     msg = 'File ended while reading molecular geometry'
                     raise ParseDataError(msg)
-            line = fobj.readline()
-            while line:
-                self.__ngeoms += 1
+            to_find = ['natoms']
+            while True:
                 try:
-                    natoms = int(line.strip())
-                except ValueError:
-                    fmt = '1st line of geometry {} should be number of atoms'
-                    raise ValueError(fmt.format(self.__ngeoms))
-                if natoms != self.__natoms:
-                    fmt = 'Number of atoms in geometry {} does not match.'
-                    raise ValueError(fmt.format(self.__ngeoms))
-                for _ in range(2+self.__natoms):
-                    line = fobj.readline()
-                    if not line:
-                        fmt = 'File ended while parsing geometry {}'
-                        raise ParseDataError(fmt.format(self.__ngeoms))
+                    datlist = parse_xyz(fobj, to_find, False)
+                except ParseDataError:
+                    fmt = 'Error in geometry num. {}.\n' \
+                        + 'Empty lines found between configurations.'
+                    raise ParseDataError(fmt.self.__ngeoms+1) from None
+                except ValueError as e:
+                    fmt = 'Error in geometry num. {}.\n{}'
+                    raise ValueError(fmt.format(self.__ngeoms+1, e)) from None
+                except EOFError:
+                    fmt = 'File ended while parsing geometry {}'
+                    raise ParseDataError(fmt.format(self.__ngeoms+1))
+                if datlist is None:
+                    break
+                else:
+                    self.__ngeoms += 1
+                    if datlist['natoms'] != self.__natoms:
+                        fmt = 'Number of atoms in geometry {} does not match.'
+                        raise ValueError(fmt.format(self.__ngeoms))
 
     def read_data(self, *to_find: tp.Sequence[str],
                   geom: tp.Optional[int] = 1,
@@ -152,7 +158,10 @@ class FileXYZ(object):
 # ================
 
 
-def parse_xyz(fobj: tp.IO, what: tp.Sequence[str]) -> tp.Dict[str, tp.Any]:
+def parse_xyz(fobj: tp.IO,
+              what: tp.Sequence[str],
+              blank_ok: bool = True
+              ) -> tp.Optional[tp.Dict[str, tp.Any]]:
     """Parses a XYZ configuration.
 
     Parses an xyz configuration, assuming the first line to read is the
@@ -165,7 +174,9 @@ def parse_xyz(fobj: tp.IO, what: tp.Sequence[str]) -> tp.Dict[str, tp.Any]:
     fobj
         File object: file already opened.
     what
-        Data to extract: natoms, atoms, atcrd, atoms
+        Data to extract: natoms, title, atcrd, atoms.
+    blank_ok
+        If true, blank lines before a configuration are OK.
 
     Returns
     -------
@@ -174,10 +185,12 @@ def parse_xyz(fobj: tp.IO, what: tp.Sequence[str]) -> tp.Dict[str, tp.Any]:
 
     Raises
     ------
-    ValueError
-        Unexpected data
     EOFError
-        End-of-file reached while reading the configuration
+        End-of-file reached while reading the configuration.
+    ParseDataError
+        Error in format of XYZ (e.g., leading blank lines)
+    ValueError
+        Unexpected type of data.
     """
     # Initialize
     data = {}
@@ -190,8 +203,23 @@ def parse_xyz(fobj: tp.IO, what: tp.Sequence[str]) -> tp.Dict[str, tp.Any]:
     if 'atcrd' in what:
         data['atcrd'] = []
     # Line 1: number of atoms
-    line = fobj.readline()
-    natoms = int(line)
+    # There may be empty lines ahead
+    nblanks = 0
+    while True:
+        line = fobj.readline()
+        if not line:
+            return None
+        else:
+            if line.strip():
+                break
+            nblanks += 1
+    if nblanks > 0 and not blank_ok:
+        raise ParseDataError('Leading blank lines found.')
+    try:
+        natoms = int(line)
+    except ValueError:
+        msg = '1st line should be the number of atoms'
+        raise ValueError(msg)
     if 'natoms' in data:
         data['natoms'] = natoms
     # Line 2: title
@@ -203,7 +231,11 @@ def parse_xyz(fobj: tp.IO, what: tp.Sequence[str]) -> tp.Dict[str, tp.Any]:
         line = fobj.readline()
         cols = line.split()
         atom = cols[0]
-        coord = [float(item)*__ang2au for item in cols[1:]]
+        try:
+            coord = [float(item)*__ang2au for item in cols[1:]]
+        except ValueError:
+            msg = 'Wrong XYZ geometry specification.'
+            raise ValueError(msg)
         if 'atoms' in data:
             data['atoms'].append(atom)
         if 'atcrd' in data:
