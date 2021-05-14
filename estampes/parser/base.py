@@ -202,7 +202,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
        QX       Derivatives in ixed normal-Cartesian coordinates
     =========  ==================================================
     """
-    nparts = 5  # Number of parts expected in full label
+    nparts = 6  # Number of parts expected in full label
     # Parse qlabel and build full list (filling missing information)
     qlist = [item or None for item in
              qlabel.split(':')]  # type: tp.List[tp.Any]
