@@ -21,6 +21,9 @@ Other blocks are:
 
 ## Unreleased
 
+
+## [0.4.1] - 2021-07-14
+
 ### Added
 - **API** - `parser/xyz`: Function `parse_xyz` can now ignore empty lines before a new configuration (not permitted by the parser itself, however).
 - **API** - `parser/xyz`: New function `parse_xyz` to simply parse a single configuration in an opened XYZ file.

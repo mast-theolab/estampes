@@ -1,6 +1,6 @@
 = ESParser: A simple parser and proof of concept for ESTAMPES
 :email: julien.bloino@sns.it
-:revnumber: 0.4.0
+:revnumber: 0.4.1
 :revremark: Introduction
 :toc: left
 :toclevels: 1
