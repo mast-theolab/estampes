@@ -187,17 +187,18 @@ def convert_y(specabbr: str,
     msgNA = f'Conversion from "{unit_from}" to "{unit_to}" not recognized ' +\
         f'for {specabbr}'
     msgVal = 'Wrong value for option {subkey} in spectroscopy {specabbr}'
+    UNIT_EPS = {  # Epsilon: Molar absorption coefficient
         '/M/cm1': ('M-1.cm-1', '/M/cm', 'dm3.mol-1.cm-1', 'dm3/mol/cm',
                    'L.mol-1.cm-1', 'L/mol/cm', '')
     }
-    UNIT_II = {
+    UNIT_II = {  # Integrated intensity
         '/M/cm2': ('M-1.cm-2', '/M/cm2', 'dm3.mol-1.cm-2', 'dm3/mol/cm2',
                    'L.mol-1.cm-2', 'L/mol/cm2')
     }
-    UNIT_DS = {
+    UNIT_DS = {  # Dipole strength
         'esu2.cm2': ('statC2.cm2', 'esu2.cm2')
     }
-    UNIT_RS = {
+    UNIT_RS = {  # Rotatory strength
         'esu2.cm2': ('statA2.cm2', 'esu2.cm2')
     }
     # Initial setup

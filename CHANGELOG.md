@@ -26,6 +26,7 @@ Other blocks are:
 - **API** - `parser/xyz`: New function `parse_xyz` to simply parse a single configuration in an opened XYZ file.
 
 ### Fixed
+- **EST** - Fixed incorrect edit in the code which prevented using several features of ESTAMPES in 0.4.0 (Issue [#1](https://github.com/jbloino/estampes/issues/1))
 - **API** - Fixed parsing of atomic masses in Gaussian log files.
 - **API** - Incorrect parsing of a *qlabel* made of a single keyword.
 - **API** - Incorrect definition of a tuple in `parse_qlabel`.
