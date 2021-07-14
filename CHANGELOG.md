@@ -26,6 +26,7 @@ Other blocks are:
 - **API** - `parser/xyz`: New function `parse_xyz` to simply parse a single configuration in an opened XYZ file.
 
 ### Fixed
+- **API** - Fixed parsing of atomic masses in Gaussian log files.
 - **API** - Incorrect parsing of a *qlabel* made of a single keyword.
 - **API** - Incorrect definition of a tuple in `parse_qlabel`.
 - **API** - `parser/xyz`: Fixed error if XYZ file contained empty line in the end

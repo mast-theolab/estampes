@@ -490,14 +490,14 @@ def qlab_to_linkdata(qtag: TypeQTag,
         raise NotImplementedError()
     elif qtag == 'atmas':
         lnk = (-101, 716)
-        key = (' AtmWgt= ', '- Thermochemistry -')
+        key = (' NAtoms= ', ' - Thermochemistry -')
         sub = (0, 3)
         end = (lambda s: s.startswith(' Leave Link'),
                lambda s: s.startswith(' Molecular Mass:'))
         fmt = (r'^ AtmWgt=\s+(?P<val>(\s+\d+\.\d+)+)\s*$',
                r'^ Atom\s+\d+ has atomic number\s+\d+ and '
                + r'mass\s+(?P<val>\d+\.\d+)\s*$')
-        num = 0
+        num = (0, 0)
     elif qtag == 'atnum':
         lnk = (0, 0)
         key = ('                         Standard orientation:',
