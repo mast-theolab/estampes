@@ -280,9 +280,9 @@ def superpose(cref: np.ndarray,
         for i in range(3):
             print('{0[0]:8.5f}{0[1]:8.5f}{0[2]:8.5f}'.format(rotmat[i, :]))
     if get_ctrans:
-        return rotmat, com_new-com_ref, cnew_ @ rotmat
+        return rotmat, (com_new-com_ref)/totwt, cnew_ @ rotmat
     else:
-        return rotmat, com_new-com_ref
+        return rotmat, (com_new-com_ref)/totwt
 
 
 def vrotate_3D(vec: np.ndarray,

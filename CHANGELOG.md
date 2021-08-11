@@ -23,6 +23,7 @@ Other blocks are:
 
 ### Fixed
 - **API** - `parser/xyz` now properly supports the _qlabels_.
+- **LIB** - The translation vector returned by `tools.math.superpose` was not properly mass-weighted.
 - **DOC** - Header doc and type hints of `tools.math.superpose`.
 
 ### Changed
