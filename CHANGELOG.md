@@ -24,6 +24,9 @@ Other blocks are:
 ### Fixed
 - **API** - `parser/xyz` now properly supports the _qlabels_.
 
+### Changed
+- **LIB** - `convert_labsymb` now fixes the case of the atomic symbol if the conversion is from `str` to `str`.
+
 ### Removed
 - **API** _ `parser/xyz`: `read_data` does not support anymore the geometry index for files with multiple geometries.  This caused a non-standard behavior of the wrapper, and is partially superseded by the proper support of _qlabels_.  More parameters are accessible by using directly the internal class without passing by the `DataFile` wrapper class.
 

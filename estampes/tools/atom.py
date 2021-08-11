@@ -68,11 +68,12 @@ def convert_labsymb(to_symb: bool,
                 else:
                     raise IndexError('Incorrect label')
             else:
-                if atom.capitalize() in ELEMENTS[1:]:
+                at = atom.capitalize()
+                if at in ELEMENTS[1:]:
                     if to_symb:
-                        new_list.append(atom)
+                        new_list.append(at)
                     else:
-                        new_list.append(ELEMENTS.index(atom))
+                        new_list.append(ELEMENTS.index(at))
                 else:
                     raise IndexError('Incorrect symbol')
         else:
