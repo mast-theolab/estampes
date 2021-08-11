@@ -155,21 +155,23 @@ def square_ltmat(ltmat: np.ndarray, what: str = 'symm') -> np.ndarray:
 def superpose(cref: np.ndarray,
               cnew: np.ndarray,
               atmass: tp.Optional[np.ndarray] = None,
-              get_ctrans: bool = False) -> tp.Union[np.ndarray, np.ndarray]:
+              get_ctrans: bool = False
+              ) -> tp.Union[tp.Tuple[np.ndarray, np.ndarray],
+                            tp.Tuple[np.ndarray, np.ndarray, np.ndarray]]:
     """Returns the transformation matrices to superpose cnew onto cref.
 
     Returns the rotation matrix and transition vector to maximize the
       superposition of `cnew` onto `cref`.  The translated and rotated
       coordinates can be returned on request.
     The superposition can be mass-weighted if requested.
-    The coordinates should have the form (3,N).
+    The coordinates should have the form (N,3).
 
     Parameters
     ----------
     cref
-        Reference structure, as a Numpy 2D array (3,N).
+        Reference structure, as a Numpy 2D array (N,3).
     cnew
-        New structure to superpose, as a Numpy 2D array (3,N).
+        New structure to superpose, as a Numpy 2D array (N,3).
     atmass
         Atomic masses, as a Numpy 1D array (N).
     get_ctrans
@@ -182,7 +184,7 @@ def superpose(cref: np.ndarray,
     np.ndarray
         Transition vector (3).
     np.ndarray : optional
-        Transformed structure, on request (3,N).
+        Transformed structure, on request (N,3).
 
     Raises
     ------

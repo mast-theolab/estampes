@@ -23,6 +23,7 @@ Other blocks are:
 
 ### Fixed
 - **API** - `parser/xyz` now properly supports the _qlabels_.
+- **DOC** - Header doc and type hints of `tools.math.superpose`.
 
 ### Changed
 - **LIB** - `convert_labsymb` now fixes the case of the atomic symbol if the conversion is from `str` to `str`.
