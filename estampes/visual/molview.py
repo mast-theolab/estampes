@@ -28,8 +28,6 @@ Methods
 -------
 build_box
     Builds the outer box containing the molecule.
-list_bonds
-    Finds and lists bonds between atoms.
 set_cam_zpos
     Sets Z position of camera in POV-Ray.
 write_pov
@@ -43,24 +41,25 @@ Molecule
 
 from math import sqrt, inf, tan, radians
 import typing as tp
-import numpy as np
 
-from estampes.base import ArgumentError, TypeColor
-from estampes.data.atom import atomic_data
-from estampes.tools.math import vrotate_3D
+import numpy as np
+import numpy.typing as npt
+
 from PySide2 import QtCore, QtGui
 from PySide2.Qt3DCore import Qt3DCore
 from PySide2.Qt3DRender import Qt3DRender
 from PySide2.Qt3DExtras import Qt3DExtras
+
+from estampes.base import ArgumentError, TypeAtLab, TypeBonds, TypeColor
+from estampes.data.atom import atomic_data
+from estampes.tools.math import vrotate_3D
 
 
 # ================
 # Module Constants
 # ================
 
-TypeBonds = tp.List[tp.Tuple[int, int]]
-TypeAtLab = tp.Sequence[str]
-TypeAtCrd = np.ndarray
+TypeAtCrd = npt.ArrayLike
 TypeAtLabM = tp.Union[TypeAtLab, tp.Sequence[TypeAtLab]]
 TypeAtCrdM = tp.Union[TypeAtCrd, tp.Sequence[TypeAtCrd]]
 TypeBondsM = tp.Union[TypeBonds, tp.Sequence[TypeBonds]]
@@ -387,45 +386,6 @@ class Molecule(Qt3DCore.QEntity):
 # ==============
 # Module Methods
 # ==============
-
-def list_bonds(at_lab: TypeAtLab,
-               at_crd: TypeAtCrd,
-               rtol: float = 1.1) -> TypeBonds:
-    """Finds and lists bonds between atoms.
-
-    Arguments
-    ---------
-    at_lab
-        List of atoms labels (as string).
-    at_crd
-        Atom coordinates as XYZ vectors, in Ang.
-    rtol
-        Radius tolerance, i.e. scaling factor applied to Rcov for bond
-          identification.
-
-    Returns
-    -------
-    list
-        List of bonds as `(atom1, atom2)`.
-    """
-    bonds = []
-    natoms = len(at_lab)
-    atdat = atomic_data(*at_lab)
-    for i in range(natoms-1):
-        xyz_i = at_crd[i]
-        rad_i = max(atdat[at_lab[i]]['rcov'], key=lambda x: x or 0.)
-        if rad_i is None:
-            raise ValueError('Missing rcov for atom {}'.format(i))
-        for j in range(i+1, natoms):
-            xyz_j = at_crd[j]
-            rad_j = max(atdat[at_lab[j]]['rcov'], key=lambda x: x or 0.)
-            if rad_j is None:
-                raise ValueError('Missing rcov for atom {}'.format(j))
-            if np.linalg.norm(xyz_j-xyz_i) < (rad_i + rad_j)*rtol/100.:
-                bonds.append((i, j))
-
-    return bonds
-
 
 def build_box(at_lab: TypeAtLab,
               at_crd: TypeAtCrd,

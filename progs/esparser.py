@@ -15,6 +15,7 @@ import typing as tp
 
 import numpy as np
 import matplotlib.pyplot as plt
+
 from PySide2 import QtCore, QtGui
 from PySide2.Qt3DCore import Qt3DCore
 from PySide2.Qt3DRender import Qt3DRender
@@ -25,7 +26,8 @@ from estampes.base.spectrum import VSPC2DATA, Spectrum
 from estampes.parser import DataFile, build_qlabel
 from estampes.data.physics import PHYSFACT
 from estampes.tools.atom import convert_labsymb
-from estampes.visual.molview import list_bonds, Molecule, TypeAtLabM, \
+from estampes.tools.mol import list_bonds
+from estampes.visual.molview import Molecule, TypeAtLabM, \
     TypeAtCrdM, TypeBondsM, MOLCOLS
 from estampes.visual.plotmat import plot_jmat, plot_cmat, plot_kvec
 from estampes.visual.plotspec import format_label, plot_spec_2D

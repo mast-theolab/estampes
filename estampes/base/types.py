@@ -30,6 +30,10 @@ TypeDGLog : :obj:`typing.List`
     Static type for data from Gaussian log file.
 TypeColor : :obj:`typing.Union`
     Static type for colors.
+TypeAtLab : :obj:`typing.Sequence`
+    Static type for atomic labels.
+TypeBonds : :obj:`typing.List`
+    Static type for bond list, as (atom1, atom2).
 
 Classes
 -------
@@ -91,3 +95,5 @@ TypeQInfo = tp.Dict[str, tp.List[tp.Any]]
 TypeDFChk = tp.Dict[str, tp.List[tp.Union[str, int, float]]]
 TypeDGLog = tp.List[tp.Union[tp.List[str], str]]
 TypeColor = tp.Union[tp.Sequence[int], float, str]
+TypeAtLab = tp.Sequence[str]
+TypeBonds = tp.List[tp.Tuple[int, int]]

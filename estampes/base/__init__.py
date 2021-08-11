@@ -40,6 +40,10 @@ TypeDGLog : :obj:`typing.List`
     Static type for data from Gaussian log file.
 TypeColor : :obj:`typing.Union`
     Static type for colors.
+TypeAtLab : :obj:`typing.Sequence`
+    Static type for atomic labels.
+TypeBonds : :obj:`typing.List`
+    Static type for bond list, as (atom1, atom2).
 
 Classes
 -------
@@ -57,9 +61,9 @@ QuantityError
 
 # flake8: noqa: F401
 
-from estampes.base.types import TypeAtData, TypeColor, TypeData, TypeDCrd, \
-    TypeDFChk, TypeDGLog, TypeDOrd, TypeQInfo, TypeQLab, TypeQLvl, TypeQOpt, \
-    TypeQTag, TypeRSta, ConstDict
+from estampes.base.types import TypeAtData, TypeAtLab, TypeBonds, TypeColor, \
+    TypeData, TypeDCrd, TypeDFChk, TypeDGLog, TypeDOrd, TypeQInfo, TypeQLab, \
+    TypeQLvl, TypeQOpt, TypeQTag, TypeRSta, ConstDict
 
 from estampes.base.errors import ArgumentError, ParseDataError, \
     ParseKeyError, ParsingError, QuantityError

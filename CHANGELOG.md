@@ -21,12 +21,17 @@ Other blocks are:
 
 ## Unreleased
 
+### Added
+- **API** - Types for atomic labels and bonds.
+- **LIB** - New tool library: `mol`, for molecule-centric operations.
+
 ### Fixed
 - **API** - `parser/xyz` now properly supports the _qlabels_.
 - **LIB** - The translation vector returned by `tools.math.superpose` was not properly mass-weighted.
 - **DOC** - Header doc and type hints of `tools.math.superpose`.
 
 ### Changed
+- **LIB** - `list_bonds` is now part of a dedicated module, `tools.mol`, and not in `visual.molview` to facilitate accesses without the need for Qt libs.
 - **LIB** - `convert_labsymb` now fixes the case of the atomic symbol if the conversion is from `str` to `str`.
 
 ### Removed
