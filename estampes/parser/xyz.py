@@ -133,7 +133,9 @@ class FileXYZ(object):
         to_find
             List of keys to find.
         geom
-            Geometry block of interest.
+            Geometry block of interest, starting from 1
+            -1: last
+            0: all (only for coordinates)
         raise_error : bool
             Only raises error if `True`, otherwise proceeds silently.
         """
@@ -141,16 +143,30 @@ class FileXYZ(object):
         datlist = {}
         if geom > self.__ngeoms:
             raise ValueError('Structure {} not available'.format(geom))
+        if geom == -1:
+            geom_ = self.__ngeoms
+        else:
+            geom_ = geom
         if 'natoms' in to_find:
             datlist['natoms'] = self.__natoms
         rest = ls_keys - {'natoms', 'title', 'atoms', 'atcrd'}
         if len(rest) > 0 and raise_error:
             raise ParseKeyError(rest[0])
         if {'title', 'atoms', 'atcrd'} & ls_keys:
-            with open(self.__fname, 'r') as fobj:
-                for _ in range((geom-1)*(self.__natoms+2)):
-                    _ = fobj.readline()
-                datlist = parse_xyz(fobj, to_find)
+            if geom_ > 0 or 'atcrd' not in ls_keys:
+                with open(self.__fname, 'r') as fobj:
+                    for _ in range((geom_-1)*(self.__natoms+2)):
+                        _ = fobj.readline()
+                    datlist = parse_xyz(fobj, to_find)
+            else:
+                with open(self.__fname, 'r') as fobj:
+                    datlist = parse_xyz(fobj, to_find)
+                    datlist['atcrd'] = [datlist['atcrd']]
+                    i = 1
+                    while i < self.__ngeoms:
+                        i += 1
+                        datlist['atcrd'].append(
+                            parse_xyz(fobj, ['atcrd'])['atcrd'])
         return datlist
 
 # ================
@@ -246,8 +262,7 @@ def parse_xyz(fobj: tp.IO,
 
 def get_data(dfobj: FileXYZ,
              *qlabels: str,
-             error_noqty: bool = True,
-             geom: int = 1) -> TypeData:
+             error_noqty: bool = True) -> TypeData:
     """Gets data from a XYZ file for each quantity label.
 
     Reads one or more full quantity labels from `qlabels` and returns
@@ -289,26 +304,40 @@ def get_data(dfobj: FileXYZ,
     # Build Keyword List
     # ------------------
     # List of keywords
+    keydata = {}
     qty_dict = {}
+    geom = None
     for qlabel in qlabels:
         # Label parsing
         # ^^^^^^^^^^^^^
-        if qlabel in ('atoms', 'atnum', 'atlab'):
-            qty_dict[qlabel] = 'atoms'
+        qty_dict[qlabel] = ep.parse_qlabel(qlabel)
+        qlab = qty_dict[qlabel][0]
+        if qlab in ('atoms', 'atnum', 'atlab'):
+            keydata[qlabel] = 'atoms'
         else:
-            qty_dict[qlabel] = ep.parse_qlabel(qlabel)[0]
+            keydata[qlabel] = qlab
+            if qlab in ('atcrd', 2, 1):
+                if qty_dict[qlabel][1] == 'last':
+                    geom = -1
+                elif qty_dict[qlabel][1] == 'first':
+                    geom = 1
+                else:
+                    geom = 0
+    if geom is None:
+        geom = 1
     # Data Extraction
     # ---------------
     # Use of set to remove redundant keywords
-    datablocks = dfobj.read_data(*list(set(qty_dict.values())), geom=geom,
+    datablocks = dfobj.read_data(*set(keydata.values()), geom=geom,
                                  raise_error=error_noqty)
     data = {}
     for qlabel in qlabels:
-        key = qty_dict[qlabel]
+        key = keydata[qlabel]
         data[qlabel] = {}
-        if qlabel in ('atnum', 'atlab'):
-            data[qlabel]['data'] = convert_labsymb(qlabel == 'atlab',
-                                                   datablocks[key])
+        qlab = qty_dict[qlabel][0]
+        if qlab in ('atnum', 'atlab'):
+            data[qlabel]['data'] = convert_labsymb(qlab == 'atlab',
+                                                   *datablocks[key])
         else:
             data[qlabel]['data'] = datablocks[key]
     return data
