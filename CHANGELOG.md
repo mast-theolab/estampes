@@ -22,6 +22,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **API** - `parser/gaussian/glog` now supports the electric dipole.
 - **API** - Types for atomic labels and bonds.
 - **LIB** - New tool library: `mol`, for molecule-centric operations.
 

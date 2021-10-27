@@ -21,7 +21,7 @@ import typing as tp
 from estampes import parser as ep
 from estampes.base import ParseKeyError, QuantityError, TypeData, TypeDCrd, \
     TypeDGLog, TypeDOrd, TypeQInfo, TypeQLvl, TypeQOpt, TypeQTag, TypeRSta
-from estampes.data.physics import PHYSFACT
+from estampes.data.physics import PHYSFACT, phys_fact
 
 
 # ================
@@ -861,6 +861,17 @@ def qlab_to_linkdata(qtag: TypeQTag,
                     raise NotImplementedError()
                 elif dord == 2:
                     raise NotImplementedError()
+            elif qtag == 101:
+                if dord == 0:
+                    if rsta == 'c':
+                        lnk1.append(601)
+                        key1.append(' Dipole moment (field-independent basis,'
+                            + ' Debye):')
+                        sub1.append(1)
+                        end1.append(lambda s: True)
+                        fmt1.append(r'^\s+(?P<val>(?:\s*[XYZ]=\s+-?\d+\.\d+)'
+                            + r'{3}).*$')
+                        num1.append(0)
             elif qtag == 'dipstr':
                 if qlvl == 'H':
                     lnk1.extend([-716, 716, -717])
@@ -957,8 +968,6 @@ def qlab_to_linkdata(qtag: TypeQTag,
         #     elif qtag == 92:
         #         raise NotImplementedError()
         #     elif qtag == 93:
-        #         raise NotImplementedError()
-        #     elif qtag == 101:
         #         raise NotImplementedError()
         #     elif qtag == 102:
         #         raise NotImplementedError()
@@ -1574,7 +1583,6 @@ def parse_data(qdict: TypeQInfo,
                 if qtag == 1:
                     if dord == 0:
                         if rsta == 'c':
-
                             def conv(s):
                                 return float(s.split('=')[1].replace('D', 'e'))
 
@@ -1596,11 +1604,22 @@ def parse_data(qdict: TypeQInfo,
                                 try:
                                     tag = res.group(1)
                                 except AttributeError:
-                                    msg = 'Unsupported energy formag'
+                                    msg = 'Unsupported energy format'
                                     raise ParseKeyError(msg) from None
                                 data[qlabel][tag] = val
                             data[qlabel]['data'] = data[qlabel][tag]
                             data[qlabel]['unit'] = 'Eh'
+                elif qtag == 101:
+                    if dord == 0:
+                        if rsta == 'c':
+                            val = [float(item)/phys_fact('au2Deb') for item in
+                                   datablocks[last][0].split()[1::2]]
+                            data[qlabel]['data'] = val
+                            data[qlabel]['unit'] = 'e.a0'
+                        else:
+                            raise NotImplementedError()
+                    else:
+                        raise NotImplementedError()
                 elif qtag == 'dipstr':
                     if qlvl == 'H':
                         for i in range(last, first-1, -1):
@@ -1721,11 +1740,6 @@ def parse_data(qdict: TypeQInfo,
             #             data[qlabel] = datablocks[kword][9:]
             #         elif qtag in (50, 91):
             #             raise NotImplementedError()
-            #         elif qtag == 101:
-            #             if dord in (0, 1):
-            #                 data[qlabel] = datablocks[kword]
-            #             else:
-            #                 raise NotImplementedError()
             #         elif qtag == 102:
             #             if dord == 1:
             #                 data[qlabel] = datablocks[kword]
