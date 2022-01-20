@@ -26,6 +26,7 @@ Other blocks are:
 - **API** - `parser/gaussian/glog` now supports GVPT2 variational coefficients.
 - **API** - `parser/gaussian/glog` now supports the electric dipole.
 - **API** - Types for atomic labels and bonds.
+- **VIZ** - Added class `MolWin` (`estampes.visual.molview`) to build a 3D representation of one or more molecules.
 - **LIB** - The `superpose` function (`estampes.tools.math`) now supports a mask to apply the superposition procedure on a subset of atoms.
 - **LIB** - New tool library: `mol`, for molecule-centric operations.
 
