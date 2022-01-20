@@ -92,7 +92,7 @@ def convert_atoms_id(list_atoms: tp.List[tp.Union[int, str]],
 
     Converts between atoms numbers (`atnum`) and labels (`atlab`).
 
-    Attributes
+    Parameters
     ----------
     list_atoms
         List of atoms numbers or labels.

@@ -31,12 +31,12 @@ def list_bonds(at_lab: TypeAtLab,
                rtol: float = 1.1) -> TypeBonds:
     """Finds and lists bonds between atoms.
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     at_lab
         List of atoms labels (as string).
     at_crd
-        Atom coordinates as XYZ vectors, in Ang.
+        Atomic coordinates as XYZ vectors, in Ang.
     rtol
         Radius tolerance, i.e. scaling factor applied to Rcov for bond
           identification.

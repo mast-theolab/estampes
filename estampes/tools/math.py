@@ -17,6 +17,7 @@ vrotate_3D
     Rotates a vector in a 3D space.
 """
 
+from itertools import cycle
 from math import exp, log, pi, sqrt
 import typing as tp
 

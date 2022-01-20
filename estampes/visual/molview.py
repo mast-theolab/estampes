@@ -141,7 +141,7 @@ class Molecule(Qt3DCore.QEntity):
                     at_lab: TypeAtLab,
                     at_crd: TypeAtCrd,
                     bonds: TypeBonds,
-                    render: bool = True) -> tp.NoReturn:
+                    render: bool = True):
         """Updates geometry information.
 
         Updates atomic labels and coordinates.
@@ -174,8 +174,7 @@ class Molecule(Qt3DCore.QEntity):
     def set_display_settings(self, *,
                              col_bond_as_atom: bool = False,
                              rad_atom_as_bond: bool = False,
-                             molcol: tp.Optional[TypeColor] = None
-                             ) -> tp.NoReturn:
+                             molcol: tp.Optional[TypeColor] = None):
         """Sets display settings for the molecule.
 
         Sets color information and rendering.
@@ -216,7 +215,7 @@ class Molecule(Qt3DCore.QEntity):
 
         self.__bo_rad = BONDDATA['rvis']*RAD_VIS_SCL
 
-    def update_render(self) -> tp.NoReturn:
+    def update_render(self):
         """Updates rendering of the molecules.
 
         Updates the rendering of the molecules with the current display
@@ -225,7 +224,7 @@ class Molecule(Qt3DCore.QEntity):
         self.__build_bonds()
         self.__build_atoms()
 
-    def addMouse(self, cam: Qt3DRender.QCamera) -> tp.NoReturn:
+    def addMouse(self, cam: Qt3DRender.QCamera):
         """Adds mouse support.
 
         Adds mouse support (clicks) on the molecule object.
@@ -239,7 +238,7 @@ class Molecule(Qt3DCore.QEntity):
         for at in self.__at_pick:
             at.pressed.connect(self.__clickAtom)
 
-    def __upd_atdat(self) -> tp.NoReturn:
+    def __upd_atdat(self):
         """Updates internal atomic data information.
 
         Builds arrays with unique atomic data:
@@ -271,7 +270,7 @@ class Molecule(Qt3DCore.QEntity):
                 rval = self.__atdata[atom]['rvis']*RAD_VIS_SCL
             self.__at_rad[atom] = rval
 
-    def __build_bonds(self) -> tp.NoReturn:
+    def __build_bonds(self):
         """Builds bonds objects and associated properties.
 
         Builds bonds objects and data in the molecule.
@@ -336,7 +335,7 @@ class Molecule(Qt3DCore.QEntity):
             self.__bo_trro.append(bo_trro)
             self.__bo_mesh.append(bo_mesh)
 
-    def __build_atoms(self) -> tp.NoReturn:
+    def __build_atoms(self):
         """Builds atoms objects and associated properties.
 
         Builds atoms objects and data in the molecule.
@@ -364,7 +363,7 @@ class Molecule(Qt3DCore.QEntity):
             self.__at_mesh.append(at_mesh)
             self.__at_tvec.append(at_tvec)
 
-    def __clickAtom(self, clickEvent: Qt3DRender.QPickEvent) -> tp.NoReturn:
+    def __clickAtom(self, clickEvent: Qt3DRender.QPickEvent):
         """Click Atom events.
 
         Adds events in case an atom is clicked.
@@ -494,15 +493,15 @@ def write_pov(fname: str,
               bonds: TypeBondsM,
               zcam: float = -8.0,
               col_bond_as_atom: bool = False,
-              rad_atom_as_bond: bool = False) -> tp.NoReturn:
+              rad_atom_as_bond: bool = False):
     """Writes a Pov-Ray file.
 
     Builds and writes a Pov-Ray file.
     If `nmols` > 1, `at_lab`, `at_crd`, `bonds` are lists, with each
       item corresponding to a molecule.
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     nmols
         Number of molecules stored in `at_lab`, `at_crd` and `bonds`.
     at_lab
