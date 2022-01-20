@@ -34,6 +34,7 @@ Other blocks are:
 - **API** - `parser/xyz` now properly supports the _qlabels_.
 - **LIB** - The translation vector returned by `tools.math.superpose` was not properly mass-weighted.
 - **VIZ** - Fixed function to generate a POV-Ray input file.  The input is now properly generated.
+- **VIZ** - Alignment problem in the plotted KVec, with the bars offset by +1 compared to the mode numbering.
 - **DOC** - Header doc and type hints of `tools.math.superpose`.
 
 ### Changed

@@ -200,7 +200,7 @@ def plot_kvec(vec: np.ndarray,
     xlab_kvec = f'Displacement / m{lloe}{ldot}a{llo0}'
     avec = np.abs(vec)
     num = len(vec)
-    pos = np.arange(num) + 1
+    pos = np.arange(num)
     plot = canvas.barh(pos, avec, align='center')
     for i in range(num):
         if vec[i] < 0:
@@ -211,7 +211,7 @@ def plot_kvec(vec: np.ndarray,
         canvas.grid(color='.9')
     canvas.set_xlabel(xlab_kvec)
     canvas.set_ylabel('Initial-state modes')
-    canvas.set_ylim(bottom=0)
+    canvas.set_ylim(bottom=-.5)
     def vmode(x, pos): return '{:d}'.format(int(x+1))
     canvas.yaxis.set_major_formatter(FuncFormatter(vmode))
     canvas.format_coord = coords
