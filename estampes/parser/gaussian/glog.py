@@ -712,7 +712,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                    r'^\s*(?P<val>\d+\s+\|\s+\d+)\s*$')
             num = (0, 0)
         else:
-        raise NotImplementedError()
+            raise NotImplementedError()
     elif qtag == 'vtrans':
         if qlvl == 'H':
             lnk = (-716, 716, -717)
@@ -880,11 +880,11 @@ def qlab_to_linkdata(qtag: TypeQTag,
                     if rsta == 'c':
                         lnk1.append(601)
                         key1.append(' Dipole moment (field-independent basis,'
-                            + ' Debye):')
+                                    + ' Debye):')
                         sub1.append(1)
                         end1.append(lambda s: True)
                         fmt1.append(r'^\s+(?P<val>(?:\s*[XYZ]=\s+-?\d+\.\d+)'
-                            + r'{3}).*$')
+                                    + r'{3}).*$')
                         num1.append(0)
             elif qtag == 'dipstr':
                 if qlvl == 'H':
@@ -1455,7 +1455,36 @@ def parse_data(qdict: TypeQInfo,
             elif qopt == 'Conv':
                 raise NotImplementedError()
             elif qopt == 'Assign':
-                raise NotImplementedError()
+                data[qlabel]['T'] = []
+                data[qlabel]['E'] = []
+                data[qlabel]['I'] = []
+                if 'DipStr':
+                    qty = 'DS'
+                elif 'RotStr':
+                    qty = 'RS'
+                else:
+                    msg = 'Unrecognized spectroscopy-specific quantity'
+                    raise IndexError(msg)
+                data[qlabel]['other'] = qty
+                data[qlabel][qty] = []
+                for l1, l2 in zip(datablocks[first], datablocks[last]):
+                    txt_E, txt_T = l1.split(':')
+                    data[qlabel]['E'].append(float(txt_E.split()[0]))
+                    trans = []
+                    for state in txt_T.split('->'):
+                        trans.append([])
+                        for item in state.strip(' |>').split(';'):
+                            if '^' in item:
+                                i, n = [int(val) for val in item.split('^')]
+                            else:
+                                i = int(item)
+                                n = 0
+                            trans[-1].append((i, n))
+                    data[qlabel]['T'].append((tuple(trans[0]),
+                                              tuple(trans[1])))
+                    line = l2.strip(')').split()
+                    data[qlabel]['I'].append(float(line[0]))
+                    data[qlabel][qty].append(float(line[-1]))
             elif qopt == 'GeomIS':
                 data[qlabel]['data'] = []
                 # By default, we choose the standard orientation if present
@@ -1580,7 +1609,7 @@ def parse_data(qdict: TypeQInfo,
                             dat.append((int(res[i0]), int(res[i1])))
                         data[qlabel][i].append((float(coef), tuple(dat)))
             else:
-            raise NotImplementedError()
+                raise NotImplementedError()
         # State(s)-dependent quantities
         # -----------------------------
         else:

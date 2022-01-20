@@ -22,6 +22,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **API** - `parser/gaussian/glog` now fully supports the band assignments of FC calculations.
 - **API** - `parser/gaussian/glog` now supports GVPT2 variational coefficients.
 - **API** - `parser/gaussian/glog` now supports the electric dipole.
 - **API** - Types for atomic labels and bonds.
