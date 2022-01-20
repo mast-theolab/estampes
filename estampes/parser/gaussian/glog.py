@@ -698,6 +698,20 @@ def qlab_to_linkdata(qtag: TypeQTag,
             fmt = r'^\s+\w+(?P<val>(?:\s+-?\d+\.\d+){3})\s*$'
             num = 0
     elif qtag == 'vptdat':
+        if qopt == 'CICoef':
+            # The second group is to correct the numbering if passive modes
+            #     present.
+            lnk = (717, 717)
+            key = (' Definition of New States w.r.t. Deperturbed States',
+                   ' Reduced-Dimensionality on Variational States')
+            sub = (4, 3)
+            end = (lambda s: not s.strip(),
+                   lambda s: not s.strip())
+            fmt = (r'^\s*(?P<val>(\d+\s+:|)\s+[+-]?\d\.\d+\s+x\s+'
+                   + r'\|[0-9();]+>)\s*$',
+                   r'^\s*(?P<val>\d+\s+\|\s+\d+)\s*$')
+            num = (0, 0)
+        else:
         raise NotImplementedError()
     elif qtag == 'vtrans':
         if qlvl == 'H':
@@ -1526,6 +1540,46 @@ def parse_data(qdict: TypeQInfo,
         # Anharmonic Information
         # ----------------------
         elif qtag == 'vptdat':
+            if qopt == 'CICoef':
+                # First, check if reduced-dimensionality used.
+                if datablocks[last]:
+                    eqv = {}
+                    for line in datablocks[last]:
+                        j, i = [int(item) for item in line.split('|')]
+                        eqv[i] = j
+
+                    def idx(i):
+                        return eqv.get(i, 0)
+                else:
+
+                    def idx(i):
+                        return i
+                # Now parses the main assignment:
+                data[qlabel]['data'] = {}
+                i = 0
+                for line in datablocks[first]:
+                    if ':' in line:
+                        key, dat = line.split(':')
+                        i = idx(int(key))
+                        if i > 0:
+                            data[qlabel][i] = []
+                        coef, state = dat.split('x')
+                    else:
+                        coef, state = line.split('x')
+                    if i > 0:
+                        modes = state.split(';')
+                        dat = []
+                        for mode in modes:
+                            res = re.split('[|>()]+', mode.strip())
+                            if res[0]:
+                                i0 = 0
+                                i1 = 1
+                            else:
+                                i0 = 1
+                                i1 = 2
+                            dat.append((int(res[i0]), int(res[i1])))
+                        data[qlabel][i].append((float(coef), tuple(dat)))
+            else:
             raise NotImplementedError()
         # State(s)-dependent quantities
         # -----------------------------

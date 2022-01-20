@@ -22,11 +22,13 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **API** - `parser/gaussian/glog` now supports GVPT2 variational coefficients.
 - **API** - `parser/gaussian/glog` now supports the electric dipole.
 - **API** - Types for atomic labels and bonds.
 - **LIB** - New tool library: `mol`, for molecule-centric operations.
 
 ### Fixed
+- **API** - Fixed parser of sub-option for `vptdat` in `parse_qlabel`.
 - **API** - `parser/xyz` now properly supports the _qlabels_.
 - **LIB** - The translation vector returned by `tools.math.superpose` was not properly mass-weighted.
 - **DOC** - Header doc and type hints of `tools.math.superpose`.

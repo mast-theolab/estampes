@@ -180,6 +180,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     -------------------------------------------------------------
      VPTDat     XMat     Anharmonic X matrix
                 GMat     Variational correction matrix
+               CICoef    CI coefficients from var. correction
     -------------------------------------------------------------
      AtCrd      all      All present geometries (scan, opt)
                 last     Only the last geometry if more present
@@ -293,11 +294,13 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
         if qlist[1] is None:
             qty_opt = 'XMat'
         else:
-            val = qlist.upper()
+            val = qlist[1].upper()
             if val in ('X', 'XMAT'):
                 qty_opt = 'XMat'
             elif val == 'GMAT':
                 qty_opt = 'GMat'
+            elif val in ('CICOEF', 'VARCOEF'):
+                qty_opt = 'CICoef'
             else:
                 raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
     elif qty_tag == 101:
