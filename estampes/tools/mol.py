@@ -4,14 +4,17 @@ Module providing tools to manipulate data relative to molecules.
 
 Methods
 -------
+center_of_mass
+    Computes the center of mass.
 list_bonds
     Finds and lists bonds between atoms.
 """
 
-import numpy as np
-import numpy.typing as npt
+import typing as tp
 
-from estampes.base import TypeAtLab, TypeBonds
+import numpy as np
+
+from estampes.base import TypeBonds
 from estampes.data.atom import atomic_data
 
 
@@ -19,15 +22,44 @@ from estampes.data.atom import atomic_data
 # Module Constants
 # ================
 
-TypeAtCrd = npt.ArrayLike
+# Typeat_crd = npt.ArrayLike
+# Typeat_mass = npt.ArrayLike
 
 
 # ==============
 # Module Methods
 # ==============
 
-def list_bonds(at_lab: TypeAtLab,
-               at_crd: TypeAtCrd,
+def center_of_mass(at_crd: np.ndarray,
+                   at_mass: np.ndarray) -> np.ndarray:
+    """Computes the center of a mass.
+
+    Computes and returns the center of mass.
+
+    Parameters
+    ----------
+    at_crd
+        Atomic coordinates as XYZ vectors, as a 2D numpy array.
+    at_mass
+        Atomic masses, as a 1D numpy array.
+
+    Returns
+    -------
+    np.ndarray
+        (3) Coordinates of the center of mass.
+
+    Raises
+    ------
+    IndexError
+        Size inconsistency between masses and coordinates.
+    """
+    if at_crd.shape[0] != at_mass.shape[0]:
+        raise IndexError('Size inconsistency between masses and coordinates.')
+    return np.einsum('ij,i->j', at_crd, at_mass)/np.sum(at_mass)
+
+
+def list_bonds(at_lab: tp.Union[np.ndarray, tp.Sequence[str]],
+               at_crd: np.ndarray,
                rtol: float = 1.1) -> TypeBonds:
     """Finds and lists bonds between atoms.
 
