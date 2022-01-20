@@ -29,7 +29,8 @@ from estampes.base import ArgumentError
 def plot_jmat(mat: np.ndarray,
               canvas: mpl.axes.Axes,
               norm_mode: str = 'byrow',
-              show_grid: bool = True) -> mpl.image.AxesImage:
+              show_grid: bool = True,
+              top_down: bool = False) -> mpl.image.AxesImage:
     """Plots a black-white heatmap of a J-like matrix.
 
     Plots the squared elements of a matrix `mat` in the Matplotlib
@@ -54,6 +55,8 @@ def plot_jmat(mat: np.ndarray,
         Normalization mode.
     show_grid
         Show light grid to hel find the modes.
+    top_down
+        Orders the modes so that the first one is at the top.
 
     Returns
     -------
@@ -90,8 +93,9 @@ def plot_jmat(mat: np.ndarray,
         _mat /= _mat.max()
     elif norm_mode.lower() != 'none':
         raise ArgumentError('norm_mode')
+    order = top_down and 'upper' or 'lower'
     plot = canvas.matshow(_mat, cmap=mpl.cm.gray_r, vmin=0.0, vmax=1.0,
-                          origin='lower')
+                          origin=order)
     if show_grid:
         canvas.grid(color='.9')
     canvas.tick_params(top=True, bottom=True, labeltop=False, labelbottom=True)
@@ -108,7 +112,8 @@ def plot_jmat(mat: np.ndarray,
 
 def plot_cmat(mat: np.ndarray,
               canvas: mpl.axes.Axes,
-              show_grid: bool = True) -> tp.Tuple[float, mpl.image.AxesImage]:
+              show_grid: bool = True,
+              top_down: bool = False) -> tp.Tuple[float, mpl.image.AxesImage]:
     """Plots a red-blue heatmap of a C-like matrix.
 
     Plots a normalized matrix has a "hot-cold"-like matrix, normalizing
@@ -123,6 +128,8 @@ def plot_cmat(mat: np.ndarray,
         Matplotlib plotting frame.
     show_grid
         Show light grid to hel find the modes.
+    top_down
+        Orders the modes so that the first one is at the top.
 
     Returns
     -------
@@ -146,8 +153,9 @@ def plot_cmat(mat: np.ndarray,
     _mat = mat.copy()
     norm = np.max(np.abs(_mat))
     _mat /= norm
+    order = top_down and 'upper' or 'lower'
     plot = canvas.matshow(_mat, cmap=mpl.cm.seismic_r, vmin=-1.0, vmax=1.0,
-                          origin='lower')
+                          origin=order)
     if show_grid:
         canvas.grid(color='.9')
     canvas.tick_params(top=True, bottom=True, labeltop=False, labelbottom=True)
@@ -164,7 +172,8 @@ def plot_cmat(mat: np.ndarray,
 
 def plot_kvec(vec: np.ndarray,
               canvas: mpl.axes.Axes,
-              show_grid: bool = True) -> mpl.container.BarContainer:
+              show_grid: bool = True,
+              top_down: bool = False) -> mpl.container.BarContainer:
     """Plots a horizontal bar chart to represent a K-like vector.
 
     Plots a shift vector as a horizontal bars.
@@ -177,6 +186,8 @@ def plot_kvec(vec: np.ndarray,
         Matplotlib plotting frame.
     show_grid
         Show light grid to hel find the modes.
+    top_down
+        Orders the modes so that the first one is at the top.
 
     Returns
     -------
@@ -193,6 +204,9 @@ def plot_kvec(vec: np.ndarray,
             z = 0.0
             fmt = 'i={y:1.0f}'
         return fmt.format(y=y+1, z=z)
+
+    def vmode(x, pos):
+        return '{:d}'.format(int(x+1))
 
     llo0 = '\N{SUBSCRIPT ZERO}'
     lloe = '\N{LATIN SUBSCRIPT SMALL LETTER E}'
@@ -211,8 +225,10 @@ def plot_kvec(vec: np.ndarray,
         canvas.grid(color='.9')
     canvas.set_xlabel(xlab_kvec)
     canvas.set_ylabel('Initial-state modes')
-    canvas.set_ylim(bottom=-.5)
-    def vmode(x, pos): return '{:d}'.format(int(x+1))
+    if top_down:
+        canvas.set_ylim((num, -.5))
+    else:
+        canvas.set_ylim((-.5, num))
     canvas.yaxis.set_major_formatter(FuncFormatter(vmode))
     canvas.format_coord = coords
 
