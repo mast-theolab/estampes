@@ -153,30 +153,35 @@ def square_ltmat(ltmat: np.ndarray, what: str = 'symm') -> np.ndarray:
     return sqmat
 
 
-def superpose(cref: np.ndarray,
-              cnew: np.ndarray,
-              atmass: tp.Optional[np.ndarray] = None,
-              get_ctrans: bool = False
+def superpose(c_ref: np.ndarray,
+              c_new: np.ndarray,
+              at_mass: tp.Optional[np.ndarray] = None,
+              get_ctrans: bool = False,
+              at_mask: tp.Optional[np.ndarray] = None
               ) -> tp.Union[tp.Tuple[np.ndarray, np.ndarray],
                             tp.Tuple[np.ndarray, np.ndarray, np.ndarray]]:
-    """Returns the transformation matrices to superpose cnew onto cref.
+    """Returns the transformation matrices to superpose c_new onto c_ref.
 
     Returns the rotation matrix and transition vector to maximize the
-      superposition of `cnew` onto `cref`.  The translated and rotated
+      superposition of `c_new` onto `c_ref`.  The translated and rotated
       coordinates can be returned on request.
     The superposition can be mass-weighted if requested.
     The coordinates should have the form (N,3).
 
     Parameters
     ----------
-    cref
+    c_ref
         Reference structure, as a Numpy 2D array (N,3).
-    cnew
+    c_new
         New structure to superpose, as a Numpy 2D array (N,3).
-    atmass
+    at_mass
         Atomic masses, as a Numpy 1D array (N).
     get_ctrans
         If True, return the transformed structure.
+    at_mask
+        Atoms to consider for the superposition scheme.
+        The translation still refers to the full system.
+        Mask should be a Numpy 1D array(N).
 
     Returns
     -------
@@ -200,41 +205,49 @@ def superpose(cref: np.ndarray,
     DEBUG = False
     com_ref = [0., 0., 0.]
     com_new = [0., 0., 0.]
-    size_ref = cref.shape
-    size_new = cnew.shape
+    size_ref = c_ref.shape
+    size_new = c_new.shape
     if size_ref != size_new:
         raise IndexError('Inconsistency in shapes of the structure')
     natoms = size_ref[0]
-    if atmass is not None:
+    if at_mass is not None:
         use_m = True
-        if atmass.shape[0] != natoms:
+        if at_mass.shape[0] != natoms:
             raise IndexError('Atomic masses inconsistent with structures')
     else:
         use_m = False
+    if at_mask is not None:
+        mask = at_mask
+        if mask.shape[0] != natoms:
+            raise IndexError('Mask inconsistent with structures.')
+    else:
+        mask = np.full(natoms, True)
     rotmat = np.identity(3)
     qmat = np.zeros((4, 4))
 
     # Calculate the center of mass and move the structure
     if use_m:
-        totwt = np.sum(atmass)
-        com_ref = np.einsum('ij,i->j', cref, atmass)
-        com_new = np.einsum('ij,i->j', cnew, atmass)
+        totwt = np.sum(at_mass[mask])
+        com_ref = np.einsum('ij,i->j', c_ref[mask, :], at_mass[mask])
+        com_new = np.einsum('ij,i->j', c_new[mask, :], at_mass[mask])
     else:
-        totwt = 1.0
-        com_ref = np.einsum('ij->j', cref)
-        com_new = np.einsum('ij->j', cnew)
-    cnew_ = cnew - com_new/totwt
-    cref_ = cref - com_ref/totwt
+        totwt = np.sum(at_mass[mask])
+        com_ref = np.einsum('ij->j', c_ref[mask, :])
+        com_new = np.einsum('ij->j', c_new[mask, :])
+    c_new_ = c_new - com_new/totwt
+    c_ref_ = c_ref - com_ref/totwt
 
     # Computes the rotation matrix
     for ia in range(natoms):
-        weight = atmass[ia] if use_m else 1.0
-        xnew = cnew_[ia, 0]
-        ynew = cnew_[ia, 1]
-        znew = cnew_[ia, 2]
-        xref = cref_[ia, 0]
-        yref = cref_[ia, 1]
-        zref = cref_[ia, 2]
+        if not mask[ia]:
+            continue
+        weight = at_mass[ia] if use_m else 1.0
+        xnew = c_new_[ia, 0]
+        ynew = c_new_[ia, 1]
+        znew = c_new_[ia, 2]
+        xref = c_ref_[ia, 0]
+        yref = c_ref_[ia, 1]
+        zref = c_ref_[ia, 2]
         xy = xnew*yref
         xz = xnew*zref
         yx = ynew*xref
@@ -281,7 +294,7 @@ def superpose(cref: np.ndarray,
         for i in range(3):
             print('{0[0]:8.5f}{0[1]:8.5f}{0[2]:8.5f}'.format(rotmat[i, :]))
     if get_ctrans:
-        return rotmat, (com_new-com_ref)/totwt, cnew_ @ rotmat
+        return rotmat, (com_new-com_ref)/totwt, c_new_ @ rotmat
     else:
         return rotmat, (com_new-com_ref)/totwt
 
