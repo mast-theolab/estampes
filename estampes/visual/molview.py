@@ -718,7 +718,7 @@ object {
         else:
             fobj.write('\n// MOLECULES DEFINITION\n')
             for imol in range(nmols):
-                fobj.write('\n#declare mol{:02d} = union {{\n'.format(i+1))
+                fobj.write('\n#declare mol{:02d} = union {{\n'.format(imol+1))
                 # -- First build bonds
                 for bond in bonds[imol]:
                     iat1, iat2 = bond
@@ -728,7 +728,7 @@ object {
                     fobj.write(fmt_obj_bo.format(
                         xyz=xyzmid,
                         at1=at_lab[imol][iat1], id1=iat1+1, xyz1=xyz1,
-                        at2=at_lab[imol][iat2], id2=iat2+1, xyz2=xyz1,
+                        at2=at_lab[imol][iat2], id2=iat2+1, xyz2=xyz2,
                         idmol=imol+1))
                 # -- Next build atoms
                 for iat in range(len(at_lab[imol])):

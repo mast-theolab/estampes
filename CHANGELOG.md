@@ -33,6 +33,7 @@ Other blocks are:
 - **API** - Fixed parser of sub-option for `vptdat` in `parse_qlabel`.
 - **API** - `parser/xyz` now properly supports the _qlabels_.
 - **LIB** - The translation vector returned by `tools.math.superpose` was not properly mass-weighted.
+- **VIZ** - Fixed function to generate a POV-Ray input file.  The input is now properly generated.
 - **DOC** - Header doc and type hints of `tools.math.superpose`.
 
 ### Changed
