@@ -185,7 +185,7 @@ def plot_kvec(vec: np.ndarray,
     """
     def coords(x: float, y: float) -> str:
         num_rows = len(vec)
-        row = int(y+.5)
+        row = int(y+.5) + 1
         if row > 0 and row <= num_rows:
             z = vec[row-1]
             fmt = 'i={y:1.0f}, K(i)={z:.4f}'
