@@ -17,6 +17,7 @@ Tools have each one their own trigram
 Other blocks are:
 - **ETC**: Miscellaneous features
 - **DOC**: Documentation
+- **DEV**: Development conventions/cleanup
 
 
 ## Unreleased
@@ -43,6 +44,7 @@ Other blocks are:
 ### Changed
 - **LIB** - `list_bonds` is now part of a dedicated module, `tools.mol`, and not in `visual.molview` to facilitate accesses without the need for Qt libs.
 - **LIB** - `convert_labsymb` now fixes the case of the atomic symbol if the conversion is from `str` to `str`.
+- **DEV** - Improved some basic type hints, adding support for Numpy is present.
 
 ### Removed
 - **API** _ `parser/xyz`: `read_data` does not support anymore the geometry index for files with multiple geometries.  This caused a non-standard behavior of the wrapper, and is partially superseded by the proper support of _qlabels_.  More parameters are accessible by using directly the internal class without passing by the `DataFile` wrapper class.

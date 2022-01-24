@@ -20,7 +20,7 @@ import re
 import typing as tp
 
 from estampes import parser as ep
-from estampes.base import TypeData, ParseKeyError, QuantityError
+from estampes.base import TypeQData, ParseKeyError, QuantityError
 
 # ================
 # Module Constants
@@ -261,7 +261,7 @@ class FileCSV(object):
 
 def get_data(dfobj: FileCSV,
              *qlabels: str,
-             error_noqty: bool = True) -> TypeData:
+             error_noqty: bool = True) -> TypeQData:
     """Gets data from a CSV file for each quantity label.
 
     Reads one or more full quantity labels from `qlabels` and returns

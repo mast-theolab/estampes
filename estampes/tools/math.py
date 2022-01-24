@@ -17,13 +17,12 @@ vrotate_3D
     Rotates a vector in a 3D space.
 """
 
-from itertools import cycle
 from math import exp, log, pi, sqrt
 import typing as tp
 
 import numpy as np
 
-from estampes.base import ArgumentError
+from estampes.base import TypeAtCrd, ArgumentError
 
 
 # ==============
@@ -153,13 +152,13 @@ def square_ltmat(ltmat: np.ndarray, what: str = 'symm') -> np.ndarray:
     return sqmat
 
 
-def superpose(c_ref: np.ndarray,
-              c_new: np.ndarray,
+def superpose(c_ref: TypeAtCrd,
+              c_new: TypeAtCrd,
               at_mass: tp.Optional[np.ndarray] = None,
               get_ctrans: bool = False,
               at_mask: tp.Optional[np.ndarray] = None
               ) -> tp.Union[tp.Tuple[np.ndarray, np.ndarray],
-                            tp.Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+                            tp.Tuple[np.ndarray, np.ndarray, TypeAtCrd]]:
     """Returns the transformation matrices to superpose c_new onto c_ref.
 
     Returns the rotation matrix and transition vector to maximize the

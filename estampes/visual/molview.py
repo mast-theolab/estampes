@@ -4,12 +4,6 @@ This module provides basic methods for the molecular visualization.
 
 Attributes
 ----------
-TypeBonds
-    Static type for bonds information.
-TypeAtLab
-    Static type for atomic labels.
-TypeAtCrd
-    Static type for atomic coordinates.
 TypeBondsM
     Static type for bonds information (multiple molecules).
 TypeAtLabM
@@ -50,7 +44,8 @@ from PySide2.Qt3DCore import Qt3DCore
 from PySide2.Qt3DRender import Qt3DRender
 from PySide2.Qt3DExtras import Qt3DExtras
 
-from estampes.base import ArgumentError, TypeAtLab, TypeBonds, TypeColor
+from estampes.base import TypeAtCrd, TypeAtLab, TypeBonds, TypeColor, \
+    ArgumentError
 from estampes.data.atom import atomic_data
 from estampes.tools.math import vrotate_3D
 
@@ -59,11 +54,10 @@ from estampes.tools.math import vrotate_3D
 # Module Constants
 # ================
 
-TypeAtCrd = npt.ArrayLike
+# Basic types extended to support multiple molecules
 TypeAtLabM = tp.Union[TypeAtLab, tp.Sequence[TypeAtLab]]
 TypeAtCrdM = tp.Union[TypeAtCrd, tp.Sequence[TypeAtCrd]]
 TypeBondsM = tp.Union[TypeBonds, tp.Sequence[TypeBonds]]
-# TypeAtCrd = tp.Sequence[tp.Sequence[float]]
 
 BONDDATA = {
     'rvis': 0.15,

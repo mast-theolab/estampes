@@ -19,8 +19,8 @@ import re  # Used to find keys in log file
 import typing as tp
 
 from estampes import parser as ep
-from estampes.base import ParseKeyError, QuantityError, TypeData, TypeDCrd, \
-    TypeDGLog, TypeDOrd, TypeQInfo, TypeQLvl, TypeQOpt, TypeQTag, TypeRSta
+from estampes.base import ParseKeyError, QuantityError, TypeDCrd, TypeDGLog, \
+    TypeDOrd, TypeQData, TypeQInfo, TypeQLvl, TypeQOpt, TypeQTag, TypeRSta
 from estampes.data.physics import PHYSFACT, phys_fact
 
 
@@ -33,7 +33,6 @@ __ang2au = 1.0 / PHYSFACT.bohr2ang
 _tp_StrInt = tp.TypeVar('_tp_StrInt', str, int)
 # TypeSBloc = tp.Optional[tp.Tuple[str, int]]
 # TypeQInfos = tp.Tuple[list, tp.List[str, int, TypeSBloc]]
-TypeQData = tp.Dict[str, tp.Optional[tp.Any]]
 TypeQKwrd = tp.Tuple[
     tp.Union[int, tp.List[int]],  # Link
     tp.Union[str, tp.List[str]],  # Keyword
@@ -1847,7 +1846,7 @@ def parse_data(qdict: TypeQInfo,
 
 def get_data(dfobj: GLogIO,
              *qlabels: str,
-             error_noqty: bool = True) -> TypeData:
+             error_noqty: bool = True) -> TypeQData:
     """Gets data from a GLog file for each quantity label.
 
     Reads one or more full quantity labels from `qlab` and returns the

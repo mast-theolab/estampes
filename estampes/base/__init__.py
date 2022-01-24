@@ -16,34 +16,38 @@ types
 
 Attributes
 ----------
-TypeQTag : :obj:`typing.TypeVar`
-    Static type for quantity tag.
-TypeQOpt : :obj:`typing.Optional`
-    Static type for quantity option.
-TypeDOrd : :obj:`typing.Optional`
-    Static type for derivative order (0: property).
-TypeDCrd : :obj:`typing.Optional`
-    Static type for derivative coordinate.
-TypeRSta : :obj:`typing.Optional`
-    Static type for reference state/transition.
-TypeQLab : :obj:`typing.Tuple`
-    Static type for quantity label.
-TypeData : :obj:`typing.Dict`
-    Static type for data returned by parsers.
-TypeAtData : :obj:`typing.Dict`
+TypeAtCrd : list, np.ndarray
+    Static type for atomic coordinates.
+TypeAtData : dict
     Static type for atom data.
-TypeQInfo : :obj:`typing.Dict`
-    Static type for dictionary of quantity full labels.
-TypeDFChk : :obj:`typing.Dict`
-    Static type for data from Gaussian fchk file.
-TypeDGLog : :obj:`typing.List`
-    Static type for data from Gaussian log file.
-TypeColor : :obj:`typing.Union`
-    Static type for colors.
-TypeAtLab : :obj:`typing.Sequence`
+TypeAtLab : list
     Static type for atomic labels.
-TypeBonds : :obj:`typing.List`
+TypeBonds : list
     Static type for bond list, as (atom1, atom2).
+TypeColor : float, str, list
+    Static type for colors.
+TypeDCrd : str, optional
+    Static type for derivative coordinate.
+TypeDFChk : dict
+    Static type for data from Gaussian fchk file.
+TypeDGLog : str, list, optional
+    Static type for data from Gaussian log file.
+TypeDOrd : int, optional
+    Static type for derivative order (0: property).
+TypeQData : dict
+    Static type for data returned by parsers.
+TypeQInfo : dict
+    Static type for dictionary of quantity full labels.
+TypeQLab : tuple
+    Static type for quantity label.
+TypeQLvl : str, optional
+    Static type for level of theory used to compute quantity.
+TypeQOpt : str, int, optional
+    Static type for quantity option.
+TypeQTag : str, int
+    Static type for quantity tag.
+TypeRSta : str, int, tuple, optional
+    Static type for reference state/transition.
 
 Classes
 -------
@@ -61,9 +65,9 @@ QuantityError
 
 # flake8: noqa: F401
 
-from estampes.base.types import TypeAtData, TypeAtLab, TypeBonds, TypeColor, \
-    TypeData, TypeDCrd, TypeDFChk, TypeDGLog, TypeDOrd, TypeQInfo, TypeQLab, \
-    TypeQLvl, TypeQOpt, TypeQTag, TypeRSta, ConstDict
+from estampes.base.types import TypeAtCrd, TypeAtData, TypeAtLab, TypeBonds, \
+    TypeColor, TypeQData, TypeDCrd, TypeDFChk, TypeDGLog, TypeDOrd, TypeQInfo, \
+    TypeQLab, TypeQLvl, TypeQOpt, TypeQTag, TypeRSta, ConstDict
 
 from estampes.base.errors import ArgumentError, ParseDataError, \
     ParseKeyError, ParsingError, QuantityError

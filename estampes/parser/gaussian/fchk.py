@@ -37,7 +37,7 @@ from math import ceil
 
 from estampes import parser as ep
 from estampes.base import ArgumentError, ParseDataError, ParseKeyError, \
-    QuantityError, TypeData, TypeDCrd, TypeDFChk, TypeDOrd, TypeQInfo, \
+    QuantityError, TypeDCrd, TypeDFChk, TypeDOrd, TypeQData, TypeQInfo, \
     TypeQLvl, TypeQOpt, TypeQTag, TypeRSta
 from estampes.data import property as edpr
 
@@ -45,7 +45,6 @@ from estampes.data import property as edpr
 # Module Constants
 # ================
 
-TypeQData = tp.Dict[str, tp.Optional[tp.Any]]
 TypeKword = tp.Dict[str, tp.Tuple[str, int, int]]
 TypeQKwrd = tp.Union[str, tp.List[str]]
 
@@ -907,7 +906,7 @@ def parse_data(qdict: TypeQInfo,
                qlab2kword: tp.Dict[str, str],
                datablocks: TypeDFChk,
                gver: tp.Optional[tp.Tuple[str, str]] = None,
-               raise_error: bool = True) -> TypeData:
+               raise_error: bool = True) -> TypeQData:
     """Parses data arrays to extract specific quantity.
 
     Parses data array to extract relevant information for each quantity.
@@ -1068,7 +1067,7 @@ def parse_data(qdict: TypeQInfo,
 
 def get_data(dfobj: FChkIO,
              *qlabels: str,
-             error_noqty: bool = True) -> TypeData:
+             error_noqty: bool = True) -> TypeQData:
     """Gets data from a FChk file for each quantity label.
 
     Reads one or more full quantity labels from `qlabels` and returns

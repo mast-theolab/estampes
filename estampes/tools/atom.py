@@ -12,6 +12,7 @@ convert_atoms_id
 
 import typing as tp
 
+from estampes.base import TypeAtLab
 from estampes.data.atom import ELEMENTS
 
 
@@ -20,7 +21,7 @@ from estampes.data.atom import ELEMENTS
 # ==============
 
 def convert_labsymb(to_symb: bool,
-                    *atoms: tp.List[tp.Union[str, int]]
+                    *atoms: TypeAtLab
                     ) -> tp.Union[tp.List[str], tp.List[int]]:
     """Converts between atomic symbols and labels
 
@@ -85,7 +86,7 @@ def convert_labsymb(to_symb: bool,
         return new_list
 
 
-def convert_atoms_id(list_atoms: tp.List[tp.Union[int, str]],
+def convert_atoms_id(list_atoms: TypeAtLab,
                      to: tp.Optional[str] = 'atnum'
                      ) -> tp.List[tp.Union[int, str]]:
     """Converts between atoms identifiers.

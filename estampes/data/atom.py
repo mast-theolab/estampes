@@ -15,7 +15,7 @@ atomic_data
 
 import typing as tp
 
-from estampes.base import TypeAtData
+from estampes.base import TypeAtData, TypeAtLab
 
 
 # ================
@@ -38,7 +38,7 @@ ELEMENTS = ('',  # NOQA
 # Module Functions
 # ================
 
-def atomic_data(*atoms: tp.List[str]) -> TypeAtData:
+def atomic_data(*atoms: TypeAtLab) -> TypeAtData:
     """Generates atomic data.
 
     Generates a dictionary containing atomic data for each atom given in
@@ -62,7 +62,7 @@ def atomic_data(*atoms: tp.List[str]) -> TypeAtData:
     Parameters
     ----------
     *atoms
-        List of atomic symbols.
+        List of atomic symbols (or numbers).
 
     Returns
     -------
@@ -74,10 +74,19 @@ def atomic_data(*atoms: tp.List[str]) -> TypeAtData:
     ------
     KeyError
         Unrecognized atomic symbol.
+
+    Notes
+    -----
+    * The function has a very basic support of symbols and atomic
+      numbers.  A more robust procedure should rely on a first
+      conversion by estampes.tools.convert_labsymb
     """
     at_data = {}
     for atom in set(atoms):
-        at_symb = atom.title()
+        try:
+            at_symb = atom.title()
+        except AttributeError:
+            at_symb = ELEMENTS[atom]
         if at_symb == 'H':
             at_data['H'] = {
                 'name': 'Hydrogen',

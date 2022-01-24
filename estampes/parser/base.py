@@ -30,7 +30,7 @@ import os
 import re
 import typing as tp
 
-from estampes.base import TypeQLab, TypeRSta
+from estampes.base import TypeQData, TypeQLab, TypeRSta
 from estampes.parser import csv, xyz
 from estampes.parser.gaussian import glog, fchk
 
@@ -556,7 +556,7 @@ class DataFile(object):
         Extract data corresponding to the provided labels.
     """
     def __init__(self, filename: str,
-                 filetype: tp.Optional[str] = None) -> None:
+                 filetype: tp.Optional[str] = None):
         if filetype is None:
             ftype = os.path.splitext(filename)[1][1:].lower()
         else:
@@ -593,7 +593,7 @@ class DataFile(object):
 
     def get_data(self,
                  *qlabels,
-                 error_noqty: bool = True):
+                 error_noqty: bool = True) -> TypeQData:
         return self._parser.get_data(self._dfile, *qlabels,
                                      error_noqty=error_noqty)
 

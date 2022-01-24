@@ -17,7 +17,7 @@ import os
 import typing as tp
 
 from estampes import parser as ep
-from estampes.base import ParseDataError, ParseKeyError, TypeData
+from estampes.base import ParseDataError, ParseKeyError, TypeQData
 from estampes.tools.atom import convert_labsymb
 from estampes.data.physics import PHYSFACT
 
@@ -262,7 +262,7 @@ def parse_xyz(fobj: tp.IO,
 
 def get_data(dfobj: FileXYZ,
              *qlabels: str,
-             error_noqty: bool = True) -> TypeData:
+             error_noqty: bool = True) -> TypeQData:
     """Gets data from a XYZ file for each quantity label.
 
     Reads one or more full quantity labels from `qlabels` and returns

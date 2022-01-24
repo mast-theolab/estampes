@@ -4,36 +4,38 @@ A basic module providing types specifications and new types for ESTAMPES.
 
 Attributes
 ----------
-TypeQTag : :obj:`typing.TypeVar`
-    Static type for quantity tag.
-TypeQOpt : :obj:`typing.Optional`
-    Static type for quantity option.
-TypeDOrd : :obj:`typing.Optional`
-    Static type for derivative order (0: property).
-TypeDCrd : :obj:`typing.Optional`
-    Static type for derivative coordinate.
-TypeRSta : :obj:`typing.Optional`
-    Static type for reference state/transition.
-TypeQLvl : :obj:`typing.Optional`
-    Static type for level of theory used to compute quantity.
-TypeQLab : :obj:`typing.Tuple`
-    Static type for quantity label.
-TypeData : :obj:`typing.Dict`
-    Static type for data returned by parsers.
-TypeAtData : :obj:`typing.Dict`
+TypeAtCrd : list, np.ndarray
+    Static type for atomic coordinates.
+TypeAtData : dict
     Static type for atom data.
-TypeQInfo : :obj:`typing.Dict`
-    Static type for dictionary of quantity full labels.
-TypeDFChk : :obj:`typing.Dict`
-    Static type for data from Gaussian fchk file.
-TypeDGLog : :obj:`typing.List`
-    Static type for data from Gaussian log file.
-TypeColor : :obj:`typing.Union`
-    Static type for colors.
-TypeAtLab : :obj:`typing.Sequence`
+TypeAtLab : list
     Static type for atomic labels.
-TypeBonds : :obj:`typing.List`
+TypeBonds : list
     Static type for bond list, as (atom1, atom2).
+TypeColor : float, str, list
+    Static type for colors.
+TypeDCrd : str, optional
+    Static type for derivative coordinate.
+TypeDFChk : dict
+    Static type for data from Gaussian fchk file.
+TypeDGLog : str, list, optional
+    Static type for data from Gaussian log file.
+TypeDOrd : int, optional
+    Static type for derivative order (0: property).
+TypeQData : dict
+    Static type for data returned by parsers.
+TypeQInfo : dict
+    Static type for dictionary of quantity full labels.
+TypeQLab : tuple
+    Static type for quantity label.
+TypeQLvl : str, optional
+    Static type for level of theory used to compute quantity.
+TypeQOpt : str, int, optional
+    Static type for quantity option.
+TypeQTag : str, int
+    Static type for quantity tag.
+TypeRSta : str, int, tuple, optional
+    Static type for reference state/transition.
 
 Classes
 -------
@@ -42,6 +44,11 @@ ConstDict
 """
 
 import typing as tp
+try:
+    import numpy as np
+    has_np = True
+except ImportError:
+    has_np = False
 
 
 # ==============
@@ -82,6 +89,7 @@ class ConstDict(dict):
 # _tp_StrInt = tp.TypeVar('_tp_StrInt', str, int)
 _tp_StrInt = tp.Union[str, int]
 
+# Label-related types
 TypeQTag = _tp_StrInt
 TypeQOpt = tp.Optional[_tp_StrInt]
 TypeDOrd = tp.Optional[int]
@@ -89,11 +97,21 @@ TypeDCrd = tp.Optional[str]
 TypeRSta = tp.Optional[tp.Union[str, int, tp.Tuple[_tp_StrInt, _tp_StrInt]]]
 TypeQLvl = tp.Optional[str]
 TypeQLab = tp.Tuple[TypeQTag, TypeQOpt, TypeDOrd, TypeDCrd, TypeRSta, TypeQLvl]
-TypeData = tp.Dict[str, tp.Dict[str, tp.Any]]
-TypeAtData = tp.Dict[str, tp.Dict[str, tp.List[tp.Any]]]
+TypeQData = tp.Dict[str, tp.Union[tp.Any, tp.Dict[str, tp.Any]]]
+
 TypeQInfo = tp.Dict[str, tp.List[tp.Any]]
 TypeDFChk = tp.Dict[str, tp.List[tp.Union[str, int, float]]]
 TypeDGLog = tp.List[tp.Union[tp.List[str], str]]
 TypeColor = tp.Union[tp.Sequence[int], float, str]
-TypeAtLab = tp.Sequence[str]
+
+# Atoms-related data
+TypeAtData = tp.Dict[str, tp.Dict[str, tp.List[tp.Any]]]
+_tpAtCrd = tp.Sequence[tp.Sequence[float]]
+_tpAtLab = tp.Sequence[_tp_StrInt]
+if has_np:
+    TypeAtCrd = tp.Union[_tpAtCrd, np.ndarray]
+    TypeAtLab = tp.Union[_tpAtLab, np.ndarray]
+else:
+    TypeAtCrd = _tpAtCrd
+    TypeAtLab = _tpAtLab
 TypeBonds = tp.List[tp.Tuple[int, int]]

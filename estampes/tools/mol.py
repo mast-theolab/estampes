@@ -14,7 +14,7 @@ import typing as tp
 
 import numpy as np
 
-from estampes.base import TypeBonds
+from estampes.base import TypeAtCrd, TypeAtLab, TypeBonds
 from estampes.data.atom import atomic_data
 
 
@@ -30,7 +30,7 @@ from estampes.data.atom import atomic_data
 # Module Methods
 # ==============
 
-def center_of_mass(at_crd: np.ndarray,
+def center_of_mass(at_crd: TypeAtCrd,
                    at_mass: np.ndarray) -> np.ndarray:
     """Computes the center of a mass.
 
@@ -58,8 +58,8 @@ def center_of_mass(at_crd: np.ndarray,
     return np.einsum('ij,i->j', at_crd, at_mass)/np.sum(at_mass)
 
 
-def list_bonds(at_lab: tp.Union[np.ndarray, tp.Sequence[str]],
-               at_crd: np.ndarray,
+def list_bonds(at_lab: TypeAtLab,
+               at_crd: TypeAtCrd,
                rtol: float = 1.1) -> TypeBonds:
     """Finds and lists bonds between atoms.
 
