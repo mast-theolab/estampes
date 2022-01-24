@@ -459,6 +459,16 @@ def main() -> tp.NoReturn:
                 + ' together'
             print(msg)
             sys.exit(2)
+        else:
+            msg = '''\
+NYI: The spectra-centric mode is not yet implemented.
+     For simple plotting, check module-specific modes, like 'l718', 'l717'...
+'''
+            print(msg)
+            sys.exit(1)
+    else:
+        print('ERROR: Unsupported feature "{}"'.format(args.mode))
+        sys.exit(1)
 
 
 if __name__ == '__main__':
