@@ -30,6 +30,7 @@ Other blocks are:
 - **API** - Types for atomic labels and bonds.
 - **VIZ** - Added class `MolWin` (`estampes.visual.molview`) to build a 3D representation of one or more molecules.
 - **VIZ** - Added possibility to reverse vertically the normal mode listing for `plot_jmat`, `plot_cmat` and `plot_kvec` with `top_down`.
+- **VIZ** - Added possibility to reverse the normal mode ordering for `plot_jmat`, `plot_cmat` and `plot_kvec` with `top_down`, so that normal mode 1 is the highest energy.
 - **LIB** - The `superpose` function (`estampes.tools.math`) now supports a mask to apply the superposition procedure on a subset of atoms.
 - **LIB** - New tool library: `mol`, for molecule-centric operations.
 

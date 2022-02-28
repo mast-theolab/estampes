@@ -30,7 +30,10 @@ def plot_jmat(mat: np.ndarray,
               canvas: mpl.axes.Axes,
               norm_mode: str = 'byrow',
               show_grid: bool = True,
-              top_down: bool = False) -> mpl.image.AxesImage:
+              *,
+              top_down: bool = False,
+              invert_modes: bool = False
+              ) -> mpl.image.AxesImage:
     """Plots a black-white heatmap of a J-like matrix.
 
     Plots the squared elements of a matrix `mat` in the Matplotlib
@@ -57,6 +60,8 @@ def plot_jmat(mat: np.ndarray,
         Show light grid to hel find the modes.
     top_down
         Orders the modes so that the first one is at the top.
+    invert_modes
+        Invert ordering of normal modes (== decreasing order).
 
     Returns
     -------
@@ -80,6 +85,9 @@ def plot_jmat(mat: np.ndarray,
             fmt = 'i={x:1.0f}, k={y:1.0f}'
         return fmt.format(x=x+1, y=y+1, z=z)
 
+    def vmode(x, pos):
+        return '{:d}'.format(int(x+1))
+
     _mat = mat**2
     if norm_mode.lower() == 'byrow':
         norm = np.sum(_mat, axis=1)
@@ -94,6 +102,8 @@ def plot_jmat(mat: np.ndarray,
     elif norm_mode.lower() != 'none':
         raise ArgumentError('norm_mode')
     order = top_down and 'upper' or 'lower'
+    if invert_modes:
+        _mat = _mat[::-1, ::-1]
     plot = canvas.matshow(_mat, cmap=mpl.cm.gray_r, vmin=0.0, vmax=1.0,
                           origin=order)
     if show_grid:
@@ -102,7 +112,6 @@ def plot_jmat(mat: np.ndarray,
     canvas.set_xlabel('Final-state modes')
     canvas.set_ylabel('Initial-state modes')
     # Change tick labels to correct numbering (Python starts at 0)
-    def vmode(x, pos): return '{:d}'.format(int(x+1))
     canvas.xaxis.set_major_formatter(FuncFormatter(vmode))
     canvas.yaxis.set_major_formatter(FuncFormatter(vmode))
     canvas.format_coord = coords
@@ -113,7 +122,10 @@ def plot_jmat(mat: np.ndarray,
 def plot_cmat(mat: np.ndarray,
               canvas: mpl.axes.Axes,
               show_grid: bool = True,
-              top_down: bool = False) -> tp.Tuple[float, mpl.image.AxesImage]:
+              *,
+              top_down: bool = False,
+              invert_modes: bool = False
+              ) -> tp.Tuple[float, mpl.image.AxesImage]:
     """Plots a red-blue heatmap of a C-like matrix.
 
     Plots a normalized matrix has a "hot-cold"-like matrix, normalizing
@@ -130,6 +142,8 @@ def plot_cmat(mat: np.ndarray,
         Show light grid to hel find the modes.
     top_down
         Orders the modes so that the first one is at the top.
+    invert_modes
+        Invert ordering of normal modes (== decreasing order).
 
     Returns
     -------
@@ -154,6 +168,8 @@ def plot_cmat(mat: np.ndarray,
     norm = np.max(np.abs(_mat))
     _mat /= norm
     order = top_down and 'upper' or 'lower'
+    if invert_modes:
+        _mat = _mat[::-1, ::-1]
     plot = canvas.matshow(_mat, cmap=mpl.cm.seismic_r, vmin=-1.0, vmax=1.0,
                           origin=order)
     if show_grid:
@@ -173,7 +189,10 @@ def plot_cmat(mat: np.ndarray,
 def plot_kvec(vec: np.ndarray,
               canvas: mpl.axes.Axes,
               show_grid: bool = True,
-              top_down: bool = False) -> mpl.container.BarContainer:
+              *,
+              top_down: bool = False,
+              invert_modes: bool = False
+              ) -> mpl.container.BarContainer:
     """Plots a horizontal bar chart to represent a K-like vector.
 
     Plots a shift vector as a horizontal bars.
@@ -188,6 +207,8 @@ def plot_kvec(vec: np.ndarray,
         Show light grid to hel find the modes.
     top_down
         Orders the modes so that the first one is at the top.
+    invert_modes
+        Invert ordering of normal modes (== decreasing order).
 
     Returns
     -------
@@ -195,10 +216,10 @@ def plot_kvec(vec: np.ndarray,
         Image of the vector.
     """
     def coords(x: float, y: float) -> str:
-        num_rows = len(vec)
+        num_rows = len(_vec)
         row = int(y+.5) + 1
         if row > 0 and row <= num_rows:
-            z = vec[row-1]
+            z = _vec[row-1]
             fmt = 'i={y:1.0f}, K(i)={z:.4f}'
         else:
             z = 0.0
@@ -212,12 +233,16 @@ def plot_kvec(vec: np.ndarray,
     lloe = '\N{LATIN SUBSCRIPT SMALL LETTER E}'
     ldot = '\N{MIDDLE DOT}'
     xlab_kvec = f'Displacement / m{lloe}{ldot}a{llo0}'
-    avec = np.abs(vec)
-    num = len(vec)
+    if invert_modes:
+        _vec = vec[::-1]
+    else:
+        _vec = vec
+    avec = np.abs(_vec)
+    num = len(_vec)
     pos = np.arange(num)
     plot = canvas.barh(pos, avec, align='center')
     for i in range(num):
-        if vec[i] < 0:
+        if _vec[i] < 0:
             plot[i].set_color('red')
         else:
             plot[i].set_color('#73BFFF')
