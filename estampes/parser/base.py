@@ -156,6 +156,8 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                 Vel      Velocity-gaue dipole strength
     -------------------------------------------------------------
      RamAct    None     Static Raman activity
+               Static   Static Raman activity
+              Dynamic   Dynamic Raman activity for all inc. freq.
                 All     Dynamic Raman activity for all inc. freq.
                <any>    Dynamic Raman activity for <any> freq.
                         A string is expected to avoid num. limit.
@@ -223,12 +225,18 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     # Label-specific keyword (sub-option)
     if qty_tag in ('ramact', 'roaact'):
         if qlist[1] is None or not qlist[1].strip():
-            qty_opt = None
-        elif qlist[1].lower() == 'all':
-            qty_opt = 'all'
-            if qlist[5][0].upper() in ('H', 'A'):
-                qty_opt = qlist[1][0].upper()
+            qty_opt = 'static'
+        elif qlist[1].lower() in ('all', 'dynamic', 'static'):
+            qty_opt = qlist[1].lower()
+            if qty_opt == 'all':
+                qty_opt = 'dynamic'
+            if qty_tag == 'roaact' and qty_opt == 'static':
+                raise ValueError('Static ROA not supported')
             else:
+            try:
+                val = float(qlist[1])
+                qty_opt = qlist[1]
+            except ValueError:
                 raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
     elif qty_tag in ('atcrd', 2, 1):
         if qlist[1] is None:

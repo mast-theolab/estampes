@@ -848,6 +848,38 @@ def qlab_to_linkdata(qtag: TypeQTag,
                 num1 = []
             else:
                 raise NotImplementedError()
+            # Add quantity specific subgroups
+            if qtag in ('ramact', 'roaact') and qopt != 'static':
+                # Information on setup and incident frequency
+                # -- Harmonic level
+                if qopt != 'static' and qlvl == 'H':
+                    lnk1.append(716)
+                    key1.append(' and normal coordinates:')
+                    sub1.append(1)
+                    end1.append(lambda s: not s.startswith(' Incident light:'))
+                    num1.append(0)
+                    fmt1.append(
+                        r'^\s+Incident light \(\S+\):\s+(?P<val>-?\d.*)\s*$')
+                # -- Anharmonic level
+                lnk1.append(-717)
+                if qopt == 'dynamic':
+                    key1.append(
+                        '          Anharmonic Raman Spectroscopy (Dynamic)')
+                    end1.append(
+                        lambda s: s.startswith('     =====')
+                        or s.startswith(' GradGrad'))
+                    sub1.append(2)
+                else:
+                    fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
+                    key1.append(fmt.format(qopt))
+                    end1.append(
+                        lambda s: s.startswith('     =====')
+                        or s.startswith(' GradGrad')
+                        or s.startswith(' ## INCIDENT WAVENUMBER:'))
+                    sub1.append(0)
+                fmt1.append(r'^ ##+ (?:INCIDENT WAVENUMBER|MEASUREMENT '
+                            + r'INFORMATION):\s+(?P<val>\S+).*\s+##+\s*$')
+                num1.append(0)
             if qtag == 1:
                 if dord == 0:
                     if rsta == 'c':
@@ -946,29 +978,121 @@ def qlab_to_linkdata(qtag: TypeQTag,
                     raise NotImplementedError()
             elif qtag == 'ramact':
                 if qlvl == 'H':
-                    lnk1.extend([-716, 716, -717])
+                    lnk1.extend([-716, 716])
                     key1.extend([' and normal coordinates:',
-                                 ' and normal coordinates:',
-                                 '        Raman activity (RA)'])
-                    sub1.extend([1, 1, 4])
+                                 ' and normal coordinates:'])
                     end1.extend([
                         lambda s: s.startswith(' Harmonic frequencies'),
-                        lambda s: s.startswith(' - Thermochemistry'),
-                        lambda s: s.startswith(' -----')])
-                    fmt1.extend([r'^\s+Raman Activities --- \s*'
+                        lambda s: s.startswith(' - Thermochemistry')])
+                    sub1.extend([1, 1])
+                    num1.extend([0, -1])
+                    if qopt == 'static':
+                        fmt1.extend(
+                            [r'^\s+Raman Activities ---\s+(?P<val>-?\d.*)\s*$',
+                             r'^\s+Raman Activ -- \s*(?P<val>-?\d.*)\s*$'])
+                    else:
+                        lnk1.append(716)
+                        key1.append(' and normal coordinates:')
+                        end1.append(
+                            lambda s: s.startswith(' - Thermochemistry'))
+                        sub1.append(1)
+                        num1.append(-1)
+                        fmt1.extend(
+                            [r'^\s+Raman Activ Fr=\s?\d --- \s*'
                                  + r'(?P<val>-?\d.*)\s*$',
-                                 r'^\s+Raman Activ -- \s*(?P<val>-?\d.*)\s*$',
-                                 r'^\s+\d+\(\d+\)\s+'
+                             r'^\s+RamAct Fr=\s?\d+--\s+(?P<val>\d.*)\s*$',
+                             r'^\s+Raman\d Fr=\s?\d+--\s+(?P<val>\d.*)\s*$'])
+                    lnk1.append(-717)
+                    if qopt in ('static', 'dynamic'):
+                        fmt = 'Anharmonic Raman Spectroscopy ({})'
+                        txt = fmt.format(qopt.capitalize())
+                        key1.append('{:>49s}'.format(txt))
+                        end1.append(
+                            lambda s: s.startswith('     =====')
+                            or s.startswith(' GradGrad'))
+                        sub1.append(2)
+                    else:
+                        fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
+                        key1.append(fmt.format(qopt))
+                        end1.append(
+                            lambda s: s.startswith('     =====')
+                            or s.startswith(' GradGrad')
+                            or s.startswith(' ## INCIDENT WAVENUMBER:'))
+                        sub1.append(1)
+                    fmt1.append(r'^\s+\d+\(1\)\s+'
+                                + r'(?:-?\d+\.\d+\s+|\*+\s+){2}'
+                                + r'(?P<val>-?\d+\.\d+|\*+)\s+'
+                                + r'(?:-?\d+\.\d+|\*+)\s*$')
+                    num1.append(0)
+                elif qlvl == 'A':
+                    lnk1.append(717)
+                    if qopt in ('static', 'dynamic'):
+                        fmt = 'Anharmonic Raman Spectroscopy ({})'
+                        txt = fmt.format(qopt.capitalize())
+                        key1.append('{:>49s}'.format(txt))
+                        end1.append(
+                            lambda s: s.startswith('     =====')
+                            or s.startswith(' GradGrad'))
+                        sub1.append(2)
+                    else:
+                        fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
+                        key1.append(fmt.format(qopt))
+                        end1.append(
+                            lambda s: s.startswith('     =====')
+                            or s.startswith(' GradGrad')
+                            or s.startswith(' ## INCIDENT WAVENUMBER:'))
+                        sub1.append(1)
+                    fmt1.append(r'^\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'
+                                + r' .*\s+(?P<val>-?\d+\.\d+|\*+)\s*$')
+                    num1.append(0)
+                else:
+                    raise NotImplementedError()
+            elif qtag == 'roaact':
+                if qlvl == 'H':
+                    lnk1.extend([716, -717])
+                    key1.append(' and normal coordinates:')
+                    end1.append(lambda s: s.startswith(' - Thermochemistry'))
+                    if qopt == 'dynamic':
+                        key1.append(
+                            '             Anharmonic Raman Optical Activity')
+                        end1.append(
+                            lambda s:
+                                s.strip() == 'Dimensionless circular '
+                                + 'intensity difference (CID)')
+                    else:
+                        fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
+                        key1.append(fmt.format(qopt))
+                        end1.append(
+                            lambda s:
+                                s.strip() == 'Dimensionless circular '
+                                + 'intensity difference (CID)'
+                                or s.startswith(' ## INCIDENT WAVENUMBER:'))
+                    sub1.extend([1, 1])
+                    fmt1.extend([r'^\s+ROA\d\s+ Fr= ?\d+-- \s*'
+                                 + r'(?P<val>-?\d.*)\s*$',
+                                 r'^\s+\d+\(1\)\s+'
                                  + r'(?:-?\d+\.\d+\s+|\*+\s+){2}'
                                  + r'(?P<val>-?\d+\.\d+|\*+)\s+'
                                  + r'(?:-?\d+\.\d+|\*+)\s*$'])
-                    num1.extend([0, -1, 0])
+                    num1.extend([-1, 0])
                 elif qlvl == 'A':
                     lnk1.append(717)
-                    key1.append('        Raman activity (RA)')
-                    sub1.append(3)
-                    end1.append(lambda s: s.startswith('     =====')
-                                or 'dipole moment' in s)
+                    if qopt == 'dynamic':
+                        key1.append(
+                            '             Anharmonic Raman Optical Activity')
+                        end1.append(
+                            lambda s:
+                                s.strip() == 'Dimensionless circular '
+                                + 'intensity difference (CID)')
+                    else:
+                        fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
+                        key1.append(fmt.format(qopt))
+                        end1.append(
+                            lambda s:
+                                s.strip() == 'Dimensionless circular '
+                                + 'intensity difference (CID)'
+                                or s.startswith(' ## INCIDENT WAVENUMBER:'))
+                    sub1.append(1)
                     fmt1.append(r'^\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'
                                 + r' .*\s+(?P<val>-?\d+\.\d+|\*+)\s*$')
                     num1.append(0)
@@ -1759,37 +1883,11 @@ def parse_data(qdict: TypeQInfo,
                     else:
                         raise NotImplementedError()
                 elif qtag == 'ramact':
-                    if qlvl == 'H':
-                        for i in range(last, first-1, -1):
-                            if datablocks[i]:
-                                iref = i
-                                break
-                        else:
-                            raise ParseKeyError('Missing quantity in file')
-                        if iref == last:
-                            data[qlabel]['unit'] = 'RA:Ang^6'
-                        else:
-                            data[qlabel]['unit'] = 'RA:amu.Ang^4'
-                        i = 0
-                        for line in datablocks[iref]:
-                            for col in line.strip().split():
-                                i += 1
-                                try:
-                                    data[qlabel][i] = float(col)
-                                except ValueError:
-                                    data[qlabel][i] = float('inf')
-                    elif qlvl == 'A':
-                        data[qlabel]['unit'] = 'RA:Ang^6'
-                        i = 0
-                        for line in datablocks[iref]:
-                            i += 1
-                            try:
-                                data[qlabel][i] = float(line)
-                            except ValueError:
-                                data[qlabel][i] = float('inf')
-                    else:
-                        raise NotImplementedError()
-
+                    data[qlabel] = _parse_logdat_ramact(qopt, qlvl, datablocks,
+                                                        first, last)
+                elif qtag == 'roaact':
+                    data[qlabel] = _parse_logdat_ramact(qopt, qlvl, datablocks,
+                                                        first, last, ROA=True)
             #     key = 'ETran scalars'
             #     if key in datablocks:
             #         (nstates, ndata, _, _, iroot,
@@ -1923,4 +2021,158 @@ def get_data(dfobj: GLogIO,
     except (ParseKeyError, IndexError):
         raise IndexError('Missing data in Gaussian log')
 
+    return data
+
+
+def _parse_logdat_ramact(qopt: str,
+                         qlvl: str,
+                         datablocks: tp.Sequence[tp.Sequence[int]],
+                         first: int,
+                         last: int,
+                         ROA: bool = False) -> tp.Dict[str, tp.Any]:
+    """Sub-function to parse GLog data for Raman activity
+
+    Sub-functions dedicated to parsing data stored in datablocks.
+
+    Parameters
+    ----------
+    """
+    data = {}
+    for i in range(last, first-1, -1):
+        if datablocks[i]:
+            iref = i
+            break
+    else:
+        raise ParseKeyError('Missing quantity in file')
+    if qlvl == 'H':
+        if iref == last:
+            data['unit'] = 'ROA:Ang^6' if ROA else 'RA:Ang^6'
+            an_blk = True
+        else:
+            data['unit'] = 'ROA:amu.Ang^4' if ROA else 'RA:amu.Ang^4'
+            an_blk = False
+        # We create the database based on the quantity
+        if qopt == 'static':
+            i = 0
+            for line in datablocks[iref]:
+                for col in line.strip().split():
+                    i += 1
+                    try:
+                        data[i] = float(col)
+                    except ValueError:
+                        data[i] = float('inf')
+        elif an_blk:
+            incfrq = None
+            setups = []
+            for item in datablocks[first+2]:
+                try:
+                    _ = float(item)
+                    incfrq = item
+                    data[incfrq] = {}
+                except ValueError:
+                    if incfrq is None:
+                        msg = 'Wrong block structure for Raman/ROA ' \
+                            + 'spectroscopy (incident freq/setup)'
+                        raise ParseKeyError(msg)
+                    data[incfrq][item] = {}
+                    setups.append((incfrq, item))
+            nlines = len(datablocks[iref])/len(setups)
+            block = 0
+            iline = 0
+            for line in datablocks[iref]:
+                iline += 1
+                if iline % nlines == 1:
+                    d = data[setups[block][0]][setups[block][1]]
+                    block += 1
+                    i = 0
+                for col in line.strip().split():
+                    i += 1
+                    try:
+                        d[i] = float(col)
+                    except ValueError:
+                        d[i] = float('inf')
+        else:
+            incfreqs = [item for line in datablocks[first+1]
+                        for item in line.split()]
+            if qopt == 'dynamic':
+                for freq in incfreqs:
+                    data[freq] = {
+                        'SCP(180)u': {}, 'SCP(90)z': {}, 'DCPI(180)': {}}
+                iline = 0
+                ifreq = 0
+                ioff = 0
+                i = 0
+                for line in datablocks[iref]:
+                    iline += 1
+                    block = iline % 3
+                    if block == 1:
+                        dfreq = data[incfreqs[ifreq % len(incfreqs)]]
+                        ifreq += 1
+                        ioff += i+1
+                    d = dfreq[('SCP(180)u', 'SCP(90)z', 'DCPI(180)')[block-1]]
+                    for i, col in enumerate(line.strip().split()):
+                        try:
+                            d[ioff+i] = float(col)
+                        except ValueError:
+                            d[ioff+i] = float('inf')
+            else:
+                if qopt in incfreqs:
+                    ref_freq = incfreqs.index(qopt)
+                    data[incfreqs[ref_freq]] = {
+                        'SCP(180)u': {}, 'SCP(90)z': {}, 'DCPI(180)': {}}
+                    iline = 0
+                    ifreq = 0
+                    iref = 0
+                    i = 0
+                    for line in datablocks[iref]:
+                        iline += 1
+                        block = iline % 3
+                        if block == 1:
+                            if ifreq % len(incfreqs) != ref_freq:
+                                ifreq += 1
+                                continue
+                            dfreq = data[incfreqs[ref_freq]]
+                            ifreq += 1
+                            iref += i+1
+                        d = dfreq[('SCP(180)u', 'SCP(90)z',
+                                   'DCPI(180)')[block-1]]
+                        for i, col in enumerate(line.strip().split()):
+                            try:
+                                d[iref+i+1] = float(col)
+                            except ValueError:
+                                d[iref+i+1] = float('inf')
+                else:
+                    raise ParseKeyError('Missing incident frequency')
+    elif qlvl == 'A':
+        incfrq = None
+        setups = []
+        for item in datablocks[first+1]:
+            try:
+                _ = float(item)
+                incfrq = item
+                data[incfrq] = {}
+            except ValueError:
+                if incfrq is None:
+                    msg = 'Wrong block structure for Raman/ROA spectroscopy ' \
+                        + '(incident freq/setup)'
+                    raise ParseKeyError(msg)
+                data[incfrq][item] = {}
+                setups.append((incfrq, item))
+        nlines = len(datablocks[iref])/len(setups)
+        block = 0
+        iline = 0
+        for line in datablocks[iref]:
+            iline += 1
+            if iline % nlines == 1:
+                d = data[setups[block][0]][setups[block][1]]
+                block += 1
+                i = 0
+            for col in line.strip().split():
+                i += 1
+                try:
+                    d[i] = float(col)
+                except ValueError:
+                    d[i] = float('inf')
+    else:
+        raise NotImplementedError()
     return data

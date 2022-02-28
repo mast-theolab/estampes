@@ -23,6 +23,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **API** - **EXPERIMENTAL**: `parser/gaussian/glog` now supports extracting Raman and ROA activity.  Note that because of some peculiarities of Raman and how Gaussian handles it, the parser may still fail in some cases.
 - **API** - `parser/gaussian/glog` now fully supports the band assignments of FC calculations.
 - **API** - `parser/gaussian/glog` now supports GVPT2 variational coefficients.
 - **API** - `parser/gaussian/glog` now supports the electric dipole.
