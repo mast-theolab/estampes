@@ -100,7 +100,7 @@ class GLogIO(object):
     @filename.setter
     def filename(self, name: str) -> None:
         if not os.path.exists(name):
-            raise FileNotFoundError('Formatted checkpoint not found')
+            raise FileNotFoundError('Gaussian output file not found')
         self.__fname = name
 
     @property
@@ -771,7 +771,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
         fmt0 = r'^\s+(?P<val>Excited State\s+\d+: .*|' +\
             r'This state for optimization.*)\s*$'
         num0 = 0
-        if type(rsta) is tuple:
+        if isinstance(rsta, tuple):
             Si, Sf = rsta
             if qtag == 1:
                 if dord == 0:
@@ -999,7 +999,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         num1.append(-1)
                         fmt1.extend(
                             [r'^\s+Raman Activ Fr=\s?\d --- \s*'
-                                 + r'(?P<val>-?\d.*)\s*$',
+                             + r'(?P<val>-?\d.*)\s*$',
                              r'^\s+RamAct Fr=\s?\d+--\s+(?P<val>\d.*)\s*$',
                              r'^\s+Raman\d Fr=\s?\d+--\s+(?P<val>\d.*)\s*$'])
                     lnk1.append(-717)

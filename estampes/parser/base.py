@@ -232,7 +232,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                 qty_opt = 'dynamic'
             if qty_tag == 'roaact' and qty_opt == 'static':
                 raise ValueError('Static ROA not supported')
-            else:
+        else:
             try:
                 val = float(qlist[1])
                 qty_opt = qlist[1]
