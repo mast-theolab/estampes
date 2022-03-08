@@ -188,7 +188,7 @@ def convert_y(specabbr: str,
         f'for {specabbr}'
     msgVal = 'Wrong value for option {subkey} in spectroscopy {specabbr}'
     UNIT_EPS = {  # Epsilon: Molar absorption coefficient
-        '/M/cm1': ('M-1.cm-1', '/M/cm', 'dm3.mol-1.cm-1', 'dm3/mol/cm',
+        '/M/cm': ('M-1.cm-1', '/M/cm', 'dm3.mol-1.cm-1', 'dm3/mol/cm',
                    'L.mol-1.cm-1', 'L/mol/cm', '')
     }
     UNIT_II = {  # Integrated intensity
@@ -234,7 +234,7 @@ def convert_y(specabbr: str,
     # Test
     if _spec == 'IR':
         if _dest_type == 'I':
-            if _dest_unit in UNIT_EPS['/M/cm1']:
+            if _dest_unit in UNIT_EPS['/M/cm']:
                 if _src_type == 'DS':
                     if _src_unit in UNIT_DS['esu2.cm2']:
                         yfactor = 8*pi**3*PHYSCNST.avogadro * 1.0e-7 / \
@@ -251,7 +251,7 @@ def convert_y(specabbr: str,
             raise IndexError(msgNA)
     elif _spec == 'VCD':
         if _dest_type == 'I':
-            if _dest_unit in UNIT_EPS['/M/cm1']:
+            if _dest_unit in UNIT_EPS['/M/cm']:
                 if _src_type == 'RS':
                     if _src_unit in UNIT_RS['esu2.cm2']:
                         yfactor = 32*pi**3*PHYSCNST.avogadro * 1.0e-7 / \
@@ -268,7 +268,7 @@ def convert_y(specabbr: str,
             raise IndexError(msgNA)
     elif _spec == 'OPA':
         if _dest_type == 'I':
-            if _dest_unit in UNIT_EPS['/M/cm1']:
+            if _dest_unit in UNIT_EPS['/M/cm']:
                 if _src_type == 'II':
                     if _src_unit in UNIT_II['/M/cm2']:
                         yfactor = 1.0
