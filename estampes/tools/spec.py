@@ -16,6 +16,7 @@ import typing as tp
 from estampes.base import ArgumentError
 from estampes.tools.char import convert_expr
 from estampes.tools.math import f_gauss, f_lorentz
+# from estampes.data.property import property_units as punits
 from estampes.data.physics import PHYSFACT, PHYSCNST, phys_fact
 
 
@@ -176,6 +177,8 @@ def convert_y(specabbr: str,
         * `II` - integrated intensity
         * `DS` - dipole strength
         * `RS` - rotatory strength
+        * `RA` - Raman activity
+        * `ROA` - Raman optical activity
     * Units are case-sensitive to avoid ambiguities.
       "/" and "." must be indicated correctly.
         * `M-1` or `/M` -> dm^3/mol
@@ -189,7 +192,7 @@ def convert_y(specabbr: str,
     msgVal = 'Wrong value for option {subkey} in spectroscopy {specabbr}'
     UNIT_EPS = {  # Epsilon: Molar absorption coefficient
         '/M/cm': ('M-1.cm-1', '/M/cm', 'dm3.mol-1.cm-1', 'dm3/mol/cm',
-                   'L.mol-1.cm-1', 'L/mol/cm', '')
+                  'L.mol-1.cm-1', 'L/mol/cm', '')
     }
     UNIT_II = {  # Integrated intensity
         '/M/cm2': ('M-1.cm-2', '/M/cm2', 'dm3.mol-1.cm-2', 'dm3/mol/cm2',
@@ -200,6 +203,20 @@ def convert_y(specabbr: str,
     }
     UNIT_RS = {  # Rotatory strength
         'esu2.cm2': ('statA2.cm2', 'esu2.cm2')
+    }
+    UNIT_RDSG = {  # Raman differential sigma (cross section)
+        'cm3/mol/sr': ('cm3/mol/sr', 'cm3.mol-1.sr-1'),
+        'm2.cm/mol/sr': ('m2.cm/mol/sr', 'm2.cm.mol-1.sr-1'),
+    }
+    UNIT_RA = {  # Raman activity
+        'Ang4': ('AA4', 'Ang4'),
+        'Ang6': ('AA6', 'Ang6'),
+        'amu.Ang4': ('amu.AA4', 'amu.Ang4'),
+    }
+    UNIT_ROA = {  # Raman optical activity
+        'Ang4': ('AA4', 'Ang4'),
+        'Ang6': ('AA6', 'Ang6'),
+        'amu.Ang4': ('amu.AA4', 'amu.Ang4'),
     }
     # Initial setup
     _spec = specabbr.upper()
@@ -258,6 +275,102 @@ def convert_y(specabbr: str,
                             (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
 
                         def xfunc(x): return x
+                    else:
+                        raise NotImplementedError(msgNYI)
+                else:
+                    raise NotImplementedError(msgNYI)
+            else:
+                raise IndexError(msgNA)
+        else:
+            raise IndexError(msgNA)
+    elif _spec == 'RS':
+        incfrq = subopts.get('incfreq', None)
+        if incfrq is None:
+            incfrq = 1.0e7/532.0
+        elif not isinstance(incfrq, (int, float)):
+            raise ArgumentError(msgVal.format(subkey='incfreq',
+                                              specabbr=specabbr))
+        if _dest_type == 'I':
+            if _dest_unit in UNIT_RDSG['cm3/mol/sr']:
+                if _src_type == 'RA':
+                    if _src_unit in UNIT_RA['amu.Ang4']:
+                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4 * (Q->q)^2
+                        yfactor = (
+                            1.0e-48*PHYSCNST.avogadro*(2*pi)**4
+                            * (phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2/2.0)
+                            / 45)
+
+                        def xfunc(x): return (incfrq-x)**4/x
+                    elif _src_unit in UNIT_RA['Ang6']:
+                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4 / 45
+                        yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4/45
+
+                        def xfunc(x): return (incfrq-x)**4
+                    else:
+                        raise NotImplementedError(msgNYI)
+                else:
+                    raise NotImplementedError(msgNYI)
+            elif _dest_unit in UNIT_RDSG['m2.cm/mol/sr']:
+                if _src_type == 'RA':
+                    if _src_unit in UNIT_RA['amu.Ang4']:
+                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4 * (Q->q)^2
+                        yfactor = (
+                            1.0e-52*PHYSCNST.avogadro*(2*pi)**4
+                            * (phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2/2.0)
+                            / 45)
+
+                        def xfunc(x): return (incfrq-x)**4/x
+                    elif _src_unit in UNIT_RA['Ang6']:
+                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4 / 45
+                        yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4/45
+
+                        def xfunc(x): return (incfrq-x)**4
+                    else:
+                        raise NotImplementedError(msgNYI)
+                else:
+                    raise NotImplementedError(msgNYI)
+            else:
+                raise IndexError(msgNA)
+        else:
+            raise IndexError(msgNA)
+    elif _spec == 'ROA':
+        incfrq = subopts.get('incfreq', None)
+        if incfrq is None:
+            incfrq = 1.0e7/532.0
+        elif not isinstance(incfrq, (int, float)):
+            raise ArgumentError(msgVal.format(subkey='incfreq',
+                                              specabbr=specabbr))
+        if _dest_type == 'I':
+            if _dest_unit in UNIT_RDSG['cm3/mol/sr']:
+                if _src_type == 'ROA':
+                    if _src_unit in UNIT_ROA['amu.Ang4']:
+                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4 * (Q->q)^2
+                        yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4 \
+                            * (phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2/2.0)
+
+                        def xfunc(x): return (incfrq-x)**4/x
+                    elif _src_unit in UNIT_ROA['Ang6']:
+                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4
+                        yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4
+
+                        def xfunc(x): return (incfrq-x)**4
+                    else:
+                        raise NotImplementedError(msgNYI)
+                else:
+                    raise NotImplementedError(msgNYI)
+            elif _dest_unit in UNIT_RDSG['m2.cm/mol/sr']:
+                if _src_type == 'ROA':
+                    if _src_unit in UNIT_ROA['amu.Ang4']:
+                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4 * (Q->q)^2
+                        yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4 \
+                            * (phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2/2.0)
+
+                        def xfunc(x): return (incfrq-x)**4/x
+                    elif _src_unit in UNIT_ROA['Ang6']:
+                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4
+                        yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4
+
+                        def xfunc(x): return (incfrq-x)**4
                     else:
                         raise NotImplementedError(msgNYI)
                 else:

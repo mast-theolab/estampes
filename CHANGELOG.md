@@ -35,6 +35,7 @@ Other blocks are:
 - **LIB** - New tool library: `mol`, for molecule-centric operations.
 - **LIB** - Added support of Raman (static and dynamic) and ROA spectroscopies in class `Spectrum`.  The spectroscopy keyword `RS` now refers to the dynamic one.
 - **LIB** - Added collector dictionary `params` in constructor of `Spectrum` to support spectroscopy-related keywords, like the incident frequency and spectroscopic setup  of Raman and ROA.
+- **LIB** - Added some conversion factors in `tools.spec.convert_y` for Raman and ROA spectroscopies.  As there is some arbitrariness in the formulas, the conversion may not be final.
 
 ### Fixed
 - **API** - Fixed parser of sub-option for `vptdat` in `parse_qlabel`.
