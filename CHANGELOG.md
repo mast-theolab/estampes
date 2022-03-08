@@ -33,6 +33,8 @@ Other blocks are:
 - **VIZ** - Added possibility to reverse the normal mode ordering for `plot_jmat`, `plot_cmat` and `plot_kvec` with `top_down`, so that normal mode 1 is the highest energy.
 - **LIB** - The `superpose` function (`estampes.tools.math`) now supports a mask to apply the superposition procedure on a subset of atoms.
 - **LIB** - New tool library: `mol`, for molecule-centric operations.
+- **LIB** - Added support of Raman (static and dynamic) and ROA spectroscopies in class `Spectrum`.  The spectroscopy keyword `RS` now refers to the dynamic one.
+- **LIB** - Added collector dictionary `params` in constructor of `Spectrum` to support spectroscopy-related keywords, like the incident frequency and spectroscopic setup  of Raman and ROA.
 
 ### Fixed
 - **API** - Fixed parser of sub-option for `vptdat` in `parse_qlabel`.

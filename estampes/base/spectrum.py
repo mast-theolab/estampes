@@ -54,22 +54,38 @@ VSPC2DATA = {
               'assign': ep.build_qlabel('vtrans', level='A')},
         'RS': 'Rotatory strength'
     },
+    'RS0': {
+        'name': 'Raman Scattering',
+        'unit': 'I:cm3/mol/sr',
+        'H': {'freq': ep.build_qlabel('vlevel', level='H'),
+              'int': ep.build_qlabel('ramact', 'static', level='H'),
+              'assign': ep.build_qlabel('vtrans', level='H')},
+        'A': {'freq': ep.build_qlabel('vlevel', level='A'),
+              'int': ep.build_qlabel('ramact', 'static', level='A'),
+              'assign': ep.build_qlabel('vtrans', level='A')},
+        'RA': 'Raman activity'
+    },
     'RS': {
         'name': 'Raman Scattering',
         'unit': 'I:cm3/mol/sr',
         'H': {'freq': ep.build_qlabel('vlevel', level='H'),
-              'int': ep.build_qlabel('ramact', level='H'),
+              'int': ep.build_qlabel('ramact', 'dynamic', level='H'),
               'assign': ep.build_qlabel('vtrans', level='H')},
         'A': {'freq': ep.build_qlabel('vlevel', level='A'),
-              'int': ep.build_qlabel('ramact', level='A'),
+              'int': ep.build_qlabel('ramact', 'dynamic', level='A'),
               'assign': ep.build_qlabel('vtrans', level='A')},
         'RA': 'Raman activity'
     },
     'ROA': {
         'name': 'Raman Optical Activity',
-        'unit': None,
-        'H': {},
-        'A': {}
+        'unit': 'I:cm3/mol/sr',
+        'H': {'freq': ep.build_qlabel('vlevel', level='H'),
+              'int': ep.build_qlabel('roaact', 'dynamic', level='H'),
+              'assign': ep.build_qlabel('vtrans', level='H')},
+        'A': {'freq': ep.build_qlabel('vlevel', level='A'),
+              'int': ep.build_qlabel('roaact', 'dynamic', level='A'),
+              'assign': ep.build_qlabel('vtrans', level='A')},
+        'ROA': 'Raman optical activity'
     }
 }
 
@@ -147,7 +163,8 @@ class Spectrum():
     * `RROA`: Resonance Raman Optical Activity
     * `IR`: Infrared
     * `VCD`: Vibrational Circular Dichroism
-    * `RS`: Raman Scattering
+    * `RS0`: Raman Scattering (static)
+    * `RS`: Raman Scattering (dynamic)
     * `ROA`: Raman Optical Activity
     Levels of theory:
     * `E[le[ctronic]]`: Pure electronic level (only electronic trans.)
@@ -175,6 +192,11 @@ class Spectrum():
     ftype
         File type (sent to `ep.DataFile`).
         If `ftype` is `CSV`, `specabbr` and `level` are ignored.
+    params
+        Spectroscopy-specific parameters:
+        Raman/ROA
+            * `incfrq`: incident frequency
+            * `setup`: experimental setup (e.g., SCP(180))
 
     Attributes
     ----------
@@ -224,7 +246,8 @@ class Spectrum():
                  level: str,
                  ylabel: tp.Optional[str] = None,
                  load_data: bool = True,
-                 ftype: tp.Optional[str] = None):
+                 ftype: tp.Optional[str] = None,
+                 **params: tp.Dict[str, tp.Any]):
         # Initialization internal parameters
         if isinstance(fname, ep.DataFile):
             self.__dfile = fname
@@ -241,6 +264,14 @@ class Spectrum():
         else:
             raise IndexError('Unrecognized level of theory: '+level)
         self.__ylab = ylabel
+        # Spectroscopy-specific parameters
+        self.__params = {}
+        if params:
+            for key, val in params.items():
+                if key.lower() in ('incfrq', 'incfreq'):
+                    self.__params['incfrq'] = val
+                elif key.lower() == 'setup':
+                    self.__params['setup'] = val
         # Initialize main data array
         self.__xaxis = [None, None]
         self.__yaxis = [None, None]
@@ -363,13 +394,66 @@ class Spectrum():
             modes.sort()
             self.__xaxis[0] = []
             self.__yaxis[0] = []
+            if self.__spec in ('RS', 'ROA'):
+                incfrq = self.__params.get('incfrq')
+                if incfrq is None:
+                    for key in data[qkeys['int']].keys():
+                        try:
+                            _ = float(key)
+                            break
+                        except ValueError:
+                            continue
+                    if incfrq is None:
+                        raise KeyError('No incident frequency data found.')
+                    else:
+                        self.__params['incfrq'] = incfrq
+                else:
+                    if incfrq not in data[qkeys['int']]:
+                        vals = [item for item in data[qkeys['int']].keys()
+                                if item.replace('.', '', 1).isdigit()]
+                        fmt = '''No incident frequency matches the value {}
+Avalable: {}'''
+                        raise KeyError(fmt.format(incfrq, ', '.join(vals)))
+                setup = self.__params.get('setup')
+                if setup is None:
+                    for key in data[qkeys['int']][incfrq].keys():
+                        if key in ('SCP(180)', 'SCP(180)u'):
+                            setup = key
+                            break
+                    if setup is None:
+                        setup = data[qkeys['int']][incfrq].keys()[0]
+                    self.__params['setup'] = setup
+                else:
+                    if setup not in data[qkeys['int']][incfrq].keys():
+                        vals = data[qkeys['int']][incfrq].keys()
+                        fmt = '''Setup "{}" not found
+Available: {}'''
+                        raise KeyError(fmt.format(setup, vals))
+                ydata = data[qkeys['int']][incfrq][setup]
+            else:
+                ydata = data[qkeys['int']]
             for mode in modes:
                 if (isinstance(data[qkeys['freq']][mode], float) and
-                        isinstance(data[qkeys['int']][mode], float)):
+                        isinstance(ydata[mode], float)):
                     self.__xaxis[0].append(data[qkeys['freq']][mode])
-                    self.__yaxis[0].append(data[qkeys['int']][mode])
+                    self.__yaxis[0].append(ydata[mode])
             self.__xlabel[0] = 'Wavenumbers'
             self.__xunit[0] = data[qkeys['freq']]['unit']
+            self.__yunit[0] = data[qkeys['int']]['unit']
+            self.__ylabel[0] = \
+                SPEC2DATA[self.__spec][self.__yunit[0].split(':')[0]]
+            self.__label = self.__yunit[0]
+            self.__broad[0]['func'] = 'stick'
+            self.__broad[0]['hwhm'] = None
+            self.__broad_ok = self.__broad[0]['func'] == 'stick'
+        elif 'ener' in qkeys:
+            self.__xaxis[0] = []
+            self.__yaxis[0] = []
+            for i, ener in enumerate(data[qkeys['ener']]):
+                self.__xaxis[0].append(ener)
+                self.__yaxis[0].append(data[qkeys['int']][i])
+            self.__xlabel[0] = 'Energy'
+            self.__xunit[0] = data[qkeys['ener']]['unit']
             self.__yunit[0] = data[qkeys['int']]['unit']
             self.__ylabel[0] = \
                 SPEC2DATA[self.__spec][self.__yunit[0].split(':')[0]]
@@ -563,7 +647,7 @@ class Spectrum():
                 raise ValueError('Broadening function not supported.')
             self.__broad[_ids]['func'] = _func
         elif not origin and self.__broad[_ids]['func'] is None:
-            if self.__spec in ('RR', 'RROA', 'IR', 'VCD', 'RS', 'ROA'):
+            if self.__spec in ('RR', 'RROA', 'IR', 'VCD', 'RS', 'RS0', 'ROA'):
                 self.__broad[_ids]['func'] = 'lorentzian'
             else:
                 self.__broad[_ids]['func'] = 'gaussian'
@@ -593,7 +677,11 @@ class Spectrum():
                     _unit_dest = SPEC2DATA[self.__spec]['unit']
                 else:
                     _unit_dest = yunit
-            _yfac, _xfun = convert_y(self.__spec, _unit_dest, self.__yunit[0])
+            d = {}
+            if 'incfrq' in self.__params:
+                d['incfrq'] = float(self.__params['incfrq'])
+            _yfac, _xfun = convert_y(self.__spec, _unit_dest, self.__yunit[0],
+                                     **d)
             self.__yaxis[_ids] = broaden(self.__xaxis[0], self.__yaxis[0],
                                          self.__xaxis[_ids],
                                          self.__broad[_ids]['func'],
