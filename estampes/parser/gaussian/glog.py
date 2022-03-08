@@ -2044,6 +2044,9 @@ def _parse_logdat_ramact(qopt: str,
             break
     else:
         raise ParseKeyError('Missing quantity in file')
+    # Data in Gaussian log are multiplied by 10^4 for ROA, so we need to take
+    #   this into account
+    yfactor = 1.0e-4 if ROA else 1.0
     if qlvl == 'H':
         if iref == last:
             data['unit'] = 'ROA:Ang^6' if ROA else 'RA:Ang^6'
@@ -2058,7 +2061,7 @@ def _parse_logdat_ramact(qopt: str,
                 for col in line.strip().split():
                     i += 1
                     try:
-                        data[i] = float(col)
+                        data[i] = float(col)*yfactor
                     except ValueError:
                         data[i] = float('inf')
         elif an_blk:
@@ -2088,7 +2091,7 @@ def _parse_logdat_ramact(qopt: str,
                 for col in line.strip().split():
                     i += 1
                     try:
-                        d[i] = float(col)
+                        d[i] = float(col)*yfactor
                     except ValueError:
                         d[i] = float('inf')
         else:
@@ -2112,7 +2115,7 @@ def _parse_logdat_ramact(qopt: str,
                     d = dfreq[('SCP(180)u', 'SCP(90)z', 'DCPI(180)')[block-1]]
                     for i, col in enumerate(line.strip().split()):
                         try:
-                            d[ioff+i] = float(col)
+                            d[ioff+i] = float(col)*yfactor
                         except ValueError:
                             d[ioff+i] = float('inf')
             else:
@@ -2138,12 +2141,13 @@ def _parse_logdat_ramact(qopt: str,
                                    'DCPI(180)')[block-1]]
                         for i, col in enumerate(line.strip().split()):
                             try:
-                                d[iref+i+1] = float(col)
+                                d[iref+i+1] = float(col)*yfactor
                             except ValueError:
                                 d[iref+i+1] = float('inf')
                 else:
                     raise ParseKeyError('Missing incident frequency')
     elif qlvl == 'A':
+        data['unit'] = 'ROA:Ang^6' if ROA else 'RA:Ang^6'
         incfrq = None
         setups = []
         for item in datablocks[first+1]:
@@ -2170,7 +2174,7 @@ def _parse_logdat_ramact(qopt: str,
             for col in line.strip().split():
                 i += 1
                 try:
-                    d[i] = float(col)
+                    d[i] = float(col)*yfactor
                 except ValueError:
                     d[i] = float('inf')
     else:
