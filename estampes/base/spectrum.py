@@ -399,6 +399,7 @@ class Spectrum():
                     for key in data[qkeys['int']].keys():
                         try:
                             _ = float(key)
+                            incfrq = key
                             break
                         except ValueError:
                             continue
