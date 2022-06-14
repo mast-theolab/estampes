@@ -761,8 +761,10 @@ def qlab_to_linkdata(qtag: TypeQTag,
             key = ' NOTE: Transition energies are given with'
             sub = 8
             def end(s): return s.startswith('     =====')
-            fmt = r'^\s+\w?\s+(?P<val>(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'\
-                  + r'(?:\w+)?\s+(?:\s*-?\d+\.\d+|\*+\s+){4,5}.*\s*$'
+            # fmt = r'^\s+\w?\s+(?P<val>(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'\
+            #       + r'(?:\w+)?\s+(?:\s*-?\d+\.\d+|\*+\s+){4,5}.*\s*$'
+            fmt = r'^\s+\w?\s+(?P<val>(?:\s*\d+\(\d+\)\s+(?:\w+)?){1,3}|\d+)'\
+                  + r'\s+(?:\s*-?\d+\.\d+|\*+\s+){4,5}.*\s*$'
             num = 0
         else:
             raise NotImplementedError()
@@ -1237,8 +1239,10 @@ def parse_data(qdict: TypeQInfo,
         return qtag == 'nvib' or \
             (qtag == 'fcdat' and qopt in ('JMat', 'JMatF'))
     data = {}
+    all_tags = []
     for qlabel in qdict:
         qtag, qopt, dord, dcrd, rsta, qlvl = qdict[qlabel]
+        all_tags.append(qtag)
         first, last = key2blocks[qlabel]
         # Basic Check: property available
         # -----------
@@ -1736,23 +1740,32 @@ def parse_data(qdict: TypeQInfo,
                     raise ParseKeyError('Missing quantity in file')
                 i = 0
                 for line in datablocks[iref]:
-                    for col in line.strip().split():
+                    cols = line.strip().split()
+                    if cols[-1] in ('active', 'inactive', 'passive'):
+                        del(cols[-1])
+                    for col in cols:
                         i += 1
                         res = col.split('(')
-                        data[qlabel][i] = [((0, 0), ), ((int(res[0]), 1), )]
+                        data[qlabel][i] = (((0, 0), ), ((int(res[0]), 1), ))
             elif qlvl == 'A':
                 i = 0
                 for line in datablocks[iref]:
                     i += 1
                     val = []
-                    for col in line.strip().split():
+                    cols = line.strip().split()
+                    if cols[-1] in ('active', 'inactive', 'passive'):
+                        status = cols[-1]
+                        del(cols[-1])
+                    else:
+                        status = None
+                    for col in cols:
                         res = col.split('(')
                         if len(res) == 1:
                             val.append((int(res[0]), 0))
                         else:
                             val.append((int(res[0]),
                                         int(res[1].replace(')', ''))))
-                        data[qlabel][i] = [((0, 0), ), tuple(val)]
+                        data[qlabel][i] = (((0, 0), ), tuple(val), status)
             else:
                 raise NotImplementedError()
         # Anharmonic Information
@@ -2005,6 +2018,17 @@ def parse_data(qdict: TypeQInfo,
             #         else:
             #             raise NotImplementedError()
 
+    # final checks/corrections
+    if not {'vlevel', 'vtrans'} - set(all_tags):
+        args = {}
+        for qlabel in qdict:
+            qtag, qopt, dord, dcrd, rsta, qlvl = qdict[qlabel]
+            if qtag == 'vlevel' and qlvl == 'A':
+                args['vlevel'] = qlabel
+            elif qtag == 'vtrans' and qlvl == 'A':
+                args['vtrans'] = qlabel
+        if 'vtrans' in args and 'vlevel' in args:
+            __del_nonactive_modes(data[args['vtrans']], data[args['vlevel']])
     return data
 
 
@@ -2246,3 +2270,47 @@ def _parse_logdat_ramact(qopt: str,
     else:
         raise NotImplementedError()
     return data
+
+
+def __del_nonactive_modes(vtrans: tp.Dict[int, tp.Sequence[tp.Any]],
+                          vlevel: tp.Dict[tp.Any, tp.Any]):
+    """
+    Selects and extracts only active mode from `vlevel`.
+
+    Parameters
+    ----------
+    vtrans
+        Information on transition levels.
+    vlevel
+        Vibrational transition energies.
+
+    Notes
+    -----
+    The function returns the arguments modified in-place.
+    """
+    nonact_modes = []
+    for _, dtrans in vtrans.items():
+        if dtrans[-1] is not None:
+            if dtrans[-1] in ('inactive', 'passive'):
+                to = dtrans[1]
+                if len(to) > 1 or to[0][1] != 1:
+                    msg = 'Status information should be only on fundamentals'
+                    raise ValueError(msg)
+                nonact_modes.append(to[0][0])
+    if nonact_modes:
+        key0 = 1
+        newtrans = vtrans.copy()
+        for key, dtrans in newtrans.items():
+            to = dtrans[1]
+            remove = False
+            if len(to) > 1 or to[0][1] != 1:
+                for mode, _ in to:
+                    if mode in nonact_modes:
+                        remove = True
+            if remove:
+                del vlevel[key]
+                del vtrans[key]
+            else:
+                vtrans[key0] = vtrans.pop(key)
+                vlevel[key0] = vlevel.pop(key)
+                key0 += 1

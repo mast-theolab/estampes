@@ -30,6 +30,7 @@ Other blocks are:
 - **API** - `parser/gaussian/glog` supports the qlabel `intens:IR`.
 - **API** - Types for atomic labels and bonds.
 - **API** - Added qlabel `Intens:` to extract intensity-related quantities for spectroscopies.
+- **API** - Added support of reduced-dimensionality VPT2 in Gaussian log files.  Note that there are limitations on the use: `vtrans` and `vlevels` must be provided together for it to work.
 - **VIZ** - Added class `MolWin` (`estampes.visual.molview`) to build a 3D representation of one or more molecules.
 - **VIZ** - Added possibility to reverse vertically the normal mode listing for `plot_jmat`, `plot_cmat` and `plot_kvec` with `top_down`.
 - **VIZ** - Added possibility to reverse the normal mode ordering for `plot_jmat`, `plot_cmat` and `plot_kvec` with `top_down`, so that normal mode 1 is the highest energy.
