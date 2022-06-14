@@ -240,8 +240,10 @@ class Spectrum():
 
     Raises
     ------
-    IndexError
+    KeyError
         Unrecognized spectroscopy
+    IndexError
+        Mismatch in normal modes
     """
     def __init__(self, fname: tp.Union[str, ep.DataFile],
                  specabbr: str,
@@ -264,7 +266,7 @@ class Spectrum():
         elif _level in ('E', 'ELE', 'ELEC', 'ELECTRONIC'):
             self.__theory = 'E'
         else:
-            raise IndexError('Unrecognized level of theory: '+level)
+            raise KeyError('Unrecognized level of theory: '+level)
         self.__ylab = ylabel
         # Spectroscopy-specific parameters
         self.__params = {}
@@ -311,10 +313,10 @@ class Spectrum():
             `ylabel` not found.
         """
         if self.__spec not in SPEC2DATA:
-            raise IndexError('Unsupported spectroscopy: '+self.__spec)
+            raise KeyError('Unsupported spectroscopy: '+self.__spec)
         if self.__theory not in SPEC2DATA[self.__spec]:
             msg = 'Level of theory not available for spectroscopy.'
-            raise IndexError(msg)
+            raise KeyError(msg)
         if ylabel is None:
             ylabel = self.__ylab
         if self.__dfile.version[0] == 'CSV':
@@ -335,7 +337,7 @@ class Spectrum():
                 if len(data[qkeys['spc']]['x']) != nblocks:
                     msg = 'Inconsistency between spectral ranges and ' +\
                         + 'parameters.'
-                    raise IndexError(msg)
+                    raise KeyError(msg)
                 # X axis should always be the same
                 data[qkeys['spc']]['x'] = data[qkeys['spc']]['x'][0]
                 data[qkeys['par']]['x'] = data[qkeys['par']]['x'][0]
@@ -433,10 +435,16 @@ Available: {}'''
             else:
                 ydata = data[qkeys['int']]
             for mode in modes:
-                if (isinstance(data[qkeys['freq']][mode], float) and
-                        isinstance(ydata[mode], float)):
-                    self.__xaxis[0].append(data[qkeys['freq']][mode])
-                    self.__yaxis[0].append(ydata[mode])
+                try:
+                    if (isinstance(data[qkeys['freq']][mode], float) and
+                            isinstance(ydata[mode], float)):
+                        self.__xaxis[0].append(data[qkeys['freq']][mode])
+                        self.__yaxis[0].append(ydata[mode])
+                except KeyError:
+                    fmt = 'Inconsistency in the list of states between ' \
+                        + 'energies and intensities.\nState {} was not ' \
+                        + 'found in one of the lists.'
+                    raise IndexError(fmt.format(mode))
             self.__xlabel[0] = 'Wavenumbers'
             self.__xunit[0] = data[qkeys['freq']]['unit']
             self.__yunit[0] = data[qkeys['int']]['unit']

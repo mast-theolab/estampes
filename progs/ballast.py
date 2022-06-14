@@ -52,7 +52,7 @@ def fscale(expr: str, var: str) -> tp.Callable[[float], float]:
     return eval('lambda {}: {}'.format(var, _expr))
 
 
-def build_opts(parser: argparse.ArgumentParser) -> tp.NoReturn:
+def build_opts(parser: argparse.ArgumentParser):
     """Builds commandline options.
 
     Builds commandline options inside input `parser`.
@@ -399,7 +399,20 @@ def parse_inifile(fname: str
             yid = optsec.get('yaxis', None)
             if yid is not None:
                 yid = 'y' + yid
-            curves[key]['data'] = Spectrum(optsec['file'], spc, lvl, yid)
+            try:
+                curves[key]['data'] = Spectrum(optsec['file'], spc, lvl, yid)
+            except KeyError as e:
+                fmt = 'Something went wrong in the definition of ' \
+                    + 'spectroscopy for curve {}'
+                print(fmt.format(key))
+                print(str(e)[1:-1])  # slice to remove enclosing quotes of key
+                sys.exit(1)
+            except IndexError as e:
+                fmt = 'Something went wrong when building spectroscopic data '\
+                    + 'from file "{}".'
+                print(fmt.format(optsec['file']))
+                print(e)
+                sys.exit(1)
             if optsec.getboolean('broaden', fallback=False):
                 func = optsec.get('function', None)
                 hwhm = optsec.getfloat('hwhm', fallback=10.)
