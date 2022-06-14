@@ -49,6 +49,7 @@ This is the basic identifier of the quantity
 | RamAct  | Raman activity
 | ROAAct  | ROA activity
 | AnySpc  | Label for spectral data with limited information (ex: CSV)
+| Intens  | Intensity-related quantities
 | VPTDat  | VPT-related data
 | FCDat   | Franck-Condon data
 2+^e| Basic properties
@@ -93,11 +94,11 @@ This is the basic identifier of the quantity
 
 A label-specific option.
 
-[cols="^10,^10,<80",option=header,frame=topbot]
+[cols="^10,^10,<80",option=header,frame=topbot,grid=rows]
 |====
 | Label | Option | Description
 
-.4+| `AtCrd` | `last` | Only last geometry if multiple present.
+.^4+| `AtCrd` | `last` | Only last geometry if multiple present.
 | `first` <| Only the first geometry if multiple present.
 | `all`   <| All geometries should be extracted.
 | `scan`  <| Geometries relative to a scan procedure
@@ -107,6 +108,8 @@ A label-specific option.
 
 .2+| `AnySpc` | `Spec` | Spectrum/spectra
 | `SpcPar` <| Spectrum parameters
+
+.1+| `Intens` | `IR` | Infrared intensity (normally, integrated intensity)
 
 .17+| `FCDat` | `SimInf` | Simulation information/parameters
 | `JMat`   <| Duschinsky matrix
@@ -126,8 +129,9 @@ A label-specific option.
 | `Conv`   <| Convergence Data
 | `Assign` <| Assignment data
 
-.2+| `VPTDat` | `XMat` | Anharmonic stem:[bb{chi}] matrix
+.3+| `VPTDat` | `XMat` | Anharmonic stem:[bb{chi}] matrix
 | `GMat` <| Variational correction matrix (for _Generalized_...)
+| `CICoef` <| CI coefficient from the variational correction in GVPT2.
 |====
 
 

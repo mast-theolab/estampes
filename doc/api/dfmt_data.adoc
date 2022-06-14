@@ -4,13 +4,13 @@ While the data formats are relatively free, following the recommendations below 
 
 ==== Vibrational transitions
 
-
-===== Vibrational transitions assignment
-
 [NOTE]
 ====
-To facilitate the relation between different quantities, 
+* To facilitate the relation between the different quantities, the numbering should be kept consistent.
+* `__N__` is the index of the state/transition when read, for consistency with other data, starting from 1.
 ====
+
+===== Vibrational transitions assignment
 
 [TIP]
 ._qlabel_
@@ -23,23 +23,113 @@ To facilitate the relation between different quantities,
 .4+| `__N__`
 2+s| Assignment data, in the form "`[__initial__, __final__]`", with each state defined as "`((mode1, quanta1), (mode2, quanta2)...)`"
 | _Type_     | `list`
-| _Accepted_ | lists of lists integers
+| _Accepted_ | lists of lists of integers
 | `None`     | No band assignment
 |====
 
 [NOTE]
 ====
-* `__N__` is the index of the state/transition when read, for consistency with other data, starting from 1.
-* For anharmonic or ground states, "`__quanta__`" is set to 0.
+* For variational or ground states, "`__quanta__`" is set to 0.
 ====
 
 
-.5+| `unitx`
-2+s| Unit used for the X axis.
+===== Vibrational energies
+
+[TIP]
+._qlabel_
+====
+* `VLevel:`
+====
+
+[cols="1,2,12",grid=rows,stripes=none]
+|====
+.5+| `unit`
+2+s| Unit of the vibrational energies.
 | _Type_     | `str`
-| _Accepted_ | string compatible with `convert_x` in `estampes.visual.plotspec`
-| `None`     | Unknown unit.
-| `False`    | No unit.
+| _Accepted_ | string compatible with `convert_x` in `estampes.tools.spec`
+| `None`     | Unknown unit / unit not found.
+| `False`    | No unit applicable.
+
+.5+| `_N_`
+2+s| Energy of the vibrational transition
+| _Type_     | `float`
+| _Accepted_ | numeric values
+| `math.inf` | Excessive value (typically `****` in Fortran output).
+| `None`     | Value not available.
+
+|====
+
+
+===== Transition intensities
+
+====== Static properties
+
+[TIP]
+._qlabel_
+====
+* `DipStr:`
+* `RotStr:`
+* `RamAct:static`
+====
+
+[cols="1,2,12",grid=rows,stripes=none]
+|====
+.5+| `unit`
+2+s| Unit of the intensity, as `qty:unit`
+| _Type_     | `str`
+| _Accepted_ | string compatible with `convert_y` in `estampes.tools.spec`.  `qty` is an abbreviation for the quantity of interest
+| `None`     | Unknown unit / unit not found.
+| `False`    | No unit applicable.
+
+.5+| `_N_`
+2+s| Value of the intensity
+| _Type_     | `float`
+| _Accepted_ | numeric values
+| `math.inf` | Excessive value (typically `****` in Fortran output).
+| `None`     | Value not available.
+
+|====
+
+====== Frequency-dependent properties (Raman)
+
+[NOTE]
+====
+Frequency-dependent quantities (e.g., dynamic Raman, ROA) should be stored in a hierarchical structure with values of intensities stored as: +
+`["_incfrq_"]["_setup_"][_N_]`+
+with
+
+`"_incfrq_"` ::
+     incident frequency, as a *string* (e.g., `"17800.00"`).
+     The format is chosen to facilitate data manipulation, since floating point numbers would be more easily error-prone
+`"_setup_"`::
+     experimental setup, for instance `"SCP(180)u"`
+`_N_`::
+     state/transition
+====
+
+._qlabel_
+====
+* `RamAct:dynamic`
+* `ROAAct:dynamic`
+====
+
+[cols="1,2,12",grid=rows,stripes=none]
+|====
+.5+| `unit`
+2+s| Unit of the intensity, as `qty:unit`
+| _Type_     | `str`
+| _Accepted_ | string compatible with `convert_y` in `estampes.tools.spec`.  `qty` is an abbreviation for the quantity of interest
+| `None`     | Unknown unit / unit not found.
+| `False`    | No unit applicable.
+
+.5+| `"_incfrq_"`/`"_setup_"`/`_N_`
+2+s| Value of the intensity
+| _Type_     | `float`
+| _Accepted_ | numeric values
+| `math.inf` | Excessive value (typically `****` in Fortran output).
+| `None`     | Value not available.
+
+|====
 
 
 ==== Spectra

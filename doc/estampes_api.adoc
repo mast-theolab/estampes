@@ -80,6 +80,11 @@ Some default keys:
         unit, without spaces, where dots (`.`) can be used as separators (multipliers, `/` for divisors).
         * `^` and `**` are both accepted as exponentiation symbols (e.g., `dm\^3.mol^-1`).
         * If unequivocal, they can be omitted (e.g., `dm3/mol`, `dm3.mol-1`).
++
+--
+NOTE: the _scale_ should be avoided in the unit, except where absolutely necessary, as it makes the parsing of unit and quantity more difficult.  It is better for the parsers to directly apply the scale to the values.
+
+--
 `format`::
     Can be used to specify storage formats (typically Fortran/C). +
 --
