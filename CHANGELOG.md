@@ -27,7 +27,9 @@ Other blocks are:
 - **API** - `parser/gaussian/glog` now fully supports the band assignments of FC calculations.
 - **API** - `parser/gaussian/glog` now supports GVPT2 variational coefficients.
 - **API** - `parser/gaussian/glog` now supports the electric dipole.
+- **API** - `parser/gaussian/glog` supports the qlabel `intens:IR`.
 - **API** - Types for atomic labels and bonds.
+- **API** - Added qlabel `Intens:` to extract intensity-related quantities for spectroscopies.
 - **VIZ** - Added class `MolWin` (`estampes.visual.molview`) to build a 3D representation of one or more molecules.
 - **VIZ** - Added possibility to reverse vertically the normal mode listing for `plot_jmat`, `plot_cmat` and `plot_kvec` with `top_down`.
 - **VIZ** - Added possibility to reverse the normal mode ordering for `plot_jmat`, `plot_cmat` and `plot_kvec` with `top_down`, so that normal mode 1 is the highest energy.
@@ -36,6 +38,7 @@ Other blocks are:
 - **LIB** - Added support of Raman (static and dynamic) and ROA spectroscopies in class `Spectrum`.  The spectroscopy keyword `RS` now refers to the dynamic one.
 - **LIB** - Added collector dictionary `params` in constructor of `Spectrum` to support spectroscopy-related keywords, like the incident frequency and spectroscopic setup  of Raman and ROA.
 - **LIB** - Added some conversion factors in `tools.spec.convert_y` for Raman and ROA spectroscopies.  As there is some arbitrariness in the formulas, the conversion may not be final.
+- **LIB** - Added conversion factor from integrated intensity to molar absorption coefficient for IR in `tools.spec.convert_y`
 
 ### Fixed
 - **API** - Fixed parser of sub-option for `vptdat` in `parse_qlabel`.
@@ -49,6 +52,7 @@ Other blocks are:
 ### Changed
 - **LIB** - `list_bonds` is now part of a dedicated module, `tools.mol`, and not in `visual.molview` to facilitate accesses without the need for Qt libs.
 - **LIB** - `convert_labsymb` now fixes the case of the atomic symbol if the conversion is from `str` to `str`.
+- **LIB** - Class `Spectrum` uses qlabel `intens:IR` instead or `dipstr` to extract IR intensities, since the later is not systematically available.
 - **DEV** - Improved some basic type hints, adding support for Numpy is present.
 
 ### Removed

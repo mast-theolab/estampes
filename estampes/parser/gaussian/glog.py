@@ -550,6 +550,35 @@ def qlab_to_linkdata(qtag: TypeQTag,
         def end(s): return True
         fmt = r'^ (?P<val>Gaussian (?:\d\d|DV):\s.*)$'
         num = 0
+    elif qtag == 'intens':
+        if qopt == 'IR':
+            if qlvl == 'H':
+                lnk = (-716, 716, -717)
+                key = (' and normal coordinates:',
+                       ' and normal coordinates:',
+                       '        Integrated intensity (I)')
+                sub = (1, 1, 4)
+                end = (lambda s: s.startswith(' - Thermochemistry'),
+                       lambda s: s.startswith(' - Thermochemistry'),
+                       lambda s: s.startswith(' -----'))
+                fmt = (r'^\s+IR Intensities --- \s*(?P<val>\d.*)\s*$',
+                       r'^\s+IR Inten    -- \s*(?P<val>\d.*)\s*$',
+                       r'^\s+\d+\(\d+\)\s+(?:-?\d+\.\d+\s+|\*+\s+){2}'
+                       + r'(?P<val>-?\d+\.\d+|\*+)\s+'
+                       + r'(?:-?\d+\.\d+|\*+)\s*$')
+                num = (0, -1, 0)
+            elif qlvl == 'A':
+                lnk = 717
+                key = '        Integrated intensity (I)'
+                sub = 3
+                def end(s): return s.startswith(' Units:')
+                fmt = r'^\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+' \
+                      + r' .*\s+(?P<val>-?\d+\.\d+|\*+)\s*$'
+                num = 0
+            else:
+                raise NotImplementedError()
+        else:
+            raise NotImplementedError()
     elif qtag == 'fcdat':
         if qopt == 'SimInf':
             lnk = -718
@@ -1294,6 +1323,43 @@ def parse_data(qdict: TypeQInfo,
         elif qtag in ('hessvec', 'hessval'):
             if iref >= 0:
                 data[qlabel]['data'] = datablocks[iref]
+        # General Spectroscopy
+        # --------------------
+        elif qtag == 'intens':
+            if qlvl == 'H':
+                for i in range(last, first-1, -1):
+                    if datablocks[i]:
+                        iref = i
+                        break
+                else:
+                    raise ParseKeyError('Missing quantity in file')
+                if qopt == 'IR':
+                    data[qlabel]['unit'] = 'II:km.mol-1'
+                else:
+                    data[qlabel]['unit'] = 'II:N/A'
+                i = 0
+                for line in datablocks[iref]:
+                    for col in line.strip().split():
+                        i += 1
+                        try:
+                            data[qlabel][i] = float(col)
+                        except ValueError:
+                            data[qlabel][i] = float('inf')
+            elif qlvl == 'A':
+                if qopt == 'IR':
+                    data[qlabel]['unit'] = 'II:km.mol-1'
+                else:
+                    data[qlabel]['unit'] = 'II:N/A'
+                i = 0
+                for line in datablocks[iref]:
+                    i += 1
+                    try:
+                        data[qlabel][i] = float(line)
+                    except ValueError:
+                        data[qlabel][i] = float('inf')
+            else:
+                raise NotImplementedError()
+
         # Vibronic Information
         # --------------------
         elif qtag == 'fcdat':
@@ -1581,9 +1647,9 @@ def parse_data(qdict: TypeQInfo,
                 data[qlabel]['T'] = []
                 data[qlabel]['E'] = []
                 data[qlabel]['I'] = []
-                if 'DipStr':
+                if qlabel == 'DipStr':
                     qty = 'DS'
-                elif 'RotStr':
+                elif qlabel == 'RotStr':
                     qty = 'RS'
                 else:
                     msg = 'Unrecognized spectroscopy-specific quantity'

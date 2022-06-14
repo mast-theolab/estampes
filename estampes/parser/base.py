@@ -105,6 +105,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
      AnySpc     Generic quantity for spectra (e.g., for CSV files)
      FCDat      Franck-Condon-related data
      VPTDat     VPT2-related data
+     Intens     Spectral intensity
             *Basic properties*
     -------------------------------------------------------------
          1      Energy
@@ -151,6 +152,8 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     ========  ========  =========================================
      Option     Sub      Description
     ========  ========  =========================================
+    -------------------------------------------------------------
+     Intens     IR       Infrared intensity
     -------------------------------------------------------------
      DipStr     Len     length-gauge dipole strength
                 Vel      Velocity-gaue dipole strength
@@ -238,6 +241,15 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                 qty_opt = qlist[1]
             except ValueError:
                 raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
+    elif qty_tag == 'intens':
+        if qlist[1] is None or not qlist[1].strip():
+            qty_opt = 'IR'
+        else:
+            spec = qlist[1].upper()
+            if spec == 'IR':
+                qty_opt = 'IR'
+            else:
+                raise ValueError('Unsupported spectral intensity')
     elif qty_tag in ('atcrd', 2, 1):
         if qlist[1] is None:
             qty_opt = 'last'

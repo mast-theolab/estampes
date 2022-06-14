@@ -196,7 +196,8 @@ def convert_y(specabbr: str,
     }
     UNIT_II = {  # Integrated intensity
         '/M/cm2': ('M-1.cm-2', '/M/cm2', 'dm3.mol-1.cm-2', 'dm3/mol/cm2',
-                   'L.mol-1.cm-2', 'L/mol/cm2')
+                   'L.mol-1.cm-2', 'L/mol/cm2'),
+        'km/M': ('km/mol', 'km/M', 'km.mol-1', 'km.M-1')
     }
     UNIT_DS = {  # Dipole strength
         'esu2.cm2': ('statC2.cm2', 'esu2.cm2')
@@ -258,6 +259,12 @@ def convert_y(specabbr: str,
                             (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
 
                         def xfunc(x): return x
+                    else:
+                        raise NotImplementedError(msgNYI)
+                elif _src_type == 'II':
+                    if _src_unit in UNIT_II['km/M']:
+                        yfactor = 100/log(10)
+
                     else:
                         raise NotImplementedError(msgNYI)
                 else:

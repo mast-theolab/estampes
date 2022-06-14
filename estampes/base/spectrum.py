@@ -35,10 +35,12 @@ VSPC2DATA = {
         'name': 'Infrared',
         'unit': 'I:/M/cm',
         'H': {'freq': ep.build_qlabel('vlevel', level='H'),
-              'int': ep.build_qlabel('dipstr', level='H'),
+              # 'int': ep.build_qlabel('dipstr', level='H'),
+              'int': ep.build_qlabel('intens', 'IR', level='H'),
               'assign': ep.build_qlabel('vtrans', level='H')},
         'A': {'freq': ep.build_qlabel('vlevel', level='A'),
-              'int': ep.build_qlabel('dipstr', level='A'),
+              # 'int': ep.build_qlabel('dipstr', level='A'),
+              'int': ep.build_qlabel('intens', 'IR', level='A'),
               'assign': ep.build_qlabel('vtrans', level='A')},
         'DS': 'Dipole strength',
         'II': 'Integrated intensity'
@@ -287,10 +289,7 @@ class Spectrum():
         self.__ytags = None
         # Initialize basic data
         if load_data:
-            if ftype is None or ftype.lower() != 'csv':
-                self.load_data(ylabel)
-            else:
-                raise NotImplementedError('CSV File not yet supported.')
+            self.load_data(ylabel)
         # Create aliases
         self.reset()
         self.__linecol = None
