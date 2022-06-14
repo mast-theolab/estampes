@@ -1,6 +1,6 @@
 = ESTAMPES: Units Conversion
 :email: julien.bloino@sns.it
-:revnumber: 0.4.1
+:revnumber: 0.4.2
 :revremark: Introduction
 :toc: left
 :toclevels: 3
