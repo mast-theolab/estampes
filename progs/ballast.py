@@ -401,6 +401,10 @@ def parse_inifile(fname: str
                 yid = 'y' + yid
             try:
                 curves[key]['data'] = Spectrum(optsec['file'], spc, lvl, yid)
+            except FileNotFoundError:
+                fmt = 'File {} not found'
+                print(fmt.format(optsec['file']))
+                sys.exit(1)
             except KeyError as e:
                 fmt = 'Something went wrong in the definition of ' \
                     + 'spectroscopy for curve {}'
