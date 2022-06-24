@@ -575,7 +575,7 @@ def main() -> tp.NoReturn:
             yaxis += yshift
         stick = curves[key]['data'].get_broadening('func') == 'stick'
         if 'outfile' in curves[key]:
-            fmt = '{:12.5f}, {:15.6e}\n'
+            fmt = '{:12.5f} {:15.6e}\n'
             with open(curves[key]['outfile'], 'w') as fobj:
                 for i in range(len(xaxis)):
                     fobj.write(fmt.format(xaxis[i], yaxis[i]))
