@@ -5,6 +5,24 @@
 *.log
 *.chk
 *.fch*
+tests/in_progress/*
+
+# Bug-testing director
+bugs/*
+
+# TeX files
+*.toc
+*.vrb
+*_latexmk
+*.bcf
+*.aux
+*.nav
+*.fls
+*.run.xml
+*.snm
+
+# Docs
+*.html
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
