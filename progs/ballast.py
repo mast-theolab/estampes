@@ -7,11 +7,10 @@ This is a simple program to combine and display spectra together.
 
 import sys
 import os
-import re
 import argparse
 import typing as tp
 import configparser as cfg
-from math import *
+from math import ceil
 
 import numpy as np
 import matplotlib.pyplot as plt
