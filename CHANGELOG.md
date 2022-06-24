@@ -22,6 +22,9 @@ Other blocks are:
 
 ## Unreleased
 
+### Changed
+- **API** - Commas get precedence over tabs as delimiters in CSV files (`parser/csv`).
+
 ## [0.4.2] - 2022-06-14
 
 ### Added

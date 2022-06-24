@@ -97,7 +97,7 @@ class FileCSV(object):
         #   delimiters which are likely to be used in this case
         #   Space must be at then end, as it is likely to give many
         #   false positives.
-        CHARS_SEP = (';', '\t', ',', ' ')
+        CHARS_SEP = (';', ',', '\t', ' ')
 
         c_com = ''
         c_sep = ''
