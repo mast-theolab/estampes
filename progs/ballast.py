@@ -625,7 +625,7 @@ def main() -> tp.NoReturn:
                 sub = subp[col]
             else:
                 sub = subp
-            sub.legend()
+            # sub.legend()
             if y0lines[row, col]:
                 sub.axhline(0, c='.5', zorder=-10.0)
             spcdata[row][col].set_plot(sub)
