@@ -491,6 +491,34 @@ Available: {}'''
         self.__xlabel[1] = None
         self.__ylabel[1] = None
 
+    def overwrite_axis(self, data: tp.Sequence[tp.Union[float, int]],
+                       axis: str = 'x'):
+        """Overwrites one of the original axes.
+
+        Note that this should only be used in special cases.
+
+        Parameters
+        ----------
+        data
+            New axis data.
+        axis
+            Axis to overwrite.
+
+        Raises
+        ------
+        TypeError
+            Cannot convert to list.
+        IndexError
+            Inconsistency in length size between the axes.
+        """
+        if axis.lower() == 'x':
+            self.__xaxis[0] = list(data)
+        elif axis.lower() == 'y':
+            self.__yaxis[0] = list(data)
+        if len(self.__xaxis[0]) != len(self.__yaxis[0]):
+            raise IndexError('Inconsistency in the size of the axes')
+        self.reset()
+
     def get_xaxis(self, origin: bool = False) -> tp.List[float]:
         """Shows X axis.
 
