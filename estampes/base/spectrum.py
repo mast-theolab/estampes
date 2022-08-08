@@ -298,7 +298,7 @@ class Spectrum():
         self.__linesty = None
         self.__linewdt = None
 
-    def load_data(self, ylabel: tp.Optional[str] = None) -> tp.NoReturn:
+    def load_data(self, ylabel: tp.Optional[str] = None):
         """Loads data from data file.
 
         Parameters
@@ -558,7 +558,7 @@ Available: {}'''
         return self.__label
 
     @label.setter
-    def label(self, val: str) -> tp.NoReturn:
+    def label(self, val: str):
         self.__label = val
 
     def get_broadening(self, info: tp.Optional[str] = None,
@@ -606,7 +606,7 @@ Available: {}'''
                        xres: float = 10.0,
                        xmin: tp.Optional[float] = None,
                        xmax: tp.Optional[float] = None,
-                       origin: bool = False) -> tp.NoReturn:
+                       origin: bool = False):
         """Sets broadening parameters.
 
         Parameters
@@ -707,7 +707,7 @@ Available: {}'''
         return self.get_broadening(info='hwhm')
 
     @hwhm.setter
-    def hwhm(self, val: float) -> tp.NoReturn:
+    def hwhm(self, val: float):
         self.set_broadening(hwhm=val)
 
     @property
@@ -716,12 +716,12 @@ Available: {}'''
         return self.get_broadening(info='func')
 
     @func.setter
-    def func(self, val: str) -> tp.NoReturn:
+    def func(self, val: str):
         self.set_broadening(func=val)
 
     def set_display(self, color: tp.Optional[TypeColor] = None,
                     linestyle: tp.Optional[str] = None,
-                    linewidth: tp.Optional[float] = None) -> tp.NoReturn:
+                    linewidth: tp.Optional[float] = None):
         """Sets display parameters.
 
         Sets options related to display.
@@ -756,7 +756,7 @@ Available: {}'''
         return self.__linecol
 
     @linecolor.setter
-    def linecolor(self, val: TypeColor) -> tp.NoReturn:
+    def linecolor(self, val: TypeColor):
         self.set_display(color=val)
 
     @property
@@ -765,7 +765,7 @@ Available: {}'''
         return self.__linesty
 
     @linestyle.setter
-    def linestyle(self, val: str) -> tp.NoReturn:
+    def linestyle(self, val: str):
         self.set_display(linestyle=val)
 
     @property
@@ -774,5 +774,5 @@ Available: {}'''
         return self.__linewdt
 
     @linewidth.setter
-    def linewidth(self, val: str) -> tp.NoReturn:
+    def linewidth(self, val: str):
         self.set_display(linewidth=val)

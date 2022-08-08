@@ -513,7 +513,7 @@ def build_mean_data(op_mol: str,
                     dref: TypeRDat,
                     do_plot: bool,
                     compfile: tp.Optional[str] = None,
-                    imgfile: tp.Optional[str] = None) -> tp.NoReturn:
+                    imgfile: tp.Optional[str] = None):
     """Builds (and displays) average statistical data.
 
     Builds average statistical data and displays if requested.

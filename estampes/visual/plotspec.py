@@ -130,7 +130,7 @@ class SpecLayout(object):
         return self.__xleft
 
     @xleft.setter
-    def xleft(self, val: tp.Optional[tp.Any]) -> tp.NoReturn:
+    def xleft(self, val: tp.Optional[tp.Any]):
         if val is None or val.lower() == 'auto':
             self.__xleft = None
         else:
@@ -142,7 +142,7 @@ class SpecLayout(object):
         return self.__xright
 
     @xright.setter
-    def xright(self, val: tp.Optional[tp.Any]) -> tp.NoReturn:
+    def xright(self, val: tp.Optional[tp.Any]):
         if val is None or val.lower() == 'auto':
             self.__xright = None
         else:
@@ -172,7 +172,7 @@ class SpecLayout(object):
         return self.__ytop
 
     @ytop.setter
-    def ytop(self, val: tp.Optional[tp.Any]) -> tp.NoReturn:
+    def ytop(self, val: tp.Optional[tp.Any]):
         if val is None or val.lower() == 'auto':
             self.__ytop = None
         else:
@@ -184,7 +184,7 @@ class SpecLayout(object):
         return self.__ybottom
 
     @ybottom.setter
-    def ybottom(self, val: tp.Optional[tp.Any]) -> tp.NoReturn:
+    def ybottom(self, val: tp.Optional[tp.Any]):
         if val is None or val.lower() == 'auto':
             self.__ybottom = None
         else:
@@ -214,7 +214,7 @@ class SpecLayout(object):
         return self.__xlabel
 
     @xlabel.setter
-    def xlabel(self, val: tp.Optional[str]) -> tp.NoReturn:
+    def xlabel(self, val: tp.Optional[str]):
         self.__xlabel = val
 
     @property
@@ -223,7 +223,7 @@ class SpecLayout(object):
         return self.__ylabel
 
     @ylabel.setter
-    def ylabel(self, val: tp.Optional[str]) -> tp.NoReturn:
+    def ylabel(self, val: tp.Optional[str]):
         self.__ylabel = val
 
     @property
@@ -232,7 +232,7 @@ class SpecLayout(object):
         return self.__xscale
 
     @xscale.setter
-    def xscale(self, val: tp.Optional[str]) -> tp.NoReturn:
+    def xscale(self, val: tp.Optional[str]):
         if val is None:
             self.__xscale = {'value': 'linear'}
         else:
@@ -252,7 +252,7 @@ class SpecLayout(object):
         return self.__yscale
 
     @yscale.setter
-    def yscale(self, val: tp.Optional[str]) -> tp.NoReturn:
+    def yscale(self, val: tp.Optional[str]):
         if val is None:
             self.__yscale = {'value': 'linear'}
         else:
@@ -272,7 +272,7 @@ class SpecLayout(object):
         return self.__title
 
     @title.setter
-    def title(self, val: tp.Optional[str]) -> tp.NoReturn:
+    def title(self, val: tp.Optional[str]):
         self.__title = val
 
     def set_xbounds(self, *xaxes: tp.List[float], desc: bool = False):
@@ -328,7 +328,7 @@ class SpecLayout(object):
             self.__ybottom = max(ymax)
 
     def legend(self, pos: tp.Optional[tp.Union[str, int, bool]] = None,
-               ncols: tp.Optional[int] = None) -> tp.NoReturn:
+               ncols: tp.Optional[int] = None):
         """Sets the position and options of the legend.
 
         Sets the position and some parameters of the legend.
@@ -382,7 +382,7 @@ class SpecLayout(object):
             if self.__legcol < 1:
                 raise ValueError('Error in number of columns.')
 
-    def set_plot(self, canvas: mpl.axes.Axes) -> tp.NoReturn:
+    def set_plot(self, canvas: mpl.axes.Axes):
         """Sets the spectrum parameters on a Matplotlib canvas.
 
         Sets the parameters for the spectrum layout on a Matplotlib
@@ -429,7 +429,7 @@ class SpecLayout(object):
             canvas.text(**self.__plottag, transform=canvas.transAxes)
 
     def def_panel(self, desc: tp.Optional[str] = None,
-                  **kwargs) -> tp.NoReturn:
+                  **kwargs):
         """Defines the parameters for a panel label on a canvas.
 
         Sets the parameters necessary to include a Places a label `text`

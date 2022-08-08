@@ -23,6 +23,7 @@ Other blocks are:
 ## Unreleased
 
 ### Fixed
+- **DEV** - Incorrect use of `typing.NoReturn` could confuse syntax analyzers (ex: Pylance).
 - **BLS** - Added correct error message if an input file for a curve is not found, instead of a useless Python traceback.
 - **BLS** - Fixed legend being printed even if user explicitly deactivated it.
 

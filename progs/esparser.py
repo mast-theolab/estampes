@@ -252,7 +252,7 @@ Default for vibronic spectroscopy is extracted from the log.'''
     return parser.parse_args(args)
 
 
-def mode_molview(dfile: DataFile) -> tp.NoReturn:
+def mode_molview(dfile: DataFile):
     """Molview Mode.
 
     Main function managing molecule viewer.
@@ -279,7 +279,7 @@ def mode_molview(dfile: DataFile) -> tp.NoReturn:
 
 def mode_vibronic(dfile: DataFile,
                   qty: str,
-                  **kwargs: tp.Dict[str, tp.Any]) -> tp.NoReturn:
+                  **kwargs: tp.Dict[str, tp.Any]):
     """Vibrational-spectroscopy Mode.
 
     Main function managing vibratonal spectroscopy.
@@ -373,7 +373,7 @@ def mode_vibronic(dfile: DataFile,
 
 
 def mode_vibspec(dfile: DataFile,
-                 **kwargs: tp.Dict[str, tp.Any]) -> tp.NoReturn:
+                 **kwargs: tp.Dict[str, tp.Any]):
     """Vibrational-spectroscopy Mode.
 
     Main function managing vibratonal spectroscopy.
