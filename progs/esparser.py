@@ -16,11 +16,12 @@ import typing as tp
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Make PySide2 optional
 try:
-from PySide2 import QtCore, QtGui
-from PySide2.Qt3DCore import Qt3DCore
-from PySide2.Qt3DRender import Qt3DRender
-from PySide2.Qt3DExtras import Qt3DExtras
+    from PySide2 import QtCore, QtGui
+    from PySide2.Qt3DCore import Qt3DCore
+    from PySide2.Qt3DRender import Qt3DRender
+    from PySide2.Qt3DExtras import Qt3DExtras
     QtYes = True
 except ModuleNotFoundError:
     QtYes = False
