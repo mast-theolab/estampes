@@ -16,10 +16,14 @@ import typing as tp
 import numpy as np
 import matplotlib.pyplot as plt
 
+try:
 from PySide2 import QtCore, QtGui
 from PySide2.Qt3DCore import Qt3DCore
 from PySide2.Qt3DRender import Qt3DRender
 from PySide2.Qt3DExtras import Qt3DExtras
+    QtYes = True
+except ModuleNotFoundError:
+    QtYes = False
 
 from estampes.base import QuantityError, TypeColor
 from estampes.base.spectrum import VSPC2DATA, Spectrum
@@ -262,6 +266,9 @@ def mode_molview(dfile: DataFile):
     dfile
         `ep.DataFile` object.
     """
+    if not QtYes:
+        print('Missing PySide2.  Cannot display.')
+        sys.exit(1)
     dkeys = {
         'atcrd': build_qlabel('atcrd', qopt='last'),
         'atnum': build_qlabel('atnum')
