@@ -26,14 +26,14 @@ try:
 except ModuleNotFoundError:
     QtYes = False
 
-from estampes.base import QuantityError, TypeColor
+from estampes.base import QuantityError, TypeAtCrdM, TypeAtLabM, \
+    TypeBondsM, TypeColor
 from estampes.base.spectrum import VSPC2DATA, Spectrum
 from estampes.parser import DataFile, build_qlabel
 from estampes.data.physics import PHYSFACT
 from estampes.tools.atom import convert_labsymb
 from estampes.tools.mol import list_bonds
-from estampes.visual.molview import Molecule, TypeAtLabM, \
-    TypeAtCrdM, TypeBondsM, MOLCOLS
+from estampes.visual.molview import Molecule, MOLCOLS
 from estampes.visual.plotmat import plot_jmat, plot_cmat, plot_kvec
 from estampes.visual.plotspec import format_label, plot_spec_2D
 

@@ -24,7 +24,9 @@ Other blocks are:
 
 ### Added
 - **LIB** - Added possibility to overwrite original X and Y axes in class `Spectrum` through method `overwrite_axis`.
+
 ### Fixed
+- **DEV** - Molecule-centric types are not anymore provided by `visual.molview` but are now more logically in `base.types`.
 - **DEV** - Incorrect use of `typing.NoReturn` could confuse syntax analyzers (ex: Pylance).
 - **BLS** - Added correct error message if an input file for a curve is not found, instead of a useless Python traceback.
 - **BLS** - Fixed legend being printed even if user explicitly deactivated it.

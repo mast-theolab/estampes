@@ -6,12 +6,18 @@ Attributes
 ----------
 TypeAtCrd : list, np.ndarray
     Static type for atomic coordinates.
+TypeAtCrdM
+    Static type for atomic coordinates (multiple molecules).
 TypeAtData : dict
     Static type for atom data.
 TypeAtLab : list
     Static type for atomic labels.
+TypeAtLabM
+    Static type for atomic labels (multiple molecules).
 TypeBonds : list
     Static type for bond list, as (atom1, atom2).
+TypeBondsM
+    Static type for bonds information (multiple molecules).
 TypeColor : float, str, list
     Static type for colors.
 TypeDCrd : str, optional
@@ -115,3 +121,8 @@ else:
     TypeAtCrd = _tpAtCrd
     TypeAtLab = _tpAtLab
 TypeBonds = tp.List[tp.Tuple[int, int]]
+
+# Basic types extended to support multiple molecules
+TypeAtLabM = tp.Union[TypeAtLab, tp.Sequence[TypeAtLab]]
+TypeAtCrdM = tp.Union[TypeAtCrd, tp.Sequence[TypeAtCrd]]
+TypeBondsM = tp.Union[TypeBonds, tp.Sequence[TypeBonds]]

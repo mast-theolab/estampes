@@ -18,12 +18,18 @@ Attributes
 ----------
 TypeAtCrd : list, np.ndarray
     Static type for atomic coordinates.
+TypeAtCrdM
+    Static type for atomic coordinates (multiple molecules).
 TypeAtData : dict
     Static type for atom data.
 TypeAtLab : list
     Static type for atomic labels.
+TypeAtLabM
+    Static type for atomic labels (multiple molecules).
 TypeBonds : list
     Static type for bond list, as (atom1, atom2).
+TypeBondsM
+    Static type for bonds information (multiple molecules).
 TypeColor : float, str, list
     Static type for colors.
 TypeDCrd : str, optional
@@ -65,9 +71,10 @@ QuantityError
 
 # flake8: noqa: F401
 
-from estampes.base.types import TypeAtCrd, TypeAtData, TypeAtLab, TypeBonds, \
-    TypeColor, TypeQData, TypeDCrd, TypeDFChk, TypeDGLog, TypeDOrd, TypeQInfo, \
-    TypeQLab, TypeQLvl, TypeQOpt, TypeQTag, TypeRSta, ConstDict
+from estampes.base.types import TypeAtCrd, TypeAtCrdM, TypeAtData, TypeAtLab, \
+    TypeAtLabM, TypeBonds, TypeBondsM, TypeColor, TypeQData, TypeDCrd, \
+    TypeDFChk, TypeDGLog, TypeDOrd, TypeQInfo, TypeQLab, TypeQLvl, TypeQOpt, \
+    TypeQTag, TypeRSta, ConstDict
 
 from estampes.base.errors import ArgumentError, ParseDataError, \
     ParseKeyError, ParsingError, QuantityError
