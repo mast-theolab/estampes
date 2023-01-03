@@ -16,16 +16,29 @@ Installation
 ------------
 The version is not yet available on *PyPI* and must be installed manually in root directory of the package:
 
-`pip install -e .`
+> **Rolling release**
+> 1. Clone the repository
+> 2. In the local repository, run:
+> ```
+> pip install -e .
+> ```
+
+
+> **Directly with pip**
+>
+> Run
+> ```
+> pip install -e git+https://github.com/jbloino/estampes.git#egg=estampes
+> ```
 
 Requirements
 ------------
 * Low-level modules do not require modules outside of the standard Python installation, to facilitate data parsing
 * Visualization tools require additional tools
-    * 3D visualization (`visual.molview`): `PySide2`, `NumPy`
+    * 3D visualization (`visual.molview`): `PySide6`, `NumPy`
     * Plot charting (`visual.plotmat`, `visual.plotspec`): `NumPy`
 * Scripts:
-    * **ESParser**: `NumPy`, `PySide2`
+    * **ESParser**: `NumPy`, `PySide6` (optional)
 
 Parser
 ------
