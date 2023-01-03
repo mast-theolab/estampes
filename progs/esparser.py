@@ -8,6 +8,10 @@ This is the main program for data parser, which also acts as an
   illustration of the toolbox.
 """
 
+# flake8: noqa: F402
+# deactivate "F402" regarding modules being at top.
+#   We need some tests based on the availability of Qt on machines.
+
 import sys
 import os
 import argparse
@@ -16,15 +20,18 @@ import typing as tp
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Make PySide2 optional
+# Make PySide optional
 try:
-    from PySide2 import QtCore, QtGui
-    from PySide2.Qt3DCore import Qt3DCore
-    from PySide2.Qt3DRender import Qt3DRender
-    from PySide2.Qt3DExtras import Qt3DExtras
+    from PySide6 import QtCore, QtGui
+    from PySide6.Qt3DCore import Qt3DCore
+    from PySide6.Qt3DRender import Qt3DRender
+    from PySide6.Qt3DExtras import Qt3DExtras
     QtYes = True
 except ModuleNotFoundError:
     QtYes = False
+
+# Deactivate molecular visualization if Qt not available
+has_molview = QtYes
 
 from estampes.base import QuantityError, TypeAtCrdM, TypeAtLabM, \
     TypeBondsM, TypeColor
@@ -33,19 +40,13 @@ from estampes.parser import DataFile, build_qlabel
 from estampes.data.physics import PHYSFACT
 from estampes.tools.atom import convert_labsymb
 from estampes.tools.mol import list_bonds
-from estampes.visual.molview import Molecule, MOLCOLS
+if has_molview:
+    from estampes.visual.molview import Molecule, MOLCOLS
 from estampes.visual.plotmat import plot_jmat, plot_cmat, plot_kvec
 from estampes.visual.plotspec import format_label, plot_spec_2D
 
 FCHT_QTIES = {
-    'mols': {
-        'atnum': build_qlabel('atnum'),
-        'IniS': build_qlabel('fcdat', qopt='GeomIS'),
-        'FinS': build_qlabel('fcdat', qopt='GeomFS'),
-        'MidS': build_qlabel('fcdat', qopt='GeomMS'),
-        'ExtG': build_qlabel('fcdat', qopt='ExGeom')
-    },
-    'jmat': {
+   'jmat': {
         'JMat': build_qlabel('fcdat', qopt='JMat')
     },
     'fulljmat': {
@@ -62,79 +63,91 @@ FCHT_QTIES = {
         'Pars': build_qlabel('fcdat', qopt='SpcPar'),
     }
 }
+if has_molview:
+    FCHT_QTIES['mols'] = {
+        'atnum': build_qlabel('atnum'),
+        'IniS': build_qlabel('fcdat', qopt='GeomIS'),
+        'FinS': build_qlabel('fcdat', qopt='GeomFS'),
+        'MidS': build_qlabel('fcdat', qopt='GeomMS'),
+        'ExtG': build_qlabel('fcdat', qopt='ExGeom')
+    }
 
 
-class MolWin(Qt3DExtras.Qt3DWindow):
-    """Qt3D Window for the visualization of molecule(s)
-
-    Attributes
-    ----------
-    nmols
-        Number of molecules stored in `atlabs`, `atcrds` and `bonds`.
-    atlabs
-        Atomic labels.
-        If `nmols>1`, list of lists.
-    atcrds
-        3-tuples with atomic coordinates, in Ang.
-        If `nmols>1`, list of lists.
-    bonds
-        2-tuples listing connected atoms.
-        If `nmols>1`, list of lists.
-    col_bond_as_atom
-        If true, bonds are colored based on the connected atoms
-    rad_atom_as_bond
-        If true, atomic radii are set equal to the bonds (tubes).
-    molcols
-        If not `None`, color of the each molecule.
-    """
-    def __init__(self, nmols: int,
-                 atlabs: TypeAtLabM,
-                 atcrds: TypeAtCrdM,
-                 bonds: TypeBondsM,
-                 col_bond_as_atom: bool = False,
-                 rad_atom_as_bond: bool = False,
-                 molcols: tp.Optional[TypeColor] = None):
-        super(MolWin, self).__init__()
-
-        # Camera
-        self.camera().lens().setPerspectiveProjection(45, 16 / 9, 0.1, 1000)
-        self.camera().setPosition(QtGui.QVector3D(0, 1, 40))
-        self.camera().setViewCenter(QtGui.QVector3D(0, 0, 0))
-
-        # For camera controls
-        self.rootEntity = Qt3DCore.QEntity()
-        if nmols == 1:
-            self.mol = Molecule(atlabs, atcrds, bonds, col_bond_as_atom,
-                                rad_atom_as_bond, molcols, self.rootEntity)
-            self.mol.addMouse(self.camera)
-        else:
-            self.mols = []
-            for i in range(nmols):
-                self.mols.append(Molecule(atlabs[i], atcrds[i], bonds[i],
-                                          col_bond_as_atom, rad_atom_as_bond,
-                                          molcols[i], self.rootEntity))
-                self.mols[-1].addMouse(self.camera)
-        self.camController = Qt3DExtras.QOrbitCameraController(self.rootEntity)
-        self.camController.setLinearSpeed(50)
-        self.camController.setLookSpeed(180)
-        self.camController.setCamera(self.camera())
-        self.obj_light = Qt3DCore.QEntity(self.camera())
-        self.camLight = Qt3DRender.QPointLight(self.obj_light)
-        self.cam_tvec = Qt3DCore.QTransform()
-        self.cam_tvec.setTranslation(QtGui.QVector3D(0, 50, 100))
-        self.obj_light.addComponent(self.camLight)
-        self.obj_light.addComponent(self.cam_tvec)
-        # self.camLight.setIntensity(100)
-        # for mol in mols:
-        self.setRootEntity(self.rootEntity)
-
-    def mousePressEvent(self, mouseEvent):
-        if (mouseEvent.button() == QtCore.Qt.RightButton):
+if QtYes and has_molview:
+    class MolWin(Qt3DExtras.Qt3DWindow):
+        """Qt3D Window for the visualization of molecule(s)
+    
+        Attributes
+        ----------
+        nmols
+            Number of molecules stored in `atlabs`, `atcrds` and `bonds`.
+        atlabs
+            Atomic labels.
+            If `nmols>1`, list of lists.
+        atcrds
+            3-tuples with atomic coordinates, in Ang.
+            If `nmols>1`, list of lists.
+        bonds
+            2-tuples listing connected atoms.
+            If `nmols>1`, list of lists.
+        col_bond_as_atom
+            If true, bonds are colored based on the connected atoms
+        rad_atom_as_bond
+            If true, atomic radii are set equal to the bonds (tubes).
+        molcols
+            If not `None`, color of the each molecule.
+        """
+        def __init__(self, nmols: int,
+                    atlabs: TypeAtLabM,
+                    atcrds: TypeAtCrdM,
+                    bonds: TypeBondsM,
+                    col_bond_as_atom: bool = False,
+                    rad_atom_as_bond: bool = False,
+                    molcols: tp.Optional[TypeColor] = None):
+            super(MolWin, self).__init__()
+    
+            # Camera
+            self.camera().lens().setPerspectiveProjection(45, 16 / 9, 0.1,
+                                                          1000)
+            self.camera().setPosition(QtGui.QVector3D(0, 1, 40))
             self.camera().setViewCenter(QtGui.QVector3D(0, 0, 0))
-        # print(mouseEvent.x())
-        # self.camera().setViewCenter(QtGui.QVector3D(mouseEvent.x(),
-        #                                             mouseEvent.y(), 0))
-        super(MolWin, self).mousePressEvent(mouseEvent)
+    
+            # For camera controls
+            self.rootEntity = Qt3DCore.QEntity()
+            if nmols == 1:
+                self.mol = Molecule(atlabs, atcrds, bonds, col_bond_as_atom,
+                                    rad_atom_as_bond, molcols, self.rootEntity)
+                self.mol.addMouse(self.camera)
+            else:
+                self.mols = []
+                for i in range(nmols):
+                    self.mols.append(Molecule(atlabs[i], atcrds[i], bonds[i],
+                                              col_bond_as_atom,
+                                              rad_atom_as_bond, molcols[i],
+                                              self.rootEntity))
+                    self.mols[-1].addMouse(self.camera)
+            self.camController = \
+                Qt3DExtras.QOrbitCameraController(self.rootEntity)
+            self.camController.setLinearSpeed(50)
+            self.camController.setLookSpeed(180)
+            self.camController.setCamera(self.camera())
+            self.obj_light = Qt3DCore.QEntity(self.camera())
+            self.camLight = Qt3DRender.QPointLight(self.obj_light)
+            self.cam_tvec = Qt3DCore.QTransform()
+            self.cam_tvec.setTranslation(QtGui.QVector3D(0, 50, 100))
+            self.obj_light.addComponent(self.camLight)
+            self.obj_light.addComponent(self.cam_tvec)
+            # self.camLight.setIntensity(100)
+            # for mol in mols:
+            self.setRootEntity(self.rootEntity)
+    
+        def mousePressEvent(self, mouseEvent):
+            if (mouseEvent.button() == QtCore.Qt.RightButton):
+                self.camera().setViewCenter(QtGui.QVector3D(0, 0, 0))
+            # print(mouseEvent.x())
+            # self.camera().setViewCenter(QtGui.QVector3D(mouseEvent.x(),
+            #                                             mouseEvent.y(), 0))
+            super(MolWin, self).mousePressEvent(mouseEvent)
 
 
 def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
@@ -152,18 +165,27 @@ def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
     :obj:`argparse.Namespace`
         Object holding results as attributes
     """
+    msg_desc = '''A simple script to parse files supported by ESTAMPES.
+This is also used as a proof-of-concept, implementation test of the library.'''
+    msg_epilog = ''''''
+    if not has_molview:
+        msg_epilog += '''
+WARNING: The Qt library (PySide6) was not found.  \
+Molecular visualization is not available.'''
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawTextHelpFormatter)
+        formatter_class=argparse.RawTextHelpFormatter,
+        description=msg_desc, epilog=msg_epilog)
     # Basic
-    psubs = parser.add_subparsers(help='Molecular viewer')
+    psubs = parser.add_subparsers(help='Graphical interface (NYI)')
     parser.set_defaults(mode='gui')
 
     # MolView
-    pmol = psubs.add_parser('molview', aliases=['mol'],
-                            help='Molecular viewer')
-    pmol.add_argument('datafile',
-                      help='Data file.')
-    pmol.set_defaults(mode='mol')
+    if has_molview:
+        pmol = psubs.add_parser('molview', aliases=['mol'],
+                                help='Molecular viewer')
+        pmol.add_argument('datafile',
+                          help='Data file.')
+        pmol.set_defaults(mode='mol')
 
     # Vibrational spectroscopy
     pvib = psubs.add_parser('vibrational', aliases=['vib', 'l717'],
@@ -203,7 +225,7 @@ def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
     fmt = 'Quantity to show.  Possible values:\n{}'
     pvel.add_argument('-q', '--quantity', type=str.lower,
                       choices=[item.lower() for item in FCHT_QTIES],
-                      default='mols',
+                      default='mols' if 'mols' in FCHT_QTIES else 'jmat',
                       help=fmt.format(', '.join([item.lower()
                                                  for item in FCHT_QTIES])))
     pvel.add_argument('-t', '--title',
@@ -268,7 +290,7 @@ def mode_molview(dfile: DataFile):
         `ep.DataFile` object.
     """
     if not QtYes:
-        print('Missing PySide2.  Cannot display.')
+        print('Missing PySide.  Cannot display.')
         sys.exit(1)
     dkeys = {
         'atcrd': build_qlabel('atcrd', qopt='last'),
@@ -425,7 +447,7 @@ def mode_vibspec(dfile: DataFile,
     plt.show()
 
 
-def mode_spectra(optfile: tp.Optional[str] = None) -> tp.NoReturn:
+def mode_spectra(optfile: tp.Optional[str] = None):
     """
     """
 

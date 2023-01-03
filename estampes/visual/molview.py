@@ -32,10 +32,10 @@ import typing as tp
 import numpy as np
 import numpy.typing as npt
 
-from PySide2 import QtCore, QtGui
-from PySide2.Qt3DCore import Qt3DCore
-from PySide2.Qt3DRender import Qt3DRender
-from PySide2.Qt3DExtras import Qt3DExtras
+from PySide6 import QtCore, QtGui
+from PySide6.Qt3DCore import Qt3DCore
+from PySide6.Qt3DRender import Qt3DRender
+from PySide6.Qt3DExtras import Qt3DExtras
 
 from estampes.base import TypeAtCrd, TypeAtCrdM, TypeAtLab, TypeAtLabM, \
     TypeBonds, TypeBondsM, TypeColor, ArgumentError
