@@ -368,7 +368,15 @@ def mode_vibronic(dfile: DataFile,
         sys.exit(app.exec_())
     else:
         if qty == 'jmat' and not data[dkeys['JMat']]['data']:
-            print('J is the identity matrix.')
+            # First check that it is not a reduced-dimensionality case
+            #   with only the full matrix printed and not the reddim one.
+            key = FCHT_QTIES['fulljmat']['JFul']
+            data2 = dfile.get_data(key, error_noqty=error_noqty)
+            if data2[key]['data']:
+                print('''J is missing. Only the full matrix is available.
+If you want to display that one, use "fulljmat" instead.''')
+            else:
+                print('J is the identity matrix.')
         else:
             figsize = (10, 8)
             fig, subp = plt.subplots(1, 1, tight_layout=True)
