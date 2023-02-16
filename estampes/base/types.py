@@ -4,6 +4,8 @@ A basic module providing types specifications and new types for ESTAMPES.
 
 Attributes
 ----------
+TypeRlCx : float, complex
+    Type variable designated either float or complex.
 TypeAtCrd : list, np.ndarray
     Static type for atomic coordinates.
 TypeAtCrdM
@@ -94,6 +96,8 @@ class ConstDict(dict):
 
 # _tp_StrInt = tp.TypeVar('_tp_StrInt', str, int)
 _tp_StrInt = tp.Union[str, int]
+
+TypeRlCx = tp.TypeVar('TypeRlCx', float, complex)
 
 # Label-related types
 TypeQTag = _tp_StrInt

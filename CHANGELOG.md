@@ -24,6 +24,9 @@ Other blocks are:
 
 ### Added
 - **LIB** - Added possibility to overwrite original X and Y axes in class `Spectrum` through method `overwrite_axis`.
+- **LIB** - New `base.spectro` module for spectroscopy-related classes and methods.  It can provide tools to build quantities or observables from more basic quantities.
+- **LIB** - New class `base.spectro.RamanInvariants` to build Raman/ROA invariants from tensors.
+- **LIB** - New function `base.spectro.raman_intensities` to compute the intensity based on the Raman setup.
 - **API** - Added support of Raman/ROA activities given in atomic units in `tool.spec.convert_y`.
 - **API** - Parsing of vibronic Resonance Raman/RROA from Gaussian log file.
 
