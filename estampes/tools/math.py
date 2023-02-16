@@ -9,6 +9,8 @@ f_gauss
     Gaussian distribution function.
 f_lorentz
     Lorentzian distribution function.
+levi_civita_tens
+    Builds the Levi-Civita tensor
 square_ltmat
     Squares a lower-triangular matrix.
 superpose
@@ -99,6 +101,23 @@ def f_lorentz(x: float,
     """
     norm = hwhm/pi
     return y0*norm/((x-x0)**2+hwhm**2)
+
+
+def levi_civita_tens() -> np.ndarray:
+    """Returns the Levi-Civita tensor
+
+    Builds and returns the Levi-Civita tensor.
+
+    Returns
+    -------
+    :obj:np.ndarray
+        3D tensor (3,3,3)
+    """
+    tensor = np.zeros((3, 3, 3))
+    tensor[0, 1, 2] = tensor[1, 2, 0] = tensor[2, 0, 1] = 1
+    tensor[0, 2, 1] = tensor[2, 1, 0] = tensor[1, 0, 2] = -1
+
+    return tensor
 
 
 def square_ltmat(ltmat: np.ndarray, what: str = 'symm') -> np.ndarray:
