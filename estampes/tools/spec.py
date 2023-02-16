@@ -212,11 +212,13 @@ def convert_y(specabbr: str,
     UNIT_RA = {  # Raman activity
         'Ang4': ('AA4', 'Ang4'),
         'Ang6': ('AA6', 'Ang6'),
+        'bohr6': ('au6', 'bohr6'),
         'amu.Ang4': ('amu.AA4', 'amu.Ang4'),
     }
     UNIT_ROA = {  # Raman optical activity
         'Ang4': ('AA4', 'Ang4'),
         'Ang6': ('AA6', 'Ang6'),
+        'bohr6': ('au6', 'bohr6'),
         'amu.Ang4': ('amu.AA4', 'amu.Ang4'),
     }
     # Initial setup
@@ -313,6 +315,12 @@ def convert_y(specabbr: str,
                         yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4/45
 
                         def xfunc(x): return (incfrq-x)**4
+                    elif _src_unit in UNIT_RA['bohr6']:
+                        # (bohr->AA->cm)^6 * Na * (2 pi * Wscat)^4
+                        yfactor = 1.0e-48*PHYSFACT.bohr2ang**6\
+                            * PHYSCNST.avogadro*(2*pi)**4/45
+
+                        def xfunc(x): return (incfrq-x)**4
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -330,6 +338,12 @@ def convert_y(specabbr: str,
                     elif _src_unit in UNIT_RA['Ang6']:
                         # (AA->cm)^6 * Na * (2 pi * Wscat)^4 / 45
                         yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4/45
+
+                        def xfunc(x): return (incfrq-x)**4
+                    elif _src_unit in UNIT_RA['bohr6']:
+                        # (bohr->AA->cm/m)^6 * Na * (2 pi * Wscat)^4
+                        yfactor = 1.0e-52*PHYSFACT.bohr2ang**6\
+                            * PHYSCNST.avogadro*(2*pi)**4/45
 
                         def xfunc(x): return (incfrq-x)**4
                     else:
@@ -353,12 +367,19 @@ def convert_y(specabbr: str,
                     if _src_unit in UNIT_ROA['amu.Ang4']:
                         # (AA->cm)^6 * Na * (2 pi * Wscat)^4 * (Q->q)^2
                         yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4 \
-                            * (phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2/2.0)
+                            * (phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2/2.0)\
+                            / 45
 
                         def xfunc(x): return (incfrq-x)**4/x
                     elif _src_unit in UNIT_ROA['Ang6']:
                         # (AA->cm)^6 * Na * (2 pi * Wscat)^4
-                        yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4
+                        yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4/45
+
+                        def xfunc(x): return (incfrq-x)**4
+                    elif _src_unit in UNIT_ROA['bohr6']:
+                        # (bohr->AA->cm)^6 * Na * (2 pi * Wscat)^4
+                        yfactor = 1.0e-48*PHYSFACT.bohr2ang**6\
+                            * PHYSCNST.avogadro*(2*pi)**4/45
 
                         def xfunc(x): return (incfrq-x)**4
                     else:
@@ -370,12 +391,19 @@ def convert_y(specabbr: str,
                     if _src_unit in UNIT_ROA['amu.Ang4']:
                         # (AA->cm)^6 * Na * (2 pi * Wscat)^4 * (Q->q)^2
                         yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4 \
-                            * (phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2/2.0)
+                            * (phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2/2.0)\
+                            / 45
 
                         def xfunc(x): return (incfrq-x)**4/x
                     elif _src_unit in UNIT_ROA['Ang6']:
-                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4
-                        yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4
+                        # (AA->cm/m)^6 * Na * (2 pi * Wscat)^4
+                        yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4/45
+
+                        def xfunc(x): return (incfrq-x)**4
+                    elif _src_unit in UNIT_ROA['bohr6']:
+                        # (bohr->AA->cm/m)^6 * Na * (2 pi * Wscat)^4
+                        yfactor = 1.0e-52*PHYSFACT.bohr2ang**6 \
+                            * PHYSCNST.avogadro*(2*pi)**4/45
 
                         def xfunc(x): return (incfrq-x)**4
                     else:
