@@ -51,6 +51,7 @@ TypeKData = tp.Tuple[
     tp.Callable[[str], bool]
 ]
 
+xyz2id = {'X': 0, 'Y': 1, 'Z': 2}
 
 # ==============
 # Module Classes
@@ -348,14 +349,14 @@ class GLogIO(object):
           position to speed up their search.
         Data type and block information are also stored.
         """
-        link_heads = {
-            # 1: 'Entering Gaussian System,',
-            1: 'Entering Link 1,',
-            601: 'Population analysis using the SCF Density.',
-            716: 'Full mass-weighted force constant matrix:',
-            717: 'Second-order Perturbative Anharmonic Analysis',
-            718: 'Generation of the Franck-Condon spectrum'
-        }
+        # link_heads = {
+        #     # 1: 'Entering Gaussian System,',
+        #     1: 'Entering Link 1,',
+        #     601: 'Population analysis using the SCF Density.',
+        #     716: 'Full mass-weighted force constant matrix:',
+        #     717: 'Second-order Perturbative Anharmonic Analysis',
+        #     718: 'Generation of the Franck-Condon spectrum'
+        # }
         # to_search = re.compile(r'''\
         #     (?P<title>[\w\s]+?)\s*  # Key
         #     \b(?P<type>[IRC])\b\s*  # Data type
@@ -461,6 +462,8 @@ def qlab_to_linkdata(qtag: TypeQTag,
         Unsupported quantity.
     ValueError
         Unsupported case.
+    ParseKeyError
+        The quantity is known to not be available.
 
     Notes
     -----
@@ -693,6 +696,14 @@ def qlab_to_linkdata(qtag: TypeQTag,
             fmt = (r'^\s+Energy =\s+(?P<val>-?\d+\.\d+ cm.-1: .*)\s*$',
                    r'^\s+-. Intensity =\s+(?P<val>.*)\s*$')
             num = (0, 0)
+        elif qopt == 'E(0-0)':
+            lnk = 718
+            key = '                 Information on Transitions'
+            sub = 2
+            def end(s): return s.startswith('     ====')
+            fmt = r'^\s+Energy of the 0-0 transition:\s+' \
+                + r'(?P<val>-?\d+\.\d+ cm\S+)\s*$'
+            num = 0
         elif qopt == 'GeomIS':
             lnk = 718
             key = '              New orientation in initial state'
@@ -742,58 +753,86 @@ def qlab_to_linkdata(qtag: TypeQTag,
         else:
             raise NotImplementedError()
     elif qtag == 'vtrans':
-        if qlvl == 'H':
-            lnk = (-716, 716, -717)
-            key = (' and normal coordinates:',
-                   ' and normal coordinates:',
-                   ' NOTE: Transition energies are given with')
-            sub = (1, 1, 8)
-            end = (lambda s: s.startswith(' - Thermochemistry'),
-                   lambda s: s.startswith(' - Thermochemistry'),
+        if qopt == 'RR':
+            lnk = (718, 718)
+            key = ('                 Information on Transitions',
+                   '                 Information on Transitions')
+            sub = (2, 2)
+            end = (lambda s: s.startswith('     ====='),
                    lambda s: s.startswith('     ====='))
-            fmt = (r'^\s{16}(?P<val>(?:\s+\d+){1,5})\s*$',
-                   r'^\s{16}(?P<val>(?:\s+\d+){1,3})\s*$',
-                   r'^\s+\w?\s+(?P<val>\s*\d+\(\d+\))\s+\w+\s+'
-                   + r'(?:\s+-?\d+\.\d+|\*+){4}.*\s*$')
-            num = (0, -1, 0)
-        elif qlvl == 'A':
-            lnk = 717
-            key = ' NOTE: Transition energies are given with'
-            sub = 8
-            def end(s): return s.startswith('     =====')
-            # fmt = r'^\s+\w?\s+(?P<val>(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'\
-            #       + r'(?:\w+)?\s+(?:\s*-?\d+\.\d+|\*+\s+){4,5}.*\s*$'
-            fmt = r'^\s+\w?\s+(?P<val>(?:\s*\d+\(\d+\)\s+(?:\w+)?){1,3}|\d+)'\
-                  + r'\s+(?:\s*-?\d+\.\d+|\*+\s+){4,5}.*\s*$'
-            num = 0
-        else:
+            fmt = (r'^\s+Energy = \s*-?\d+\.\d+ cm.-1:\s+'
+                   + r'(?P<val>\|.+ ->\s+\|.+)\s*$',
+                   r'^\s+-> Omega =\s*(?P<val>\d+\.\d+) cm.-1$')
+            num = (0, 0)
+        elif qopt == 'SOS':
             raise NotImplementedError()
+        else:
+            if qlvl == 'H':
+                lnk = (-716, 716, -717)
+                key = (' and normal coordinates:',
+                       ' and normal coordinates:',
+                       ' NOTE: Transition energies are given with')
+                sub = (1, 1, 8)
+                end = (lambda s: s.startswith(' - Thermochemistry'),
+                       lambda s: s.startswith(' - Thermochemistry'),
+                       lambda s: s.startswith('     ====='))
+                fmt = (r'^\s{16}(?P<val>(?:\s+\d+){1,5})\s*$',
+                       r'^\s{16}(?P<val>(?:\s+\d+){1,3})\s*$',
+                       r'^\s+\w?\s+(?P<val>\s*\d+\(\d+\))\s+\w+\s+'
+                       + r'(?:\s+-?\d+\.\d+|\*+){4}.*\s*$')
+                num = (0, -1, 0)
+            elif qlvl == 'A':
+                lnk = 717
+                key = ' NOTE: Transition energies are given with'
+                sub = 8
+                def end(s): return s.startswith('     =====')
+                # fmt = r'^\s+\w?\s+(?P<val>(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'\
+                #       + r'(?:\w+)?\s+(?:\s*-?\d+\.\d+|\*+\s+){4,5}.*\s*$'
+                fmt = r'^\s+\w?\s+(?P<val>(?:\s*\d+\(\d+\)\s+(?:\w+)?)' \
+                    + r'{1,3}|\d+)\s+(?:\s*-?\d+\.\d+|\*+\s+){4,5}.*\s*$'
+                num = 0
+            else:
+                raise NotImplementedError()
     elif qtag == 'vlevel':
-        if qlvl == 'H':
-            lnk = (-716, 716, -717)
-            key = (' and normal coordinates:',
-                   ' and normal coordinates:',
-                   ' NOTE: Transition energies are given with')
-            sub = (1, 1, 8)
-            end = (lambda s: s.startswith(' - Thermochemistry'),
-                   lambda s: s.startswith(' - Thermochemistry'),
+        if qopt == 'RR':
+            lnk = (718, 718)
+            key = ('                 Information on Transitions',
+                   '                 Information on Transitions')
+            sub = (2, 2)
+            end = (lambda s: s.startswith('     ====='),
                    lambda s: s.startswith('     ====='))
-            fmt = (r'^\s+Frequencies --- \s*(?P<val>\d.*)\s*$',
-                   r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$',
-                   r'^\s+\w?\s+(?:\s*\d+\(\d+\))\s+\w+\s+'
-                   + r'(?P<val>-?\d+\.\d+|\*+)(?:\s+-?\d+\.\d+|\*+){4}.*\s*$')
-            num = (0, -1, 0)
-        elif qlvl == 'A':
-            lnk = 717
-            key = ' NOTE: Transition energies are given with'
-            sub = 8
-            def end(s): return s.startswith('     =====')
-            fmt = r'^\s+\w?\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+(?:\w+)?\s+' \
-                  + r'(?:-?\d+\.\d+|\*+)?\s+(?P<val>-?\d+\.\d+|\*+)' \
-                  + r'(?:\s*-?\d+\.\d+|\*+){3}.*\s*$'
-            num = 0
-        else:
+            fmt = (r'^\s+Energy = \s*(?P<val>-?\d+\.\d+) cm.-1:\s+\|.+$',
+                   r'^\s+-> Omega = \s*(?P<val>\d+\.\d+) cm.-1$')
+            num = (0, 0)
+        elif qopt == 'SOS':
             raise NotImplementedError()
+        else:
+            if qlvl == 'H':
+                lnk = (-716, 716, -717)
+                key = (' and normal coordinates:',
+                       ' and normal coordinates:',
+                       ' NOTE: Transition energies are given with')
+                sub = (1, 1, 8)
+                end = (lambda s: s.startswith(' - Thermochemistry'),
+                       lambda s: s.startswith(' - Thermochemistry'),
+                       lambda s: s.startswith('     ====='))
+                fmt = (r'^\s+Frequencies --- \s*(?P<val>\d.*)\s*$',
+                       r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$',
+                       r'^\s+\w?\s+(?:\s*\d+\(\d+\))\s+\w+\s+'
+                       + r'(?P<val>-?\d+\.\d+|\*+)(?:\s+-?\d+\.\d+|\*+){4}'
+                       + r'.*\s*$')
+                num = (0, -1, 0)
+            elif qlvl == 'A':
+                lnk = 717
+                key = ' NOTE: Transition energies are given with'
+                sub = 8
+                def end(s): return s.startswith('     =====')
+                fmt = r'^\s+\w?\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+(?:\w+)?' \
+                    + r'\s+(?:-?\d+\.\d+|\*+)?\s+(?P<val>-?\d+\.\d+|\*+)' \
+                    + r'(?:\s*-?\d+\.\d+|\*+){3}.*\s*$'
+                num = 0
+            else:
+                raise NotImplementedError()
     else:
         lnk0 = -914
         key0 = ' Excitation energies and oscillator strengths:'
@@ -948,6 +987,157 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         fmt1.append(r'^\s+(?P<val>(?:\s*[XYZ]=\s+-?\d+\.\d+)'
                                     + r'{3}).*$')
                         num1.append(0)
+            elif qtag == 1300:
+                if qlvl == 'VE':
+                    if rsta == 'c':
+                        lnk1.append(718)
+                        key1.append(
+                            '                 Information on Transitions'
+                        )
+                        sub1.append(2)
+                        end1.append(lambda s: s.startswith('     ====='))
+                        fmt1.append(
+                            r'^\s+-> Omega = \s*(?P<val>\d+\.\d+ cm.-1)$')
+                        num1.append(0)
+                    else:
+                        raise NotImplementedError()
+                else:
+                    raise NotImplementedError()
+            elif qtag == 1301:
+                if qlvl == 'VE':
+                    if dord == 0:
+                        if rsta == 'c':
+                            lnk1.extend((718, 718))
+                            key1.extend((
+                                '     ELECTRIC DIPOLE-ELECTRIC DIPOLE',
+                                '                 Information on Transitions'
+                            ))
+                            sub1.extend((2, 2))
+                            end1.extend((
+                                lambda s: '--' in s,
+                                lambda s: s.startswith('     =====')
+                            ))
+                            fmt1.extend((
+                                r'^\s+(?P<val>[XYZ]-[XYZ]'
+                                + r'(?:\s+-?\d+\.\d+E?[-+]\d+){2}\s*$)',
+                                r'^\s+-> Omega = \s*(?P<val>\d+\.\d+) cm.-1$'
+                            ))
+                            num1.extend((1, 0))
+                        else:
+                            raise NotImplementedError()
+                    else:
+                        msg = 'Tensor derivatives not available from vRR.'
+                        raise ParseKeyError(msg)
+                else:
+                    raise NotImplementedError()
+            elif qtag == 1302:
+                if qlvl == 'VE':
+                    if dord == 0:
+                        if rsta == 'c':
+                            lnk1.extend((718, 718))
+                            key1.extend((
+                                '     ELECTRIC DIPOLE-MAGNETIC DIPOLE',
+                                '                 Information on Transitions'
+                            ))
+                            sub1.extend((2, 2))
+                            end1.extend((
+                                lambda s: '--' in s,
+                                lambda s: s.startswith('     =====')
+                            ))
+                            fmt1.extend((
+                                r'^\s+(?P<val>[XYZ]-[XYZ]'
+                                + r'(?:\s+-?\d+\.\d+E?[-+]\d+){2}\s*$)',
+                                r'^\s+-> Omega = \s*(?P<val>\d+\.\d+) cm.-1$'
+                            ))
+                            num1.extend((1, 0))
+                        else:
+                            raise NotImplementedError()
+                    else:
+                        msg = 'Tensor derivatives not available from vRR.'
+                        raise ParseKeyError(msg)
+                else:
+                    raise NotImplementedError()
+            elif qtag == 1303:
+                if qlvl == 'VE':
+                    if dord == 0:
+                        if rsta == 'c':
+                            lnk1.extend((718, 718))
+                            key1.extend((
+                                '     MAGNETIC DIPOLE-ELECTRIC DIPOLE',
+                                '                 Information on Transitions'
+                            ))
+                            sub1.extend((2, 2))
+                            end1.extend((
+                                lambda s: '--' in s,
+                                lambda s: s.startswith('     =====')
+                            ))
+                            fmt1.extend((
+                                r'^\s+(?P<val>[XYZ]-[XYZ]'
+                                + r'(?:\s+-?\d+\.\d+E?[-+]\d+){2}\s*$)',
+                                r'^\s+-> Omega = \s*(?P<val>\d+\.\d+) cm.-1$'
+                            ))
+                            num1.extend((1, 0))
+                        else:
+                            raise NotImplementedError()
+                    else:
+                        msg = 'Tensor derivatives not available from vRR.'
+                        raise ParseKeyError(msg)
+                else:
+                    raise NotImplementedError()
+            elif qtag == 1304:
+                if qlvl == 'VE':
+                    if dord == 0:
+                        if rsta == 'c':
+                            lnk1.extend((718, 718))
+                            key1.extend((
+                                '   ELECTRIC DIPOLE-ELECTRIC QUADRUPOLE',
+                                '                 Information on Transitions'
+                            ))
+                            sub1.extend((2, 2))
+                            end1.extend((
+                                lambda s: '--' in s,
+                                lambda s: s.startswith('     =====')
+                            ))
+                            fmt1.extend((
+                                r'^\s+(?P<val>[XYZ]-[XYZ]{2}'
+                                + r'(?:\s+-?\d+\.\d+E?[-+]\d+){2}\s*$)',
+                                r'^\s+-> Omega = \s*(?P<val>\d+\.\d+) cm.-1$'
+                            ))
+                            num1.extend((1, 0))
+                        else:
+                            raise NotImplementedError()
+                    else:
+                        msg = 'Tensor derivatives not available from vRR.'
+                        raise ParseKeyError(msg)
+                else:
+                    raise NotImplementedError()
+            elif qtag == 1305:
+                if qlvl == 'VE':
+                    if dord == 0:
+                        if rsta == 'c':
+                            lnk1.extend((718, 718))
+                            key1.extend((
+                                '   ELECTRIC QUADRUPOLE-ELECTRIC DIPOLE',
+                                '                 Information on Transitions'
+                            ))
+                            sub1.extend((2, 2))
+                            end1.extend((
+                                lambda s: '--' in s,
+                                lambda s: s.startswith('     =====')
+                            ))
+                            fmt1.extend((
+                                r'^\s+(?P<val>[XYZ]{2}-[XYZ]'
+                                + r'(?:\s+-?\d+\.\d+E?[-+]\d+){2}\s*$)',
+                                r'^\s+-> Omega = \s*(?P<val>\d+\.\d+) cm.-1$'
+                            ))
+                            num1.extend((1, 0))
+                        else:
+                            raise NotImplementedError()
+                    else:
+                        msg = 'Tensor derivatives not available from vRR.'
+                        raise ParseKeyError(msg)
+                else:
+                    raise NotImplementedError()
             elif qtag == 'dipstr':
                 if qlvl == 'H':
                     lnk1.extend([-716, 716, -717])
@@ -1696,78 +1886,130 @@ def parse_data(qdict: TypeQInfo,
                 for line in datablocks[iref]:
                     data[qlabel]['data'].append([float(item)*__ang2au
                                                  for item in line.split()])
+            elif qopt == 'E(0-0)':
+                if len(set(datablocks[iref])) > 1:
+                    msg = 'Excessive information on 0-0 energy.'
+                    raise ParseKeyError(msg)
+                val, unit = datablocks[iref][0].split()
+                if re.match(r'cm\^.?-1.?\s*', unit, re.I):
+                    data[qlabel]['unit'] = 'cm^-1'
+                else:
+                    data[qlabel]['unit'] = '???'
+                data[qlabel]['data'] = float(val)
         # Vibrational transitions
         # -----------------------
         elif qtag == 'vlevel':
-            if qlvl == 'H':
-                for i in range(last, first-1, -1):
-                    if datablocks[i]:
-                        iref = i
-                        break
-                else:
-                    raise ParseKeyError('Missing quantity in file')
+            if qopt == 'RR':
+                if len(datablocks[last]) != len(datablocks[last-1]):
+                    msg = 'Incident frequencies data and transition energies' \
+                        + ' do not match.'
+                    raise ParseKeyError(msg)
                 data[qlabel]['unit'] = 'cm-1'
-                i = 0
-                for line in datablocks[iref]:
-                    for col in line.strip().split():
+                counts = {}
+                for incfrq, trans in zip(datablocks[last], datablocks[last-1]):
+                    if incfrq not in data[qlabel]:
+                        data[qlabel][incfrq] = {}
+                        counts[incfrq] = 1
+                    else:
+                        counts[incfrq] += 1
+                    data[qlabel][incfrq][counts[incfrq]] = float(trans)    
+            else:
+                if qlvl == 'H':
+                    for i in range(last, first-1, -1):
+                        if datablocks[i]:
+                            iref = i
+                            break
+                    else:
+                        raise ParseKeyError('Missing quantity in file')
+                    data[qlabel]['unit'] = 'cm-1'
+                    i = 0
+                    for line in datablocks[iref]:
+                        for col in line.strip().split():
+                            i += 1
+                            try:
+                                data[qlabel][i] = float(col)
+                            except ValueError:
+                                data[qlabel][i] = float('inf')
+                elif qlvl == 'A':
+                    if datablocks[last]:
+                        iref = last
+                    else:
+                        iref = first
+                    data[qlabel]['unit'] = 'cm-1'
+                    i = 0
+                    for line in datablocks[iref]:
                         i += 1
                         try:
-                            data[qlabel][i] = float(col)
+                            data[qlabel][i] = float(line)
                         except ValueError:
                             data[qlabel][i] = float('inf')
-            elif qlvl == 'A':
-                if datablocks[last]:
-                    iref = last
                 else:
-                    iref = first
-                data[qlabel]['unit'] = 'cm-1'
-                i = 0
-                for line in datablocks[iref]:
-                    i += 1
-                    try:
-                        data[qlabel][i] = float(line)
-                    except ValueError:
-                        data[qlabel][i] = float('inf')
-            else:
-                raise NotImplementedError()
+                    raise NotImplementedError()
         elif qtag == 'vtrans':
-            if qlvl == 'H':
-                for i in range(last, first-1, -1):
-                    if datablocks[i]:
-                        iref = i
-                        break
-                else:
-                    raise ParseKeyError('Missing quantity in file')
-                i = 0
-                for line in datablocks[iref]:
-                    cols = line.strip().split()
-                    if cols[-1] in ('active', 'inactive', 'passive'):
-                        del(cols[-1])
-                    for col in cols:
-                        i += 1
-                        res = col.split('(')
-                        data[qlabel][i] = (((0, 0), ), ((int(res[0]), 1), ))
-            elif qlvl == 'A':
-                i = 0
-                for line in datablocks[iref]:
-                    i += 1
-                    val = []
-                    cols = line.strip().split()
-                    if cols[-1] in ('active', 'inactive', 'passive'):
-                        status = cols[-1]
-                        del(cols[-1])
+            if qopt == 'RR':
+                if len(datablocks[last]) != len(datablocks[last-1]):
+                    msg = 'Incident frequencies data and transition data ' \
+                        + 'do not match.'
+                    raise ParseKeyError(msg)
+                counts = {}
+                for incfrq, trans in zip(datablocks[last], datablocks[last-1]):
+                    if incfrq not in data[qlabel]:
+                        data[qlabel][incfrq] = {}
+                        counts[incfrq] = 1
                     else:
-                        status = None
-                    for col in cols:
-                        res = col.split('(')
-                        if len(res) == 1:
-                            val.append((int(res[0]), 0))
+                        counts[incfrq] += 1
+                    svals = []
+                    for i, sdat in enumerate(trans.split('->')):
+                        sdesc = sdat.strip(' |>')
+                        if sdesc == '0':
+                            svals.append((0, 0))
                         else:
-                            val.append((int(res[0]),
-                                        int(res[1].replace(')', ''))))
-                        data[qlabel][i] = (((0, 0), ), tuple(val), status)
+                            state = []
+                            for osc in sdesc.split(','):
+                                state.append(tuple([
+                                    int(i) for i in osc.split('^')
+                                ]))
+                            svals.append(tuple(state))
+                    data[qlabel][incfrq][counts[incfrq]] = tuple(svals)
             else:
-                raise NotImplementedError()
+                if qlvl == 'H':
+                    for i in range(last, first-1, -1):
+                        if datablocks[i]:
+                            iref = i
+                            break
+                    else:
+                        raise ParseKeyError('Missing quantity in file')
+                    i = 0
+                    for line in datablocks[iref]:
+                        cols = line.strip().split()
+                        if cols[-1] in ('active', 'inactive', 'passive'):
+                            del(cols[-1])
+                        for col in cols:
+                            i += 1
+                            res = col.split('(')
+                            data[qlabel][i] = (((0, 0), ),
+                                               ((int(res[0]), 1), ))
+                elif qlvl == 'A':
+                    i = 0
+                    for line in datablocks[iref]:
+                        i += 1
+                        val = []
+                        cols = line.strip().split()
+                        if cols[-1] in ('active', 'inactive', 'passive'):
+                            status = cols[-1]
+                            del(cols[-1])
+                        else:
+                            status = None
+                        for col in cols:
+                            res = col.split('(')
+                            if len(res) == 1:
+                                val.append((int(res[0]), 0))
+                            else:
+                                val.append((int(res[0]),
+                                            int(res[1].replace(')', ''))))
+                            data[qlabel][i] = (((0, 0), ), tuple(val), status)
+                else:
+                    raise NotImplementedError()
         # Anharmonic Information
         # ----------------------
         elif qtag == 'vptdat':
@@ -1905,6 +2147,19 @@ def parse_data(qdict: TypeQInfo,
                             raise NotImplementedError()
                     else:
                         raise NotImplementedError()
+                elif qtag == 1300:
+                    unit = datablocks[iref][0].split()[-1]
+                    data[qlabel]['unit'] = unit.lower()
+                    data[qlabel]['data'] = []
+                    data[qlabel]['keys'] = []
+                    for line in datablocks[iref]:
+                        key, unit = line.split()
+                        if key not in data[qlabel]['keys']:
+                            data[qlabel]['keys'].append(key)
+                            data[qlabel]['data'].append(float(key))
+                elif qtag in (1301, 1302, 1303, 1304, 1305):
+                    data[qlabel] = _parse_logdat_vtransprop(
+                        qtag, qopt, qlvl, datablocks, first, last)
                 elif qtag == 'dipstr':
                     if qlvl == 'H':
                         for i in range(last, first-1, -1):
@@ -2116,7 +2371,7 @@ def get_data(dfobj: GLogIO,
 
 def _parse_logdat_ramact(qopt: str,
                          qlvl: str,
-                         datablocks: tp.Sequence[tp.Sequence[int]],
+                         datablocks: TypeDGLog,
                          first: int,
                          last: int,
                          ROA: bool = False) -> tp.Dict[str, tp.Any]:
@@ -2269,6 +2524,77 @@ def _parse_logdat_ramact(qopt: str,
                     d[i] = float('inf')
     else:
         raise NotImplementedError()
+    return data
+
+
+def _parse_logdat_vtransprop(qtag: int,
+                             qopt: str,
+                             qlvl: str,
+                             datablocks: TypeDGLog,
+                             first: int,
+                             last: int) -> tp.Dict[str, tp.Any]:
+    """Sub-function to parse GLog data for vib. transition moment.
+
+    Sub-function dedicated to parsing data related to vibrational,
+        transition moments of properties, stored in datablocks.
+
+    Parameters
+    ----------
+    """
+    if qtag in range(1301, 1310):
+        if len(datablocks[last]) != len(datablocks[last-1]):
+            msg = 'Incident frequencies data and properties moments ' \
+                + 'do not match.'
+            raise ParseKeyError(msg)
+    counts = {}
+    data = {}
+    dosym = False
+    for incfrq, dtens in zip(datablocks[last], datablocks[last-1]):
+        if incfrq not in data:
+            data[incfrq] = {}
+            counts[incfrq] = 1
+        else:
+            counts[incfrq] += 1
+        if qtag in (1301, 1302, 1303):
+            tensor = [
+                [None, None, None],
+                [None, None, None],
+                [None, None, None]
+            ]
+        elif qtag in (1304, 1305):
+            dosym = len(dtens) == 18
+            tensor = [
+                [[None, None, None],
+                 [None, None, None],
+                 [None, None, None]],
+                [[None, None, None],
+                 [None, None, None],
+                 [None, None, None]],
+                [[None, None, None],
+                 [None, None, None],
+                 [None, None, None]]
+            ]
+        else:
+            raise NotImplementedError()
+        for line in dtens:
+            cols = line.strip().split()
+            if len(cols) == 3:
+                val = complex(float(cols[-2]), float(cols[-1]))
+            else:
+                val = float(cols[-1])
+            crds = cols[0].split('-')
+            ixyz = [xyz2id[xyz] for crd in crds for xyz in crd]
+            if len(ixyz) == 3:
+                tensor[ixyz[0]][ixyz[1]][ixyz[2]] = val
+                if dosym:
+                    if len(crds[0]) == 2:
+                        tensor[ixyz[1]][ixyz[0]][ixyz[2]] = val
+                    else:
+                        tensor[ixyz[0]][ixyz[2]][ixyz[1]] = val
+            else:
+                tensor[ixyz[0]][ixyz[1]] = val
+        data[incfrq][counts[incfrq]] = tensor
+
     return data
 
 

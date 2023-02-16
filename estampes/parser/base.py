@@ -146,6 +146,14 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
        304      Dipole-quadrupole polarizability
        305      Hyperpolarizability Beta(-w,w,0)
        306      Hyperpolarizability Beta(w,w,-2w)
+            *Vibrational transition moments of properties*
+    -------------------------------------------------------------
+      1300      List of incident frequencies
+      1301      Electric dipole-electric dipole tensor
+      1302      Induced electric dipole-magnetic dipole tensor
+      1303      Electric dipole-induced magnetic dipole tensor
+      1304      Induced electric dipole-el. quadrupole tensor
+      1305      Electric dipole-induced el. quadrupole tensor
     =========  ==================================================
 
     Sub-Options:
@@ -182,10 +190,19 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                SpcPar    Spectrum parameters
                 Conv     Intensity convergence/spectrum progress
                Assign    Transition assignment data
+               E(0-0)    Energy between vibrational ground states
     -------------------------------------------------------------
      VPTDat     XMat     Anharmonic X matrix
                 GMat     Variational correction matrix
                CICoef    CI coefficients from var. correction
+    -------------------------------------------------------------
+     VLevel    <None>    Read data from standard vib. data output
+                SOS      Sum-over-states vibronic structure
+                 RR      Similar to SOS but with Raman inc. freq.
+    -------------------------------------------------------------
+     VTrans    <None>    Read data from standard vib. data output
+                SOS      Sum-over-states vibronic structure
+                 RR      Similar to SOS but with Raman inc. freq.
     -------------------------------------------------------------
      AtCrd      all      All present geometries (scan, opt)
                 last     Only the last geometry if more present
@@ -308,6 +325,8 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                 qty_opt = 'SimInf'
             elif val in ('SPCPAR', 'SPCPARS', 'SPCPARAMS', 'SPCPARAMETERS'):
                 qty_opt = 'SpcPar'
+            elif val in ('E(0-0)', 'E0-0', 'DE(0-0)', 'DE0-0', 'E00', 'DE00'):
+                qty_opt = 'E(0-0)'
             else:
                 raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
     elif qty_tag == 'vptdat':
@@ -323,6 +342,15 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                 qty_opt = 'CICoef'
             else:
                 raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
+    elif qty_tag in ('vtrans', 'vlevel'):
+        if qlist[1] is not None:
+            val = qlist[1].upper()
+            if val == 'SOS':
+                qty_opt = 'SOS'
+            elif val in ('RR', 'RROA'):
+                qty_opt = 'RR'
+            else:
+                raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
     elif qty_tag == 101:
         if qlist[1] is None:
             qty_opt = 'len'
@@ -331,7 +359,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                 qty_opt = qlist[1][:3].lower()
             else:
                 raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
-    elif qty_tag in range(300, 310):
+    elif qty_tag in range(300, 310) or qty_tag in range(1300, 1310):
         if qlist[1] is None:
             qty_opt = 0
         else:
@@ -412,8 +440,8 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
         else:
             qty_lvl = None
     else:
-        lvl = qlist[5][0].upper()
-        if lvl not in ('E', 'H', 'A'):
+        lvl = qlist[5].strip().upper()
+        if lvl not in ('E', 'H', 'A', 'VE'):
             raise ValueError('Incorrect level for {}'.format(qty_tag))
         else:
             qty_lvl = lvl

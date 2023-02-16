@@ -8,6 +8,7 @@ While the data formats are relatively free, following the recommendations below 
 ====
 * To facilitate the relation between the different quantities, the numbering should be kept consistent.
 * `__N__` is the index of the state/transition when read, for consistency with other data, starting from 1.
+* With the `RR` sub-option, the structure is slightly altered and have the following hierarchy: `["_incfrq_"][_N_]`, with `"_incfrq_"` the incident frequency, as a *string* (e.g., `"17800.00"`).
 ====
 
 ===== Vibrational transitions assignment

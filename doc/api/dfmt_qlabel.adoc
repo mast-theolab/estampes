@@ -17,7 +17,7 @@ The structure of the _qlabel_ is as follows:
 `state(s)`::
     reference electronic state or transition (as `i->j`)
 `level`::
-    Energy level: vibrational (harmonic/anharmonic), electronic...
+    Theoretical level: vibrational (harmonic/anharmonic), electronic...
 
 
 ==== Quantity specification
@@ -44,6 +44,8 @@ This is the basic identifier of the quantity
 | HessVal | Hessian eigenvalues
 | SWOpt   | Software runtime options
 | SWVer   | Software version
+| VTrans  | Vibrational transitions
+| VLevel  | Vibrational energy levels
 | DipStr  | Dipole strength
 | RotStr  | Rotatory strength
 | RamAct  | Raman activity
@@ -81,13 +83,24 @@ This is the basic identifier of the quantity
 |   209 | Isotropic Spin-Spin coupling
 2+^e| Dynamic (frequency-dependent) properties
 |   301 | Polarizability Alpha(-w,w)
-|   302 | Optical rotations
+|   302 | Optical rotation
 |   303 | Polarizability Alpha(w,0)
 |   304 | Dipole-quadrupole polarizability
 |   305 | Hyperpolarizability Beta(-w,w,0)
 |   306 | Hyperpolarizability Beta(w,w,-2w)
+2+^e| Vibrational transition moments of properties
+|  1301 | Electric dipole-electric dipole tensor
+|  1302 | Electric dipole-magnetic dipole tensor (induced electric dipole)
+|  1303 | Electric dipole-magnetic dipole tensor (induced magnetic dipole)
+|  1304 | Electric dipole-electric quadrupole tensor (induced electric dipole)
+|  1305 | Electric dipole-electric quadrupole tensor (induced quadrupole)
 
 |====
+
+[NOTE]
+====
+* `1xxx` stores vibrational transition moments of properties.  Ex: `13xx` stores the vibrational transition moments of frequency-dependent properties.
+====
 
 
 ==== Quantity-related option specification
@@ -111,7 +124,7 @@ A label-specific option.
 
 .1+| `Intens` | `IR` | Infrared intensity (normally, integrated intensity)
 
-.17+| `FCDat` | `SimInf` | Simulation information/parameters
+.18+| `FCDat` | `SimInf` | Simulation information/parameters
 | `JMat`   <| Duschinsky matrix
 | `JMatF`  <| Duschinsky matrix (full dimension if red-dim requested)
 | `KVec`   <| Shift vector
@@ -128,10 +141,19 @@ A label-specific option.
 | `SpcPar` <| Spectrum parameters (legend and broadening)
 | `Conv`   <| Convergence Data
 | `Assign` <| Assignment data
+| `E(0-0)` <| Energy difference between vibrational ground states
 
 .3+| `VPTDat` | `XMat` | Anharmonic stem:[bb{chi}] matrix
 | `GMat` <| Variational correction matrix (for _Generalized_...)
 | `CICoef` <| CI coefficient from the variational correction in GVPT2.
+
+.3+| `VLevel` | None | Read vibrational energies from standard vibrational structure
+| `SOS` <| Read from a vibronic sum over states-like structure (e.g., vRR)
+| `RR` <| Same as `SOS` but with frequency-dependency parameter
+
+.3+| `VTrans` | None | Read vibrational transitions data from standard vibrational structure
+| `SOS` <| Read from a vibronic sum over states-like structure (e.g., vRR)
+| `RR` <| Same as `SOS` but with frequency-dependency parameter
 |====
 
 
@@ -192,14 +214,17 @@ It can be either a single "`state`" value (integer or string) or 2 "`state`" val
 
 ==== Level of theory
 
+The level of theory, expected as an uppercase string
+
 [cols="^20m,<80",option=header,frame=topbot]
 |====
 
 | Value | Description
 
 |  None | Not applicable
-|   `E` | Electronic level
-|   `H` | Vibrational level, harmonic approximation
-|   `A` | Vibrational level, anharmonic description
+|  `E`  | Electronic level
+|  `H`  | Vibrational level, harmonic approximation
+|  `A`  | Vibrational level, anharmonic description
+|  `VE` | Vibrationally-resolved electronic level
 
 |====
