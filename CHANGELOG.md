@@ -35,6 +35,7 @@ Other blocks are:
 - **ESP** - ESParser incorrectly stated that the Duschinsky matrix was identity if only the full matrix was printed and not the one after reduction of the dimension of the system (default case if the printing of J is not requested).
 - **BLS** - Added correct error message if an input file for a curve is not found, instead of a useless Python traceback.
 - **BLS** - Fixed legend being printed even if user explicitly deactivated it.
+- **BLS** - Fixed error with `legend = auto`.
 - **DEV** - Molecule-centric types are not anymore provided by `visual.molview` but are now more logically in `base.types`.
 - **DEV** - Incorrect use of `typing.NoReturn` could confuse syntax analyzers (ex: Pylance).
 - **API** - ROA intensity scaled by 45 to match what is done with Raman.

@@ -307,7 +307,10 @@ def parse_inifile(fname: str
         for key in spckeys:
             for alias in spckeys[key]:
                 if alias in optsec:
-                    spcbase[key] = optsec[alias]
+                    if key == 'legpos' and optsec[alias] == 'auto':
+                        spcbase[key] = 'best'
+                    else:
+                        spcbase[key] = optsec[alias]
                     break
 
     for sec in secs:
