@@ -20,6 +20,102 @@ from estampes.tools.char import convert_expr
 from estampes.visual.plotspec import SpecLayout
 
 
+TMPL_INI_BASIC = """\
+[DEFAULT]
+Spectroscopy = IR
+Level = H
+Broaden = yes
+Function = lorentzian
+HWHM = 10
+Grain = 2
+NewXMin = 0
+NewXMax = 4000
+
+[Figure]
+MainTitle = Basic input for ballast
+ImageFile = example.pdf
+
+[Layout]
+XLeft = 800
+XRight = 1200
+Legend = auto
+XLabel = Wavenumber / cm$^{-1}$
+YLabel = Intensity / arb. unit
+
+[Curve:spec1]
+File = outputfile.log
+Label = Curve 1
+Show = Yes
+"""
+
+TMPL_INI_EXPL = """\
+[DEFAULT]
+# Set here default parameters for all curves
+Spectroscopy = IR  # type of spectroscopy: IR, OPA, ECD, RS...
+Level = H          # Level of theory: E[lectronic], H[armonic], [A]nharmonic
+Broaden = yes      # Broaden spectra assume the data points are sticks
+Function = lorentzian  # Broadening function
+HWHM = 10          # Half-width at half-maximum
+Grain = 2          # Distance between 2 points in the broadened spectrum
+NewXMin = 0        # New lower bound for the broadened spectra
+NewXMax = 4000     # New uppper bound for the broadened spectra
+
+[Figure]
+# Figure parameters
+ImageFile = example.pdf        # Image will be saved with the filename
+MainTitle = Commented Example  # Title of the figure
+Geometry = 8,6*  # Geometry of the figure, 6" per row subplot (total=12 here)
+Subplots = 2,1                 # 2 rows, 1 column
+MergeAxes = X                  # Merge the X axes
+ShowFigure = No  # The image is directly saved, not shown on screen
+
+[Layout:1,1]
+# This is the layout parameters for the 1st subplot (see Figure.Subplots)
+Title = Some subplot   # Title of the subplot.  Beware of Figure.MergeAxes!
+XLeft = 800            # Only show spectrum from 800 and above
+XRight = 1200          # Only show spectrum below 1200
+XScale = linear        # Scale used for the X axis: log, log2, log10
+# YScale is available too
+Legend = auto          # Print legend, letting Matplotlib set the position
+Legend_cols = 2        # Print legend on 2 columns (default: 1 column)
+YLabel = Absorbance / arb. unit  # Label for the Y axis
+YBottom = 0            # Only show spectrum starting 0
+# YTop to force the maximum value on the Y axis
+Panel = IR @ top left  # Add a panel label on the top left
+
+[Layout:2,1]
+# This is the layout parameters for the 2st subplot (see Figure.Subplots)
+XLeft = 800
+XRight = 1200
+Legend = no                       # deactivate the legend in this subplot
+YLabel = $\Delta A$ / arb. unit   # Latex-style can be used.
+XLabel = Wavenumbers / cm$^{-1}$  # Label for the X axis; beware of merging
+# YTop to force the maximum value on the Y axis
+Panel = VCD @ top left            # Add a panel label on the top left
+
+[Curve:spec1]
+# Information on the curve: spec1
+Subplot = 1,1          # Add curve only on subplot 1,1 (otherwise on all)
+File = outputfile.log  # Data file
+Label = Curve 1        # Label for the legend
+HWHM = 5               # Override the default for HWHM
+Show = Yes             # Show the curve; no to hide it
+YScale = (10-log(x))   # Yscale can be a constant or a function of x
+XScale = rel, 1        # With rel, offsets are first removed, then scaled
+LineStyle = --         # Matplotlib-compatible line style specification
+
+[Curve:spec2]
+Subplot = 2,1
+File = outputfile.log
+Label = Curve 2
+Spectroscopy = VCD
+Show = No
+Normalize = yes        # Normalize the y values
+yshift = +.5           # shift final spectrum by .5 along y
+color = #D2A356        # Color of the spectrum
+"""
+
+
 def fscale(expr: str, var: str) -> tp.Callable[[float], float]:
     """Returns a scaling function.
 
@@ -85,6 +181,10 @@ Ex. '3:Test' means that the label 'Test' is for the 3rd file (start at 1).
                         help=msg)
     parser.add_argument('-r', '--refdata',
                         help='Reference spectrum file.')
+    parser.add_argument('--gen-ini',
+                        help='Create a minimalist example of INI file.')
+    parser.add_argument('--gen-longini',
+                        help='Create a documented INI file as example.')
 
 
 def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
@@ -504,6 +604,15 @@ def main() -> tp.NoReturn:
     """Main function.
     """
     args = parse_args(sys.argv[1:])
+    if args.gen_ini is not None or args.gen_longini is not None:
+        if args.gen_longini:
+            with open(args.gen_longini, 'w') as fobj:
+                fobj.write(TMPL_INI_EXPL)
+            sys.exit()
+        if args.gen_ini:
+            with open(args.gen_ini, 'w') as fobj:
+                fobj.write(TMPL_INI_BASIC)
+            sys.exit()
     if not args.inpfile and not args.optfile:
         print('ERROR: Missing files or option file.')
         sys.exit(2)

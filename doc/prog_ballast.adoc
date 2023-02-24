@@ -41,7 +41,10 @@ Its structure is divided in 2 blocks:
 `layout`::
     Layout of the spectrum. +
 +
+--
 NOTE: For multiple sub-plots, the keyword layout can be followed by "`:`" and either a "`row,column`" or "`subplot_id`" specification.
+
+--
 +
 `curve`::
     Parameters of a curve, *must* be followed by an identifier, separated by a "`:`" (ex: `curve:1`).
@@ -78,6 +81,7 @@ For curves, it is possible to specify a range of rows and/or columns.
 --
 WARNING: The file extension must be supported by *Matplotlib*.
     Name of the file where the figure will be saved. +
+
 --
 +
 `ShowFigure` | [underline]#Default#: `True`::
@@ -170,6 +174,7 @@ The default scaling method is relative (`rel`), with the Y axis shifted toward t
 +
 --
 CAUTION: Normalization is applied after scaling to properly apply potential transformation (1/y, log(y)...).
+
 --
 +
 `show` | [underline]#Default#: `yes`::

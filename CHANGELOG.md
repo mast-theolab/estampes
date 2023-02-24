@@ -23,6 +23,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **BLS** - Added the generation of template INI files with `--gen-ini` and `--gen-longini` to facilitate the creation of input.
 - **LIB** - Added possibility to overwrite original X and Y axes in class `Spectrum` through method `overwrite_axis`.
 - **LIB** - New `base.spectro` module for spectroscopy-related classes and methods.  It can provide tools to build quantities or observables from more basic quantities.
 - **LIB** - New class `base.spectro.RamanInvariants` to build Raman/ROA invariants from tensors.
