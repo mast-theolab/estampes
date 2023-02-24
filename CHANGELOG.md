@@ -22,6 +22,9 @@ Other blocks are:
 
 ## Unreleased
 
+
+## [0.4.3] - 2023-02-24
+
 ### Added
 - **BLS** - Added the generation of template INI files with `--gen-ini` and `--gen-longini` to facilitate the creation of input.
 - **LIB** - Added possibility to overwrite original X and Y axes in class `Spectrum` through method `overwrite_axis`.
