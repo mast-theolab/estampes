@@ -527,11 +527,13 @@ class RamanInvariants():
         else:
             raise NotImplementedError('Non-sequence tensor NYI.')
         eps = levi_civita_tens()
-        epsA = np.einsum('ikl,jkl->ij', eps, self.__A_indEQ)
+        # epsA = np.einsum('ikl,jkl->ij', eps, self.__A_indEQ)
+        epsA = np.einsum('ikl,ljk->ij', eps, self.__A_indEQ)
         self.__calA1_s = (epsA + epsA.T)/2.0
         self.__calA1_a = (epsA - epsA.T)/2.0
         # epsA = np.einsum('ijk,llk->ij', eps, self.__A_indEQ)
-        epsA = np.einsum('ijk,lkl->ij', eps, self.__A_indEQ)
+        # epsA = np.einsum('ijk,lkl->ij', eps, self.__A_indEQ)
+        epsA = np.einsum('ijk,kll->ij', eps, self.__A_indEQ)
         self.__calA2_a = (epsA - epsA.T)/2.0
         self.__b_s_calA = None
         self.__b_a_calA = None

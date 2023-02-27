@@ -22,6 +22,9 @@ Other blocks are:
 
 ## Unreleased
 
+### Fixed
+- **LIB** - Corrected the invariants related to the electric dipole-induced electric quadrupole in `spectro.RamanInvariants`.
+
 
 ## [0.4.3] - 2023-02-24
 
