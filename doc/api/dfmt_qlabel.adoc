@@ -124,7 +124,7 @@ A label-specific option.
 
 .1+| `Intens` | `IR` | Infrared intensity (normally, integrated intensity)
 
-.18+| `FCDat` | `SimInf` | Simulation information/parameters
+.19+| `FCDat` | `SimInf` | Simulation information/parameters
 | `JMat`   <| Duschinsky matrix
 | `JMatF`  <| Duschinsky matrix (full dimension if red-dim requested)
 | `KVec`   <| Shift vector
@@ -142,6 +142,7 @@ A label-specific option.
 | `Conv`   <| Convergence Data
 | `Assign` <| Assignment data
 | `E(0-0)` <| Energy difference between vibrational ground states
+| `RedDim` <| Reduced-dimensionality equivalency tables
 
 .3+| `VPTDat` | `XMat` | Anharmonic stem:[bb{chi}] matrix
 | `GMat` <| Variational correction matrix (for _Generalized_...)

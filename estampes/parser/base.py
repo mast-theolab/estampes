@@ -190,6 +190,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                SpcPar    Spectrum parameters
                 Conv     Intensity convergence/spectrum progress
                Assign    Transition assignment data
+               RedDim    Normal modes equivalence for reddim
                E(0-0)    Energy between vibrational ground states
     -------------------------------------------------------------
      VPTDat     XMat     Anharmonic X matrix
@@ -313,6 +314,8 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                 qty_opt = 'Conv'
             elif val in ('ASSIGN', 'ASSIGNMENT'):
                 qty_opt = 'Assign'
+            elif val in ('REDDIM', 'RED-DIM', 'REDUCED', 'REDUCED-DIMENSION'):
+                qty_opt = 'RedDim'
             elif val in ('IS', 'ISGEOM', 'GEOMIS'):
                 qty_opt = 'GeomIS'
             elif val in ('FS', 'FSGEOM', 'GEOMFS'):

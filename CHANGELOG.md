@@ -22,6 +22,9 @@ Other blocks are:
 
 ## Unreleased
 
+### Added
+- **API** - Added qlabel *FCData:RedDim* and support in `parser.gaussian.glog` to extract information on normal-modes numbering in reduced-dimensionality schemes.
+
 ### Fixed
 - **LIB** - Corrected the invariants related to the electric dipole-induced electric quadrupole in `spectro.RamanInvariants`.
 

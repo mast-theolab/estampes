@@ -133,6 +133,54 @@ with
 |====
 
 
+==== Vibronic calculations
+
+Data for vibronic calculations within the Franck-Condon principle are gathered under the label `FCDat`.
+
+===== Reduced-dimensionality schemes
+
+Reduced-dimensionality schemes refer to the truncation of the full system by excluding a subset of normal modes.
+The output may be affected, and consequently the extracted data.
+The size of matrices should be checked for consistency.
+
+Specific options are:
+
+`FCDat:JMatF`::
+     Full Duschinsky matrix, independently of the use of reduced-dimensionality schemes
++
+--
+[cols="1,2,12",grid=rows,stripes=none]
+|====
+.3+| `data`
+2+s| Matrix, as a sequence
+| _Type_     | `list`
+| _Accepted_ | `lists` of `float` values.
+
+|====
+
+--
++
+`FCDat:RedDim`::
+     provide equivalence information between the reduced-dimension numbering and the full-size numbering of normal modes.
++
+--
+[cols="1,2,12",grid=rows,stripes=none]
+|====
+.3+| `state__N__`
+2+s| Equivalence table for state num. _N_.
+| _Type_     | `dict`
+| _Accepted_ | Dictionary where the keys are the indexes of the mode in the _reduced system_ (`int`) and the values the indexes in the _full system_.
+
+.3+| `labels`
+2+s| Labels of the states (optional).
+| _Type_     | `dict`
+| _Accepted_ | keys should be the state labels (ex: `state1`) and the values an identifier (ex: `initial`).
+
+|====
+
+--
+
+
 ==== Spectra
 
 Spectra refer to fully generated spectra, for instance vibronic, where storing all transitions could be too large, or for data file with the generated spectra (ex: CSV files).

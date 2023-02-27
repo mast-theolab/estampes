@@ -53,6 +53,7 @@ TypeKData = tp.Tuple[
 
 xyz2id = {'X': 0, 'Y': 1, 'Z': 2}
 
+
 # ==============
 # Module Classes
 # ==============
@@ -696,6 +697,13 @@ def qlab_to_linkdata(qtag: TypeQTag,
             fmt = (r'^\s+Energy =\s+(?P<val>-?\d+\.\d+ cm.-1: .*)\s*$',
                    r'^\s+-. Intensity =\s+(?P<val>.*)\s*$')
             num = (0, 0)
+        elif qopt == 'RedDim':
+            lnk = -718
+            key = ' Reduced system'
+            sub = 2
+            def end(s): return not s.strip()
+            fmt = r'^\s+(?P<val>\d+\s+=\s+\d+\s+\d+\s+=\s+\d+)\s*$'
+            num = 0
         elif qopt == 'E(0-0)':
             lnk = 718
             key = '                 Information on Transitions'
@@ -1896,6 +1904,19 @@ def parse_data(qdict: TypeQInfo,
                 else:
                     data[qlabel]['unit'] = '???'
                 data[qlabel]['data'] = float(val)
+            elif qopt == 'RedDim':
+                if len(datablocks[iref][0].split()) % 3 != 0:
+                    raise ParseKeyError('Expected reddim structure: num = num')
+                nstates = len(datablocks[iref][0].split())//3
+                for i in range(nstates):
+                    data[qlabel]['state{}'.format(i+1)] = {}
+                for line in datablocks[iref]:
+                    cols = line.split()
+                    for i in range(nstates):
+                        data[qlabel]['state{}'.format(i+1)][int(cols[i*3])] = \
+                            int(cols[i*3+2])
+            else:
+                raise NotImplementedError('Unknown option for FCDat')
         # Vibrational transitions
         # -----------------------
         elif qtag == 'vlevel':
