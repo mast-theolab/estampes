@@ -1526,15 +1526,27 @@ def parse_data(qdict: TypeQInfo,
         elif qtag == 'natoms':
             data[qkey]['data'] = int(datablocks[iref][0])
         elif qtag == 'atcrd' or qtag == 2:
-            _dat = []
             # By default, we choose the standard orientation if present
             if datablocks[last]:
                 i = last
             else:
                 i = first
-            for line in datablocks[i]:
-                _dat.append([float(item)*__ang2au for item in line.split()])
+            _dat = []
+            if qopt in ('all', 'scan'):
+                for step, block in enumerate(datablocks[i]):
+                    _block = []
+                    for line in block:
+                        _block.append([float(item)*__ang2au
+                                     for item in line.split()])
+                    _dat.append(_block)
+                num = len(datablocks[i])
+            else:
+                for line in datablocks[i]:
+                    _dat.append([float(item)*__ang2au
+                                 for item in line.split()])
+                num = 1
             data[qkey]['data'] = _dat
+            data[qkey]['ngeoms'] = num
         elif qtag == 'atmas':
             _dat = []
             for line in datablocks[iref]:

@@ -2,6 +2,35 @@ The data format expected for each type of quantity are listed below, sorted by q
 While the data formats are relatively free, following the recommendations below will improve the compatibility and provide a more versatile interface.
 
 
+==== Structural information
+
+
+===== Atomic coordinates
+
+[TIP]
+._qlabel_
+====
+* `AtCrd:`
+====
+
+[cols="1,2,12",grid=rows,stripes=none]
+|====
+.5+| `ngeoms`
+2+s| Number of geometries stored in `data` (as list of list)
+| _Type_     | `int`
+| _Accepted_ | Any strictly positive value
+| 1          | Only 1 geometry, coordinates are given at top level.
+| >1         | Multiple coordinates, the top list contains lists of coordinates
+
+.4+| `data`
+2+s| Coordinates
+| _Type_     | `list`
+| _Accepted_ | numeric values
+| _structure | if `ngeoms==1`, _natoms_ lists of Cartesian coordinates, one per atom. Otherwise, `ngeoms` list of _natoms_ lists  of Cartesian coordinates
+
+|====
+
+
 ==== Vibrational transitions
 
 [NOTE]
