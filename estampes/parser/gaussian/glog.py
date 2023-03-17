@@ -17,6 +17,7 @@ GLogIO
 import os  # Used for file existence check
 import re  # Used to find keys in log file
 import typing as tp
+from math import sqrt
 
 from estampes import parser as ep
 from estampes.base import ParseKeyError, QuantityError, TypeDCrd, TypeDGLog, \
@@ -490,7 +491,16 @@ def qlab_to_linkdata(qtag: TypeQTag,
         fmt = r'^ NAtoms=\s+(?P<val>\d+) NActive=\s+.*$'
         num = 0
     elif qtag == 'nvib':
-        raise NotImplementedError()
+        # We load anyway the frequencies to count them.
+        # This is a bit of an absurd way to proceed but only way to be
+        #   sure that we have the correct number since Gaussian does not
+        #   list it explicitly in the output
+        lnk = 716
+        key = ' and normal coordinates:'
+        sub = 1
+        def end(s): return s.startswith(' - Thermochemistry')
+        fmt = r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$'
+        num = -1
     elif qtag == 'atmas':
         lnk = (-101, 716)
         key = (' NAtoms= ', ' - Thermochemistry -')
@@ -533,13 +543,26 @@ def qlab_to_linkdata(qtag: TypeQTag,
             num = (-1, -1)
         else:
             num = (1, 1)
-    elif qtag in ('hessvec', 'hessval'):
-        lnk = 716
-        key = ' and normal coordinates:'
-        sub = 1
-        def end(s): return s.startswith(' - Thermochemistry')
-        fmt = NotImplemented
-        raise NotImplementedError()
+    elif qtag == 'hessvec':
+        lnk = (-716, 716)
+        key = (' and normal coordinates:',
+               ' and normal coordinates:')
+        sub = (1, 1)
+        end = (lambda s: s.startswith(' - Thermochemistry'),
+               lambda s: s.startswith(' - Thermochemistry'))
+        fmt = (r'^\s+(?P<val>(?:\d+\s+){3}(?:\s+-?\d\.\d+){1,5})\s*$',
+               r'^\s+(?P<val>(?:\d+\s+){2}(?:\s+-?\d\.\d+){1,9})\s*$')
+        num = (0, -1)
+    elif qtag == 'hessval':
+        lnk = (-716, 716)
+        key = (' and normal coordinates:',
+               ' and normal coordinates:')
+        sub = (1, 1)
+        end = (lambda s: s.startswith(' - Thermochemistry'),
+               lambda s: s.startswith(' - Thermochemistry'))
+        fmt = (r'^\s+Frequencies --- \s*(?P<val>\d.*)\s*$',
+               r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$')
+        num = (0, -1)
     elif qtag == 'swopt':
         lnk = 1
         key = ' Cite this work as:'
@@ -869,6 +892,8 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         num = -1
                     else:
                         raise NotImplementedError()
+                else:
+                    raise NotImplementedError()
             elif qtag == 'dipstr':
                 if Si == 0:
                     lnk = 0
@@ -983,7 +1008,20 @@ def qlab_to_linkdata(qtag: TypeQTag,
                 elif dord == 1:
                     raise NotImplementedError()
                 elif dord == 2:
-                    raise NotImplementedError()
+                    if rsta == 'c':
+                        lnk1.append(-716)
+                        key1.append(
+                            ' Force constants in Cartesian coordinates:')
+                        sub1.append(1)
+                        end1.append(
+                            lambda s:
+                                not re.match(r'^\s+\d+\s+-?\d', s))
+                        fmt1.append(
+                            r'^\s+(?P<val>\d+(?:\s+\d+|'
+                            + r'\s+-?\d+\.\d+D?[-+]\d+){1,5})\s*$')
+                        num1.append(0)
+                    elif type(rsta) is int:
+                        raise NotImplementedError()
             elif qtag == 101:
                 if dord == 0:
                     if rsta == 'c':
@@ -1516,15 +1554,61 @@ def parse_data(qdict: TypeQInfo,
         # -----------------------
         # Technically state should be checked but considered irrelevant.
         elif qtag == 'nvib':
-            if iref >= 0:
-                data[qlabel]['data'] = int(datablocks[iref])
+            i = 0
+            for line in datablocks[iref]:
+                i += len(line.split())
+
+            data[qlabel]['data'] = i
+        elif qtag == 'hessvec':
+            for i in range(first, last+1):
+                if datablocks[i]:
+                    iref = i
+                    break
             else:
-                # For a robust def of nvib, we need the symmetry and
-                #   the number of frozen atoms. For now, difficult to do.
-                raise NotImplementedError()
-        elif qtag in ('hessvec', 'hessval'):
-            if iref >= 0:
-                data[qlabel]['data'] = datablocks[iref]
+                raise ParseKeyError('Missing quantity in file')
+            data[qlabel]['form'] = 'L.M^{-1/2}'
+            data[qlabel]['data'] = []
+            # We analyze the first line to find if HPModes or normal
+            res = datablocks[iref][0].split()[-1]
+            if len(res.split('.')[1]) == 2:
+                ncols = 3  # maximum number of modes per block
+                ioff = -ncols  # Started at -3 to offset increment in 1st block
+                for line in datablocks[iref]:
+                    cols = line.split()
+                    nmodes = (len(cols)-2)//3
+                    if cols[0] == '1':
+                        ioff += ncols
+                        data[qlabel]['data'].extend(
+                            [[] for _ in range(nmodes)])
+                    for i in range(nmodes):
+                        data[qlabel]['data'][ioff+i].extend(
+                            [float(item) for item in cols[2+i*3:2+(i+1)*3]])
+            else:
+                ncols = 5
+                ioff = -ncols
+                for line in datablocks[iref]:
+                    cols = line.split()
+                    nmodes = len(cols) - 3
+                    if cols[0] == '1' and cols[1] == '1':
+                        ioff += ncols
+                        data[qlabel]['data'].extend(
+                            [[] for _ in range(nmodes)])
+                    for i in range(nmodes):
+                        data[qlabel]['data'][ioff+i].append(float(cols[3+i]))
+        elif qtag == 'hessval':
+            for i in range(first, last+1):
+                if datablocks[i]:
+                    iref = i
+                    break
+            else:
+                raise ParseKeyError('Missing quantity in file')
+            data[qlabel]['unit'] = 'cm-1'
+            data[qlabel]['data'] = []
+            i = 0
+            for line in datablocks[iref]:
+                data[qlabel]['data'].extend(
+                    [float(item) if '*' not in item else float('inf')
+                     for item in line.split()])
         # General Spectroscopy
         # --------------------
         elif qtag == 'intens':
@@ -1933,7 +2017,7 @@ def parse_data(qdict: TypeQInfo,
                         counts[incfrq] = 1
                     else:
                         counts[incfrq] += 1
-                    data[qlabel][incfrq][counts[incfrq]] = float(trans)    
+                    data[qlabel][incfrq][counts[incfrq]] = float(trans)
             else:
                 if qlvl == 'H':
                     for i in range(last, first-1, -1):
@@ -2157,6 +2241,45 @@ def parse_data(qdict: TypeQInfo,
                                 data[qlabel][tag] = val
                             data[qlabel]['data'] = data[qlabel][tag]
                             data[qlabel]['unit'] = 'Eh'
+                    elif dord == 2:
+                        if rsta == 'c':
+                            maxcols = 5
+                            nbloc = 0
+                            data[qlabel]['unit'] = 'Eh.a0^{-2}'
+                            data[qlabel]['data'] = []
+                            data[qlabel]['shape'] = 'lt'
+                            # Store as triangle
+                            # for line in datablocks[iref]:
+                            #     if '.' not in line:
+                            #         nbloc += 1
+                            #     else:
+                            #         cols = line.split()
+                            #         i = int(cols[0]) - 1
+                            #         if nbloc == 1:
+                            #             data[qlabel]['data'].append([])
+                            #         data[qlabel]['data'][i].extend(
+                            #             [float(item.replace('D', 'e'))
+                            #              for item in cols[1:]])
+                            # store in linear form
+                            for line in datablocks[iref]:
+                                if '.' not in line:
+                                    nbloc += 1
+                                else:
+                                    cols = line.split()
+                                    i = int(cols[0])
+                                    if nbloc == 1:
+                                        data[qlabel]['data'].extend(
+                                            [float(item.replace('D', 'e'))
+                                             for item in cols[1:]])
+                                        if i > 5:
+                                            data[qlabel]['data'].extend(
+                                                0.0 for _ in range(maxcols, i))
+                                    else:
+                                        ioff = i*(i-1)//2 + (nbloc-1)*maxcols
+                                        ncols = len(cols) - 1
+                                        data[qlabel]['data'][ioff:ioff+ncols] \
+                                            = [float(item.replace('D', 'e'))
+                                               for item in cols[1:]]
                 elif qtag == 101:
                     if dord == 0:
                         if rsta == 'c':
@@ -2661,3 +2784,213 @@ def __del_nonactive_modes(vtrans: tp.Dict[int, tp.Sequence[tp.Any]],
                 vtrans[key0] = vtrans.pop(key)
                 vlevel[key0] = vlevel.pop(key)
                 key0 += 1
+
+
+def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
+                  get_evec: bool = True,
+                  get_eval: bool = True,
+                  pre_data: tp.Optional[TypeQData] = None
+                  ) -> tp.Tuple[tp.Any]:
+    """Gets or builds Hessian data (eigenvectors and values).
+
+    This function retrieves or builds the eigenvectors and eigenvalues.
+    Contrary to ``get_data`` which only looks for available data, this
+      functions looks for alternative forms to build necessary data.
+    It also returns a Numpy array instead of Python lists.
+    Preloaded data can be provided to avoid duplicating extraction
+      queries.  They are expected in the same format as given by
+      GLogIO methods.
+
+    Parameters
+    ----------
+    dfobj
+        Gaussian output file as `GLogIO` object.
+    get_evec
+        Return the eigenvectors.
+    get_eval
+        Return the eigenvalues.
+    pre_data
+        Database with quantities already loaded from previous queries.
+
+    Returns
+    -------
+    :obj:numpy.ndarray
+        Eigenvectors (None if not requested).
+    :obj:numpy.ndarray
+        Eigenvalues (None if not requested).
+
+    Raises
+    ------
+    ValueError
+        Inconsitent values given in input.
+    IOError
+        Error if file object not set but needed.
+    IndexError
+        Quantity not found.
+
+    Notes
+    -----
+    * Numpy is needed to run this function
+    * Data can be given in argument or will be extracted from `dfobj`
+    """
+    import sys
+    import numpy as np
+    from estampes.tools.math import square_ltmat
+    from estampes.data.physics import phys_fact
+
+    def build_evec(fccart, atmas, get_evec, get_eval, nvib=None):
+        """Build evec and eval from force constants matrix"""
+        inv_sqmas = 1./np.sqrt(atmas)
+        nat3 = fccart.shape[0]
+        ffx = np.einsum('i,ij,j->ij', inv_sqmas, fccart, inv_sqmas)
+        hessval, hessvec = np.linalg.eigh(ffx)
+        vibs = np.full(nat3, True)
+        freqs = []
+        for i, val in enumerate(hessval):
+            freq = sqrt(abs(val)*phys_fact('fac2au'))
+            if freq < 10.0:
+                vibs[i] = False
+            else:
+                if val < 0:
+                    freqs.append(-freq)
+                else:
+                    freqs.append(freq)
+        if nvib is not None:
+            if np.count_nonzero(vibs) != nvib:
+                msg = 'Unable to identify vibrations from rot/trans'
+                raise QuantityError(msg)
+        evec = norm_evec(hessvec[:, vibs].T) if get_evec else None
+        eval = freqs if get_eval else None
+
+        return evec, eval
+
+    def convert_evec(hessvec, atmas=None, natoms=None, form='L.M^{-1/2}'):
+        """Convert eigenvector based on form and available data."""
+        evec = None
+        if form in ('L.M^-1/2', 'L/M^1/2', 'L.M^{-1/2}', 'L/M^{1/2}'):
+            if atmas is not None:
+                nat3 = atmas.size
+                evec = norm_evec(np.einsum(
+                    'ij,j->ij',
+                    np.reshape(hessvec, (-1, nat3)),
+                    np.sqrt(atmas)
+                ))
+            else:
+                raise QuantityError('Missing atomic masses to correct evec')
+        else:
+            if natoms is not None:
+                evec = np.reshape(hessvec, (-1, 3*natoms))
+            else:
+                # Compute nat3 based on: 3*nat*(3nat-ntrro) = size(hessvec)
+                # ntrro = 6 for non-linear, 5 otherwise
+                # The positive root should be last one (ascending order)
+                # assume first most common case: non-linear
+                N = hessvec.size
+                val = np.polynomial.polynomial.polyroots((-N, -6, 1))[-1]
+                if val.is_integer():
+                    nat3 = int(val)
+                else:
+                    nat3 = int(np.polynomial.polynomial.polyroots(
+                        (-N, -5, 1))[-1])
+                evec = np.reshape(hessvec, (-1, nat3))
+        return evec
+
+    def norm_evec(evec):
+        """Normalize eigenvector (assumed to have shape (nvib, nat3))"""
+        res = np.empty(evec.shape)
+        norms = np.sum(evec**2, axis=1)
+        for i in range(evec.shape[0]):
+            if norms[i] > sys.float_info.epsilon:
+                res[i, :] = evec[i, :] / sqrt(norms[i])
+            else:
+                res[i, :] = 0.0
+        return res
+
+    if not (get_evec or get_eval):
+        raise ValueError('Nothing to do')
+
+    natoms = None
+    nvib = None
+    atmas = None
+    hessvec = None
+    hessval = None
+    fccart = None
+    key_ffx = None
+    key_evec = None
+    evec = None
+    eval = None
+    if pre_data is not None:
+        for key in pre_data:
+            qlabel = pre_data[key].get('qlabel', key)
+            qtag, _, dord, dcrd, *_ = ep.parse_qlabel(qlabel)
+            if qtag == 'natoms':
+                natoms = pre_data['natoms']['data']
+            elif qtag == 'nvib':
+                natoms = pre_data['nvib']['data']
+            elif qtag == 'atmas':
+                # np.repeat used to duplicate atmas for each Cart. coord.
+                atmas = np.repeat(np.array(pre_data[key]['data']), 3)
+            elif qtag == 'hessvec':
+                key_evec = key
+                hessvec = np.array(pre_data[key]['data'])
+            elif qtag == 'hessval':
+                hessvec = np.array(pre_data[key]['data'])
+            elif qtag == 1 and dord == 2 and dcrd == 'X':
+                key_ffx = key
+                fccart = np.array(pre_data[key]['data'])
+
+    if fccart is not None and atmas is not None:
+        if (len(fccart.shape) == 1
+                or pre_data[key_ffx]['shape'].lower() == 'lt'):
+            fccart = square_ltmat(pre_data[key_ffx]['data'])
+        evec, eval = build_evec(fccart, atmas, get_evec, get_eval, nvib)
+    else:
+        if get_evec and hessvec is not None:
+            # Check if eigenvectors need to be corrected
+            #  Default is assumed to be Gaussian fchk
+            evec_form = pre_data[key_evec].get('form', 'L.M^{-1/2}')
+            evec = convert_evec(hessvec, atmas, natoms, evec_form)
+        if get_eval and hessval is not None:
+            eval = hessval
+
+    calc_evec = get_evec and evec is None
+    calc_eval = get_eval and eval is None
+    if calc_evec or calc_eval:
+        # We are missing data, now extracting data and recomputing.
+        read_data = []
+        key_FC = ep.build_qlabel(1, None, 2, 'X')
+        if calc_evec or calc_eval:
+            read_data.extend(('natoms', key_FC, 'atmas', 'nvib'))
+        if calc_evec:
+            read_data.append('hessvec')
+        if calc_eval:
+            read_data.append('hessval')
+        tmp_data = get_data(dfobj, *read_data, error_noqty=False)
+
+        if tmp_data[key_FC] is not None and tmp_data['atmas'] is not None:
+            # Rediagonlizing is more accurate, but require being
+            atmas = np.repeat(np.array(tmp_data['atmas']['data']), 3)
+            ffx = square_ltmat(tmp_data[key_FC]['data'])
+            nvib = None if tmp_data['nvib'] is None \
+                else tmp_data['nvib']['data']
+            evec, eval = build_evec(ffx, atmas, get_evec, get_eval, nvib)
+        else:
+            if calc_evec:
+                if (tmp_data['hessvec'] is not None
+                        and tmp_data['atmas'] is not None):
+                    hessvec = tmp_data['hessvec']['data']
+                    atmas = np.repeat(np.array(tmp_data['atmas']['data']), 3)
+                    natoms = tmp_data['natoms']['data']
+                    evec_form = tmp_data['hessvec'].get('form', 'L.M^{-1/2}')
+                    evec = convert_evec(hessvec, atmas, natoms, evec_form)
+                else:
+                    msg = 'Unable to retrieve force constants eigenvectors'
+                    raise QuantityError(msg)
+            if calc_eval:
+                if tmp_data['hessval'] is not None:
+                    eval = np.array(tmp_data['hessval']['data'])
+                else:
+                    msg = 'Unable to retrieve normal mode wavenumbers'
+                    raise QuantityError(msg)
+
+    return evec, eval

@@ -649,16 +649,9 @@ class DataFile(object):
                                      error_noqty=error_noqty)
 
     def get_hess_data(self,
-                      natoms: int,
                       get_evec: bool = True,
                       get_eval: bool = True,
-                      mweigh: bool = True,
-                      hessvec: tp.Optional[tp.List[float]] = None,
-                      hessval: tp.Optional[tp.List[float]] = None,
-                      atmass: tp.Optional[tp.List[float]] = None,
-                      fccart: tp.Optional[tp.List[float]] = None
+                      pre_data: tp.Optional[TypeQData] = None
                       ) -> tp.Tuple[tp.Any]:
-        return self._parser.get_hess_data(
-            natoms=natoms, get_evec=get_evec, get_eval=get_eval, mweigh=mweigh,
-            dfobj=self._dfile, hessvec=hessvec, hessval=hessval, atmass=atmass,
-            fccart=fccart)
+        return self._parser.get_hess_data(self._dfile, get_evec=get_evec,
+                                          get_eval=get_eval, pre_data=pre_data)

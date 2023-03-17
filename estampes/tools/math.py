@@ -120,7 +120,8 @@ def levi_civita_tens() -> np.ndarray:
     return tensor
 
 
-def square_ltmat(ltmat: np.ndarray, what: str = 'symm') -> np.ndarray:
+def square_ltmat(ltmat: tp.Union[tp.Sequence[float], np.ndarray],
+                 what: str = 'symm') -> np.ndarray:
     """Squares a lower-triangular matrix.
 
     Takes a lower-triangular matrix and returns the 2D symmetric or
@@ -145,8 +146,8 @@ def square_ltmat(ltmat: np.ndarray, what: str = 'symm') -> np.ndarray:
     ValueError
         Input matrix does not seem to have lower-triangular size.
     """
-    n = int((-.5 + sqrt(.5**2 + 2*ltmat.size))/1)
-    if ltmat.size != n*(n+1)//2:
+    n = int(-.5 + sqrt(.5**2 + 2*np.size(ltmat)))
+    if np.size(ltmat) != n*(n+1)//2:
         raise ValueError('Inconsistency size in LT matrix')
     sqmat = np.zeros((n, n))
     ij = 0
