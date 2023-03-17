@@ -644,9 +644,11 @@ class DataFile(object):
 
     def get_data(self,
                  *qlabels,
-                 error_noqty: bool = True) -> TypeQData:
+                 error_noqty: bool = True,
+                 **keys4qlabels) -> TypeQData:
         return self._parser.get_data(self._dfile, *qlabels,
-                                     error_noqty=error_noqty)
+                                     error_noqty=error_noqty,
+                                     **keys4qlabels)
 
     def get_hess_data(self,
                       get_evec: bool = True,

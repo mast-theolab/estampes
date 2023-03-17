@@ -122,15 +122,17 @@ class GLogIO(object):
         keydata = []
         qtydata = {}
         key2blk = {}
+        qlab2key = {}
         i = 0
         for item in ('route', 'swopt', 'swver'):
+            qlab2key[item] = item
             qtydata[item] = ep.parse_qlabel(ep.build_qlabel(item))
             key2blk[item] = (i, i)
             i += 1
             link, key, skips, fmt, end, num = qlab_to_linkdata(item)
             keydata.append((key, link, skips, re.compile(fmt), num, end))
         ndata, data = self.read_data(*keydata)
-        data = parse_data(qtydata, key2blk, ndata, data)
+        data = parse_data(qtydata, key2blk, qlab2key, ndata, data)
         self.__route = data['route']['data']
         self.__links = sorted(set([int(item[0]) for item in self.__route]))
         self.__gversion = data['swver']
@@ -1431,6 +1433,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
 
 def parse_data(qdict: TypeQInfo,
                key2blocks: tp.Dict[str, tp.Tuple[int, int]],
+               qlab2key: tp.Dict[str, str],
                ndatablock: tp.Sequence[int],
                datablocks: TypeDGLog,
                gver: tp.Optional[tp.Tuple[str, str]] = None,
@@ -1445,6 +1448,8 @@ def parse_data(qdict: TypeQInfo,
         Dictionary of quantities.
     key2blocks
         Range tuples associating each keyword to the data blocks.
+    qlab2key
+        Associates for each qlabel a key to use in final dictionary.
     ndatablock
         Number of occurrences of the data blocks extracted.
     datablocks
@@ -1477,6 +1482,7 @@ def parse_data(qdict: TypeQInfo,
     data = {}
     all_tags = []
     for qlabel in qdict:
+        qkey = qlab2key[qlabel]
         qtag, qopt, dord, dcrd, rsta, qlvl = qdict[qlabel]
         all_tags.append(qtag)
         first, last = key2blocks[qlabel]
@@ -1497,9 +1503,9 @@ def parse_data(qdict: TypeQInfo,
             if raise_error:
                 raise ParseKeyError('Missing quantity in file')
             else:
-                data[qlabel] = None
+                data[qkey] = None
                 continue
-        data[qlabel] = {}
+        data[qkey] = {}
         # Basic Properties/Quantities
         # ---------------------------
         if qtag == 'route':
@@ -1516,9 +1522,9 @@ def parse_data(qdict: TypeQInfo,
                 for link in links.split(','):
                     fulllink = fmt.format(int(ov), int(link))
                     _dat.append((fulllink, num+1, iops, toline))
-            data[qlabel]['data'] = _dat
+            data[qkey]['data'] = _dat
         elif qtag == 'natoms':
-            data[qlabel]['data'] = int(datablocks[iref][0])
+            data[qkey]['data'] = int(datablocks[iref][0])
         elif qtag == 'atcrd' or qtag == 2:
             _dat = []
             # By default, we choose the standard orientation if present
@@ -1528,19 +1534,19 @@ def parse_data(qdict: TypeQInfo,
                 i = first
             for line in datablocks[i]:
                 _dat.append([float(item)*__ang2au for item in line.split()])
-            data[qlabel]['data'] = _dat
+            data[qkey]['data'] = _dat
         elif qtag == 'atmas':
             _dat = []
             for line in datablocks[iref]:
                 _dat.extend(float(item) for item in line.split())
-            data[qlabel]['data'] = _dat
+            data[qkey]['data'] = _dat
         elif qtag in ('atnum',):
-            data[qlabel]['data'] = []
+            data[qkey]['data'] = []
             for line in datablocks[iref]:
-                data[qlabel]['data'].extend(int(item) for item in line.split())
+                data[qkey]['data'].extend(int(item) for item in line.split())
         elif qtag == 'swopt':
             # The last line are the final dashes
-            data[qlabel]['data'] = ' '.join(datablocks[iref][:-1])
+            data[qkey]['data'] = ' '.join(datablocks[iref][:-1])
         elif qtag == 'molsym':
             raise NotImplementedError()
         elif qtag == 'swver':
@@ -1548,8 +1554,8 @@ def parse_data(qdict: TypeQInfo,
                 + r'(\d+-\w{3}-\d{4})\s*'
             pattern = re.compile(txt)
             res = re.match(pattern, ''.join(datablocks[iref])).groups()
-            data[qlabel] = {'major': res[2], 'minor': res[3],
-                            'system': res[1], 'release': res[4]}
+            data[qkey] = {'major': res[2], 'minor': res[3],
+                          'system': res[1], 'release': res[4]}
         # Vibrational Information
         # -----------------------
         # Technically state should be checked but considered irrelevant.
@@ -1558,7 +1564,7 @@ def parse_data(qdict: TypeQInfo,
             for line in datablocks[iref]:
                 i += len(line.split())
 
-            data[qlabel]['data'] = i
+            data[qkey]['data'] = i
         elif qtag == 'hessvec':
             for i in range(first, last+1):
                 if datablocks[i]:
@@ -1566,8 +1572,8 @@ def parse_data(qdict: TypeQInfo,
                     break
             else:
                 raise ParseKeyError('Missing quantity in file')
-            data[qlabel]['form'] = 'L.M^{-1/2}'
-            data[qlabel]['data'] = []
+            data[qkey]['form'] = 'L.M^{-1/2}'
+            data[qkey]['data'] = []
             # We analyze the first line to find if HPModes or normal
             res = datablocks[iref][0].split()[-1]
             if len(res.split('.')[1]) == 2:
@@ -1578,10 +1584,10 @@ def parse_data(qdict: TypeQInfo,
                     nmodes = (len(cols)-2)//3
                     if cols[0] == '1':
                         ioff += ncols
-                        data[qlabel]['data'].extend(
+                        data[qkey]['data'].extend(
                             [[] for _ in range(nmodes)])
                     for i in range(nmodes):
-                        data[qlabel]['data'][ioff+i].extend(
+                        data[qkey]['data'][ioff+i].extend(
                             [float(item) for item in cols[2+i*3:2+(i+1)*3]])
             else:
                 ncols = 5
@@ -1591,10 +1597,10 @@ def parse_data(qdict: TypeQInfo,
                     nmodes = len(cols) - 3
                     if cols[0] == '1' and cols[1] == '1':
                         ioff += ncols
-                        data[qlabel]['data'].extend(
+                        data[qkey]['data'].extend(
                             [[] for _ in range(nmodes)])
                     for i in range(nmodes):
-                        data[qlabel]['data'][ioff+i].append(float(cols[3+i]))
+                        data[qkey]['data'][ioff+i].append(float(cols[3+i]))
         elif qtag == 'hessval':
             for i in range(first, last+1):
                 if datablocks[i]:
@@ -1602,11 +1608,11 @@ def parse_data(qdict: TypeQInfo,
                     break
             else:
                 raise ParseKeyError('Missing quantity in file')
-            data[qlabel]['unit'] = 'cm-1'
-            data[qlabel]['data'] = []
+            data[qkey]['unit'] = 'cm-1'
+            data[qkey]['data'] = []
             i = 0
             for line in datablocks[iref]:
-                data[qlabel]['data'].extend(
+                data[qkey]['data'].extend(
                     [float(item) if '*' not in item else float('inf')
                      for item in line.split()])
         # General Spectroscopy
@@ -1620,29 +1626,29 @@ def parse_data(qdict: TypeQInfo,
                 else:
                     raise ParseKeyError('Missing quantity in file')
                 if qopt == 'IR':
-                    data[qlabel]['unit'] = 'II:km.mol-1'
+                    data[qkey]['unit'] = 'II:km.mol-1'
                 else:
-                    data[qlabel]['unit'] = 'II:N/A'
+                    data[qkey]['unit'] = 'II:N/A'
                 i = 0
                 for line in datablocks[iref]:
                     for col in line.strip().split():
                         i += 1
                         try:
-                            data[qlabel][i] = float(col)
+                            data[qkey][i] = float(col)
                         except ValueError:
-                            data[qlabel][i] = float('inf')
+                            data[qkey][i] = float('inf')
             elif qlvl == 'A':
                 if qopt == 'IR':
-                    data[qlabel]['unit'] = 'II:km.mol-1'
+                    data[qkey]['unit'] = 'II:km.mol-1'
                 else:
-                    data[qlabel]['unit'] = 'II:N/A'
+                    data[qkey]['unit'] = 'II:N/A'
                 i = 0
                 for line in datablocks[iref]:
                     i += 1
                     try:
-                        data[qlabel][i] = float(line)
+                        data[qkey][i] = float(line)
                     except ValueError:
-                        data[qlabel][i] = float('inf')
+                        data[qkey][i] = float('inf')
             else:
                 raise NotImplementedError()
 
@@ -1658,15 +1664,15 @@ def parse_data(qdict: TypeQInfo,
                             val = None
                         else:
                             val = float(line.split()[-1][:-1])
-                        data[qlabel]['temp'] = val
+                        data[qkey]['temp'] = val
                     elif 'framework' in line:
-                        data[qlabel]['frame'] = getval(line)
+                        data[qkey]['frame'] = getval(line)
                     elif 'Spectroscopy' in line:
-                        data[qlabel]['spec'] = getval(line)
+                        data[qkey]['spec'] = getval(line)
                     elif 'Model' in line:
-                        data[qlabel]['model'] = getval(line)
+                        data[qkey]['model'] = getval(line)
                     elif 'electronic transition moment' in line:
-                        data[qlabel]['tmom'] = \
+                        data[qkey]['tmom'] = \
                             line.split(':', maxsplit=1)[-1].strip()
             elif qopt == 'JMat':
                 if datablocks[last]:
@@ -1674,80 +1680,80 @@ def parse_data(qdict: TypeQInfo,
                 else:
                     i = first
                 if 'diagonal' in datablocks[i]:
-                    data[qlabel]['data'] = []
+                    data[qkey]['data'] = []
                 else:
-                    data[qlabel]['data'] = []
+                    data[qkey]['data'] = []
                     N = 0
                     for line in datablocks[i]:
                         cols = line.split()
                         irow = int(cols[0]) - 1
                         if irow == N:
-                            data[qlabel]['data'].append([])
+                            data[qkey]['data'].append([])
                             N += 1
-                        data[qlabel]['data'][irow].extend(
+                        data[qkey]['data'][irow].extend(
                             [float(item.replace('D', 'e'))
                              for item in cols[1:]])
             elif qopt == 'JMatF':
                 if 'diagonal' in datablocks[iref]:
-                    data[qlabel]['data'] = []
+                    data[qkey]['data'] = []
                 else:
-                    data[qlabel]['data'] = []
+                    data[qkey]['data'] = []
                     N = 0
                     for line in datablocks[iref]:
                         cols = line.split()
                         irow = int(cols[0]) - 1
                         if irow == N:
-                            data[qlabel]['data'].append([])
+                            data[qkey]['data'].append([])
                             N += 1
-                        data[qlabel]['data'][irow].extend(
+                        data[qkey]['data'][irow].extend(
                             [float(item.replace('D', 'e'))
                              for item in cols[1:]])
             elif qopt == 'KVec':
-                data[qlabel]['data'] = []
+                data[qkey]['data'] = []
                 for line in datablocks[iref]:
-                    data[qlabel]['data'].append(float(line.replace('D', 'e')))
+                    data[qkey]['data'].append(float(line.replace('D', 'e')))
             elif qopt == 'SRAMat':
-                data[qlabel]['data'] = []
+                data[qkey]['data'] = []
                 N = 0
                 for line in datablocks[iref]:
                     cols = line.split()
                     irow = int(cols[0]) - 1
                     if irow == N:
-                        data[qlabel]['data'].append([])
+                        data[qkey]['data'].append([])
                         N += 1
-                    data[qlabel]['data'][irow].extend(
+                    data[qkey]['data'][irow].extend(
                         [float(item.replace('D', 'e'))
                             for item in cols[1:]])
             elif qopt == 'SRBVec':
-                data[qlabel]['data'] = []
+                data[qkey]['data'] = []
                 for line in datablocks[iref]:
-                    data[qlabel]['data'].append(float(line.replace('D', 'e')))
+                    data[qkey]['data'].append(float(line.replace('D', 'e')))
             elif qopt == 'SRCMat':
-                data[qlabel]['data'] = []
+                data[qkey]['data'] = []
                 N = 0
                 for line in datablocks[iref]:
                     cols = line.split()
                     irow = int(cols[0]) - 1
                     if irow == N:
-                        data[qlabel]['data'].append([])
+                        data[qkey]['data'].append([])
                         N += 1
-                    data[qlabel]['data'][irow].extend(
+                    data[qkey]['data'][irow].extend(
                         [float(item.replace('D', 'e'))
                             for item in cols[1:]])
             elif qopt == 'SRDVec':
-                data[qlabel]['data'] = []
+                data[qkey]['data'] = []
                 for line in datablocks[iref]:
-                    data[qlabel]['data'].append(float(line.replace('D', 'e')))
+                    data[qkey]['data'].append(float(line.replace('D', 'e')))
             elif qopt == 'SREMat':
-                data[qlabel]['data'] = []
+                data[qkey]['data'] = []
                 N = 0
                 for line in datablocks[iref]:
                     cols = line.split()
                     irow = int(cols[0]) - 1
                     if irow == N:
-                        data[qlabel]['data'].append([])
+                        data[qkey]['data'].append([])
                         N += 1
-                    data[qlabel]['data'][irow].extend(
+                    data[qkey]['data'][irow].extend(
                         [float(item.replace('D', 'e'))
                             for item in cols[1:]])
             elif qopt == 'Spec':
@@ -1779,16 +1785,16 @@ def parse_data(qdict: TypeQInfo,
                 # First block contains the full initial legend block
                 # Necessary for the different parameters
                 iref = first
-                data[qlabel] = {'x': []}
+                data[qkey] = {'x': []}
                 if nyaxes == 0:
                     nyaxes = len(datablocks[iref][0].split()) - 1
                 if nyaxes == 1:
                     yfmt = 'y'
-                    data[qlabel]['y'] = []
+                    data[qkey]['y'] = []
                 else:
                     yfmt = 'y{{idy:0{}d}}'.format(len(str(nyaxes)))
                     for i in range(nyaxes):
-                        data[qlabel][yfmt.format(idy=i+1)] = []
+                        data[qkey][yfmt.format(idy=i+1)] = []
                 # If multiple blocks, the reading with first parsing method
                 #   is wrong since it combines all blocks together
                 # We fix it by only considering the last one which should be
@@ -1797,17 +1803,17 @@ def parse_data(qdict: TypeQInfo,
                 for bloc in range(nblocks):
                     yax = {}
                     if nblocks > 1:
-                        data[qlabel]['x'].append([])
-                        xax = data[qlabel]['x'][-1]
+                        data[qkey]['x'].append([])
+                        xax = data[qkey]['x'][-1]
                         for i in range(nyaxes):
                             y = yfmt.format(idy=i+1)
-                            data[qlabel][y].append([])
-                            yax[y] = data[qlabel][y][-1]
+                            data[qkey][y].append([])
+                            yax[y] = data[qkey][y][-1]
                     else:
-                        xax = data[qlabel]['x']
+                        xax = data[qkey]['x']
                         for i in range(nyaxes):
                             y = yfmt.format(idy=i+1)
-                            yax[y] = data[qlabel][y]
+                            yax[y] = data[qkey][y]
                     for line in datablocks[iref][bloc]:
                         cols = [float(item.replace('D', 'e'))
                                 for item in line.split()]
@@ -1847,13 +1853,13 @@ def parse_data(qdict: TypeQInfo,
                     if i >= len(datablocks[iref]):
                         raise IndexError('Legend not found')
                 if 'No' in datablocks[iref][i-1]:
-                    data[qlabel]['func'] = 'stick'
-                    data[qlabel]['hwhm'] = None
+                    data[qkey]['func'] = 'stick'
+                    data[qkey]['hwhm'] = None
                 elif 'broadening' in datablocks[iref][i-2]:
                     func = datablocks[iref][i-2].split()[-3].lower()
                     hwhm = float(datablocks[iref][i-1].split()[-2])
-                    data[qlabel]['func'] = func
-                    data[qlabel]['hwhm'] = hwhm
+                    data[qkey]['func'] = func
+                    data[qkey]['hwhm'] = hwhm
                 else:
                     raise IndexError('Unrecognized broadening function.')
                 offset = i + 1
@@ -1878,12 +1884,12 @@ def parse_data(qdict: TypeQInfo,
                         _key = 'x'
                         txt = title.rsplit('in ', maxsplit=1)[1].\
                             replace(')', '').strip()
-                        data[qlabel]['unitx'] = txt
+                        data[qkey]['unitx'] = txt
                     elif key.strip() == 'Intensity':
                         _key = 'I'
                         txt = title.rsplit('in ', maxsplit=1)[1].\
                             replace(')', '').strip()
-                        if data[qlabel]['func'] == 'stick':
+                        if data[qkey]['func'] == 'stick':
                             _desc = 'II:'
                             # Fix a stupidity in the unit in some versions
                             #   for the stick spectrum
@@ -1891,7 +1897,7 @@ def parse_data(qdict: TypeQInfo,
                                 txt = 'dm^3.mol^-1.cm^-2'
                         else:
                             _desc = 'I:'
-                        data[qlabel]['unity'] = _desc + txt
+                        data[qkey]['unity'] = _desc + txt
                     else:
                         try:
                             idy = int(key.strip()[0]) - 1
@@ -1900,12 +1906,12 @@ def parse_data(qdict: TypeQInfo,
                                              key)
                         _key = yfmt.format(idy=idy)
                     if nblocks == 1:
-                        data[qlabel][_key] = title.strip()
+                        data[qkey][_key] = title.strip()
                     else:
                         if _key[0] == 'I':
-                            data[qlabel][_key] = title.strip()
+                            data[qkey][_key] = title.strip()
                         else:
-                            data[qlabel][_key] = [title.strip()]
+                            data[qkey][_key] = [title.strip()]
                 # More than 1 block, read the new ones
                 for bloc in range(1, nblocks):
                     for line in datablocks[last][bloc][1:]:
@@ -1926,25 +1932,25 @@ def parse_data(qdict: TypeQInfo,
                                 msg = 'Unrecognized key in spc leg.: ' + key
                                 raise IndexError(msg)
                             _key = yfmt.format(idy=idy)
-                        data[qlabel][_key].append(title.strip())
+                        data[qkey][_key].append(title.strip())
             elif qopt == 'Conv':
                 raise NotImplementedError()
             elif qopt == 'Assign':
-                data[qlabel]['T'] = []
-                data[qlabel]['E'] = []
-                data[qlabel]['I'] = []
-                if qlabel == 'DipStr':
+                data[qkey]['T'] = []
+                data[qkey]['E'] = []
+                data[qkey]['I'] = []
+                if qtag == 'DipStr':
                     qty = 'DS'
-                elif qlabel == 'RotStr':
+                elif qtag == 'RotStr':
                     qty = 'RS'
                 else:
                     msg = 'Unrecognized spectroscopy-specific quantity'
                     raise IndexError(msg)
-                data[qlabel]['other'] = qty
-                data[qlabel][qty] = []
+                data[qkey]['other'] = qty
+                data[qkey][qty] = []
                 for l1, l2 in zip(datablocks[first], datablocks[last]):
                     txt_E, txt_T = l1.split(':')
-                    data[qlabel]['E'].append(float(txt_E.split()[0]))
+                    data[qkey]['E'].append(float(txt_E.split()[0]))
                     trans = []
                     for state in txt_T.split('->'):
                         trans.append([])
@@ -1955,49 +1961,49 @@ def parse_data(qdict: TypeQInfo,
                                 i = int(item)
                                 n = 0
                             trans[-1].append((i, n))
-                    data[qlabel]['T'].append((tuple(trans[0]),
-                                              tuple(trans[1])))
+                    data[qkey]['T'].append((tuple(trans[0]),
+                                            tuple(trans[1])))
                     line = l2.strip(')').split()
-                    data[qlabel]['I'].append(float(line[0]))
-                    data[qlabel][qty].append(float(line[-1]))
+                    data[qkey]['I'].append(float(line[0]))
+                    data[qkey][qty].append(float(line[-1]))
             elif qopt == 'GeomIS':
-                data[qlabel]['data'] = []
+                data[qkey]['data'] = []
                 # By default, we choose the standard orientation if present
                 for line in datablocks[iref]:
-                    data[qlabel]['data'].append([float(item)*__ang2au
-                                                 for item in line.split()])
+                    data[qkey]['data'].append([float(item)*__ang2au
+                                               for item in line.split()])
             elif qopt == 'GeomFS':
-                data[qlabel]['data'] = []
+                data[qkey]['data'] = []
                 # By default, we choose the standard orientation if present
                 for line in datablocks[iref]:
-                    data[qlabel]['data'].append([float(item)*__ang2au
-                                                 for item in line.split()])
+                    data[qkey]['data'].append([float(item)*__ang2au
+                                               for item in line.split()])
             elif qopt == 'ExGeom':
-                data[qlabel]['data'] = []
+                data[qkey]['data'] = []
                 # By default, we choose the standard orientation if present
                 for line in datablocks[iref]:
-                    data[qlabel]['data'].append([float(item)*__ang2au
-                                                 for item in line.split()])
+                    data[qkey]['data'].append([float(item)*__ang2au
+                                               for item in line.split()])
             elif qopt == 'E(0-0)':
                 if len(set(datablocks[iref])) > 1:
                     msg = 'Excessive information on 0-0 energy.'
                     raise ParseKeyError(msg)
                 val, unit = datablocks[iref][0].split()
                 if re.match(r'cm\^.?-1.?\s*', unit, re.I):
-                    data[qlabel]['unit'] = 'cm^-1'
+                    data[qkey]['unit'] = 'cm^-1'
                 else:
-                    data[qlabel]['unit'] = '???'
-                data[qlabel]['data'] = float(val)
+                    data[qkey]['unit'] = '???'
+                data[qkey]['data'] = float(val)
             elif qopt == 'RedDim':
                 if len(datablocks[iref][0].split()) % 3 != 0:
                     raise ParseKeyError('Expected reddim structure: num = num')
                 nstates = len(datablocks[iref][0].split())//3
                 for i in range(nstates):
-                    data[qlabel]['state{}'.format(i+1)] = {}
+                    data[qkey]['state{}'.format(i+1)] = {}
                 for line in datablocks[iref]:
                     cols = line.split()
                     for i in range(nstates):
-                        data[qlabel]['state{}'.format(i+1)][int(cols[i*3])] = \
+                        data[qkey]['state{}'.format(i+1)][int(cols[i*3])] = \
                             int(cols[i*3+2])
             else:
                 raise NotImplementedError('Unknown option for FCDat')
@@ -2009,15 +2015,15 @@ def parse_data(qdict: TypeQInfo,
                     msg = 'Incident frequencies data and transition energies' \
                         + ' do not match.'
                     raise ParseKeyError(msg)
-                data[qlabel]['unit'] = 'cm-1'
+                data[qkey]['unit'] = 'cm-1'
                 counts = {}
                 for incfrq, trans in zip(datablocks[last], datablocks[last-1]):
-                    if incfrq not in data[qlabel]:
-                        data[qlabel][incfrq] = {}
+                    if incfrq not in data[qkey]:
+                        data[qkey][incfrq] = {}
                         counts[incfrq] = 1
                     else:
                         counts[incfrq] += 1
-                    data[qlabel][incfrq][counts[incfrq]] = float(trans)
+                    data[qkey][incfrq][counts[incfrq]] = float(trans)
             else:
                 if qlvl == 'H':
                     for i in range(last, first-1, -1):
@@ -2026,28 +2032,28 @@ def parse_data(qdict: TypeQInfo,
                             break
                     else:
                         raise ParseKeyError('Missing quantity in file')
-                    data[qlabel]['unit'] = 'cm-1'
+                    data[qkey]['unit'] = 'cm-1'
                     i = 0
                     for line in datablocks[iref]:
                         for col in line.strip().split():
                             i += 1
                             try:
-                                data[qlabel][i] = float(col)
+                                data[qkey][i] = float(col)
                             except ValueError:
-                                data[qlabel][i] = float('inf')
+                                data[qkey][i] = float('inf')
                 elif qlvl == 'A':
                     if datablocks[last]:
                         iref = last
                     else:
                         iref = first
-                    data[qlabel]['unit'] = 'cm-1'
+                    data[qkey]['unit'] = 'cm-1'
                     i = 0
                     for line in datablocks[iref]:
                         i += 1
                         try:
-                            data[qlabel][i] = float(line)
+                            data[qkey][i] = float(line)
                         except ValueError:
-                            data[qlabel][i] = float('inf')
+                            data[qkey][i] = float('inf')
                 else:
                     raise NotImplementedError()
         elif qtag == 'vtrans':
@@ -2058,8 +2064,8 @@ def parse_data(qdict: TypeQInfo,
                     raise ParseKeyError(msg)
                 counts = {}
                 for incfrq, trans in zip(datablocks[last], datablocks[last-1]):
-                    if incfrq not in data[qlabel]:
-                        data[qlabel][incfrq] = {}
+                    if incfrq not in data[qkey]:
+                        data[qkey][incfrq] = {}
                         counts[incfrq] = 1
                     else:
                         counts[incfrq] += 1
@@ -2075,7 +2081,7 @@ def parse_data(qdict: TypeQInfo,
                                     int(i) for i in osc.split('^')
                                 ]))
                             svals.append(tuple(state))
-                    data[qlabel][incfrq][counts[incfrq]] = tuple(svals)
+                    data[qkey][incfrq][counts[incfrq]] = tuple(svals)
             else:
                 if qlvl == 'H':
                     for i in range(last, first-1, -1):
@@ -2092,8 +2098,8 @@ def parse_data(qdict: TypeQInfo,
                         for col in cols:
                             i += 1
                             res = col.split('(')
-                            data[qlabel][i] = (((0, 0), ),
-                                               ((int(res[0]), 1), ))
+                            data[qkey][i] = (((0, 0), ),
+                                             ((int(res[0]), 1), ))
                 elif qlvl == 'A':
                     i = 0
                     for line in datablocks[iref]:
@@ -2112,7 +2118,7 @@ def parse_data(qdict: TypeQInfo,
                             else:
                                 val.append((int(res[0]),
                                             int(res[1].replace(')', ''))))
-                            data[qlabel][i] = (((0, 0), ), tuple(val), status)
+                            data[qkey][i] = (((0, 0), ), tuple(val), status)
                 else:
                     raise NotImplementedError()
         # Anharmonic Information
@@ -2133,14 +2139,14 @@ def parse_data(qdict: TypeQInfo,
                     def idx(i):
                         return i
                 # Now parses the main assignment:
-                data[qlabel]['data'] = {}
+                data[qkey]['data'] = {}
                 i = 0
                 for line in datablocks[first]:
                     if ':' in line:
                         key, dat = line.split(':')
                         i = idx(int(key))
                         if i > 0:
-                            data[qlabel][i] = []
+                            data[qkey][i] = []
                         coef, state = dat.split('x')
                     else:
                         coef, state = line.split('x')
@@ -2156,7 +2162,7 @@ def parse_data(qdict: TypeQInfo,
                                 i0 = 1
                                 i1 = 2
                             dat.append((int(res[i0]), int(res[i1])))
-                        data[qlabel][i].append((float(coef), tuple(dat)))
+                        data[qkey][i].append((float(coef), tuple(dat)))
             else:
                 raise NotImplementedError()
         # State(s)-dependent quantities
@@ -2170,11 +2176,11 @@ def parse_data(qdict: TypeQInfo,
                     if dord == 0:
                         if Si == 0:
                             if isinstance(Sf, int):
-                                data[qlabel]['data'] = float(datablocks[iref])
-                                data[qlabel]['unit'] = 'eV'
+                                data[qkey]['data'] = float(datablocks[iref])
+                                data[qkey]['unit'] = 'eV'
                             else:
-                                data[qlabel]['unit'] = 'eV'
-                                data[qlabel]['data'] = \
+                                data[qkey]['unit'] = 'eV'
+                                data[qkey]['data'] = \
                                     [float(item) for item in datablocks[iref]]
                         else:
                             pass
@@ -2183,23 +2189,23 @@ def parse_data(qdict: TypeQInfo,
                 elif qtag == 'dipstr':
                     if Si == 0:
                         if isinstance(Sf, int):
-                            data[qlabel]['data'] = float(datablocks[iref])
-                            data[qlabel]['unit'] = 'DS:au'
+                            data[qkey]['data'] = float(datablocks[iref])
+                            data[qkey]['unit'] = 'DS:au'
                         else:
-                            data[qlabel]['unit'] = 'DS:au'
-                            data[qlabel]['data'] = \
+                            data[qkey]['unit'] = 'DS:au'
+                            data[qkey]['data'] = \
                                 [float(item) for item in datablocks[iref]]
                     else:
                         pass
                 elif qtag == 'rotstr':
                     if Si == 0:
                         if isinstance(Sf, int):
-                            data[qlabel]['data'] \
+                            data[qkey]['data'] \
                                 = float(datablocks[iref])*1.0e-40
-                            data[qlabel]['unit'] = 'RS:esu^2.cm^2'
+                            data[qkey]['unit'] = 'RS:esu^2.cm^2'
                         else:
-                            data[qlabel]['unit'] = 'RS:esu^2.cm^2'
-                            data[qlabel]['data'] = \
+                            data[qkey]['unit'] = 'RS:esu^2.cm^2'
+                            data[qkey]['data'] = \
                                 [float(item) * 1.0e-40
                                  for item in datablocks[iref]]
                     else:
@@ -2238,16 +2244,16 @@ def parse_data(qdict: TypeQInfo,
                                 except AttributeError:
                                     msg = 'Unsupported energy format'
                                     raise ParseKeyError(msg) from None
-                                data[qlabel][tag] = val
-                            data[qlabel]['data'] = data[qlabel][tag]
-                            data[qlabel]['unit'] = 'Eh'
+                                data[qkey][tag] = val
+                            data[qkey]['data'] = data[qkey][tag]
+                            data[qkey]['unit'] = 'Eh'
                     elif dord == 2:
                         if rsta == 'c':
                             maxcols = 5
                             nbloc = 0
-                            data[qlabel]['unit'] = 'Eh.a0^{-2}'
-                            data[qlabel]['data'] = []
-                            data[qlabel]['shape'] = 'lt'
+                            data[qkey]['unit'] = 'Eh.a0^{-2}'
+                            data[qkey]['data'] = []
+                            data[qkey]['shape'] = 'lt'
                             # Store as triangle
                             # for line in datablocks[iref]:
                             #     if '.' not in line:
@@ -2256,8 +2262,8 @@ def parse_data(qdict: TypeQInfo,
                             #         cols = line.split()
                             #         i = int(cols[0]) - 1
                             #         if nbloc == 1:
-                            #             data[qlabel]['data'].append([])
-                            #         data[qlabel]['data'][i].extend(
+                            #             data[qkey]['data'].append([])
+                            #         data[qkey]['data'][i].extend(
                             #             [float(item.replace('D', 'e'))
                             #              for item in cols[1:]])
                             # store in linear form
@@ -2268,16 +2274,16 @@ def parse_data(qdict: TypeQInfo,
                                     cols = line.split()
                                     i = int(cols[0])
                                     if nbloc == 1:
-                                        data[qlabel]['data'].extend(
+                                        data[qkey]['data'].extend(
                                             [float(item.replace('D', 'e'))
                                              for item in cols[1:]])
                                         if i > 5:
-                                            data[qlabel]['data'].extend(
+                                            data[qkey]['data'].extend(
                                                 0.0 for _ in range(maxcols, i))
                                     else:
                                         ioff = i*(i-1)//2 + (nbloc-1)*maxcols
                                         ncols = len(cols) - 1
-                                        data[qlabel]['data'][ioff:ioff+ncols] \
+                                        data[qkey]['data'][ioff:ioff+ncols] \
                                             = [float(item.replace('D', 'e'))
                                                for item in cols[1:]]
                 elif qtag == 101:
@@ -2285,24 +2291,24 @@ def parse_data(qdict: TypeQInfo,
                         if rsta == 'c':
                             val = [float(item)/phys_fact('au2Deb') for item in
                                    datablocks[last][0].split()[1::2]]
-                            data[qlabel]['data'] = val
-                            data[qlabel]['unit'] = 'e.a0'
+                            data[qkey]['data'] = val
+                            data[qkey]['unit'] = 'e.a0'
                         else:
                             raise NotImplementedError()
                     else:
                         raise NotImplementedError()
                 elif qtag == 1300:
                     unit = datablocks[iref][0].split()[-1]
-                    data[qlabel]['unit'] = unit.lower()
-                    data[qlabel]['data'] = []
-                    data[qlabel]['keys'] = []
+                    data[qkey]['unit'] = unit.lower()
+                    data[qkey]['data'] = []
+                    data[qkey]['keys'] = []
                     for line in datablocks[iref]:
                         key, unit = line.split()
-                        if key not in data[qlabel]['keys']:
-                            data[qlabel]['keys'].append(key)
-                            data[qlabel]['data'].append(float(key))
+                        if key not in data[qkey]['keys']:
+                            data[qkey]['keys'].append(key)
+                            data[qkey]['data'].append(float(key))
                 elif qtag in (1301, 1302, 1303, 1304, 1305):
-                    data[qlabel] = _parse_logdat_vtransprop(
+                    data[qkey] = _parse_logdat_vtransprop(
                         qtag, qopt, qlvl, datablocks, first, last)
                 elif qtag == 'dipstr':
                     if qlvl == 'H':
@@ -2312,24 +2318,24 @@ def parse_data(qdict: TypeQInfo,
                                 break
                         else:
                             raise ParseKeyError('Missing quantity in file')
-                        data[qlabel]['unit'] = 'DS:esu^2.cm^2'
+                        data[qkey]['unit'] = 'DS:esu^2.cm^2'
                         i = 0
                         for line in datablocks[iref]:
                             for col in line.strip().split():
                                 i += 1
                                 try:
-                                    data[qlabel][i] = float(col)*1.0e-40
+                                    data[qkey][i] = float(col)*1.0e-40
                                 except ValueError:
-                                    data[qlabel][i] = float('inf')
+                                    data[qkey][i] = float('inf')
                     elif qlvl == 'A':
-                        data[qlabel]['unit'] = 'DS:esu^2.cm^2'
+                        data[qkey]['unit'] = 'DS:esu^2.cm^2'
                         i = 0
                         for line in datablocks[iref]:
                             i += 1
                             try:
-                                data[qlabel][i] = float(line)*1.0e-40
+                                data[qkey][i] = float(line)*1.0e-40
                             except ValueError:
-                                data[qlabel][i] = float('inf')
+                                data[qkey][i] = float('inf')
                     else:
                         raise NotImplementedError()
                 elif qtag == 'rotstr':
@@ -2340,32 +2346,32 @@ def parse_data(qdict: TypeQInfo,
                                 break
                         else:
                             raise ParseKeyError('Missing quantity in file')
-                        data[qlabel]['unit'] = 'RS:esu^2.cm^2'
+                        data[qkey]['unit'] = 'RS:esu^2.cm^2'
                         i = 0
                         for line in datablocks[iref]:
                             for col in line.strip().split():
                                 i += 1
                                 try:
-                                    data[qlabel][i] = float(col)*1.0e-44
+                                    data[qkey][i] = float(col)*1.0e-44
                                 except ValueError:
-                                    data[qlabel][i] = float('inf')
+                                    data[qkey][i] = float('inf')
                     elif qlvl == 'A':
-                        data[qlabel]['unit'] = 'RS:esu^2.cm^2'
+                        data[qkey]['unit'] = 'RS:esu^2.cm^2'
                         i = 0
                         for line in datablocks[iref]:
                             i += 1
                             try:
-                                data[qlabel][i] = float(line)*1.0e-44
+                                data[qkey][i] = float(line)*1.0e-44
                             except ValueError:
-                                data[qlabel][i] = float('inf')
+                                data[qkey][i] = float('inf')
                     else:
                         raise NotImplementedError()
                 elif qtag == 'ramact':
-                    data[qlabel] = _parse_logdat_ramact(qopt, qlvl, datablocks,
-                                                        first, last)
+                    data[qkey] = _parse_logdat_ramact(qopt, qlvl, datablocks,
+                                                      first, last)
                 elif qtag == 'roaact':
-                    data[qlabel] = _parse_logdat_ramact(qopt, qlvl, datablocks,
-                                                        first, last, ROA=True)
+                    data[qkey] = _parse_logdat_ramact(qopt, qlvl, datablocks,
+                                                      first, last, ROA=True)
             #     key = 'ETran scalars'
             #     if key in datablocks:
             #         (nstates, ndata, _, _, iroot,
@@ -2422,10 +2428,11 @@ def parse_data(qdict: TypeQInfo,
         args = {}
         for qlabel in qdict:
             qtag, qopt, dord, dcrd, rsta, qlvl = qdict[qlabel]
+            qkey = qlab2key[qlabel]
             if qtag == 'vlevel' and qlvl == 'A':
-                args['vlevel'] = qlabel
+                args['vlevel'] = qkey
             elif qtag == 'vtrans' and qlvl == 'A':
-                args['vtrans'] = qlabel
+                args['vtrans'] = qkey
         if 'vtrans' in args and 'vlevel' in args:
             __del_nonactive_modes(data[args['vtrans']], data[args['vlevel']])
     return data
@@ -2433,7 +2440,8 @@ def parse_data(qdict: TypeQInfo,
 
 def get_data(dfobj: GLogIO,
              *qlabels: str,
-             error_noqty: bool = True) -> TypeQData:
+             error_noqty: bool = True,
+             **keys4qlab) -> TypeQData:
     """Gets data from a GLog file for each quantity label.
 
     Reads one or more full quantity labels from `qlab` and returns the
@@ -2448,6 +2456,8 @@ def get_data(dfobj: GLogIO,
         List of full quantity labels to parse.
     error_noqty
         If True, error is raised if the quantity is not found.
+    **keys4qlab
+        Aliases for the qlabels to be used in returned data object.
 
     Returns
     -------
@@ -2469,16 +2479,27 @@ def get_data(dfobj: GLogIO,
     if not isinstance(dfobj, GLogIO):
         raise TypeError('GLogIO instance expected')
     # Check if anything to do
-    if len(qlabels) == 0:
+    if len(qlabels) == 0 and len(keys4qlab) == 0:
         return None
     # Build Keyword List
     # ------------------
+    # Build full list of qlabels
+    full_qlabs = []
+    qlab2key = {}
+    for qlabel in qlabels:
+        if qlabel not in full_qlabs:
+            full_qlabs.append(qlabel)
+        qlab2key[qlabel] = qlabel
+    for key, qlabel in keys4qlab.items():
+        if qlabel not in full_qlabs:
+            full_qlabs.append(qlabel)
+        qlab2key[qlabel] = key
     # List of keywords
     keydata = []
     key2blocks = {}
     idata = 0
     qty_dict = {}
-    for qlabel in qlabels:
+    for qlabel in full_qlabs:
         # Label parsing
         # ^^^^^^^^^^^^^
         qty_dict[qlabel] = ep.parse_qlabel(qlabel)
@@ -2503,8 +2524,8 @@ def get_data(dfobj: GLogIO,
     # ------------
     gver = (dfobj.version['major'], dfobj.version['minor'])
     try:
-        data = parse_data(qty_dict, key2blocks, ndata, datablocks, gver,
-                          error_noqty)
+        data = parse_data(qty_dict, key2blocks, qlab2key, ndata, datablocks,
+                          gver, error_noqty)
     except (QuantityError, NotImplementedError):
         raise QuantityError('Unsupported quantities')
     except (ParseKeyError, IndexError):

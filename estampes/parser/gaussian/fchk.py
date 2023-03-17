@@ -107,8 +107,9 @@ class FChkIO(object):
             qtag = 'swver'
             qdict = {qtag: list(ep.parse_qlabel(qtag))}
             qkwrd = {qtag: key}
+            qlab2key = {qtag: qtag}
             qdata = self.read_data(key)
-            self.__gversion = parse_data(qdict, qkwrd, qdata)[qtag]
+            self.__gversion = parse_data(qdict, qkwrd, qlab2key, qdata)[qtag]
         except ParseKeyError:
             self.__gversion = {'major': None, 'minor': None}
 
@@ -904,6 +905,7 @@ def _parse_freqdep_data(qtag: TypeQTag,
 
 def parse_data(qdict: TypeQInfo,
                qlab2kword: tp.Dict[str, str],
+               qlab2key: tp.Dict[str, str],
                datablocks: TypeDFChk,
                gver: tp.Optional[tp.Tuple[str, str]] = None,
                raise_error: bool = True) -> TypeQData:
@@ -916,7 +918,9 @@ def parse_data(qdict: TypeQInfo,
     qdict
         Dictionary of quantities.
     qlab2kword
-        mMin keyword for each quantity.
+        Connects each qlabel with the section title in fchk file.
+    qlab2key
+        Associates for each qlabel a key to use in final dictionary.
     datablocks
         Data blocks, by keyword.
     gver
@@ -944,6 +948,7 @@ def parse_data(qdict: TypeQInfo,
         return qtag == 'nvib'
     data = {}
     for qlabel in qdict:
+        qkey = qlab2key[qlabel]
         qtag, qopt, dord, dcrd, rsta, qlvl = qdict[qlabel]
         kword = qlab2kword[qlabel]
         # Basic Check: main property present
@@ -954,30 +959,30 @@ def parse_data(qdict: TypeQInfo,
             else:
                 data[qlabel] = None
                 continue
-        data[qlabel] = {}
+        data[qkey] = {}
         # Basic Properties/Quantities
         # ---------------------------
         if qtag == 'natoms':
-            data[qlabel]['data'] = int(datablocks[kword][0])
+            data[qkey]['data'] = int(datablocks[kword][0])
         elif qtag in ('atcrd', 2):
-            data[qlabel]['data'] = ep.reshape_dblock(datablocks[kword], (3, ))
+            data[qkey]['data'] = ep.reshape_dblock(datablocks[kword], (3, ))
         elif qtag in ('atmas', 'atnum'):
-            data[qlabel]['data'] = datablocks[kword]
+            data[qkey]['data'] = datablocks[kword]
         elif qtag == 'swopt':
-            data[qlabel]['data'] = ' '.join(datablocks[kword])
+            data[qkey]['data'] = ' '.join(datablocks[kword])
         elif qtag == 'molsym':
             raise NotImplementedError()
         elif qtag == 'swver':
             pattern = re.compile(r'(\w+)-(\w{3})Rev([\w.+]+)')
             res = re.match(pattern, ''.join(datablocks[kword])).groups()
-            data[qlabel] = {'major': res[1], 'minor': res[2],
-                            'system': res[0], 'release': None}
+            data[qkey] = {'major': res[1], 'minor': res[2],
+                          'system': res[0], 'release': None}
         # Vibrational Information
         # -----------------------
         # Technically state should be checked but considered irrelevant.
         elif qtag == 'nvib':
             if kword in datablocks:
-                data[qlabel]['data'] = int(datablocks[kword][0])
+                data[qkey]['data'] = int(datablocks[kword][0])
             else:
                 # For a robust def of nvib, we need the symmetry and
                 #   the number of frozen atoms. For now, difficult to do.
@@ -985,8 +990,8 @@ def parse_data(qdict: TypeQInfo,
         elif qtag in ('hessvec', 'hessval'):
             if kword in datablocks:
                 if qtag == 'hessvec':
-                    data[qlabel]['form'] = 'L.M^{-1/2}'
-                data[qlabel]['data'] = datablocks[kword]
+                    data[qkey]['form'] = 'L.M^{-1/2}'
+                data[qkey]['data'] = datablocks[kword]
         # Vibronic Information
         # --------------------
         elif qtag == 'fcdat':
@@ -1001,9 +1006,9 @@ def parse_data(qdict: TypeQInfo,
             # Transition moments
             # ^^^^^^^^^^^^^^^^^^
             if type(rsta) is tuple:
-                data[qlabel]['data'] = _parse_electrans_data(qtag, datablocks,
-                                                             kword, qopt, dord,
-                                                             dcrd, rsta)
+                data[qkey]['data'] = _parse_electrans_data(qtag, datablocks,
+                                                           kword, qopt, dord,
+                                                           dcrd, rsta)
             # States-specific Quantities
             # ^^^^^^^^^^^^^^^^^^^^^^^^^^
             else:
@@ -1030,30 +1035,30 @@ def parse_data(qdict: TypeQInfo,
                             offset = 7*ndat
                         else:
                             offset = 8*ndat
-                        data[qlabel]['data'] = \
+                        data[qkey]['data'] = \
                             datablocks[kword][offset:offset+ndat]
                     elif qtag == 1:
-                        data[qlabel]['data'] = datablocks[kword]
+                        data[qkey]['data'] = datablocks[kword]
                     elif qtag == 92:
-                        data[qlabel]['data'] = datablocks[kword][:9]
+                        data[qkey]['data'] = datablocks[kword][:9]
                     elif qtag == 93:
-                        data[qlabel]['data'] = datablocks[kword][9:]
+                        data[qkey]['data'] = datablocks[kword][9:]
                     elif qtag in (50, 91):
                         raise NotImplementedError()
                     elif qtag == 101:
                         if dord in (0, 1):
-                            data[qlabel]['data'] = datablocks[kword]
+                            data[qkey]['data'] = datablocks[kword]
                         else:
                             raise NotImplementedError()
                     elif qtag == 102:
                         if dord == 1:
-                            data[qlabel]['data'] = datablocks[kword]
+                            data[qkey]['data'] = datablocks[kword]
                         else:
                             raise NotImplementedError()
                     elif qtag == 300:
                         if dord in (0, 1):
                             if qopt == 0:
-                                data[qlabel]['data'] = datablocks[kword]
+                                data[qkey]['data'] = datablocks[kword]
                         else:
                             raise NotImplementedError()
                     else:
@@ -1064,7 +1069,8 @@ def parse_data(qdict: TypeQInfo,
 
 def get_data(dfobj: FChkIO,
              *qlabels: str,
-             error_noqty: bool = True) -> TypeQData:
+             error_noqty: bool = True,
+             **keys4qlab) -> TypeQData:
     """Gets data from a FChk file for each quantity label.
 
     Reads one or more full quantity labels from `qlabels` and returns
@@ -1079,6 +1085,8 @@ def get_data(dfobj: FChkIO,
         List of full quantity labels to parse.
     error_noqty
         If True, error is raised if the quantity is not found.
+    **keys4qlab
+        Aliases for the qlabels to be used in returned data object.
 
     Returns
     -------
@@ -1100,15 +1108,26 @@ def get_data(dfobj: FChkIO,
     if not isinstance(dfobj, FChkIO):
         raise TypeError('FChkIO instance expected')
     # Check if anything to do
-    if len(qlabels) == 0:
+    if len(qlabels) == 0 and len(keys4qlab) == 0:
         return None
     # Build Keyword List
     # ------------------
+    # Build full list of qlabels
+    full_qlabs = []
+    qlab2key = {}
+    for qlabel in qlabels:
+        if qlabel not in full_qlabs:
+            full_qlabs.append(qlabel)
+        qlab2key[qlabel] = qlabel
+    for key, qlabel in keys4qlab.items():
+        if qlabel not in full_qlabs:
+            full_qlabs.append(qlabel)
+        qlab2key[qlabel] = key
     # List of keywords
     full_kwlist = []
     main_kwlist = {}
     qty_dict = {}
-    for qlabel in qlabels:
+    for qlabel in full_qlabs:
         # Label parsing
         # ^^^^^^^^^^^^^
         qty_dict[qlabel] = ep.parse_qlabel(qlabel)
@@ -1127,7 +1146,8 @@ def get_data(dfobj: FChkIO,
     # ------------
     gver = (dfobj.version['major'], dfobj.version['minor'])
     try:
-        data = parse_data(qty_dict, main_kwlist, datablocks, gver, error_noqty)
+        data = parse_data(qty_dict, main_kwlist, qlab2key, datablocks, gver,
+                          error_noqty)
     except (QuantityError, NotImplementedError):
         raise QuantityError('Unsupported quantities')
     except (ParseKeyError, IndexError):
