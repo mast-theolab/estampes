@@ -23,6 +23,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **API** - New key in returned dictionary from `DataFile.get_data`: `qlabel`, which recalls the actual *qlabel* used.
 - **API** - The `get_data` method of `DataFile` supports aliases of the type (`alias=qlabel`) to be used in the returned data dictionary.
 - **API** - New `get_hess_data` method in `DataFile` to get the eigenvectors (L) to transform from mass-weighted Cartesian to normal coordinates and frequencies.  This method acts as a wrapper and tries different ways to build the data.
 - **API** - Added qlabel *FCData:RedDim* and support in `parser.gaussian.glog` to extract information on normal-modes numbering in reduced-dimensionality schemes.

@@ -959,7 +959,7 @@ def parse_data(qdict: TypeQInfo,
             else:
                 data[qlabel] = None
                 continue
-        data[qkey] = {}
+        data[qkey] = {'qlabel': qlabel}
         # Basic Properties/Quantities
         # ---------------------------
         if qtag == 'natoms':

@@ -1505,7 +1505,7 @@ def parse_data(qdict: TypeQInfo,
             else:
                 data[qkey] = None
                 continue
-        data[qkey] = {}
+        data[qkey] = {'qlabel': qlabel}
         # Basic Properties/Quantities
         # ---------------------------
         if qtag == 'route':
@@ -1537,7 +1537,7 @@ def parse_data(qdict: TypeQInfo,
                     _block = []
                     for line in block:
                         _block.append([float(item)*__ang2au
-                                     for item in line.split()])
+                                       for item in line.split()])
                     _dat.append(_block)
                 num = len(datablocks[i])
             else:
