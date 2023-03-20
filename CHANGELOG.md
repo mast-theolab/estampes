@@ -31,6 +31,7 @@ Other blocks are:
 ### Fixed
 - **LIB** - Corrected the invariants related to the electric dipole-induced electric quadrupole in `spectro.RamanInvariants`.
 - **API** - Fixed broken support of *AtCrd:all* in Gaussian log files.
+- **API** - Fixed cases where *NAtoms* was not properly read from Gaussian log files.
 
 
 ## [0.4.3] - 2023-02-24

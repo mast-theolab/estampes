@@ -490,7 +490,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
         key = ' NAtoms='
         sub = 0
         def end(s): return True
-        fmt = r'^ NAtoms=\s+(?P<val>\d+) NActive=\s+.*$'
+        fmt = r'^ NAtoms=\s+(?P<val>\d+)\s+N\w+=\s+.*$'
         num = 0
     elif qtag == 'nvib':
         # We load anyway the frequencies to count them.
