@@ -116,6 +116,15 @@ A label-specific option.
 | `all`   <| All geometries should be extracted.
 | `scan`  <| Geometries relative to a scan procedure
 
+.^2+| `101` | `len` | Use length gauge if available (default).
+| `vel` <| Use velocity gauge if available.
+
+.^2+| `DipStr` | `len` | Use length gauge if available (default).
+| `vel` <| Use velocity gauge if available.
+
+.^2+| `RotStr` | `len` | Use length gauge if available.
+| `vel` <| Use velocity gauge if available (default).
+
 .2+| `3xx` | `0` | Data for all incident frequencies
 | _N_ <| Data for _N_-th incident frequency
 

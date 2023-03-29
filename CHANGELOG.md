@@ -27,9 +27,11 @@ Other blocks are:
 - **API** - The `get_data` method of `DataFile` supports aliases of the type (`alias=qlabel`) to be used in the returned data dictionary.
 - **API** - New `get_hess_data` method in `DataFile` to get the eigenvectors (L) to transform from mass-weighted Cartesian to normal coordinates and frequencies.  This method acts as a wrapper and tries different ways to build the data.
 - **API** - Added qlabel *FCData:RedDim* and support in `parser.gaussian.glog` to extract information on normal-modes numbering in reduced-dimensionality schemes.
+- **API** - Lengths and velocity gauges can be specified in the *qlabel* for dipole and rotatory strengths.
 
 ### Fixed
 - **LIB** - Corrected the invariants related to the electric dipole-induced electric quadrupole in `spectro.RamanInvariants`.
+- **API** - Parsing of ground-to-excited rotatory strengths in Gaussian log files.
 - **API** - Fixed broken support of *AtCrd:all* in Gaussian log files.
 - **API** - Fixed cases where *NAtoms* was not properly read from Gaussian log files.
 

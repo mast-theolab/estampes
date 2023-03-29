@@ -163,8 +163,14 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     -------------------------------------------------------------
      Intens     IR       Infrared intensity
     -------------------------------------------------------------
-     DipStr     Len     length-gauge dipole strength
-                Vel      Velocity-gaue dipole strength
+        101     Len      Length-gauge dipole strength
+                Vel      Velocity-gauge dipole strength
+    -------------------------------------------------------------
+     DipStr     Len      Length-gauge dipole strength
+                Vel      Velocity-gauge dipole strength
+    -------------------------------------------------------------
+     RotStr     Len      Length-gauge dipole strength
+                Vel      Velocity-gauge dipole strength
     -------------------------------------------------------------
      RamAct    None     Static Raman activity
                Static   Static Raman activity
@@ -354,9 +360,12 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                 qty_opt = 'RR'
             else:
                 raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
-    elif qty_tag == 101:
+    elif qty_tag in (101, 'dipstr', 'rotstr'):
         if qlist[1] is None:
-            qty_opt = 'len'
+            if qty_tag == 'rotstr':
+                qty_opt = 'vel'
+            else:
+                qty_opt = 'len'
         else:
             if qlist[1][:3].lower() in ('len', 'vel'):
                 qty_opt = qlist[1][:3].lower()

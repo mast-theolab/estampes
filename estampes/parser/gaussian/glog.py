@@ -906,7 +906,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         def end(s): return True
                     elif Sf == 'a':
                         sub = 1
-                        def end(s): return s[1] != ' '
+                        def end(s): return s[2] != ' '
                     else:
                         raise ValueError('Unsupported final state')
                     fmt = r'^\s+\d+(?:\s+-?\d+\.\d+){3}\s+' \
@@ -924,12 +924,17 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         def end(s): return True
                     elif Sf == 'a':
                         sub = 1
-                        def end(s): return s[1] != ' '
+                        def end(s): return s[2] != ' '
                     else:
                         raise ValueError('Unsupported final state')
-                    num = -1
-                    fmt = r'^\s+\d+(?:\s+-?\d+\.\d+){3}\s+' \
-                        + r'(?P<val>-?\d+\.\d+)\s+-?\d+\.\d+\s*$'
+                    if qopt == 'vel':
+                        num = 0
+                        fmt = r'^\s+\d+(?:\s+-?\d+\.\d+){3}\s+' \
+                            + r'(?P<val>-?\d+\.\d+)\s+-?\d+\.\d+\s*$'
+                    else:
+                        num = -1
+                        fmt = r'^\s+\d+(?:\s+-?\d+\.\d+){3}\s+' \
+                            + r'(?P<val>-?\d+\.\d+)\s*$'
                 else:
                     raise NotImplementedError()
             else:
