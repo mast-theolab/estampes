@@ -428,6 +428,23 @@ def convert_y(specabbr: str,
                 raise IndexError(msgNA)
         else:
             raise IndexError(msgNA)
+    elif _spec == 'ECD':
+        if _dest_type == 'I':
+            if _dest_unit in UNIT_EPS['/M/cm']:
+                if _src_type == 'RS':
+                    if _src_unit in UNIT_RS['esu2.cm2']:
+                        yfactor = 32*pi**3*PHYSCNST.avogadro * 1.0e-7 / \
+                            (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
+
+                        def xfunc(x): return x
+                    else:
+                        raise NotImplementedError(msgNYI)
+                else:
+                    raise NotImplementedError(msgNYI)
+            else:
+                raise IndexError(msgNA)
+        else:
+            raise IndexError(msgNA)
     else:
         raise NotImplementedError(msgNYI)
 
