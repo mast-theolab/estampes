@@ -329,20 +329,20 @@ class Spectrum():
             self.__fullspec = SPEC2DATA[self.__spec]['name']
             if not qkeys:
                 raise NotImplementedError('Keywords not available')
-        data = self.__dfile.get_data(*qkeys.values())
+        data = self.__dfile.get_data(**qkeys)
         if 'spc' in qkeys:
-            if isinstance(data[qkeys['par']]['x'], list):
+            if isinstance(data['par']['x'], list):
                 # Post-processing if multiple blocks:
-                nblocks = len(data[qkeys['par']]['x'])
-                if len(data[qkeys['spc']]['x']) != nblocks:
+                nblocks = len(data['par']['x'])
+                if len(data['spc']['x']) != nblocks:
                     msg = 'Inconsistency between spectral ranges and ' +\
                         + 'parameters.'
                     raise KeyError(msg)
                 # X axis should always be the same
-                data[qkeys['spc']]['x'] = data[qkeys['spc']]['x'][0]
-                data[qkeys['par']]['x'] = data[qkeys['par']]['x'][0]
+                data['spc']['x'] = data['spc']['x'][0]
+                data['par']['x'] = data['par']['x'][0]
                 # Y format
-                nidx = len([y for y in data[qkeys['spc']]
+                nidx = len([y for y in data['spc']
                             if y.startswith('y')][0]) - 1
                 yfmt = 'y{{:0{:d}d}}'.format(nidx)
                 offset = 0
@@ -350,24 +350,24 @@ class Spectrum():
                 _tmpax = {}
                 for bloc in range(nblocks):
                     ylabels = [item for
-                               item in data[qkeys['par']].keys()
+                               item in data['par'].keys()
                                if (item[0] == 'y' and
-                                   len(data[qkeys['par']]) > bloc)]
+                                   len(data['par']) > bloc)]
                     for yax in ylabels:
                         i = int(yax[1:])
                         y = yfmt.format(i+offset)
-                        _tmpax[y] = data[qkeys['par']][yax][bloc]
-                        _tmpy[y] = data[qkeys['spc']][yax][bloc]
+                        _tmpax[y] = data['par'][yax][bloc]
+                        _tmpy[y] = data['spc'][yax][bloc]
                     offset += len(ylabels)
                 for yax in _tmpax:
-                    data[qkeys['spc']][yax] = _tmpy[yax]
-                    data[qkeys['par']][yax] = _tmpax[yax]
-            self.__xaxis[0] = data[qkeys['spc']]['x']
-            self.__xlabel[0] = data[qkeys['par']]['x']
-            self.__xunit[0] = data[qkeys['par']]['unitx']
-            _yindexes = [y for y in data[qkeys['spc']] if y.startswith('y')]
+                    data['spc'][yax] = _tmpy[yax]
+                    data['par'][yax] = _tmpax[yax]
+            self.__xaxis[0] = data['spc']['x']
+            self.__xlabel[0] = data['par']['x']
+            self.__xunit[0] = data['par']['unitx']
+            _yindexes = [y for y in data['spc'] if y.startswith('y')]
             _yindexes.sort()
-            self.__ytags = {y: data[qkeys['par']] for y in _yindexes}
+            self.__ytags = {y: data['par'] for y in _yindexes}
             if ylabel is None:
                 _ylab = _yindexes[0]
             else:
@@ -376,20 +376,20 @@ class Spectrum():
                 except ValueError:
                     raise KeyError('Non-existent Y label')
                 _ylab = _yindexes[_id]
-            self.__yaxis[0] = data[qkeys['spc']][_ylab]
-            self.__ylabel[0] = data[qkeys['par']][_ylab]
-            self.__yunit[0] = data[qkeys['par']]['unity']
+            self.__yaxis[0] = data['spc'][_ylab]
+            self.__ylabel[0] = data['par'][_ylab]
+            self.__yunit[0] = data['par']['unity']
             self.__label = self.__yunit[0]
-            self.__broad[0]['func'] = data[qkeys['par']]['func']
-            self.__broad[0]['hwhm'] = data[qkeys['par']]['hwhm']
+            self.__broad[0]['func'] = data['par']['func']
+            self.__broad[0]['hwhm'] = data['par']['hwhm']
             self.__broad_ok = self.__broad[0]['func'] == 'stick'
             if 'info' in qkeys:
-                self.__info = data[qkeys['info']]
+                self.__info = data['info']
             else:
                 self.__info = None
         elif 'freq' in qkeys:
             modes = []
-            for key in data[qkeys['freq']]:
+            for key in data['freq']:
                 if isinstance(key, int):
                     modes.append(key)
             modes.sort()
@@ -398,7 +398,7 @@ class Spectrum():
             if self.__spec in ('RS', 'ROA'):
                 incfrq = self.__params.get('incfrq')
                 if incfrq is None:
-                    for key in data[qkeys['int']].keys():
+                    for key in data['int'].keys():
                         try:
                             _ = float(key)
                             incfrq = key
@@ -410,35 +410,35 @@ class Spectrum():
                     else:
                         self.__params['incfrq'] = incfrq
                 else:
-                    if incfrq not in data[qkeys['int']]:
-                        vals = [item for item in data[qkeys['int']].keys()
+                    if incfrq not in data['int']:
+                        vals = [item for item in data['int'].keys()
                                 if item.replace('.', '', 1).isdigit()]
                         fmt = '''No incident frequency matches the value {}
-Avalable: {}'''
+Available: {}'''
                         raise KeyError(fmt.format(incfrq, ', '.join(vals)))
                 setup = self.__params.get('setup')
                 if setup is None:
-                    for key in data[qkeys['int']][incfrq].keys():
+                    for key in data['int'][incfrq].keys():
                         if key in ('SCP(180)', 'SCP(180)u'):
                             setup = key
                             break
                     if setup is None:
-                        setup = data[qkeys['int']][incfrq].keys()[0]
+                        setup = data['int'][incfrq].keys()[0]
                     self.__params['setup'] = setup
                 else:
-                    if setup not in data[qkeys['int']][incfrq].keys():
-                        vals = data[qkeys['int']][incfrq].keys()
+                    if setup not in data['int'][incfrq].keys():
+                        vals = data['int'][incfrq].keys()
                         fmt = '''Setup "{}" not found
 Available: {}'''
                         raise KeyError(fmt.format(setup, vals))
-                ydata = data[qkeys['int']][incfrq][setup]
+                ydata = data['int'][incfrq][setup]
             else:
-                ydata = data[qkeys['int']]
+                ydata = data['int']
             for mode in modes:
                 try:
-                    if (isinstance(data[qkeys['freq']][mode], float) and
+                    if (isinstance(data['freq'][mode], float) and
                             isinstance(ydata[mode], float)):
-                        self.__xaxis[0].append(data[qkeys['freq']][mode])
+                        self.__xaxis[0].append(data['freq'][mode])
                         self.__yaxis[0].append(ydata[mode])
                 except KeyError:
                     fmt = 'Inconsistency in the list of states between ' \
@@ -446,8 +446,8 @@ Available: {}'''
                         + 'found in one of the lists.'
                     raise IndexError(fmt.format(mode))
             self.__xlabel[0] = 'Wavenumbers'
-            self.__xunit[0] = data[qkeys['freq']]['unit']
-            self.__yunit[0] = data[qkeys['int']]['unit']
+            self.__xunit[0] = data['freq']['unit']
+            self.__yunit[0] = data['int']['unit']
             self.__ylabel[0] = \
                 SPEC2DATA[self.__spec][self.__yunit[0].split(':')[0]]
             self.__label = self.__yunit[0]
@@ -457,12 +457,12 @@ Available: {}'''
         elif 'ener' in qkeys:
             self.__xaxis[0] = []
             self.__yaxis[0] = []
-            for i, ener in enumerate(data[qkeys['ener']]):
+            for i, ener in enumerate(data['ener']['data']):
                 self.__xaxis[0].append(ener)
-                self.__yaxis[0].append(data[qkeys['int']][i])
+                self.__yaxis[0].append(data['int']['data'][i])
             self.__xlabel[0] = 'Energy'
-            self.__xunit[0] = data[qkeys['ener']]['unit']
-            self.__yunit[0] = data[qkeys['int']]['unit']
+            self.__xunit[0] = data['ener']['unit']
+            self.__yunit[0] = data['int']['unit']
             self.__ylabel[0] = \
                 SPEC2DATA[self.__spec][self.__yunit[0].split(':')[0]]
             self.__label = self.__yunit[0]
