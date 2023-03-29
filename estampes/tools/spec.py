@@ -200,7 +200,8 @@ def convert_y(specabbr: str,
         'km/M': ('km/mol', 'km/M', 'km.mol-1', 'km.M-1')
     }
     UNIT_DS = {  # Dipole strength
-        'esu2.cm2': ('statC2.cm2', 'esu2.cm2')
+        'esu2.cm2': ('statC2.cm2', 'esu2.cm2'),
+        'au': ('au', 'e2.a02')
     }
     UNIT_RS = {  # Rotatory strength
         'esu2.cm2': ('statA2.cm2', 'esu2.cm2')
@@ -417,7 +418,22 @@ def convert_y(specabbr: str,
     elif _spec == 'OPA':
         if _dest_type == 'I':
             if _dest_unit in UNIT_EPS['/M/cm']:
-                if _src_type == 'II':
+                if _src_type == 'DS':
+                    if _src_unit in UNIT_DS['esu2.cm2']:
+                        yfactor = 8*pi**3*PHYSCNST.avogadro * 1.0e-7 \
+                            / (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
+
+                        def xfunc(x): return x
+                    elif _src_unit in UNIT_DS['au']:
+                        yfactor = 8*pi**3*PHYSCNST.avogadro * 1.0e-7 \
+                            * (phys_fact('au2esu')*PHYSFACT.bohr2ang
+                               * 1.0e-8)**2 \
+                            / (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
+
+                        def xfunc(x): return x
+                    else:
+                        raise NotImplementedError(msgNYI)
+                elif _src_type == 'II':
                     if _src_unit in UNIT_II['/M/cm2']:
                         yfactor = 1.0
                     else:
