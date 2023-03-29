@@ -99,7 +99,8 @@ ESPC2DATA = {
               'int': ep.build_qlabel('dipstr', state=(0, 'a'))},
         'H': {'spc': ep.build_qlabel('fcdat', qopt='Spec'),
               'par': ep.build_qlabel('fcdat', qopt='SpcPar'),
-              'info': ep.build_qlabel('fcdat', qopt='SimInf')}
+              'info': ep.build_qlabel('fcdat', qopt='SimInf')},
+        'DS': 'Dipole strength'
     },
     'OPE': {
         'name': 'One-Photon Emission',
@@ -116,7 +117,8 @@ ESPC2DATA = {
               'int': ep.build_qlabel('rotstr', state=(0, 'a'))},
         'H': {'spc': ep.build_qlabel('fcdat', qopt='Spec'),
               'par': ep.build_qlabel('fcdat', qopt='SpcPar'),
-              'info': ep.build_qlabel('fcdat', qopt='SimInf')}
+              'info': ep.build_qlabel('fcdat', qopt='SimInf')},
+        'RS': 'Rotatory strength'
     },
     'CPL': {
         'name': 'Circularly Polarized Luminescence',

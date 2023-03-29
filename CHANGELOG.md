@@ -23,6 +23,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **LIB** - The `Spectrum` class now supports ECD and OPA spectra from rotatory strengths and dipole strengths, respectively.
 - **LIB** - Conversion factors from rotatory strengths to intensity for ECD.
 - **API** - New key in returned dictionary from `DataFile.get_data`: `qlabel`, which recalls the actual *qlabel* used.
 - **API** - The `get_data` method of `DataFile` supports aliases of the type (`alias=qlabel`) to be used in the returned data dictionary.
