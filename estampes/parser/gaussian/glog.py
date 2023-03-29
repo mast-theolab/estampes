@@ -1487,6 +1487,7 @@ def parse_data(qdict: TypeQInfo,
     data = {}
     all_tags = []
     for qlabel in qdict:
+        msg_noqty = 'Missing quantity in file: ' + qlabel
         qkey = qlab2key[qlabel]
         qtag, qopt, dord, dcrd, rsta, qlvl = qdict[qlabel]
         all_tags.append(qtag)
@@ -1506,7 +1507,7 @@ def parse_data(qdict: TypeQInfo,
                     num = len(datablocks[i])
         if num == 0 and not empty_cases_ok(qtag, qopt):
             if raise_error:
-                raise ParseKeyError('Missing quantity in file')
+                raise ParseKeyError(msg_noqty)
             else:
                 data[qkey] = None
                 continue
@@ -1588,7 +1589,7 @@ def parse_data(qdict: TypeQInfo,
                     iref = i
                     break
             else:
-                raise ParseKeyError('Missing quantity in file')
+                raise ParseKeyError(msg_noqty)
             data[qkey]['form'] = 'L.M^{-1/2}'
             data[qkey]['data'] = []
             # We analyze the first line to find if HPModes or normal
@@ -1624,7 +1625,7 @@ def parse_data(qdict: TypeQInfo,
                     iref = i
                     break
             else:
-                raise ParseKeyError('Missing quantity in file')
+                raise ParseKeyError(msg_noqty)
             data[qkey]['unit'] = 'cm-1'
             data[qkey]['data'] = []
             i = 0
@@ -1641,7 +1642,7 @@ def parse_data(qdict: TypeQInfo,
                         iref = i
                         break
                 else:
-                    raise ParseKeyError('Missing quantity in file')
+                    raise ParseKeyError(msg_noqty)
                 if qopt == 'IR':
                     data[qkey]['unit'] = 'II:km.mol-1'
                 else:
@@ -2048,7 +2049,7 @@ def parse_data(qdict: TypeQInfo,
                             iref = i
                             break
                     else:
-                        raise ParseKeyError('Missing quantity in file')
+                        raise ParseKeyError(msg_noqty)
                     data[qkey]['unit'] = 'cm-1'
                     i = 0
                     for line in datablocks[iref]:
@@ -2106,7 +2107,7 @@ def parse_data(qdict: TypeQInfo,
                             iref = i
                             break
                     else:
-                        raise ParseKeyError('Missing quantity in file')
+                        raise ParseKeyError(msg_noqty)
                     i = 0
                     for line in datablocks[iref]:
                         cols = line.strip().split()
@@ -2334,7 +2335,7 @@ def parse_data(qdict: TypeQInfo,
                                 iref = i
                                 break
                         else:
-                            raise ParseKeyError('Missing quantity in file')
+                            raise ParseKeyError(msg_noqty)
                         data[qkey]['unit'] = 'DS:esu^2.cm^2'
                         i = 0
                         for line in datablocks[iref]:
@@ -2362,7 +2363,7 @@ def parse_data(qdict: TypeQInfo,
                                 iref = i
                                 break
                         else:
-                            raise ParseKeyError('Missing quantity in file')
+                            raise ParseKeyError(msg_noqty)
                         data[qkey]['unit'] = 'RS:esu^2.cm^2'
                         i = 0
                         for line in datablocks[iref]:
@@ -2570,7 +2571,7 @@ def _parse_logdat_ramact(qopt: str,
             iref = i
             break
     else:
-        raise ParseKeyError('Missing quantity in file')
+        raise ParseKeyError('Missing data for Raman/ROA activity in file')
     # Data in Gaussian log are multiplied by 10^4 for ROA, so we need to take
     #   this into account
     yfactor = 1.0e-4 if ROA else 1.0

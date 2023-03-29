@@ -29,6 +29,7 @@ Other blocks are:
 - **API** - New `get_hess_data` method in `DataFile` to get the eigenvectors (L) to transform from mass-weighted Cartesian to normal coordinates and frequencies.  This method acts as a wrapper and tries different ways to build the data.
 - **API** - Added qlabel *FCData:RedDim* and support in `parser.gaussian.glog` to extract information on normal-modes numbering in reduced-dimensionality schemes.
 - **API** - Lengths and velocity gauges can be specified in the *qlabel* for dipole and rotatory strengths.
+- **API** - The parser for the Gaussian log now indicates the *qlabel* for the missing quantity in the raised error.
 
 ### Fixed
 - **LIB** - Corrected the invariants related to the electric dipole-induced electric quadrupole in `spectro.RamanInvariants`.
