@@ -261,7 +261,8 @@ class FileCSV(object):
 
 def get_data(dfobj: FileCSV,
              *qlabels: str,
-             error_noqty: bool = True) -> TypeQData:
+             error_noqty: bool = True,
+             **keys4qlab) -> TypeQData:
     """Gets data from a CSV file for each quantity label.
 
     Reads one or more full quantity labels from `qlabels` and returns
@@ -275,6 +276,8 @@ def get_data(dfobj: FileCSV,
         List of full quantity labels to parse.
     error_noqty
         If True, error is raised if the quantity is not found.
+    **keys4qlab
+        Aliases for the qlabels to be used in returned data object.
 
     Returns
     -------
@@ -296,25 +299,38 @@ def get_data(dfobj: FileCSV,
     if not isinstance(dfobj, FileCSV):
         raise TypeError('FileXYZ instance expected')
     # Check if anything to do
-    if len(qlabels) == 0:
+    if len(qlabels) == 0 and len(keys4qlab) == 0:
         return None
     # Build Keyword List
     # ------------------
+    full_qlabs = []
+    qlab2key = {}
+    for qlabel in qlabels:
+        if qlabel not in full_qlabs:
+            full_qlabs.append(qlabel)
+        qlab2key[qlabel] = qlabel
+    for key, qlabel in keys4qlab.items():
+        if qlabel not in full_qlabs:
+            full_qlabs.append(qlabel)
+        qlab2key[qlabel] = key
     # List of keywords
     qty_dict = {}
-    for qlabel in qlabels:
+    for qlabel in full_qlabs:
         # Label parsing
         # ^^^^^^^^^^^^^
         qtag, qopt = ep.parse_qlabel(qlabel)[:2]
         if qtag != 'anyspc':
             raise QuantityError('Only spectroscopic data supported.')
         qty_dict[qlabel] = qopt.lower()
+    
     # Data Extraction
     # ---------------
     # Use of set to remove redundant keywords
     datablocks = dfobj.read_data(*list(set(qty_dict.values())),
                                  raise_error=error_noqty)
     data = {}
-    for qlabel in qlabels:
-        data[qlabel] = datablocks[qty_dict[qlabel]]
+    for qlabel in full_qlabs:
+        qkey = qlab2key[qlabel]
+        data[qkey] = datablocks[qty_dict[qlabel]]
+        data[qkey]['qlabel'] = qlabel
     return data

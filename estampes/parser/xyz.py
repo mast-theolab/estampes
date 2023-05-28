@@ -262,7 +262,8 @@ def parse_xyz(fobj: tp.IO,
 
 def get_data(dfobj: FileXYZ,
              *qlabels: str,
-             error_noqty: bool = True) -> TypeQData:
+             error_noqty: bool = True,
+             **keys4qlab) -> TypeQData:
     """Gets data from a XYZ file for each quantity label.
 
     Reads one or more full quantity labels from `qlabels` and returns
@@ -276,8 +277,8 @@ def get_data(dfobj: FileXYZ,
         List of full quantity labels to parse.
     error_noqty
         If True, error is raised if the quantity is not found.
-    geom
-        Geometry of interest (starting from 1).
+    **keys4qlab
+        Aliases for the qlabels to be used in returned data object.
 
     Returns
     -------
@@ -299,15 +300,26 @@ def get_data(dfobj: FileXYZ,
     if not isinstance(dfobj, FileXYZ):
         raise TypeError('FileXYZ instance expected')
     # Check if anything to do
-    if len(qlabels) == 0:
+    if len(qlabels) == 0 and len(keys4qlab) == 0:
         return None
     # Build Keyword List
     # ------------------
+    # Build full list of qlabels
+    full_qlabs = []
+    qlab2key = {}
+    for qlabel in qlabels:
+        if qlabel not in full_qlabs:
+            full_qlabs.append(qlabel)
+        qlab2key[qlabel] = qlabel
+    for key, qlabel in keys4qlab.items():
+        if qlabel not in full_qlabs:
+            full_qlabs.append(qlabel)
+        qlab2key[qlabel] = key
     # List of keywords
     keydata = {}
     qty_dict = {}
     geom = None
-    for qlabel in qlabels:
+    for qlabel in full_qlabs:
         # Label parsing
         # ^^^^^^^^^^^^^
         qty_dict[qlabel] = ep.parse_qlabel(qlabel)
@@ -315,7 +327,10 @@ def get_data(dfobj: FileXYZ,
         if qlab in ('atoms', 'atnum', 'atlab'):
             keydata[qlabel] = 'atoms'
         else:
-            keydata[qlabel] = qlab
+            if qlab == 2:
+                keydata[qlabel] = 'atcrd'
+            else:
+                keydata[qlabel] = qlab
             if qlab in ('atcrd', 2, 1):
                 if qty_dict[qlabel][1] == 'last':
                     geom = -1
@@ -331,13 +346,20 @@ def get_data(dfobj: FileXYZ,
     datablocks = dfobj.read_data(*set(keydata.values()), geom=geom,
                                  raise_error=error_noqty)
     data = {}
-    for qlabel in qlabels:
+    for qlabel in full_qlabs:
         key = keydata[qlabel]
-        data[qlabel] = {}
+        qkey = qlab2key[qlabel]
+        data[qkey] = {'qlabel': qlabel}
         qlab = qty_dict[qlabel][0]
         if qlab in ('atnum', 'atlab'):
-            data[qlabel]['data'] = convert_labsymb(qlab == 'atlab',
-                                                   *datablocks[key])
+            data[qkey]['data'] = convert_labsymb(qlab == 'atlab',
+                                                 *datablocks[key])
         else:
-            data[qlabel]['data'] = datablocks[key]
+            if qlab in ('atcrd', 2):
+                if geom == 0:
+                    num = dfobj.nstruct
+                else:
+                    num = 1
+                data[qkey]['ngeoms'] = num
+            data[qkey]['data'] = datablocks[key]
     return data
