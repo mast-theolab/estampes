@@ -578,7 +578,7 @@ def qlab_to_kword(qtag: TypeQTag,
                             keyword = 'SCF Energy'
                         else:
                             keyword = 'ETran state values'
-                        keywords.append('Total Energy', 'ETran scalars')
+                        keywords = ['Total Energy', 'ETran scalars']
                 elif dord == 1:
                     if dcrd is None or dcrd == 'X':
                         if rsta == 'c' or type(rsta) is int:
@@ -588,7 +588,8 @@ def qlab_to_kword(qtag: TypeQTag,
                         if rsta == 'c' or type(rsta) is int:
                             keyword = 'Cartesian Force Constants'
             elif qtag == 50:
-                raise NotImplementedError()
+                keywords = ['ETran scalars']
+                keyword = 'Nonadiabatic coupling'
             elif qtag == 91:
                 raise NotImplementedError()
             elif qtag == 92:
@@ -1016,6 +1017,10 @@ def parse_data(qdict: TypeQInfo,
                 if key in datablocks:
                     (nstates, ndata, _, _, iroot,
                         _) = [item for item in datablocks[key][:6]]
+                else:
+                    nstates = 1
+                    ndata = 16   # TODO: This may not work in the future.
+                    iroot = 0
                 curr_sta = rsta == 'c' or rsta == iroot
                 # Only energy is currently computed for all states:
                 if rsta == 'a' and qtag == 2:
@@ -1044,7 +1049,7 @@ def parse_data(qdict: TypeQInfo,
                     elif qtag == 93:
                         data[qkey]['data'] = datablocks[kword][9:]
                     elif qtag in (50, 91):
-                        raise NotImplementedError()
+                        data[qkey]['data'] = datablocks[kword]
                     elif qtag == 101:
                         if dord in (0, 1):
                             data[qkey]['data'] = datablocks[kword]
