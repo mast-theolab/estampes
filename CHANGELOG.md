@@ -36,6 +36,7 @@ Other blocks are:
 
 ### Fixed
 - **LIB** - Corrected the invariants related to the electric dipole-induced electric quadrupole in `spectro.RamanInvariants`.
+- **API** - Reading the electronic energy from Gaussian fchk files returned an array instead of a scalar.
 - **API** - `parser.gaussian.fchk` incorrectly built list of auxiliary keywords needed to process transition/excited-state properties.
 - **API** - Parsing of ground-to-excited rotatory strengths in Gaussian log files.
 - **API** - Fixed broken support of *AtCrd:all* in Gaussian log files.

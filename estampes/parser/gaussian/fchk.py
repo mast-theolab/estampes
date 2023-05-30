@@ -1043,7 +1043,7 @@ def parse_data(qdict: TypeQInfo,
                         data[qkey]['data'] = \
                             datablocks[kword][offset:offset+ndat]
                     elif qtag == 1:
-                        data[qkey]['data'] = datablocks[kword]
+                        data[qkey]['data'] = datablocks[kword][0]
                     elif qtag == 92:
                         data[qkey]['data'] = datablocks[kword][:9]
                     elif qtag == 93:
