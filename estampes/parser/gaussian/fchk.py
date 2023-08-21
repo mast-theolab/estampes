@@ -524,11 +524,19 @@ def qlab_to_kword(qtag: TypeQTag,
         raise NotImplementedError()
     elif qtag == 'atcrd' or qtag == 2:
         keyword = 'Current cartesian coordinates'
-    elif qtag in ('hessvec', 'hessval'):
-        if qtag == 'hessvec':
+    elif qtag == 'hessvec':
+        if qlvl == 'H':
             keyword = 'Vib-Modes'
         else:
-            keyword = 'Vib-E2'
+            keyword = 'Anharmonic Vib-Modes'
+    elif qtag == 'hessval':
+        if isinstance(rsta, int) or rsta == 'c':
+            if qlvl == 'H':
+                keyword = 'Vib-E2'
+                keywords.append('Number of Normal Modes')
+            else:
+                keyword = 'Anharmonic Vib-E2'
+                keywords.append('Anharmonic Number of Normal Modes')
     elif qtag == 'swopt':
         keyword = 'Route'
     elif qtag == 'swver':
@@ -538,15 +546,15 @@ def qlab_to_kword(qtag: TypeQTag,
     elif qtag == 'vptdat':
         raise NotImplementedError()
     elif qtag in ('dipstr', 'rotstr'):
-        keywords = ['ETran scalars']
         if isinstance(rsta, int) or rsta == 'c':
             if qopt == 'H':
                 keyword = 'Vib-E2'
-                keywords.append('Number of Normal Modes')
+                keywords = ['Number of Normal Modes']
             else:
                 keyword = 'Anharmonic Vib-E2'
-                keywords.append('Anharmonic Number of Normal Modes')
+                keywords = ['Anharmonic Number of Normal Modes']
         else:
+            keywords = ['ETran scalars']
             keyword = 'ETran state values'
     else:
         if isinstance(rsta, tuple):
@@ -974,11 +982,21 @@ def parse_data(qdict: TypeQInfo,
                 # For a robust def of nvib, we need the symmetry and
                 #   the number of frozen atoms. For now, difficult to do.
                 raise NotImplementedError()
-        elif qtag in ('hessvec', 'hessval'):
+        elif qtag == 'hessvec':
             if kword in datablocks:
-                if qtag == 'hessvec':
-                    data[qkey]['form'] = 'L.M^{-1/2}'
+                data[qkey]['form'] = 'L.M^{-1/2}'
                 data[qkey]['data'] = datablocks[kword]
+        elif qtag == 'hessval':
+            if qlvl == 'H':
+                key = 'Number of Normal Modes'
+            else:
+                key = 'Anharmonic Number of Normal Modes'
+            if key not in datablocks:
+                raise ParseKeyError('Missing necessary dimension')
+            ndat = int(datablocks[key][0])
+            offset = 0
+            data[qkey]['data'] = \
+                datablocks[kword][offset:offset+ndat]
         # Vibronic Information
         # --------------------
         elif qtag == 'fcdat':
@@ -1021,7 +1039,7 @@ def parse_data(qdict: TypeQInfo,
                             key = 'Anharmonic Number of Normal Modes'
                         if key not in datablocks:
                             raise ParseKeyError('Missing necessary dimension')
-                        ndat = int(datablocks[key])
+                        ndat = int(datablocks[key][0])
                         if qtag == 'dipstr':
                             offset = 7*ndat
                         else:
