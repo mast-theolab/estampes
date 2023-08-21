@@ -23,6 +23,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **LIB** - New function `tools.mol.inertia_mom` to compute the inertia moment from atomic masses and coordinates.
 - **LIB** - Conversion factors from dipole strengths in atomic units to intensity for OPA.
 - **LIB** - The `Spectrum` class now supports ECD and OPA spectra from rotatory strengths and dipole strengths, respectively.
 - **LIB** - Conversion factors from rotatory strengths to intensity for ECD.
