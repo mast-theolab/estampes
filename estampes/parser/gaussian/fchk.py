@@ -1170,7 +1170,8 @@ def get_data(dfobj: FChkIO,
 def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
                   get_evec: bool = True,
                   get_eval: bool = True,
-                  pre_data: tp.Optional[TypeQData] = None
+                  pre_data: tp.Optional[TypeQData] = None,
+                  force_calc: bool = False
                   ) -> tp.Tuple[tp.Any]:
     """Gets or builds Hessian data (eigenvectors and values).
 
@@ -1305,6 +1306,7 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
     key_evec = None
     evec = None
     eval = None
+    do_calc = force_calc
     if pre_data is not None:
         for key in pre_data:
             qlabel = pre_data[key].get('qlabel', key)
@@ -1325,12 +1327,12 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
                 key_ffx = key
                 fccart = np.array(pre_data[key]['data'])
 
-    if fccart is not None and atmas is not None:
+    if force_calc and fccart is not None and atmas is not None:
         if (len(fccart.shape) == 1
                 or pre_data[key_ffx]['shape'].lower() == 'lt'):
             fccart = square_ltmat(pre_data[key_ffx]['data'])
         evec, eval = build_evec(fccart, atmas, get_evec, get_eval, nvib)
-    else:
+    elif not force_calc:
         if get_evec and hessvec is not None:
             # Check if eigenvectors need to be corrected
             #  Default is assumed to be Gaussian fchk
@@ -1343,24 +1345,20 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
     calc_eval = get_eval and eval is None
     if calc_evec or calc_eval:
         # We are missing data, now extracting data and recomputing.
-        read_data = []
-        key_FC = ep.build_qlabel(1, None, 2, 'X')
+        read_data = {}
         if calc_evec or calc_eval:
-            read_data.extend(('natoms', key_FC, 'atmas', 'nvib'))
+            read_data['natoms'] = 'natoms'
+            read_data['d2EdX2'] = ep.build_qlabel(1, None, 2, 'X')
+            read_data['atmas'] = 'atmas'
+            read_data['nvib'] = 'nvib'
         if calc_evec:
-            read_data.append('hessvec')
+            read_data['hessvec'] = ep.build_qlabel('hessvec', level='H')
         if calc_eval:
-            read_data.append('hessval')
-        tmp_data = get_data(dfobj, *read_data, error_noqty=False)
+            read_data['hessval'] = ep.build_qlabel('hessval', level='H')
+        tmp_data = get_data(dfobj, error_noqty=False, **read_data)
 
-        if tmp_data[key_FC] is not None and tmp_data['atmas'] is not None:
-            # Rediagonlizing is more accurate, but require being
-            atmas = np.repeat(np.array(tmp_data['atmas']['data']), 3)
-            ffx = square_ltmat(tmp_data[key_FC]['data'])
-            nvib = None if tmp_data['nvib'] is None \
-                else tmp_data['nvib']['data']
-            evec, eval = build_evec(ffx, atmas, get_evec, get_eval, nvib)
-        else:
+        do_calc = force_calc
+        if not force_calc:
             if calc_evec:
                 if (tmp_data['hessvec'] is not None
                         and tmp_data['atmas'] is not None):
@@ -1370,12 +1368,26 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
                     evec_form = tmp_data['hessvec'].get('form', 'L.M^{-1/2}')
                     evec = convert_evec(hessvec, atmas, natoms, evec_form)
                 else:
-                    msg = 'Unable to retrieve force constants eigenvectors'
-                    raise QuantityError(msg)
+                    do_calc = True
             if calc_eval:
                 if tmp_data['hessval'] is not None:
                     eval = np.array(tmp_data['hessval']['data'])
                 else:
+                    do_calc = True
+
+        if do_calc:
+            if tmp_data['d2EdX2'] is not None and tmp_data['atmas'] is not None:
+                # Rediagonlizing is more accurate, but require being
+                atmas = np.repeat(np.array(tmp_data['atmas']['data']), 3)
+                ffx = square_ltmat(tmp_data['d2EdX2']['data'])
+                nvib = None if tmp_data['nvib'] is None \
+                    else tmp_data['nvib']['data']
+                evec, eval = build_evec(ffx, atmas, get_evec, get_eval, nvib)
+            else:
+                if calc_evec:
+                    msg = 'Unable to retrieve force constants eigenvectors'
+                    raise QuantityError(msg)
+                if calc_eval:
                     msg = 'Unable to retrieve normal mode wavenumbers'
                     raise QuantityError(msg)
 

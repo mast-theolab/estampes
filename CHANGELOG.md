@@ -26,7 +26,6 @@ Other blocks are:
 - **LIB** - Conversion factors from dipole strengths in atomic units to intensity for OPA.
 - **LIB** - The `Spectrum` class now supports ECD and OPA spectra from rotatory strengths and dipole strengths, respectively.
 - **LIB** - Conversion factors from rotatory strengths to intensity for ECD.
-- **API**
 - **API** - Support extraction of non-adiabatic couplings from Gaussian fchk file.
 - **API** - New key in returned dictionary from `DataFile.get_data`: `qlabel`, which recalls the actual *qlabel* used.
 - **API** - The `get_data` method of `DataFile` supports aliases of the type (`alias=qlabel`) to be used in the returned data dictionary.
