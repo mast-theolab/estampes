@@ -1,7 +1,10 @@
 """Module for the file parsing in ESTAMPES.
 
 This module provides high-levels classes and methods, independent of
-  the format:
+the format:
+
+Sub-modules
+-----------
 DataFile
     Main class to manipulate data.
 parse_qlabel

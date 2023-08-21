@@ -2,12 +2,6 @@
 
 Module providing tools to manipulate data relative to atoms.
 
-Methods
--------
-convert_labsymb
-    Converts between atomic symbols and labels
-convert_atoms_id
-    Converts between atoms identifiers.
 """
 
 import typing as tp
@@ -23,16 +17,16 @@ from estampes.data.atom import ELEMENTS
 def convert_labsymb(to_symb: bool,
                     *atoms: TypeAtLab
                     ) -> tp.Union[tp.List[str], tp.List[int]]:
-    """Converts between atomic symbols and labels
+    """Converts between atomic symbols and labels.
 
-    Converts to atomic symbols (`to_symb`=True) or labels (False).
+    Converts to atomic symbols (``to_symb`` = True) or labels (False).
     The function is voluntarily very permissive accepting mixed data sets.
 
     Parameters
     ----------
     to_symb
         Converts to atomic symbols (True) or labels (False).
-    *atoms
+    atoms
         List of atomic symbols and/or labels.
 
     Returns
@@ -91,7 +85,7 @@ def convert_atoms_id(list_atoms: TypeAtLab,
                      ) -> tp.List[tp.Union[int, str]]:
     """Converts between atoms identifiers.
 
-    Converts between atoms numbers (`atnum`) and labels (`atlab`).
+    Converts between atoms numbers (``atnum``) and labels (``atlab``).
 
     Parameters
     ----------
@@ -103,7 +97,7 @@ def convert_atoms_id(list_atoms: TypeAtLab,
     Returns
     -------
     list
-        List of atoms with the chosen type of identifers.
+        List of atoms with the chosen type of identifiers.
     """
     atoms = []
     if to.lower() not in ('atnum', 'atlab'):

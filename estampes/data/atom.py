@@ -7,10 +7,6 @@ Attributes
 ELEMENTS : list
     atomic number -> atomic Label list
 
-Methods
--------
-atomic_data
-    Generates atomic data.
 """
 
 import typing as tp
@@ -42,8 +38,9 @@ def atomic_data(*atoms: TypeAtLab) -> TypeAtData:
     """Generates atomic data.
 
     Generates a dictionary containing atomic data for each atom given in
-      argument.  Each item of the returned dictionary contains the
-      following elements:
+    argument.  Each item of the returned dictionary contains the
+    following elements:
+
     `name`
         Full name of the atom.
     `num`
@@ -68,7 +65,7 @@ def atomic_data(*atoms: TypeAtLab) -> TypeAtData:
     -------
     dict
         Dictionary of atomic data, containing the elements listed above
-          grouped by atomic symbols.
+        grouped by atomic symbols.
 
     Raises
     ------

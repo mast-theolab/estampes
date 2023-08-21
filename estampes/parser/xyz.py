@@ -2,15 +2,6 @@
 
 This module provides basic classes and methods to parse XYZ files.
 
-Methods
--------
-get_data
-    Gets data from a XYZ file for each quantity label.
-
-Classes
--------
-FileXYZ
-    Main class to handle XYZ files.
 """
 
 import os
@@ -36,19 +27,6 @@ __ang2au = 1.0 / PHYSFACT.bohr2ang
 class FileXYZ(object):
     """Main class to handle XYZ files.
 
-    Attributes
-    ----------
-    filename : str
-        File name.
-    full_version : tuple
-        full version:
-        * XYZ
-        * None
-
-    Methods
-    -------
-    read_data(to_find, geom, raise_error)
-        Extracts 1 or more data blocks from the XYZ file.
     """
     def __init__(self, fname: str) -> None:
         self.filename = fname
@@ -56,7 +34,7 @@ class FileXYZ(object):
 
     @property
     def filename(self) -> str:
-        """Gets or sets the filename associated to the XYZ object."""
+        """Filename associated to the XYZ object."""
         return self.__fname
 
     @filename.setter
@@ -67,12 +45,18 @@ class FileXYZ(object):
 
     @property
     def full_version(self) -> tp.Tuple[str, tp.Any]:
-        """Returns the full version, for the parser interface"""
+        """Full version of the program, which generated the file.
+        
+        Full program version, for the parser interface.
+
+        * "XYZ".
+        * `None`
+        """
         return "XYZ", None
 
     @property
     def natoms(self) -> int:
-        """Returns the number of atoms"""
+        """Number of atoms"""
         return self.__natoms
 
     @property
@@ -84,7 +68,7 @@ class FileXYZ(object):
         """Analyzes XYZ file to get basic structural information.
 
         Analyzes a XYZ file and reports the number of geometries stored
-          and the number of atoms to easily parse the file.
+        and the number of atoms to easily parse the file.
         """
         with open(self.__fname, 'r') as fobj:
             self.__ngeoms = 1
@@ -134,8 +118,10 @@ class FileXYZ(object):
             List of keys to find.
         geom
             Geometry block of interest, starting from 1
-            -1: last
-            0: all (only for coordinates)
+
+            `-1`: last
+            `0`: all (only for coordinates)
+
         raise_error : bool
             Only raises error if `True`, otherwise proceeds silently.
         """
@@ -181,9 +167,9 @@ def parse_xyz(fobj: tp.IO,
     """Parses a XYZ configuration.
 
     Parses an xyz configuration, assuming the first line to read is the
-      number of atoms.
+    number of atoms.
     On return, the pointer to `fobj` is on the last line of the
-      configuration.
+    configuration.
 
     Parameters
     ----------
@@ -267,7 +253,7 @@ def get_data(dfobj: FileXYZ,
     """Gets data from a XYZ file for each quantity label.
 
     Reads one or more full quantity labels from `qlabels` and returns
-      the corresponding data.
+    the corresponding data.
 
     Parameters
     ----------

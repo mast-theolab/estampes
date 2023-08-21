@@ -1,19 +1,5 @@
 """Module providing basic classes and methods for ESTAMPES
 
-A module providing basic submodules to be used by ESTAMPES:
-atom
-    Atom-related data.
-physics
-    Basic physical constants and methods.
-property
-    Molecular property-related data.
-molecule
-    Provides the `Molecule` class.
-state
-    Provides the `ElectronicState` and `MolecularProperties` classes.
-types
-    Provides special static types used in ESTAMPES.
-
 Attributes
 ----------
 TypeAtCrd : list, np.ndarray

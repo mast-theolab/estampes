@@ -9,18 +9,9 @@ RAMAN_SETUPS
     Provides a list of accepted setups to be used in `raman_intensities`
     for instance.
 
-Classes
--------
-RamanInvariants
-    Build the Raman/ROA invariants.
-
-Methods
--------
-raman_intensities
-    Compute the Raman/ROA intensities or activities.
-
-TODO
-!! Add check of consistent types between numbers
+Notes
+-----
+* TODO: Add check of consistent types between numbers
 """
 
 from math import pi
@@ -88,12 +79,13 @@ class InvariantNA(Exception):
 # Main classes
 
 class RamanInvariants():
-    """Build Raman/ROA invariants
+    """Build Raman/ROA invariants.
 
-    Builds the Raman/ROA invariants, based on available quantities.
+    Builds the Raman/ROA invariants, based on available quantities,
+    following Ref. [2]_.
     The labels of the invariants are based on Ref. [1]_.
     The class supports the far-from-resonance case, as well as the more
-      general case, in complex.
+    general case, in complex.
 
     Parameters
     ----------
@@ -122,54 +114,7 @@ class RamanInvariants():
     is_complex
         If True, properties are assumed complexes.
         By default, this is inferred from the input quantity.
-            It cannot be changed later.
-
-    Attributes
-    ----------
-    alpha
-        Electric dipole-electric dipole tensor
-    G_indED
-        Induced electric dipole-magnetic dipole tensor
-    Gtensor
-        Alias for `G_indED`
-    A_indED
-        Induced electric dipole-electric quadrupole tensor
-    Atensor
-        Alias for "A_indED"
-    G_indMD
-        Electric dipole-induced magnetic dipole tensor
-    A_indEQ
-        Electric dipole-induced electric quadrupole tensor
-    inc_frq
-        Incident frequency (s^-1)
-    scat_frq
-        Scattered frequency (s^-1)
-    alpha2
-        Invariant alpha^2
-    b_s_alph
-        Invariant beta_s(alpha)^2
-    b_a_alph
-        Invariant beta_a(alpha)^2
-    alp_romG
-        Invariant alpha.G{roman}
-    b_s_romG
-        Invariant beta_s(G{roman})
-    b_a_romG
-        Invariant beta_a(G{roman})
-    alp_calG
-        Invariant alpha.G{script}
-    b_s_calG
-        Invariant beta_s(G{script})
-    b_a_calG
-        Invariant beta_a(G{script})
-    b_s_romA
-        Invariant beta_s(A{roman})
-    b_a_romA
-        Invariant beta_a(A{roman})
-    b_s_calA
-        Invariant beta_s(A{script})
-    b_a_calA
-        Invariant beta_a(A{script})
+        It cannot be changed later.
 
     Raises
     ------
@@ -249,7 +194,7 @@ class RamanInvariants():
     # Invariants
     @property
     def alpha2(self):
-        """Compute/return alpha^2"""
+        """Compute/return invariant alpha^2"""
         if self.__alpha2 is None:
             self.__alpha2 = np.real(
                 np.einsum('ii,jj->', self.__alph_s, self.__alph_s.conj())
@@ -258,7 +203,7 @@ class RamanInvariants():
 
     @property
     def b_s_alph(self):
-        """Compute/return beta_s(alpha)^2"""
+        """Compute/return invariant beta_s(alpha)^2"""
         if self.__b_s_alph is None:
             self.__b_s_alph = np.real(
                 3*np.einsum('ij,ij->', self.__alph_s, self.__alph_s.conj())
@@ -268,7 +213,7 @@ class RamanInvariants():
 
     @property
     def b_a_alph(self):
-        """Compute/return beta_a(alpha)^2"""
+        """Compute/return invariant beta_a(alpha)^2"""
         if self.__b_a_alph is None:
             self.__b_a_alph = 3.0*np.real(
                 np.einsum('ij,ij->', self.__alph_a, self.__alph_a.conj())
@@ -277,7 +222,7 @@ class RamanInvariants():
 
     @property
     def alp_romG(self):
-        """Compute/return alpha.G{roman}"""
+        """Compute/return invariant alpha.G{roman}"""
         if self.__alp_romG is None:
             if self.__G_indED is None:
                 raise InvariantNA('alpha.romG')
@@ -288,7 +233,7 @@ class RamanInvariants():
 
     @property
     def b_s_romG(self):
-        """Compute/return beta_s(G{roman})"""
+        """Compute/return invariant alpha.G{roman}"""
         if self.__b_s_romG is None:
             if self.__G_indED is None:
                 raise InvariantNA('beta_s(romG)')
@@ -300,7 +245,7 @@ class RamanInvariants():
 
     @property
     def b_a_romG(self):
-        """Compute/return beta_a(G{roman})"""
+        """Compute/return invariant beta_a(G{roman})"""
         if self.__b_a_romG is None:
             if self.__G_indED is None:
                 raise InvariantNA('beta_a(romG)')
@@ -311,7 +256,7 @@ class RamanInvariants():
 
     @property
     def alp_calG(self):
-        """Compute/return alpha.G{script}"""
+        """Compute/return invariant alpha.G{script}"""
         if self.__alp_calG is None:
             if self.__G_indMD is None:
                 raise InvariantNA('alpha.calG')
@@ -322,7 +267,7 @@ class RamanInvariants():
 
     @property
     def b_s_calG(self):
-        """Compute/return beta_s(G{script})"""
+        """Compute/return invariant beta_s(G{script})"""
         if self.__b_s_calG is None:
             if self.__G_indMD is None:
                 raise InvariantNA('beta_s(calG)')
@@ -334,7 +279,7 @@ class RamanInvariants():
 
     @property
     def b_a_calG(self):
-        """Compute/return beta_a(G{script})"""
+        """Compute/return invariant beta_a(G{script})"""
         if self.__b_a_calG is None:
             if self.__G_indMD is None:
                 raise InvariantNA('beta_a(calG)')
@@ -345,7 +290,7 @@ class RamanInvariants():
 
     @property
     def b_s_romA(self):
-        """Compute/return beta_s(A{roman})"""
+        """Compute/return invariant beta_s(A{roman})"""
         if self.__b_s_romA is None:
             if self.__A_indED is None:
                 raise InvariantNA('beta_s(romA)')
@@ -356,7 +301,7 @@ class RamanInvariants():
 
     @property
     def b_a_romA(self):
-        """Compute/return beta_a(A{roman})"""
+        """Compute/return invariant beta_a(A{roman})"""
         if self.__b_a_romA is None:
             if self.__A_indED is None:
                 raise InvariantNA('beta_a(romA)')
@@ -368,7 +313,7 @@ class RamanInvariants():
 
     @property
     def b_s_calA(self):
-        """Compute/return beta_s(A{script})"""
+        """Compute/return invariant beta_s(A{script})"""
         if self.__b_s_calA is None:
             if self.__A_indEQ is None:
                 raise InvariantNA('beta_s(calA)')
@@ -379,7 +324,7 @@ class RamanInvariants():
 
     @property
     def b_a_calA(self):
-        """Compute/return beta_a(A{script})"""
+        """Compute/return invariant beta_a(A{script})"""
         if self.__b_a_calA is None:
             if self.__A_indEQ is None:
                 raise InvariantNA('beta_a(calA)')
@@ -391,7 +336,6 @@ class RamanInvariants():
 
     # Encapsulation methods
     def __set_alpha(self, tens: TypeTensor2D):
-        """Set electric dipole-electric dipole tensor."""
         if isinstance(tens, np.ndarray):
             self.__alpha = tens
         elif isinstance(tens, (tuple, list)):
@@ -418,18 +362,12 @@ class RamanInvariants():
         self.__b_a_calA = None
 
     def __get_alpha(self) -> np.ndarray:
-        """Get electric dipole-electric dipole tensor."""
         return self.__alpha
 
-    alpha = property(__get_alpha, __set_alpha)
+    alpha = property(__get_alpha, __set_alpha,
+        doc="""Electric dipole-electric dipole tensor""")
 
     def __set_G_indED(self, tens: TypeTensor2D):
-        """Set G tensor (induced electric dipole).
-
-        Sets the electric dipole-magnetic dipole (induced electric
-            dipole).
-        This would be the default for G.
-        """
         if isinstance(tens, np.ndarray):
             self.__G_indED = tens
         elif isinstance(tens, (tuple, list)):
@@ -446,19 +384,14 @@ class RamanInvariants():
         self.__b_a_romG = None
 
     def __get_G_indED(self) -> tp.Optional[np.ndarray]:
-        """Get G tensor (induced electric dipole)."""
         return self.__G_indED
 
-    G_indED = property(__get_G_indED, __set_G_indED)
-    Gtensor = property(__get_G_indED, __set_G_indED)
+    G_indED = property(__get_G_indED, __set_G_indED,
+        doc="""Induced electric dipole-magnetic dipole tensor""")
+    Gtensor = property(__get_G_indED, __set_G_indED,
+                       doc="""Alias for ``G_indED``""")
 
     def __set_A_indED(self, tens: TypeTensor3D):
-        """Set A tensor (induced electric dipole).
-
-        Sets the electric dipole-electric quadrupole (induced electric
-            dipole).
-        This would be the default for A.
-        """
         if isinstance(tens, np.ndarray):
             self.__A_indED = tens
         elif isinstance(tens, (tuple, list)):
@@ -478,18 +411,14 @@ class RamanInvariants():
         self.__b_a_romA = None
 
     def __get_A_indED(self) -> tp.Optional[np.ndarray]:
-        """Get A tensor (induced electric dipole)."""
         return self.__A_indED
 
-    A_indED = property(__get_A_indED, __set_A_indED)
-    Atensor = property(__get_A_indED, __set_A_indED)
+    A_indED = property(__get_A_indED, __set_A_indED,
+        doc="""Induced electric dipole-electric quadrupole tensor""")
+    Atensor = property(__get_A_indED, __set_A_indED,
+        doc="""Alias for ``A_indED``""")
 
     def __set_G_indMD(self, tens: TypeTensor2D):
-        """Set G tensor (induced magnetic dipole).
-
-        Sets the electric dipole-magnetic dipole (induced magnetic
-            dipole).
-        """
         if isinstance(tens, np.ndarray):
             self.__G_indMD = tens
         elif isinstance(tens, (tuple, list)):
@@ -506,17 +435,12 @@ class RamanInvariants():
         self.__b_a_calG = None
 
     def __get_G_indMD(self) -> tp.Optional[np.ndarray]:
-        """Get G tensor (induced magnetic dipole)."""
         return self.__G_indMD
 
-    G_indMD = property(__get_G_indMD, __set_G_indMD)
+    G_indMD = property(__get_G_indMD, __set_G_indMD,
+        doc="""Electric dipole-induced magnetic dipole tensor""")
 
     def __set_A_indEQ(self, tens: TypeTensor3D):
-        """Set A tensor (induced electric quadrupole).
-
-        Sets the electric dipole-electric quadrupole (induced electric
-            quadrupole).
-        """
         if isinstance(tens, np.ndarray):
             self.__A_indEQ = tens
         elif isinstance(tens, (tuple, list)):
@@ -539,16 +463,12 @@ class RamanInvariants():
         self.__b_a_calA = None
 
     def __get_A_indEQ(self) -> tp.Optional[np.ndarray]:
-        """Get A tensor (induced electric quadrupole)."""
         return self.__A_indEQ
 
-    A_indEQ = property(__get_A_indEQ, __set_A_indEQ)
+    A_indEQ = property(__get_A_indEQ, __set_A_indEQ,
+        doc="""Electric dipole-induced electric quadrupole tensor""")
 
     def __set_incfrq(self, energy: tp.Optional[float]):
-        """Set the incident frequency.
-
-        The incident energy is transformed into a frequency internally.
-        """
         if energy is not None:
             self.__Winc = 2*pi*_c_au*1.0e-8*PHYSFACT.bohr2ang*energy
         else:
@@ -559,13 +479,10 @@ class RamanInvariants():
     def __get_incfrq(self) -> tp.Optional[float]:
         return self.__Winc
 
-    inc_frq = property(__get_incfrq, __set_incfrq)
+    inc_frq = property(__get_incfrq, __set_incfrq,
+                       doc="""Incident frequency (s^-1)""")
 
     def __set_scatfrq(self, energy: tp.Optional[float]):
-        """Set the scattered frequency.
-
-        The scattered energy is transformed into a frequency internally.
-        """
         if energy is not None:
             self.__Wscat = 2*pi*_c_au*1.0e-8*PHYSFACT.bohr2ang*energy
         else:
@@ -576,7 +493,8 @@ class RamanInvariants():
     def __get_scatfrq(self) -> tp.Optional[float]:
         return self.__Wscat
 
-    scat_frq = property(__get_scatfrq, __set_scatfrq)
+    scat_frq = property(__get_scatfrq, __set_scatfrq,
+                        doc="""Scattered frequency (s^-1).""")
 
 
 # ==============

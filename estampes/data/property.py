@@ -24,14 +24,16 @@ from estampes.data.physics import PHYSCNST, PHYSFACT, phys_fact
 # Module Functions
 # ================
 
-def property_data(qlabel: TypeQTag,
-                  qsublabel: TypeQOpt = None
+def property_data(qtag: TypeQTag,
+                  qopt: TypeQOpt = None
                   ) -> tp.NamedTuple:
     """Generates property data.
 
     Generates a named tuple containing basic data for a given
-      property in argument given in input.
+    property in argument given in input.
+
     Available information:
+
     name
         Full name of the property.
     dim
@@ -60,7 +62,7 @@ def property_data(qlabel: TypeQTag,
     KeyError
         Unrecognized atomic symbol.
     """
-    item = str(qlabel).lower()
+    item = str(qtag).lower()
     if item == '1':
         qname = 'energy'
         qdim = 1
@@ -215,7 +217,7 @@ def property_units(qtag: str, unit: str = 'SI') -> tp.Tuple[float, str]:
     """Returns conversion factors and unit labels.
 
     Returns the conversion factor from atomic unit to new unit, as well
-      as the label.
+    as the label.
 
     Parameters
     ----------

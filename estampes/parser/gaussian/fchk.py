@@ -1,22 +1,7 @@
 """Low-level operations on Gaussian formatted checkpoint files.
 
 Provides low-level interfaces to manipulate/extract data in Gaussian
-  formatted checkpoint files.
-
-Attributes
-----------
-
-Methods
--------
-get_data
-    Gets data from a FChk file for each quantity label.
-get_hess_data
-    Gets or Builds Hessian data (eigenvectors and values).
-
-Classes
--------
-FChkIO
-    Main class to handle formatted checkpoint file operations.
+formatted checkpoint files.
 
 Notes
 -----
@@ -73,27 +58,8 @@ class FChkIO(object):
     """Main class to handle formatted checkpoint file operations.
 
     Main class to manage the parsing and formatting of data stored in
-      Gaussian formatted checkpoint file.
+    Gaussian formatted checkpoint file.
 
-    Attributes
-    ----------
-    filename : str
-        Formatted checkpoint filename
-    version : str
-        Version, software-dependent
-    full_version : tuple
-        full version:
-        * Gaussian
-        * Gaussian major and minor revisions, mach and relesase date
-
-    Methods
-    -------
-    read_data(to_find, raise_error)
-        Extracts 1 or more data blocks from the fchk file
-    write_data(data, new_file, error_key, error_size)
-        Writes data corresponding to the keys to find.
-    show_keys()
-        Shows available keys in fchk if loaded
     """
     def __init__(self, fname: str,
                  load_keys: bool = True) -> None:
@@ -115,7 +81,7 @@ class FChkIO(object):
 
     @property
     def filename(self) -> str:
-        """Gets or sets the filename associated to the FChk object."""
+        """Filename associated to the FChk object."""
         return self.__fname
 
     @filename.setter
@@ -126,12 +92,19 @@ class FChkIO(object):
 
     @property
     def version(self) -> tp.Dict[str, str]:
-        """Returns the version of Gaussian used to generate the FChk.
+        """Version of Gaussian used to generate the FChk file.
+
+        Returns the version as a dictionary with two keys:
+
+        major
+            Major revision.
+        minor
+            Minor revision
 
         Notes
         -----
         Earlier versions of Gaussian did not support this so this may be
-          empty.
+        empty.
         """
         return self.__gversion
 
@@ -144,7 +117,20 @@ class FChkIO(object):
 
     @property
     def full_version(self) -> tp.Tuple[str, tp.Any]:
-        """Returns the full version, for the parser interface"""
+        """Full version of Gaussian, for the parser interface.
+        
+        Returns the full version of Gaussian used to generate the log file.
+        Available keys:
+
+        major
+            Major revision.
+        minor
+            Minor revision.
+        mach
+            Processor architecture for which Gaussian was compiled.
+        release
+            Release date of this version of Gaussian.
+        """
         return "Gaussian", self.__gversion
 
     def read_data(self,
@@ -217,10 +203,10 @@ class FChkIO(object):
         """Writes data corresponding to the keys to find.
 
         Reads a dictionary of keys and overwrites the data present in
-          the file.
+        the file.
         If the key is not present or the size is inconsistent with the
-          data present in the file, an error is raised, except if
-          `error_key` or `error_size` are False, respectively.
+        data present in the file, an error is raised, except if
+        `error_key` or `error_size` are False, respectively.
 
         Parameters
         ----------
@@ -319,7 +305,7 @@ class FChkIO(object):
         """Stores the keys in the fchk to speed up search.
 
         Loads the keys present in the file and pointers to their
-          position to speed up their search.
+        position to speed up their search.
         Data type and block information are also stored.
 
         Returns
@@ -355,7 +341,7 @@ class FChkIO(object):
         """Extracts information on a given block.
 
         Extracts information on a block, either from the line or data
-          in arguments.
+        in arguments.
 
         Parameters
         ----------
@@ -415,7 +401,7 @@ class FChkIO(object):
 
         Reads a data block from a Gaussian formatted checkpoint file.
         The file "cursor" should be at the "title/section line" and the
-          content stored in 'line'.
+        content stored in 'line'.
 
         Parameters
         ----------
@@ -481,8 +467,8 @@ def qlab_to_kword(qtag: TypeQTag,
     """Returns the keyword(s) relevant for a given quantity.
 
     Returns the keyword corresponding to the block containing the
-      quantity of interest and the list all keywords of interest for
-      possible conversions.
+    quantity of interest and the list all keywords of interest for
+    possible conversions.
 
     Parameters
     ----------
@@ -711,7 +697,7 @@ def _parse_electrans_data(qtag: TypeQTag,
     """Sub-function to parse electronic-transition related data.
 
     Parses and returns data for a given quantity related to an
-      electronic transition.
+    electronic transition.
 
     Parameters
     ----------
@@ -821,7 +807,7 @@ def _parse_freqdep_data(qtag: TypeQTag,
     """Sub-function to parse data on frequency-dependent properties.
 
     Parses and returns data on a specific property for one or more
-      incident frequencies.
+    incident frequencies.
 
     Parameters
     ----------
@@ -1079,7 +1065,7 @@ def get_data(dfobj: FChkIO,
     """Gets data from a FChk file for each quantity label.
 
     Reads one or more full quantity labels from `qlabels` and returns
-      the corresponding data.
+    the corresponding data.
 
     Parameters
     ----------
@@ -1170,11 +1156,14 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
 
     This function retrieves or builds the eigenvectors and eigenvalues.
     Contrary to ``get_data`` which only looks for available data, this
-      functions looks for alternative forms to build necessary data.
+    functions looks for alternative forms to build necessary data.
     It also returns a Numpy array instead of Python lists.
     Preloaded data can be provided to avoid duplicating extraction
-      queries.  They are expected in the same format as given by
-      FChkIO methods.
+    queries.  They are expected in the same format as given by
+    FChkIO methods.
+    By default, it uses data read from formatted checkpoint file, as
+    they are sufficiently accurate and contains multiple corrections:
+    projection of gradients, rotation/translation...
 
     Parameters
     ----------
@@ -1186,6 +1175,8 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
         Return the eigenvalues.
     pre_data
         Database with quantities already loaded from previous queries.
+    force_calc
+        Force the computation of the eigenvectors and eigenvalues.
 
     Returns
     -------

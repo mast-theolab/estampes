@@ -1,28 +1,11 @@
 """General module for the computational chemistry programs.
 
 Provides general routines and wrappers for software-independent parsing
-  operations.
-
-Attributes
-----------
-
-Methods
--------
-parse_qlabel
-    Parses a full quantity label into sub-items.
-build_qlabel
-    Builds a `qlabel` from option elements.
-reshape_dblock
-    Reshapes data block.
-
-Classes
--------
-DataFile
-    Main class for data parsing.
+operations.
 
 Notes
 -----
-- The submodules of parsers should provide a function get_data, which
+* The submodules of parsers should provide a function get_data, which
   will be used in the main class.
 """
 
@@ -39,21 +22,26 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     """Parses a quantity label and returns a list of items.
 
     Parses a label in the form:
+
+    .. code-block:: text
+
         id|label[:[subopt][:[ord][:[coord][:[state(s)][:[level]]]]]
+
     with
-        id|label
-            quantity identifier (see below) or textual label
-        subopt
-            sub-option (e.g., gauge, specific components, sub-field)
-        ord
-            derivative order (0 for reference value)
-        coord
-            reference coordinates
-        state(s)
-            reference electronic state or transition (as `i->j`)
-        level
-            Level of theory use to generate the quantity.
-            ex: vibrational (harm, anharm), electronic...
+
+    ``id|label``
+        quantity identifier (see below) or textual label
+    ``subopt``
+        sub-option (e.g., gauge, specific components, sub-field)
+    ``ord``
+        derivative order (0 for reference value)
+    ``coord``
+        reference coordinates
+    ``state(s)``
+        reference electronic state or transition (as ``"i->j"``)
+    ``level``
+        Level of theory use to generate the quantity.
+        ex: vibrational (harm, anharm), electronic...
 
     Parameters
     ----------
@@ -64,173 +52,128 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     -------
     list
         Parsed quantity label, as (`None` if undefined):
+
         1. quantity identifier or label
         2. quantity-specific options
         3. derivative order
         4. reference coordinates
         5. reference state or transition
-           `a`: refers to all available electronic states
-           `c`: refers to the current electronic state
+
+            :"a": refers to all available electronic states
+            :"c": refers to the current electronic state
+
         6. level of theory: vibrational (harm, anharm), electronic...
 
     Notes
     -----
-    Possible identifiers or labels
-    =========  ==================================================
-      Value    Description
-    =========  ==================================================
-            *Special labels*
-    -------------------------------------------------------------
-     Title      Title of the job
-     NAtoms     Number of atoms
-     NVib       Number of vibrations
-     AtMas      Atomic masses
-     AtNum      Atomic numbers
-     AtLab      Atomic labels
-     MolSym     Symmetry
-     Charge     Charge
-     Multip     Multiplicity
-     AtCrd      Coordinates
-     Atoms      Atoms (can be numbers or labels)
-     HessVec    Hessian eigenvectors
-     HessVal    Hessian eigenvalues
-     SWOpt      Software runtime options
-     SWVer      Software version
-     VTrans     Vibrational transitions
-     VLevel     Vibrational energy levels
-     DipStr     Dipole strength
-     RotStr     Rotatory strength
-     RamAct     Raman activity
-     ROAAct     ROA activity
-     AnySpc     Generic quantity for spectra (e.g., for CSV files)
-     FCDat      Franck-Condon-related data
-     VPTDat     VPT2-related data
-     Intens     Spectral intensity
-            *Basic properties*
-    -------------------------------------------------------------
-         1      Energy
-         2      Coordinates
-            *Special electronic properties*
-    -------------------------------------------------------------
-        50      Non-adiabatic couplings
-            *Special quantities*
-    -------------------------------------------------------------
-        91      Coriolis Couplings
-        92      Rotation Matrix
-        93      Transition vector
-            *Static electric/mixed-field properties*
-    -------------------------------------------------------------
-       101      Electric dipole
-       102      Magnetic dipole
-       103      Polarizability tensor
-       104      Optical rotations
-       105      Dipole-quadrupole polarizability
-       106      Hyperpolarizability
-       107      Quadrupole
-            *Magnetic-field properties*
-    -------------------------------------------------------------
-       201      Magnetic susceptibility       (NMR)
-       202      Fake rotational g-Tensor      (EPR)
-       203      NMR shielding tensors         (NMR)
-       204      Spin-rotation tensors         (EPR)
-       205      Anisotropic hyperfine tensors (EPR)
-       206      Isotropic (Fermi) terms       (EPR)
-       207      ESR g-tensor                  (EPR)
-       208      Nuclear quadrupole tensors    (NMR)
-       209      Isotropic Spin-Spin coupling  (NMR)
-            *Dynamic (frequency-dependent) properties*
-    -------------------------------------------------------------
-       301      Polarizability Alpha(-w,w)
-       302      Optical rotations
-       303      Polarizability Alpha(w,0)
-       304      Dipole-quadrupole polarizability
-       305      Hyperpolarizability Beta(-w,w,0)
-       306      Hyperpolarizability Beta(w,w,-2w)
-            *Vibrational transition moments of properties*
-    -------------------------------------------------------------
-      1300      List of incident frequencies
-      1301      Electric dipole-electric dipole tensor
-      1302      Induced electric dipole-magnetic dipole tensor
-      1303      Electric dipole-induced magnetic dipole tensor
-      1304      Induced electric dipole-el. quadrupole tensor
-      1305      Electric dipole-induced el. quadrupole tensor
-    =========  ==================================================
+    Below is the list of possible identifiers or labels
 
-    Sub-Options:
-    ========  ========  =========================================
-     Option     Sub      Description
-    ========  ========  =========================================
-    -------------------------------------------------------------
-     Intens     IR       Infrared intensity
-    -------------------------------------------------------------
-        101     Len      Length-gauge dipole strength
-                Vel      Velocity-gauge dipole strength
-    -------------------------------------------------------------
-     DipStr     Len      Length-gauge dipole strength
-                Vel      Velocity-gauge dipole strength
-    -------------------------------------------------------------
-     RotStr     Len      Length-gauge dipole strength
-                Vel      Velocity-gauge dipole strength
-    -------------------------------------------------------------
-     RamAct    None     Static Raman activity
-               Static   Static Raman activity
-              Dynamic   Dynamic Raman activity for all inc. freq.
-                All     Dynamic Raman activity for all inc. freq.
-               <any>    Dynamic Raman activity for <any> freq.
-                        A string is expected to avoid num. limit.
-    -------------------------------------------------------------
-     FCDat      JMat     Duschinsky matrix
-                JMatF    Duschinsky matrix (full, only for reddim)
-                KVec     Shift vector
-               SRAMat    Sharp and Rosenstock A matrix
-               SRBVec    Sharp and Rosenstock B vector
-               SRCMat    Sharp and Rosenstock C matrix
-               SRDVec    Sharp and Rosenstock D vector
-               SREMat    Sharp and Rosenstock E matrix
-               GeomIS    Initial-state geometry
-               GeomFS    Final-state geometry
-               GeomMS    Intermediate geometry
-               ExGeom    Extrapolated geometry
-               SimInf    Simulation information
-                Spec     Final spectrum/a
-               SpcPar    Spectrum parameters
-                Conv     Intensity convergence/spectrum progress
-               Assign    Transition assignment data
-               RedDim    Normal modes equivalence for reddim
-               E(0-0)    Energy between vibrational ground states
-    -------------------------------------------------------------
-     VPTDat     XMat     Anharmonic X matrix
-                GMat     Variational correction matrix
-               CICoef    CI coefficients from var. correction
-    -------------------------------------------------------------
-     VLevel    <None>    Read data from standard vib. data output
-                SOS      Sum-over-states vibronic structure
-                 RR      Similar to SOS but with Raman inc. freq.
-    -------------------------------------------------------------
-     VTrans    <None>    Read data from standard vib. data output
-                SOS      Sum-over-states vibronic structure
-                 RR      Similar to SOS but with Raman inc. freq.
-    -------------------------------------------------------------
-     AtCrd      all      All present geometries (scan, opt)
-                last     Only the last geometry if more present
-               first     Only the first geometry
-                scan     Extract scan-related data
-    -------------------------------------------------------------
-        1       all      All present geometries (scan, opt)
-                last     Only the last geometry if more present
-               first     Only the first geometry
-                scan     Extract scan-related data
-    ========  ========  =========================================
+    *Possible identifiers or labels*
 
-    Possible coordinates:
-    =========  ==================================================
-      Value     Description
-    =========  ==================================================
-       X        Derivatives with respect to Cartesian coordinates
-       Q        Derivatives with respect to normal coordinates
-       I        Derivatives with respect to internal coordinates
-       QX       Derivatives in ixed normal-Cartesian coordinates
-    =========  ==================================================
+    =========  =====================================================
+      Value      Description
+    =========  =====================================================
+           *Special labels*
+    ----------------------------------------------------------------
+    Title      Title of the job
+    NAtoms     Number of atoms
+    NVib       Number of vibrations
+    AtMas      Atomic masses
+    AtNum      Atomic numbers
+    AtLab      Atomic labels
+    MolSym     Symmetry
+    Charge     Charge
+    Multip     Multiplicity
+    AtCrd      Coordinates
+    Atoms      Atoms (can be numbers or labels)
+    HessVec    Hessian eigenvectors
+    HessVal    Hessian eigenvalues
+    SWOpt      Software runtime options
+    SWVer      Software version
+    VTrans     Vibrational transitions
+    VLevel     Vibrational energy levels
+    DipStr     Dipole strength
+    RotStr     Rotatory strength
+    RamAct     Raman activity
+    ROAAct     ROA activity
+    AnySpc     Generic quantity for spectra (e.g., for CSV files)
+    FCDat      Franck-Condon-related data
+    VPTDat     VPT2-related data
+    Intens     Spectral intensity
+    *Basic properties*
+    ----------------------------------------------------------------
+        1      Energy
+        2      Coordinates
+    *Special electronic properties*
+    ----------------------------------------------------------------
+        50     Non-adiabatic couplings
+    *Special quantities*
+    ----------------------------------------------------------------
+        91     Coriolis Couplings
+        92     Rotation Matrix
+        93     Transition vector
+    *Static electric/mixed-field properties*
+    ----------------------------------------------------------------
+       101     Electric dipole
+       102     Magnetic dipole
+       103     Polarizability tensor
+       104     Optical rotations
+       105     Dipole-quadrupole polarizability
+       106     Hyperpolarizability
+       107     Quadrupole
+    *Magnetic-field properties*
+    ----------------------------------------------------------------
+       201     Magnetic susceptibility       (NMR)
+       202     Fake rotational g-Tensor      (EPR)
+       203     NMR shielding tensors         (NMR)
+       204     Spin-rotation tensors         (EPR)
+       205     Anisotropic hyperfine tensors (EPR)
+       206     Isotropic (Fermi) terms       (EPR)
+       207     ESR g-tensor                  (EPR)
+       208     Nuclear quadrupole tensors    (NMR)
+       209     Isotropic Spin-Spin coupling  (NMR)
+    *Dynamic (frequency-dependent) properties*
+    ----------------------------------------------------------------
+       301     Polarizability Alpha(-w,w)
+       302     Optical rotations
+       303     Polarizability Alpha(w,0)
+       304     Dipole-quadrupole polarizability
+       305     Hyperpolarizability Beta(-w,w,0)
+       306     Hyperpolarizability Beta(w,w,-2w)
+    *Vibrational transition moments of properties*
+    ----------------------------------------------------------------
+      1300     List of incident frequencies
+      1301     Electric dipole-electric dipole tensor
+      1302     Induced electric dipole-magnetic dipole tensor
+      1303     Electric dipole-induced magnetic dipole tensor
+      1304     Induced electric dipole-el. quadrupole tensor
+      1305     Electric dipole-induced el. quadrupole tensor
+    =========  =====================================================
+
+    **Sub-options**
+
+    =========  ========  ===========================================
+     Option     Sub       Description
+    =========  ========  ===========================================
+     Intens    IR         Infrared intensity
+        101    Len        Length-gauge dipole strength
+
+               Vel        Velocity-gauge dipole strength
+     DipStr    Len        Length-gauge dipole strength
+
+               Vel        Velocity-gauge dipole strength
+    =========  ========  ===========================================
+
+    **Possible coordinates**
+
+    +---------+----------------------------------------------------+
+    |  Value  |   Description                                      |
+    +=========+====================================================+
+    |   X     | Derivatives with respect to Cartesian coordinates  |
+    |   Q     | Derivatives with respect to normal coordinates     |
+    |   I     | Derivatives with respect to internal coordinates   |
+    |   QX    | Derivatives in ixed normal-Cartesian coordinates   |
+    +---------+----------------------------------------------------+
     """
     nparts = 6  # Number of parts expected in full label
     # Parse qlabel and build full list (filling missing information)
@@ -472,8 +415,9 @@ def build_qlabel(qtag: tp.Union[str, int],
 
     This is a very simple routine to quickly generate a *qlabel*.
     It should not be used without some control from `parse_qlabel`.
-    The full qlabel is generated:
-    qtag:[qopt]:[dord]:[dcrd]:[state]:[level].
+    The full qlabel is generated::
+
+        qtag:[qopt]:[dord]:[dcrd]:[state]:[level].
 
     Parameters
     ----------
@@ -513,10 +457,10 @@ def reshape_dblock(dblock: tp.Sequence[tp.Any],
     """Reshapes a data block.
 
     Reshapes a data block, normally extracted from fchk,
-      assuming a Fortran-like array was stored in memory.
+    assuming a Fortran-like array was stored in memory.
     If the shape is smaller than the length of `dblock`, the function
-      tries to add a dimension, checking the consistency of this new
-      dimension.
+    tries to add a dimension, checking the consistency of this new
+    dimension.
 
     Parameters
     ----------
@@ -524,6 +468,7 @@ def reshape_dblock(dblock: tp.Sequence[tp.Any],
         Data block to reshape.
     dshape
         Shape of the returned data block.
+
         `0`/`-1` can be used for automatic definition of a dimension,
 
     Returns
@@ -601,19 +546,6 @@ class DataFile(object):
     filetype : str, optional
         Filetype.
         Supported: 'fchk', 'glog', 'xyz'
-
-    Attributes
-    ----------
-    filename
-        Name of the file used to extract data.
-    version : tuple
-        1. Program used to generate file/exchange format
-        2. Program/Format-specific version information
-
-    Methods
-    -------
-    get_data
-        Extract data corresponding to the provided labels.
     """
     def __init__(self, filename: str,
                  filetype: tp.Optional[str] = None):
@@ -638,16 +570,17 @@ class DataFile(object):
 
     @property
     def filename(self) -> str:
-        """Returns the name of the file."""
+        """Name of the file used to extract data."""
         return self._dfile.filename
 
     @property
     def version(self) -> tp.Tuple[str, tp.Any]:
-        """Returns the program version
+        """Version of the program used to generate the file.
 
         The version is a tuple with:
-        * The program name
-        * The version (software-dependent)
+
+        # The program name
+        # Program/Format-specific version information
         """
         return self._dfile.full_version
 

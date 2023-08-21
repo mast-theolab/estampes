@@ -2,10 +2,6 @@
 
 Module providing tools to manipulate data relative to vibrations.
 
-Methods
--------
-orient_modes
-    Sets a unique orientation for normal coordinates.
 """
 
 import numpy as np
@@ -19,17 +15,18 @@ def orient_modes(Lmat: np.ndarray) -> np.ndarray:
     """Sets a unique orientation for normal coordinates.
 
     Sets the sign for each column of `Lmat` so that the highest element
-      is positive.  This way, the vectors can adopt a consistent
-      orientation, especially for the numerical differentiation, where
-      it is critical.
+    is positive.  This way, the vectors can adopt a consistent
+    orientation, especially for the numerical differentiation, where
+    it is critical.
+
     A small shift is given to this highest value to avoid uncertainty
-      if two elements have very close or equal magnitudes but
-      potentially opposite signs.
+    if two elements have very close or equal magnitudes but
+    potentially opposite signs.
 
     Parameters
     ----------
     Lmat
-        Transformation matrix from cart to normal coord. (nvib,3natoms).
+        Transformation matrix from cart to normal coord. (N,3Na).
 
     Returns
     -------

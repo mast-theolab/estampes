@@ -1,7 +1,7 @@
 """Module on physical constants and related data.
 
 This module provides basic data related to physical constants and
-  conversion factor.
+conversion factor.
 
 Attributes
 ----------
@@ -9,11 +9,6 @@ PHYSFACT : dict
     Physical conversion factors.
 PHYSCNST : dict
     Physical constants.
-
-Methods
--------
-phys_fact
-    Routine to build conversion factors.
 """
 
 from math import pi, sqrt
@@ -54,7 +49,7 @@ def phys_fact(factor: str) -> float:
     """Physical conversion factor.
 
     Returns some common conversion factors, especially for quantities
-      often used in spectroscopy.
+    often used in spectroscopy.
 
     Parameters
     ----------
@@ -69,58 +64,71 @@ def phys_fact(factor: str) -> float:
     Note
     ----
     Convention:
-    * kB : Boltzmann constant
-    * Na : Avogadro constant
-    * Eh : Hartree (energy unit)
-    * (abc) = amu^1/2.Bohr.cm^-1/2
+
+    :math:`A`
+        Angstroms
+    :math:`a_0`
+        atomic unit of length (Bohr)
+    :math:`\\text{aJ}`
+        attojoule
+    :math:`E_h`
+        atomic unit of energy (Hartree)
+    :math:`k_B`
+        Boltzmann constant
+    :math:`N_a`
+        Avogadro constant
+    :math:`u`
+        unified atomic mass
+    :math:`abc`
+        alias for :math:`u^{1/2}.a_0.cm^{-1/2}`
+
     Available factors:
-    au2amu
-        a.u. (m_e) to a.m.u ("proton" mass)
-    au2cm1
-        a.u. (Hartree) to cm^-1
-    au2Deb
-        a.u. (e^-.Bohr) to Debye conversion factor
-    au2ESU
-        a.u. (e^-) electron to electric static unit
-    au2kg
-        a.u. (m_e) to kg
-    hbar
-        h/(2.pi)                in amu.Ang^2.s^-1
-    Fac0AU
-        1/(h.c)                 in cm^-1.Eh^-1
-    Fac1AU
-        1/(2.pi.h^1/2.c^3/2)    in cm^-1.(abc).Eh^-1
-    Fac2AU
-        1/(4.pi^2.c^2)          in cm^-1.(abc)^2.Eh^-1
-    Fac3AU
-        1/(8.pi^3.h^-1/2.c^5/2) in cm^-1.(abc)^3.Eh^-1
-    Fac4AU
-        1/(16.pi^4.h^-1.c^3)    in cm^-1.(abc)^4.Eh^-1
-    Fact1
-        1/(2.pi.h^1/2.c^3/2)    in amu^1/2.Ang.cm^-3/2.attoJ^-1
-    Fact2
-        1/(4.pi^2.c^2)          in amu.Ang^2.cm^-2.attoJ^-1
-    Fact3
-        1/(8.pi^3.h^-1/2.c^5/2) in amu^3/2.Ang^3.cm^-5/2.attoJ^-1
-    Fact4
-        1/(16.pi^4.h^-1.c^3)    in amu^2.Ang^4.cm^-3.attoJ^-1
-    FactA
-        h/(8.pi^2.c^2)          in Ang^2.amu.cm^-1
-    FactB
-        h.c/(2.kB)              in cm.K
-    FactC
-        kB/c^2                  in amu.Bohr^2.cm^-2.K^-1
-    FactG
-        4.pi^2.c/h              in cm.amu^-1.Ang^-2
-    HC
-        h.c                     in attoJ.cm == mdyn.Ang.cm.
-    MWQ2q
-        mass-weighted to dimensionless normal coordinates
-        h^1/2 / (2.pi.c^1/2)    in Bohr.amu^1/2.cm^-1/2
-    PiCH12
-        pi.(c/h)^1/2            in cm^1/2.Ang^-1.amu^-1/2
-    ToUMA
-        amu to uma conversion factor
+
+    ========  =========================================================
+     Label     Unit
+    ========  =========================================================
+     au2amu    a.u. (:math:`m_e`) to a.m.u ("proton" mass)
+     au2cm1    a.u. (:math:`E_h`) to cm^-1
+     au2Deb    a.u. (:math:`e^-.a_0`) to Debye conversion factor
+     au2ESU    a.u. (:math:`e^-`) electron to electric static unit
+     au2kg     a.u. (:math:`m_e`) to kg
+     hbar      :math:`h/(2.pi)`
+               in :math:`u.A^2.s^{-1}`
+     Fac0AU    :math:`1/(h.c)`
+               in :math:`\\text{cm}^{-1}.{E_h}^{-1}`
+     Fac1AU    :math:`1/(2.\\pi.h^{1/2}.c^{3/2})`
+               in :math:`\\text{cm}^{-1}.abc.{E_h}^{-1}`
+     Fac2AU    :math:`1/(4.\\pi^2.c^2)`
+               in :math:`\\text{cm}^{-1}.(abc)^2.{E_h}^{-1}`
+     Fac3AU    :math:`1/(8.\\pi^3.h^{-1/2}.c^{5/2})`
+               in :math:`\\text{cm}^{-1}.(abc)^3.{E_h}^{-1}`
+     Fac4AU    :math:`1/(16.\\pi^4.h^{-1}.c^3)`
+               in :math:`\\text{cm}^{-1}.(abc)^4.{E_h}^{-1}`
+     Fact1     :math:`1/(2.\\pi.h^{1/2}.c^{3/2})`
+               in :math:`u^{1/2}.A.\\text{cm}^{-3/2}.\\text{aJ}^{-1}`
+     Fact2     :math:`1/(4.\\pi^2.c^2)`
+               in :math:`u.A^2.\\text{cm}^{-2}.\\text{aJ}^{-1}`
+     Fact3     :math:`1/(8.\\pi^3.h^{-1/2}.c^{5/2})`
+               in :math:`u^{3/2}.A^3.\\text{cm}^{-5/2}.\\text{aJ}^{-1}`
+     Fact4     :math:`1/(16.\\pi^4.h^{-1}.c^3)`
+               in :math:`u^2.A^4.\\text{cm}^{-3}.\\text{aJ}^{-1}`
+     FactA     :math:`h/(8.\\pi^2.c^2)`
+               in :math:`A^2.u.\\text{cm}^{-1}`
+     FactB     :math:`h.c/(2.k_B)`
+               in cm.K
+     FactC     :math:`k_B/c^2`
+               in :math:`u.{a_0}^2.\\text{cm}^{-2}.K^{-1}`
+     FactG     :math:`4.\\pi^2.c/h`
+               in :math:`\\text{cm}.u^{-1}.A^{-2}`
+     HC        :math:`h.c`
+               in attoJ.cm == mdyn.Ang.cm.
+     MWQ2q     mass-weighted to dimensionless normal coordinates,
+               :math:`h^{1/2} / (2.\\pi.c^{1/2})`
+               in :math:`a_0.u^{1/2}.\\text{cm}^{-1/2}`
+     PiCH12    :math:`\\pi.(c/h)^{1/2}`
+               in :math:`\\text{cm}^{1/2}.A^{-1}.u^{-1/2}`
+     ToUMA     amu to uma conversion factor
+    ========  =========================================================
     """
 
     m2ang = 1.0e10  # meter-to-Angstroms conversion factor

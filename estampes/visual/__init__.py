@@ -1,6 +1,7 @@
 """Module providing basic visual components for ESTAMPES
 
-The following submodules are provided
+The following submodules are provided:
+
 molview
     molecular viewer capabilities
 matplot

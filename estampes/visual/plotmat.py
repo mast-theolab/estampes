@@ -1,22 +1,16 @@
 """Module for matrix/vector plotting.
 
 This module provides simple functions to build matrix/vector
-  representations for Matplotlib.
-
-Methods
--------
-plot_cmat
-    Plots a red-blue heatmap of a C-like matrix.
-plot_jmat
-    Plots a black-white heatmap of a J-like matrix.
-plot_kvec
-    Plots a horizontal bar chart to represent a K-like vector.
+representations for Matplotlib.
 """
 
 import typing as tp
 
 import numpy as np
 import matplotlib as mpl
+import matplotlib.axes as mpl_axes
+import matplotlib.image as mpl_img
+import matplotlib.container as mpl_cont
 from matplotlib.ticker import FuncFormatter
 
 from estampes.base import ArgumentError
@@ -27,26 +21,28 @@ from estampes.base import ArgumentError
 # ==============
 
 def plot_jmat(mat: np.ndarray,
-              canvas: mpl.axes.Axes,
+              canvas: mpl_axes.Axes,
               norm_mode: str = 'byrow',
               show_grid: bool = True,
               *,
               top_down: bool = False,
               invert_modes: bool = False
-              ) -> mpl.image.AxesImage:
+              ) -> mpl_img.AxesImage:
     """Plots a black-white heatmap of a J-like matrix.
 
     Plots the squared elements of a matrix `mat` in the Matplotlib
-      Axes `canvas`.
-    Possible modes of normalization:
-    none
-        no normalization.
-    byrow
-        normalized by row.
-    bycol
-        normalized by col.
-    highest
-        sets highest squared element in the matrix to 1.
+    Axes `canvas`.
+
+    The possible modes of normalization are::
+    
+        none
+            no normalization.
+        byrow
+            normalized by row.
+        bycol
+            normalized by col.
+        highest
+            sets highest squared element in the matrix to 1.
 
     Parameters
     ----------
@@ -65,7 +61,7 @@ def plot_jmat(mat: np.ndarray,
 
     Returns
     -------
-    mpl.image.AxesImage
+    mpl_img.AxesImage
         Image of the matrix.
 
     Raises
@@ -125,12 +121,12 @@ def plot_cmat(mat: np.ndarray,
               *,
               top_down: bool = False,
               invert_modes: bool = False
-              ) -> tp.Tuple[float, mpl.image.AxesImage]:
+              ) -> tp.Tuple[float, mpl_img.AxesImage]:
     """Plots a red-blue heatmap of a C-like matrix.
 
     Plots a normalized matrix has a "hot-cold"-like matrix, normalizing
-      the highest number in absolute value to 1 in Matplotlib Axes
-      `canvas`.
+    the highest number in absolute value to 1 in Matplotlib Axes
+    `canvas`.
 
     Parameters
     ----------
@@ -149,7 +145,7 @@ def plot_cmat(mat: np.ndarray,
     -------
     float
         Normalization factor.
-    mpl.image.AxesImage
+    mpl_img.AxesImage
         Image of the matrix.
     """
     def coords(x: float, y: float) -> str:
@@ -192,7 +188,7 @@ def plot_kvec(vec: np.ndarray,
               *,
               top_down: bool = False,
               invert_modes: bool = False
-              ) -> mpl.container.BarContainer:
+              ) -> mpl_cont.BarContainer:
     """Plots a horizontal bar chart to represent a K-like vector.
 
     Plots a shift vector as a horizontal bars.

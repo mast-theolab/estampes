@@ -44,16 +44,12 @@ TypeQTag : str, int
     Static type for quantity tag.
 TypeRSta : str, int, tuple, optional
     Static type for reference state/transition.
-
-Classes
--------
-ConstDict
-    Derived class from `dict` offering attribute form.
 """
 
 import typing as tp
 try:
     import numpy as np
+    import numpy.typing as npt
     has_np = True
 except ImportError:
     has_np = False
@@ -67,12 +63,11 @@ class ConstDict(dict):
     """Derived type from dict offering attribute style access.
 
     A type derived from `dict`, which offers the possibility to access
-      keys as attributes.
+    keys as attributes.
 
     References
     ----------
     https://goodcode.io/attributes/python-dict-object/
-
     """
     def __getattr__(self, name):
         if name in self:
@@ -116,14 +111,12 @@ TypeColor = tp.Union[tp.Sequence[int], float, str]
 
 # Atoms-related data
 TypeAtData = tp.Dict[str, tp.Dict[str, tp.List[tp.Any]]]
-_tpAtCrd = tp.Sequence[tp.Sequence[float]]
-_tpAtLab = tp.Sequence[_tp_StrInt]
 if has_np:
-    TypeAtCrd = tp.Union[_tpAtCrd, np.ndarray]
-    TypeAtLab = tp.Union[_tpAtLab, np.ndarray]
+    TypeAtCrd = npt.ArrayLike
+    TypeAtLab = npt.ArrayLike
 else:
-    TypeAtCrd = _tpAtCrd
-    TypeAtLab = _tpAtLab
+    TypeAtCrd = tp.Sequence[tp.Sequence[float]]
+    TypeAtLab = tp.Sequence[_tp_StrInt]
 TypeBonds = tp.List[tp.Tuple[int, int]]
 
 # Basic types extended to support multiple molecules

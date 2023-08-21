@@ -1,16 +1,6 @@
 """Module for spectrum plotting.
 
 This module provides simple function to display spectra.
-
-Methods
--------
-plot_spec_2D
-    Plots 2D spectra.
-
-Classes
--------
-SpecLayout
-    Class for the spectrum layout.
 """
 
 import re
@@ -18,6 +8,7 @@ import typing as tp
 
 import numpy as np
 import matplotlib as mpl
+import matplotlib.axes as mpl_axes
 
 from estampes.base import ArgumentError
 
@@ -59,42 +50,6 @@ class SpecLayout(object):
         Number of columns in the legend.
     plottag
         Tag (panel label) for the plot.
-
-    Attributes
-    ----------
-    xleft
-        Leftmost bound (X axis).
-    xright
-        Rightmost bound (X axis).
-    ytop
-        Top bound (Y axis).
-    ybottom
-        Bottom bound (Y axis).
-    xscale
-        Scale for the X axis.
-        Acceptable values: linear
-    yscale
-        Scale for the Y axis.
-        Acceptable values: linear
-    xlabel
-        Label for the X axis.
-    ylabel
-        Label for the Y axis.
-    title
-        Title for the spectrum layout.
-
-    Methods
-    -------
-    set_xbounds(*xaxes, desc=False)
-        Sets X bounds from a list of X axes.
-    set_ybounds(*yaxes, desc=False)
-        Sets Y bounds from a list of X axes.
-    legend(pos=None, ncols=1)
-        Sets the position and options of the legend.
-    set_plot(canvas)
-        Sets the spectrum parameters on a Matplotlib canvas.
-    def_panel(desc, **kwargs)
-        Defines the parameters for a panel label on a canvas.
     """
     def __init__(self,
                  xleft: tp.Optional[tp.Union[int, float, str]] = None,
@@ -126,7 +81,7 @@ class SpecLayout(object):
 
     @property
     def xleft(self) -> tp.Optional[float]:
-        """Gets or sets the X leftmost bound."""
+        """Leftmost bound (X axis), `None` if unset."""
         return self.__xleft
 
     @xleft.setter
@@ -138,7 +93,7 @@ class SpecLayout(object):
 
     @property
     def xright(self) -> tp.Optional[float]:
-        """Gets or sets the X rightmost bound."""
+        """Rightmost bound (X axis), `None` if unset."""
         return self.__xright
 
     @xright.setter
@@ -150,7 +105,7 @@ class SpecLayout(object):
 
     @property
     def xmin(self) -> tp.Optional[float]:
-        """Returns lowest value along X."""
+        """Lower bound (X axis), `None` if no bounds set."""
         if self.__xleft is None and self.__xright is None:
             return None
         else:
@@ -159,7 +114,7 @@ class SpecLayout(object):
 
     @property
     def xmax(self) -> tp.Optional[float]:
-        """Returns highest value along X."""
+        """Upper bound (X axis), `None` if no bounds set."""
         if self.__xleft is None and self.__xright is None:
             return None
         else:
@@ -168,7 +123,7 @@ class SpecLayout(object):
 
     @property
     def ytop(self) -> tp.Optional[float]:
-        """Gets or sets the top limit along Y."""
+        """Top bound (Y axis), `None` if unset."""
         return self.__ytop
 
     @ytop.setter
@@ -180,7 +135,7 @@ class SpecLayout(object):
 
     @property
     def ybottom(self) -> tp.Optional[float]:
-        """Gets or sets the bottom limit along Y."""
+        """Bottom bound (Y axis), `None` if unset."""
         return self.__ybottom
 
     @ybottom.setter
@@ -192,7 +147,7 @@ class SpecLayout(object):
 
     @property
     def ymin(self) -> tp.Optional[float]:
-        """Returns lowest value along Y."""
+        """Lower value of the Y axis, `None` if no bounds set."""
         if self.__ytop is None and self.__ybottom is None:
             return None
         else:
@@ -201,7 +156,7 @@ class SpecLayout(object):
 
     @property
     def ymax(self) -> tp.Optional[float]:
-        """Returns highest value along Y."""
+        """Upper value of the Y axis, `None` if no bounds set."""
         if self.__ytop is None and self.__ybottom is None:
             return None
         else:
@@ -210,7 +165,7 @@ class SpecLayout(object):
 
     @property
     def xlabel(self) -> tp.Optional[str]:
-        """Gets or sets the label for the X axis."""
+        """Label for the X axis."""
         return self.__xlabel
 
     @xlabel.setter
@@ -219,7 +174,7 @@ class SpecLayout(object):
 
     @property
     def ylabel(self) -> tp.Optional[str]:
-        """Gets or sets the label for the X axis."""
+        """Label for the X axis."""
         return self.__ylabel
 
     @ylabel.setter
@@ -227,8 +182,8 @@ class SpecLayout(object):
         self.__ylabel = val
 
     @property
-    def xscale(self) -> tp.Tuple[str, int]:
-        """Gets or sets the scale along the X axis."""
+    def xscale(self) -> tp.Dict[str, tp.Union[str, int]]:
+        """Dictionary with the information on the scale used on X axis."""
         return self.__xscale
 
     @xscale.setter
@@ -247,8 +202,8 @@ class SpecLayout(object):
                 raise IndexError('Unrecognized scale: {}'.format(val))
 
     @property
-    def yscale(self) -> tp.Tuple[str, int]:
-        """Gets or sets the scale along the Y axis."""
+    def yscale(self) -> tp.Dict[str, tp.Union[str, int]]:
+        """Dictionary with the information on the scale used on Y axis."""
         return self.__yscale
 
     @yscale.setter
@@ -268,7 +223,7 @@ class SpecLayout(object):
 
     @property
     def title(self) -> str:
-        """Gets or sets the title of the spectrum."""
+        """Title of the spectrum."""
         return self.__title
 
     @title.setter
@@ -280,7 +235,7 @@ class SpecLayout(object):
 
         Given a list of X values, sets the bounds.
         By default, the bounds are set so that the the lower bound is on
-          the left.  This can be reversed with `desc` = True.
+        the left.  This can be reversed with `desc` = True.
 
         Parameters
         ----------
@@ -306,7 +261,7 @@ class SpecLayout(object):
 
         Given a list of Y values, sets the bounds.
         By default, the bounds are set so that the the lower bound is at
-          the bottom.  This can be reversed with `desc` = True.
+        the bottom.  This can be reversed with `desc` = True.
 
         Parameters
         ----------
@@ -382,11 +337,11 @@ class SpecLayout(object):
             if self.__legcol < 1:
                 raise ValueError('Error in number of columns.')
 
-    def set_plot(self, canvas: mpl.axes.Axes):
+    def set_plot(self, canvas: mpl_axes.Axes):
         """Sets the spectrum parameters on a Matplotlib canvas.
 
         Sets the parameters for the spectrum layout on a Matplotlib
-          canvas.
+        canvas.
 
         Parameters
         ----------
@@ -433,7 +388,7 @@ class SpecLayout(object):
         """Defines the parameters for a panel label on a canvas.
 
         Sets the parameters necessary to include a Places a label `text`
-          in one of the corner of a canvas.
+        in one of the corner of a canvas.
 
         Parameters
         ----------
@@ -442,7 +397,7 @@ class SpecLayout(object):
         kwargs
             Matplotlib Text properties (advanced usage).
             This can be used to override any properties, including
-              the text.
+            the text.
 
         Raises
         ------
@@ -512,7 +467,7 @@ def format_label(label: str, full: bool = False) -> str:
 
 
 def plot_spec_2D(axes: tp.Dict[str, tp.Sequence[float]],
-                 canvas: mpl.axes.Axes,
+                 canvas: mpl_axes.Axes,
                  xlabel: tp.Optional[str] = None,
                  ylabel: tp.Optional[str] = None,
                  legends: tp.Optional[tp.Dict[str, str]] = None,
@@ -524,16 +479,16 @@ def plot_spec_2D(axes: tp.Dict[str, tp.Sequence[float]],
                  yup: tp.Optional[tp.Union[int, float]] = None,
                  is_stick: bool = False,
                  add_y0: bool = False) -> tp.Dict[str, float]:
-    """Plots 2D spectra.
+    """Plot 2D spectra.
 
     Plots one or more 2D spectra in the provided Matplotlib Axes
-      `canvas`.
+    `canvas`.
     If `legends` and/or `colors are given, they must have the same keys
-      as `axes` (for the y axis).
+    as `axes` (for the y axis).
     `xlabel` provides the label for the X axis.  If unset, `legends[x]`
-      is used.  If the key does not exist, a generic label is used.
+    is used.  If the key does not exist, a generic label is used.
     `ylabel` provides the label for the Y axis.  If unset, `legends[I]`
-      is used.  If the key does not exist, a generic label is used.
+    is used.  If the key does not exist, a generic label is used.
 
     Parameters
     ----------

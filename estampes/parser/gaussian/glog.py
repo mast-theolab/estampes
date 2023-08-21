@@ -1,17 +1,8 @@
 """Low-level operations on Gaussian output (log) files.
 
 Provides low-level interfaces to manipulate/extract data in Gaussian
-  output files.
+output files.
 
-Methods
--------
-get_data
-    Gets data from a GLog file for each quantity label.
-
-Classes
--------
-GLogIO
-    Main class to handle Gaussian output file operations.
 """
 
 import os  # Used for file existence check
@@ -62,21 +53,6 @@ xyz2id = {'X': 0, 'Y': 1, 'Z': 2}
 class GLogIO(object):
     """Main class to handle Gaussian output file operations.
 
-    Attributes
-    ----------
-    filename : str
-        Gaussian output filename.
-    version : str
-        Version, software-dependent.
-    full_version : tuple
-        full version:
-        * Gaussian
-        * Gaussian major and minor revisions, mach and relesase date
-
-    Methods
-    -------
-    read_data
-        Extracts 1 or more data blocks from Gaussian's log file.
     """
     def __init__(self, fname: str,
                  load_pos: bool = True) -> None:
@@ -97,7 +73,7 @@ class GLogIO(object):
 
     @property
     def filename(self) -> str:
-        """Gets or sets the filename associated to the GLog object."""
+        """Filename associated to the GLog object."""
         return self.__fname
 
     @filename.setter
@@ -108,13 +84,33 @@ class GLogIO(object):
 
     @property
     def version(self) -> tp.Dict[str, str]:
-        """Returns the version of Gaussian used to generate the log file.
+        """Version of Gaussian used to generate the log file.
+
+        Returns the version as a dictionary with two keys:
+
+        major
+            Major revision.
+        minor
+            Minor revision.
         """
         return {key: self.__gversion[key] for key in ('major', 'minor')}
 
     @property
     def full_version(self) -> tp.Tuple[str, tp.Any]:
-        """Returns the full version, for the parser interface"""
+        """Full version of Gaussian, for the parser interface.
+        
+        Returns the full version of Gaussian used to generate the log file.
+        Available keys:
+
+        major
+            Major revision.
+        minor
+            Minor revision.
+        mach
+            Processor architecture for which Gaussian was compiled.
+        release
+            Release date of this version of Gaussian.
+        """
         return "Gaussian", self.__gversion
 
     def get_head(self):
@@ -159,6 +155,7 @@ class GLogIO(object):
         ----------
         to_find
             List of tuples with the following data:
+
             keyword: str
                 keyword to search.
             link: int
@@ -171,6 +168,7 @@ class GLogIO(object):
                 Which occurrences of the quantity to extract.
             endcond: function
                 End condition function, which takes a string as argument.
+
         raise_error
             Only raises error if `True`, otherwise proceeds silently.
 
@@ -350,7 +348,7 @@ class GLogIO(object):
         """Stores the link header positions in the file if available.
 
         Loads the keys present in the file and pointers to their
-          position to speed up their search.
+        position to speed up their search.
         Data type and block information are also stored.
         """
         # link_heads = {
@@ -396,24 +394,30 @@ def qlab_to_linkdata(qtag: TypeQTag,
     """Returns the keyword(s) relevant for a given quantity.
 
     Returns the a tuple, containing:
+
     1. the link(s), which may provide the quantities.
-        The returned value can be:
+       The returned value can be:
+
         * `=0`: No specific link provides the data
         * `>0`: Link which produces the data
+
     2. specific keyword to search, *from the start of the line*
     3. jump/skip information:
+
         * `int`: Number of lines to pass.
         * `str`: Sub-string to search (ex: '----').
+
     4. Regular expression for the data specification.
-        The key `val` refers to the data of interest.
+       The key `val` refers to the data of interest.
     5. Ending condition, as a function taking a string in arg.
     6. Number of occurrences to search, as integer:
+
         * `0`: only the first occurrence, then stop.
         * `-1`: takes the last, discarding all previous ones.
         * `1`: takes all occurrences.
-    If multiple links can provide the data or alternative keywords are
-      available, the function returns tuples of data for each quantity.
 
+    If multiple links can provide the data or alternative keywords are
+    available, the function returns tuples of data for each quantity.
 
     Parameters
     ----------
@@ -2463,7 +2467,7 @@ def get_data(dfobj: GLogIO,
     """Gets data from a GLog file for each quantity label.
 
     Reads one or more full quantity labels from `qlab` and returns the
-      corresponding data.
+    corresponding data.
 
     Parameters
     ----------
@@ -2719,7 +2723,7 @@ def _parse_logdat_vtransprop(qtag: int,
     """Sub-function to parse GLog data for vib. transition moment.
 
     Sub-function dedicated to parsing data related to vibrational,
-        transition moments of properties, stored in datablocks.
+    transition moments of properties, stored in datablocks.
 
     Parameters
     ----------
@@ -2834,11 +2838,11 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
 
     This function retrieves or builds the eigenvectors and eigenvalues.
     Contrary to ``get_data`` which only looks for available data, this
-      functions looks for alternative forms to build necessary data.
+    functions looks for alternative forms to build necessary data.
     It also returns a Numpy array instead of Python lists.
     Preloaded data can be provided to avoid duplicating extraction
-      queries.  They are expected in the same format as given by
-      GLogIO methods.
+    queries.  They are expected in the same format as given by
+    GLogIO methods.
 
     Parameters
     ----------

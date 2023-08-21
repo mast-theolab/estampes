@@ -1,14 +1,8 @@
 """Module providing basic computer-related functions
 
 A basic module providing methods related to basic computer operations,
-  for ESTAMPES tools.
+for ESTAMPES tools.
 
-Methods
--------
-convert_storage
-    Converts storage string to number of bytes.
-bytes_units
-    Converts a number of bytes to a human readable unit.
 """
 
 import typing as tp
@@ -31,7 +25,7 @@ def convert_storage(label: str) -> int:
     """Converts storage string to number of bytes.
 
     Given a storage specification with unit, converts it to a number of
-      bytes.
+    bytes.
 
     Parameters
     ----------
@@ -89,8 +83,8 @@ def bytes_units(num_bytes: int,
     """Converts a number of bytes to a human readable unit.
 
     Given a number of bytes (integer), returns a string with the
-      storage expressed in a human readable form or in a specific
-      unit.
+    storage expressed in a human readable form or in a specific
+    unit.
 
     Parameters
     ----------

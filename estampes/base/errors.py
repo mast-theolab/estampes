@@ -27,7 +27,7 @@ class ArgumentError(Exception):
     """Generates an error for inconsistency/errors in arguments.
 
     Generates an error if inconsistency/errors are found in arguments in
-      calls to functions/methods.
+    calls to functions/methods.
 
     Parameters
     ----------
@@ -92,7 +92,7 @@ class QuantityError(Exception):
     """Generates an error if quantity is not supported.
 
     Generates an error if a quantity is not supported either as a whole
-      or in specific conditions.
+    or in specific conditions.
 
     Parameters
     ----------

@@ -1,12 +1,8 @@
 """Module providing basic character strings-related functions
 
 A basic module providing methods related to character string operations,
-  for ESTAMPES tools.
+for ESTAMPES tools.
 
-Methods
--------
-convert_expr
-    Converts mathematical expression to correct Python form.
 """
 
 import re
@@ -23,10 +19,10 @@ def convert_expr(expr: str,
     """Converts mathematical expression to correct Python form.
 
     A very basic function to convert a mathematical expression given in
-      a more natural language to Python-compatible expressions.
+    a more natural language to Python-compatible expressions.
     It is intended primarily for expressions like scaling or "scaled"
-      units, like "10^-40 esu^2 cm^2", not to provide a complete
-      mathematical framework.
+    units, like `"10^-40 esu^2 cm^2"`, not to provide a complete
+    mathematical framework.
 
     Parameters
     ----------

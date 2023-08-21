@@ -5,12 +5,6 @@ A basic module providing the main class for manipulating spectral data.
 Attributes
 ----------
 
-Methods
--------
-
-Classes
--------
-Spectrum
 """
 
 from math import ceil
@@ -157,24 +151,28 @@ class Spectrum():
     """Main class to manipulate spectra.
 
     Provides the basic instruments to access and manipulate spectral
-      data.
+    data.
     Only one spectroscopy can be stored.  Supported:
-    * `OPA`: One-Photon Absorption
-    * `OPE`: One-Photon Emission
-    * `ECD`: Electronic Circular Dichroism
-    * `CPL`: Circularly Polarized Luminescence
-    * `RR`: Resonance Raman
-    * `RROA`: Resonance Raman Optical Activity
-    * `IR`: Infrared
-    * `VCD`: Vibrational Circular Dichroism
-    * `RS0`: Raman Scattering (static)
-    * `RS`: Raman Scattering (dynamic)
-    * `ROA`: Raman Optical Activity
+
+    :"OPA": One-Photon Absorption
+    :"OPE": One-Photon Emission
+    :"ECD": Electronic Circular Dichroism
+    :"CPL": Circularly Polarized Luminescence
+    :"RR": Resonance Raman
+    :"RROA": Resonance Raman Optical Activity
+    :"IR": Infrared
+    :"VCD": Vibrational Circular Dichroism
+    :"RS0": Raman Scattering (static)
+    :"RS": Raman Scattering (dynamic)
+    :"ROA": Raman Optical Activity
+    
     Levels of theory:
-    * `E[le[ctronic]]`: Pure electronic level (only electronic trans.)
-    * `H[arm]`: Harmonic approximation of nuclear vibrations
-    * `A[nh[arm]]`: Anharmonic representation of nuclear vibrations
-    To avoid any ambiguity, spectroscopies and levels of theory *must*
+    
+    :"E[le[ctronic]]": Pure electronic level (only electronic trans.)
+    :"H[arm]": Harmonic approximation of nuclear vibrations
+    :"A[nh[arm]]": Anharmonic representation of nuclear vibrations
+
+    To avoid any ambiguity, spectroscopies and levels of theory **must**
       be provided.
 
     Parameters
@@ -198,47 +196,11 @@ class Spectrum():
         If `ftype` is `CSV`, `specabbr` and `level` are ignored.
     params
         Spectroscopy-specific parameters:
+        
         Raman/ROA
-            * `incfrq`: incident frequency
-            * `setup`: experimental setup (e.g., SCP(180))
 
-    Attributes
-    ----------
-    xaxis
-        Shows reference X axis.
-    yaxis
-        Shows reference Y axis.
-    label
-        Gets/sets label of the spectrum.
-    hwhm
-        Gets/sets HWHM for the broadening.
-    func
-        Gets/sets broadening function.
-    linecolor
-        Gets/sets the line color.
-    linestyle
-        Gets/sets the line style.
-    linewidth
-        Gets/sets the line width.
-
-    Methods
-    -------
-    load_data(ylabel)
-        Loads data from data file.
-    reset()
-        Resets reference axes to original axes.
-    get_ytags()
-        Returns all available Y axes in data file (will load if needed).
-    get_xaxis(origin)
-        Shows X axis.
-    get_yaxis(origin)
-        Shows Y axis.
-    get_broadening(info, origin)
-        Shows broadening data.
-    set_broadening(hwhm, func, yunit, origin)
-        Sets broadening data.
-    set_display(color, linestyle, linewidth)
-        Sets display parameters.
+            :"incfrq": incident frequency
+            :"setup": experimental setup (e.g., SCP(180))
 
     Raises
     ------
@@ -485,7 +447,7 @@ Available: {}'''
 
         Resets the pointers/aliases to the original data.
         Note that this is only possible if the data have not been
-          overwritten.
+        overwritten.
         """
         self.__idref = 0
         self.__xaxis[1] = None
@@ -584,7 +546,7 @@ Available: {}'''
 
     @property
     def label(self) -> str:
-        """Gets or sets label for the spectrum."""
+        """Label for the spectrum."""
         return self.__label
 
     @label.setter
@@ -661,7 +623,7 @@ Available: {}'''
         Notes
         -----
         It is possible to override the original data only if the
-          function is `None`.
+        function is `None`.
 
         Raises
         ------
@@ -733,7 +695,7 @@ Available: {}'''
 
     @property
     def hwhm(self) -> tp.Optional[float]:
-        """Gets or sets the HWHM for the broadening."""
+        """HWHM for the broadening."""
         return self.get_broadening(info='hwhm')
 
     @hwhm.setter
@@ -782,7 +744,7 @@ Available: {}'''
 
     @property
     def linecolor(self) -> tp.Optional[TypeColor]:
-        """Gets or sets the line color."""
+        """Line color."""
         return self.__linecol
 
     @linecolor.setter
@@ -791,7 +753,7 @@ Available: {}'''
 
     @property
     def linestyle(self) -> tp.Optional[str]:
-        """Gets or sets the line style."""
+        """Line style."""
         return self.__linesty
 
     @linestyle.setter
@@ -800,7 +762,7 @@ Available: {}'''
 
     @property
     def linewidth(self) -> tp.Optional[str]:
-        """Gets or sets the line width."""
+        """Line width."""
         return self.__linewdt
 
     @linewidth.setter

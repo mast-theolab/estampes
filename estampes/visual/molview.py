@@ -5,25 +5,11 @@ This module provides basic methods for the molecular visualization.
 Attributes
 ----------
 BONDDATA
-    Bond data for visualization
+    Bond data for visualization.
 MOLCOLS
     List of molecular colors with a sufficiently good contrast.
 RAD_VIS_SCL
-    Default scaling factors of radius for visualization
-
-Methods
--------
-build_box
-    Builds the outer box containing the molecule.
-set_cam_zpos
-    Sets Z position of camera in POV-Ray.
-write_pov
-    Writes a Pov-Ray file.
-
-Classes
--------
-Molecule
-    Molecule class for the visualization.
+    Default scaling factors of radius for visualization.
 """
 
 from math import sqrt, inf, tan, radians
@@ -160,7 +146,9 @@ class Molecule(Qt3DCore.QEntity):
         """Sets display settings for the molecule.
 
         Sets color information and rendering.
-        Available settings:
+        
+        Parameters
+        ----------
         col_bond_as_atom
             Each bond half uses the color of the connected atom.
         rad_atom_as_bond
@@ -447,13 +435,14 @@ def build_box(at_lab: TypeAtLab,
     """Builds the outer box containing the molecule.
 
     Builds the outer box containing the whole molecule and returns its
-      bounds:
-    * xmin
-    * xmax
-    * ymin
-    * ymax
-    * zmin
-    * zmax
+    bounds:
+
+    * xmin: lower X value
+    * xmax: upper X value
+    * ymin: lower Y value
+    * ymax: upper Y value
+    * zmin: lower Z value
+    * zmax: upper Z value
 
     Arguments
     ---------
@@ -465,6 +454,10 @@ def build_box(at_lab: TypeAtLab,
         If true, atomic radii are set equal to the bonds (tubes).
 
     Returns
+    -------
+    dict
+        Dictionary with positions of `xmin`, `xmax`, `ymin`, `ymax`,
+        `zmin`, `zmax`.
     """
     xmin, ymin, zmin, xmax, ymax, zmax = +inf, +inf, +inf, -inf, -inf, -inf
     atrad = rad_atom_as_bond and BONDDATA['rvis']*RAD_VIS_SCL or None
@@ -507,11 +500,14 @@ def set_cam_zpos(box_mol: tp.Dict[str, float],
     """Sets Z position of camera in POV-Ray.
 
     Sets the Z position of the camera in POV-Ray, assuming that the axes
-        are the following:
-    y ^   ^ z
-      |  /
-      | /
-      -------------> x
+    are the following:
+
+    .. code-block:: text
+
+        y ^   ^ z
+          |  /
+          | /
+          -------------> x
 
     References
     ----------
@@ -553,7 +549,7 @@ def write_pov(fname: str,
 
     Builds and writes a Pov-Ray file.
     If `nmols` > 1, `at_lab`, `at_crd`, `bonds` are lists, with each
-      item corresponding to a molecule.
+    item corresponding to a molecule.
 
     Parameters
     ----------

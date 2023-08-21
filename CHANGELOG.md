@@ -33,6 +33,7 @@ Other blocks are:
 - **API** - Added qlabel *FCData:RedDim* and support in `parser.gaussian.glog` to extract information on normal-modes numbering in reduced-dimensionality schemes.
 - **API** - Lengths and velocity gauges can be specified in the *qlabel* for dipole and rotatory strengths.
 - **API** - The parser for the Gaussian log now indicates the *qlabel* for the missing quantity in the raised error.
+- **API** - Added Make file to build the API documentation.
 
 ### Fixed
 - **LIB** - Corrected the invariants related to the electric dipole-induced electric quadrupole in `spectro.RamanInvariants`.
@@ -41,7 +42,7 @@ Other blocks are:
 - **API** - Parsing of ground-to-excited rotatory strengths in Gaussian log files.
 - **API** - Fixed broken support of *AtCrd:all* in Gaussian log files.
 - **API** - Fixed cases where *NAtoms* was not properly read from Gaussian log files.
-
+- **API** - Improved internal code documentation to be compatible with Sphinx.
 
 ## [0.4.3] - 2023-02-24
 

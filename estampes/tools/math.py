@@ -1,22 +1,8 @@
 """Module providing mathematical functions
 
 A basic module providing methods for some useful mathematical
-  operations, for ESTAMPES tools.
+operations, for ESTAMPES tools.
 
-Methods
--------
-f_gauss
-    Gaussian distribution function.
-f_lorentz
-    Lorentzian distribution function.
-levi_civita_tens
-    Builds the Levi-Civita tensor
-square_ltmat
-    Squares a lower-triangular matrix.
-superpose
-    Returns the transformation matrices to superpose 2 structures.
-vrotate_3D
-    Rotates a vector in a 3D space.
 """
 
 from math import exp, log, pi, sqrt
@@ -38,7 +24,7 @@ def f_gauss(x: float,
     """Value of a Gaussian broadening function at x.
 
     Computes the value of Gaussian distribution function with an
-        integrated area of `y0` centered on position `x0` at `x`.
+    integrated area of `y0` centered on position `x0` at `x`.
 
     Parameters
     ----------
@@ -76,7 +62,7 @@ def f_lorentz(x: float,
     """Value of a Lorentzian broadening function at x.
 
     Computes the value of Lorentzian distribution function with an
-        integrated area of `y0` centered on position `x0` at `x`.
+    integrated area of `y0` centered on position `x0` at `x`.
 
     Parameters
     ----------
@@ -125,7 +111,7 @@ def square_ltmat(ltmat: tp.Union[tp.Sequence[float], np.ndarray],
     """Squares a lower-triangular matrix.
 
     Takes a lower-triangular matrix and returns the 2D symmetric or
-      antisymmetric matrix.
+    antisymmetric matrix.
 
     Parameters
     ----------
@@ -182,10 +168,12 @@ def superpose(c_ref: TypeAtCrd,
     """Returns the transformation matrices to superpose c_new onto c_ref.
 
     Returns the rotation matrix and transition vector to maximize the
-      superposition of `c_new` onto `c_ref`.  The translated and rotated
-      coordinates can be returned on request.
+    superposition of `c_new` onto `c_ref`.  The translated and rotated
+    coordinates can be returned on request.
     The superposition can be mass-weighted if requested.
     The coordinates should have the form (N,3).
+
+    The algorithm is described in Refs. [1]_ [2]_
 
     Parameters
     ----------
@@ -215,6 +203,10 @@ def superpose(c_ref: TypeAtCrd,
     ------
     IndexError
         Inconsistency in structure shapes.
+
+    Notes
+    -----
+    See Ref. [1,2] for details on the algorithms.
 
     References
     ----------
@@ -323,7 +315,7 @@ def vrotate_3D(vec: np.ndarray,
     """Rotates a vector in a 3D space.
 
     Returns the rotation matrix for `vec` to match the orientation of a
-      reference vector `ref`.
+    reference vector `ref`.
     https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d/476311#476311
 
     Parameters

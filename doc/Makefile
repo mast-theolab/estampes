@@ -41,6 +41,10 @@ api: $(api_ext)
 
 lib: $(lib_ext)
 
+autodoc :
+	python3 $$(which sphinx-apidoc) -f -o source/ ../../estampes/ ../../estampes/setup.py
+	python3 $$(which sphinx-build) -b html source/ build/
+
 %.pdf : %.adoc
 	asciidoctor-pdf $< $(opts_pdf) -o build/pdf/$@
 	rm stem-*
@@ -54,3 +58,6 @@ lib: $(lib_ext)
 clean:
 	rm -fr build/
 
+autoclean :
+	rm source/estampes*.rst source/modules.rst source/test.rst
+	rm -r build/*

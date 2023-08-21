@@ -2,17 +2,8 @@
 
 This module provides basic classes and methods to parse CSV files.
 Since the internal module of Python for CSV parsing is pretty dumb,
-  an alternative parser is built by hand.
+an alternative parser is built by hand.
 
-Methods
--------
-get_data
-    Gets data from a CSV file for each quantity label.
-
-Classes
--------
-FileCSV
-    Main class to handle CSV files.
 """
 
 import os
@@ -40,19 +31,6 @@ PATTERN_F = re.compile(txt_F)
 class FileCSV(object):
     """Main class to handle XYZ files.
 
-    Attributes
-    ----------
-    filename : str
-        File name.
-    full_version : tuple
-        full version:
-        * CSV
-        * None
-
-    Methods
-    -------
-    read_data(to_find, geom, raise_error)
-        Extracts 1 or more data blocks from the CSV file.
     """
     def __init__(self, fname: str) -> None:
         self.filename = fname
@@ -266,7 +244,7 @@ def get_data(dfobj: FileCSV,
     """Gets data from a CSV file for each quantity label.
 
     Reads one or more full quantity labels from `qlabels` and returns
-      the corresponding data.
+    the corresponding data.
 
     Parameters
     ----------

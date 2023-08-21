@@ -2,12 +2,6 @@
 
 Module providing tools to manipulate data relative to spectra.
 
-Methods
--------
-broaden
-    Broadens a stick spectra with a given broadening function.
-convert_y
-    Returns parameters for the broadening to convert Y units.
 """
 
 from math import ceil, log, pi
@@ -36,17 +30,20 @@ def broaden(xval: tp.Sequence[float],
     """Broadens a stick spectra with a given broadening function.
 
     Performs the broadening operation given a list of transitions stored in
-      two separate arrays, `xval` and `yval`.
+    two separate arrays, `xval` and `yval`.
     Returns the broadened spectrum for each point in `xaxis`.
+
     `yaxis` is computed as:
-    yax[i] = sum_j yf*yv[j]*xfunc(xax[i])*f(xax[i]-xv[j])
-    * yax: `yaxis`
-    * jf: `yfactor`
-    * yv: `yval`
-    * xax: `xaxis`
-    * xpow: `xpower`
-    * f: `function`
-    * xv: `xval`
+    
+    .. math:: y_a(i) = sum_j y_f*y_v(j)*f(x_a(i))*g(x_a(i)-x_v(j))
+
+    * :math:`y_a`: `yaxis`
+    * :math:`y_f`: `yfactor`
+    * :math:`y_v`: `yval`
+    * :math:`x_a`: `xaxis`
+    * :math:`x_v`: `xval`
+    * :math:`f`: xfunc
+    * :math:`g`: broadening function, related to `funcname`
 
     Parameters
     ----------
@@ -133,13 +130,14 @@ def convert_y(specabbr: str,
     """Returns parameters for the conversion of Y units.
 
     Returns the scaling factor and the power of X needed to convert the
-      Y unit from `unit_from` to `unit_to`.
+    Y unit from `unit_from` to `unit_to`.
     The units are strings composed of two parts, separated by colon:
-    - a description: DS, RS, RA, I, II...
-    - a unit: km/mol, cgs...
+
+    * a description: DS, RS, RA, I, II...
+    * a unit: km/mol, cgs...
+
     A default unit may be available, in which case, the unit can be
-      provided as:
-    `desc:`
+    provided as: "desc:"
 
     Parameters
     ----------
@@ -151,8 +149,10 @@ def convert_y(specabbr: str,
         Original Y unit.
     subopts
         Sub-options, dependent on quantity:
-        - 'incfreq': incident frequency for Raman, ROA (in cm^-1)
-                     if not present or None, use def. 532 nm.
+
+        'incfreq'
+            incident frequency for Raman, ROA (in cm^-1)
+            if not present or None, use def. 532 nm.
 
     Returns
     -------
@@ -173,17 +173,21 @@ def convert_y(specabbr: str,
     Notes
     -----
     * Recognized unit descriptions:
+
         * `I` - intensity
         * `II` - integrated intensity
         * `DS` - dipole strength
         * `RS` - rotatory strength
         * `RA` - Raman activity
         * `ROA` - Raman optical activity
+
     * Units are case-sensitive to avoid ambiguities.
       "/" and "." must be indicated correctly.
+
         * `M-1` or `/M` -> dm^3/mol
         * `M-1.cm-1` or `/M/cm` -> dm^3/mol/cm
         * `M-1.cm-2` or `/M/cm2` -> dm^3/mol/cm^2
+
     """
     msgNYI = f'For {specabbr}: conversion from "{unit_from}" to "{unit_to}"' +\
         ' not yet implemented.'

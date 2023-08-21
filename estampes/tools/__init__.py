@@ -1,8 +1,11 @@
 """Module with different tools to facilitate data operations in ESTAMPES
 
 This module provides different simple tools, by submodules to facilitate
-  common operations like conversions, transformations...
+common operations like conversions, transformations...
 The tools are gathered by submodules based on their intended use:
+
+List of sub-modules
+-------------------
 `atom`
     Atom-specific tools.
 `comp`
