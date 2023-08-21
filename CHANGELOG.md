@@ -22,6 +22,9 @@ Other blocks are:
 
 ## Unreleased
 
+
+## [0.4.4] - 2023-18-21
+
 ### Added
 - **VIZ** - Added support of click events in molecule object for the 3D visualization.
 - **LIB** - New function `tools.vib.build_dusch_J` to compute the Duschinsky matrix J.
