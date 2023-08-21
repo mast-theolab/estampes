@@ -2,19 +2,13 @@
 
 Module providing tools to manipulate data relative to molecules.
 
-Methods
--------
-center_of_mass
-    Computes the center of mass.
-list_bonds
-    Finds and lists bonds between atoms.
 """
 
 import typing as tp
 
 import numpy as np
 
-from estampes.base import TypeAtCrd, TypeAtLab, TypeBonds
+from estampes.base import TypeAtCrd, TypeAtLab, TypeAtMas, TypeBonds
 from estampes.data.atom import atomic_data
 
 
@@ -31,7 +25,7 @@ from estampes.data.atom import atomic_data
 # ==============
 
 def center_of_mass(at_crd: TypeAtCrd,
-                   at_mass: np.ndarray) -> np.ndarray:
+                   at_mass: TypeAtMas) -> np.ndarray:
     """Computes the center of a mass.
 
     Computes and returns the center of mass.

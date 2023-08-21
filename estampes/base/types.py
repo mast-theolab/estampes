@@ -16,6 +16,8 @@ TypeAtLab : list
     Static type for atomic labels.
 TypeAtLabM
     Static type for atomic labels (multiple molecules).
+TypeAtMas : list, np.ndarray
+    Static type for atomic masses.
 TypeBonds : list
     Static type for bond list, as (atom1, atom2).
 TypeBondsM
@@ -114,9 +116,11 @@ TypeAtData = tp.Dict[str, tp.Dict[str, tp.List[tp.Any]]]
 if has_np:
     TypeAtCrd = npt.ArrayLike
     TypeAtLab = npt.ArrayLike
+    TypeAtMas = npt.ArrayLike
 else:
     TypeAtCrd = tp.Sequence[tp.Sequence[float]]
     TypeAtLab = tp.Sequence[_tp_StrInt]
+    TypeAtMas = tp.Sequence[float]
 TypeBonds = tp.List[tp.Tuple[int, int]]
 
 # Basic types extended to support multiple molecules

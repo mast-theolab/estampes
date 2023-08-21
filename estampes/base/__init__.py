@@ -12,6 +12,8 @@ TypeAtLab : list
     Static type for atomic labels.
 TypeAtLabM
     Static type for atomic labels (multiple molecules).
+TypeAtMas : list, np.ndarray
+    Static type for atomic masses.
 TypeBonds : list
     Static type for bond list, as (atom1, atom2).
 TypeBondsM
@@ -58,9 +60,9 @@ QuantityError
 # flake8: noqa: F401
 
 from estampes.base.types import TypeAtCrd, TypeAtCrdM, TypeAtData, TypeAtLab, \
-    TypeAtLabM, TypeBonds, TypeBondsM, TypeColor, TypeQData, TypeDCrd, \
-    TypeDFChk, TypeDGLog, TypeDOrd, TypeQInfo, TypeQLab, TypeQLvl, TypeQOpt, \
-    TypeQTag, TypeRSta, ConstDict
+    TypeAtLabM, TypeAtMas, TypeBonds, TypeBondsM, TypeColor, TypeQData, \
+    TypeDCrd, TypeDFChk, TypeDGLog, TypeDOrd, TypeQInfo, TypeQLab, TypeQLvl, \
+    TypeQOpt, TypeQTag, TypeRSta, ConstDict
 
 from estampes.base.errors import ArgumentError, ParseDataError, \
     ParseKeyError, ParsingError, QuantityError
