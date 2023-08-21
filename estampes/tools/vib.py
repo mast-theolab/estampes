@@ -4,11 +4,101 @@ Module providing tools to manipulate data relative to vibrations.
 
 """
 
+import typing as tp
+
 import numpy as np
+
+from estampes.base import TypeAtCrd, TypeAtMas, ArgumentError
 
 # ==============
 # Module Methods
 # ==============
+
+def build_dusch_J(Lmat_A: np.ndarray,
+                  Lmat_B: np.ndarray,
+                  orth_L: bool = True,
+                  at_mass_A: tp.Optional[np.ndarray] = None,
+                  at_mass_B: tp.Optional[np.ndarray] = None) -> np.ndarray:
+    """Build Duschinsky matrix J.
+    
+    Build the Duschinsky matrix J corresponding to:
+
+    :math:`Q_A = J Q_B + K`
+
+    with :math:`J = L_A M_A^{1/2} M_B^{-1/2} L_B^{-1}`.
+
+    By default, the L matrices are assumed pseudo-orthogonal and the
+    masses are the same, so :math:`J = L_A L_B^{T}`
+
+    Parameters
+    ----------
+    Lmat_A
+        Eigenvectors of the Hessian matrix of system A, as (N,3Na) array.
+    Lmat_B
+        Eigenvectors of the Hessian matrix of system B, as (N,3Na) array.
+    orth_L
+        If True, `Lmat_A` and `Lmat_B` are assumed pseudo-orthogonal.
+    at_mass_A
+        Vector of atomic masses of system A.
+    at_mass_B
+        Vector of atomic masses of system B.
+    
+    Returns
+    -------
+    np.ndarray
+        (N,N) Duschinsky matrix J.
+    """
+    if orth_L:
+        if at_mass_A is None and at_mass_B is None:
+            Jmat = np.einsum('ij,kj->ik', Lmat_A, Lmat_B)
+        else:
+            if not (at_mass_A is not None and at_mass_B is not None):
+                raise ArgumentError('Atomic masses of both systems are needed')
+            massA = np.sqrt(np.repeat(at_mass_A, 3))
+            massB = np.repeat(at_mass_B, 3)**(-1/2)
+            Jmat = np.einsum('ij,j,j,kj->ij', Lmat_A, massA, massB, Lmat_B)
+    else:
+        if at_mass_A is None and at_mass_B is None:
+            Jmat = np.einsum('ij,jk->ik', Lmat_A, np.linalg.pinv(Lmat_B))
+        else:
+            if not (at_mass_A is not None and at_mass_B is not None):
+                raise ArgumentError('Atomic masses of both systems are needed')
+            massA = np.sqrt(np.repeat(at_mass_A, 3))
+            massB = np.repeat(at_mass_B, 3)**(-1/2)
+            Jmat = np.einsum('ij,j,j,jk->ij', Lmat_A, massA, massB,
+                             np.linalg.pinv(Lmat_B))
+            
+    return Jmat
+
+
+def build_dusch_K(Lmat: np.ndarray,
+                  at_mass: TypeAtMas,
+                  at_deltaR: tp.Optional[TypeAtCrd] = None) -> np.ndarray:
+    """Build Duschinsky-transformation shift vector K.
+    
+    Build the shift vector associated to the Duschinsky transformation,
+    
+    :math:`Q_A = J Q_B + K`
+
+    The form of K depends on the availability of two equilibrium
+    geometries.  In electronic transitions, this is related to the
+    adiabatic or vertical models adopted to describe the transition.
+    
+    Parameters
+    ----------
+    Lmat
+        Transformation matrix from mass-weighted cart. to normal coord. (N,3Na).
+    at_mass
+        Atomic masses, as a 1D array.
+    at_deltaR
+        Difference between equilibrium geometries (:math:`\Delta R`).
+    """
+    if at_deltaR is not None:
+        mass = np.sqrt(np.repeat(at_mass, 3))
+        Kvec = np.einsum('ij,j,j->i', Lmat, mass, np.reshape(at_deltaR, (-1,)))
+    else:
+        raise NotImplementedError('Vertical K not yet implemented.')
+    return Kvec
 
 
 def orient_modes(Lmat: np.ndarray) -> np.ndarray:
