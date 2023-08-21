@@ -23,6 +23,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **VIZ** - Added support of click events in molecule object for the 3D visualization.
 - **LIB** - New function `tools.vib.build_dusch_J` to compute the Duschinsky matrix J.
 - **LIB** - New function `tools.vib.build_dusch_K` to compute the shift vector K associated to the Duschinsky transformation.
 - **LIB** - New function `tools.mol.inertia_mom` to compute the inertia moment from atomic masses and coordinates.

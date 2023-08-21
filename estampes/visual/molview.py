@@ -16,7 +16,6 @@ from math import sqrt, inf, tan, radians
 import typing as tp
 
 import numpy as np
-import numpy.typing as npt
 
 from PySide6 import QtCore, QtGui
 from PySide6.Qt3DCore import Qt3DCore
@@ -89,6 +88,9 @@ class Molecule(Qt3DCore.QEntity):
     addMouse(cam)
         Add mouse support.
     """
+    click_molatom = QtCore.Signal(list)
+    __mol_count = 0
+
     def __init__(self,
                  at_lab: TypeAtLab,
                  at_crd: TypeAtCrd,
@@ -99,6 +101,8 @@ class Molecule(Qt3DCore.QEntity):
                  rootEntity: tp.Optional[Qt3DCore.QEntity] = None):
         super(Molecule, self).__init__(rootEntity)
 
+        self.__class__.__mol_count += 1
+        self.__mol_id = self.__class__.__mol_count
         self.set_display_settings(
             col_bond_as_atom=col_bond_as_atom,
             rad_atom_as_bond=rad_atom_as_bond,
@@ -350,6 +354,14 @@ class Molecule(Qt3DCore.QEntity):
             loc_pos = clickEvent.localIntersection()
             # Subtracting them give us the origin of the sphere
             self._cam().setViewCenter(abs_pos-loc_pos)
+        elif clickEvent.button() == QtCore.Qt.LeftButton:
+            self.click_molatom.emit(
+                [self.__mol_id,
+                 self.__at_obj.index(clickEvent.entity())+1])
+
+    @classmethod
+    def reset_counter(cls):
+        Molecule.__mol_count = 0
 
 
 class MolWin(Qt3DExtras.Qt3DWindow):
@@ -375,6 +387,8 @@ class MolWin(Qt3DExtras.Qt3DWindow):
     molcols
         If not `None`, color of the each molecule.
     """
+    click_mol = QtCore.Signal(list)
+
     def __init__(self, nmols: int,
                  atlabs: TypeAtLabM,
                  atcrds: TypeAtCrdM,
@@ -391,17 +405,24 @@ class MolWin(Qt3DExtras.Qt3DWindow):
 
         # For camera controls
         self.rootEntity = Qt3DCore.QEntity()
+        Molecule.reset_counter()
         if nmols == 1:
             self.mol = Molecule(atlabs, atcrds, bonds, col_bond_as_atom,
                                 rad_atom_as_bond, molcols, self.rootEntity)
             self.mol.addMouse(self.camera)
+            self.mol.click_molatom.connect(self.atom_clicked)
         else:
             self.mols = []
             for i in range(nmols):
+                if molcols is None:
+                    molcol = None
+                else:
+                    molcol = molcols[i]
                 self.mols.append(Molecule(atlabs[i], atcrds[i], bonds[i],
                                           col_bond_as_atom, rad_atom_as_bond,
-                                          molcols[i], self.rootEntity))
+                                          molcol, self.rootEntity))
                 self.mols[-1].addMouse(self.camera)
+                self.mols[-1].click_molatom.connect(self.atom_clicked)
         self.camController = Qt3DExtras.QOrbitCameraController(self.rootEntity)
         self.camController.setLinearSpeed(50)
         self.camController.setLookSpeed(180)
@@ -416,8 +437,22 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         # for mol in mols:
         self.setRootEntity(self.rootEntity)
 
+    @QtCore.Slot(list)
+    def atom_clicked(self, molatom: tp.Sequence[int]):
+        """Captures the information on the clicked atom.
+
+        Captures the information from the clicked atom on one of the
+        molecules.
+
+        Parameters
+        ----------
+        molatom
+            Molar atom, as a list of integers.
+        """
+        self.click_mol.emit(molatom)
+
     def mousePressEvent(self, mouseEvent):
-        if (mouseEvent.button() == QtCore.Qt.RightButton):
+        if mouseEvent.button() == QtCore.Qt.RightButton:
             self.camera().setViewCenter(QtGui.QVector3D(0, 0, 0))
         # print(mouseEvent.x())
         # self.camera().setViewCenter(QtGui.QVector3D(mouseEvent.x(),
