@@ -968,10 +968,12 @@ def parse_data(qdict: TypeQInfo,
         elif qtag == 'molsym':
             raise NotImplementedError()
         elif qtag == 'swver':
-            pattern = re.compile(r'(\w+)-(\w{3})Rev([\w.+]+)')
+            pattern = re.compile(r'(?:(\w+)-)?(\w{3})Rev-?([\w.+]+)')
             res = re.match(pattern, ''.join(datablocks[kword])).groups()
-            data[qkey] = {'major': res[1], 'minor': res[2],
-                          'system': res[0], 'release': None}
+            data[qkey] = {'major': res[-2], 'minor': res[-1]}
+            if len(res) == 3:
+                data[qkey]['system'] = res[0]
+            data[qkey]['release'] = None
         # Vibrational Information
         # -----------------------
         # Technically state should be checked but considered irrelevant.

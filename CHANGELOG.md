@@ -26,7 +26,7 @@ Other blocks are:
 - **LIB** - Conversion factors from dipole strengths in atomic units to intensity for OPA.
 - **LIB** - The `Spectrum` class now supports ECD and OPA spectra from rotatory strengths and dipole strengths, respectively.
 - **LIB** - Conversion factors from rotatory strengths to intensity for ECD.
-- **API** - Fixed parsing of Hessian eigenvectors and eigenvalues from Gaussian fchk file.
+- **API**
 - **API** - Support extraction of non-adiabatic couplings from Gaussian fchk file.
 - **API** - New key in returned dictionary from `DataFile.get_data`: `qlabel`, which recalls the actual *qlabel* used.
 - **API** - The `get_data` method of `DataFile` supports aliases of the type (`alias=qlabel`) to be used in the returned data dictionary.
@@ -38,6 +38,8 @@ Other blocks are:
 
 ### Fixed
 - **LIB** - Corrected the invariants related to the electric dipole-induced electric quadrupole in `spectro.RamanInvariants`.
+- **API** - Improved parsing of version from Gaussian fchk file to support cases of files generated through utilities instead of main suite.
+- **API** - Parsing of Hessian eigenvectors and eigenvalues from Gaussian fchk file.
 - **API** - Reading the electronic energy from Gaussian fchk files returned an array instead of a scalar.
 - **API** - `parser.gaussian.fchk` incorrectly built list of auxiliary keywords needed to process transition/excited-state properties.
 - **API** - Parsing of ground-to-excited rotatory strengths in Gaussian log files.
