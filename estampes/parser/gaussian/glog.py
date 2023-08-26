@@ -2812,7 +2812,7 @@ def __del_nonactive_modes(vtrans: tp.Dict[int, tp.Sequence[tp.Any]],
                 nonact_modes.append(to[0][0])
     if nonact_modes:
         key0 = 1
-        newtrans = vtrans.copy()
+        newtrans = {key: val for key, val in vtrans.items() if key != 'qlabel'}
         for key, dtrans in newtrans.items():
             to = dtrans[1]
             remove = False

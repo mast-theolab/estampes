@@ -22,6 +22,8 @@ Other blocks are:
 
 ## Unreleased
 
+### Fixed
+- **API** - Broken support of non-active modes from Gaussian anharmonic log files.
 
 ## [0.4.4] - 2023-18-21
 
