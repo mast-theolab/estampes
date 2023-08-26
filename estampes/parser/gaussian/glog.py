@@ -559,15 +559,21 @@ def qlab_to_linkdata(qtag: TypeQTag,
         fmt = (r'^\s+(?P<val>(?:\d+\s+){3}(?:\s+-?\d\.\d+){1,5})\s*$',
                r'^\s+(?P<val>(?:\d+\s+){2}(?:\s+-?\d\.\d+){1,9})\s*$')
         num = (0, -1)
-    elif qtag == 'hessval':
+    elif qtag == 'hessdat':
         lnk = (-716, 716)
         key = (' and normal coordinates:',
                ' and normal coordinates:')
         sub = (1, 1)
         end = (lambda s: s.startswith(' - Thermochemistry'),
                lambda s: s.startswith(' - Thermochemistry'))
-        fmt = (r'^\s+Frequencies --- \s*(?P<val>\d.*)\s*$',
-               r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$')
+        if qopt == 'freq':
+            fmt = (r'^\s+Frequencies --- \s*(?P<val>\d.*)\s*$',
+                r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$')
+        elif qopt == 'redmas':
+            fmt = (r'^\s+Reduced masses --- \s*(?P<val>\d.*)\s*$',
+                r'^\s+Red. masses -- \s*(?P<val>\d.*)\s*$')
+        else:
+            raise NotImplementedError('Unknown subopt for HessDat')
         num = (0, -1)
     elif qtag == 'swopt':
         lnk = 1
@@ -1623,14 +1629,19 @@ def parse_data(qdict: TypeQInfo,
                             [[] for _ in range(nmodes)])
                     for i in range(nmodes):
                         data[qkey]['data'][ioff+i].append(float(cols[3+i]))
-        elif qtag == 'hessval':
+        elif qtag == 'hessdat':
             for i in range(first, last+1):
                 if datablocks[i]:
                     iref = i
                     break
             else:
                 raise ParseKeyError(msg_noqty)
-            data[qkey]['unit'] = 'cm-1'
+            if qopt == 'freq':
+                data[qkey]['unit'] = 'cm-1'
+            elif qopt == 'redmass':
+                data[qkey]['unit'] = 'amu'
+            else:
+                raise NotImplementedError('Unknown subopt for HessDat')
             data[qkey]['data'] = []
             i = 0
             for line in datablocks[iref]:
@@ -2965,7 +2976,7 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
     if pre_data is not None:
         for key in pre_data:
             qlabel = pre_data[key].get('qlabel', key)
-            qtag, _, dord, dcrd, *_ = ep.parse_qlabel(qlabel)
+            qtag, qopt, dord, dcrd, *_ = ep.parse_qlabel(qlabel)
             if qtag == 'natoms':
                 natoms = pre_data['natoms']['data']
             elif qtag == 'nvib':
@@ -2976,8 +2987,8 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
             elif qtag == 'hessvec':
                 key_evec = key
                 hessvec = np.array(pre_data[key]['data'])
-            elif qtag == 'hessval':
-                hessvec = np.array(pre_data[key]['data'])
+            elif qtag == 'hessval' and qopt == 'freq':
+                hessval = np.array(pre_data[key]['data'])
             elif qtag == 1 and dord == 2 and dcrd == 'X':
                 key_ffx = key
                 fccart = np.array(pre_data[key]['data'])
@@ -3000,20 +3011,24 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
     calc_eval = get_eval and eval is None
     if calc_evec or calc_eval:
         # We are missing data, now extracting data and recomputing.
-        read_data = []
+        read_data = {}
         key_FC = ep.build_qlabel(1, None, 2, 'X')
         if calc_evec or calc_eval:
-            read_data.extend(('natoms', key_FC, 'atmas', 'nvib'))
+            read_data['natoms'] = 'natoms'
+            read_data['d2EdX2'] = ep.build_qlabel(1, None, 2, 'X')
+            read_data['atmas'] = 'atmas'
+            read_data['nvib'] = 'nvib'
         if calc_evec:
-            read_data.append('hessvec')
+            read_data['hessvec'] = ep.build_qlabel('hessvec', level='H')
         if calc_eval:
-            read_data.append('hessval')
-        tmp_data = get_data(dfobj, *read_data, error_noqty=False)
+            read_data['hessval'] = ep.build_qlabel('hessdat', 'freq',
+                                                   level='H')
+        tmp_data = get_data(dfobj, error_noqty=False, **read_data)
 
-        if tmp_data[key_FC] is not None and tmp_data['atmas'] is not None:
+        if tmp_data['d2EdX2'] is not None and tmp_data['atmas'] is not None:
             # Rediagonlizing is more accurate, but require being
             atmas = np.repeat(np.array(tmp_data['atmas']['data']), 3)
-            ffx = square_ltmat(tmp_data[key_FC]['data'])
+            ffx = square_ltmat(tmp_data['d2EdX2']['data'])
             nvib = None if tmp_data['nvib'] is None \
                 else tmp_data['nvib']['data']
             evec, eval = build_evec(ffx, atmas, get_evec, get_eval, nvib)

@@ -529,7 +529,7 @@ def qlab_to_kword(qtag: TypeQTag,
             keyword = 'Vib-Modes'
         else:
             keyword = 'Anharmonic Vib-Modes'
-    elif qtag == 'hessval':
+    elif qtag == 'hessdat':
         if isinstance(rsta, int) or rsta == 'c':
             if qlvl == 'H':
                 keyword = 'Vib-E2'
@@ -988,7 +988,7 @@ def parse_data(qdict: TypeQInfo,
             if kword in datablocks:
                 data[qkey]['form'] = 'L.M^{-1/2}'
                 data[qkey]['data'] = datablocks[kword]
-        elif qtag == 'hessval':
+        elif qtag == 'hessdat':
             if qlvl == 'H':
                 key = 'Number of Normal Modes'
             else:
@@ -996,7 +996,10 @@ def parse_data(qdict: TypeQInfo,
             if key not in datablocks:
                 raise ParseKeyError('Missing necessary dimension')
             ndat = int(datablocks[key][0])
-            offset = 0
+            if qopt == 'freq':
+                offset = 0
+            elif qopt == 'redmas':
+                offset = ndat
             data[qkey]['data'] = \
                 datablocks[kword][offset:offset+ndat]
         # Vibronic Information
@@ -1310,7 +1313,7 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
     if pre_data is not None:
         for key in pre_data:
             qlabel = pre_data[key].get('qlabel', key)
-            qtag, _, dord, dcrd, *_ = ep.parse_qlabel(qlabel)
+            qtag, qopt, dord, dcrd, *_ = ep.parse_qlabel(qlabel)
             if qtag == 'natoms':
                 natoms = pre_data['natoms']['data']
             elif qtag == 'nvib':
@@ -1321,8 +1324,8 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
             elif qtag == 'hessvec':
                 key_evec = key
                 hessvec = np.array(pre_data[key]['data'])
-            elif qtag == 'hessval':
-                hessvec = np.array(pre_data[key]['data'])
+            elif qtag == 'hessdat' and qopt == 'freq':
+                hessval = np.array(pre_data[key]['data'])
             elif qtag == 1 and dord == 2 and dcrd == 'X':
                 key_ffx = key
                 fccart = np.array(pre_data[key]['data'])
@@ -1354,7 +1357,8 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
         if calc_evec:
             read_data['hessvec'] = ep.build_qlabel('hessvec', level='H')
         if calc_eval:
-            read_data['hessval'] = ep.build_qlabel('hessval', level='H')
+            read_data['hessval'] = ep.build_qlabel('hessdat', 'freq',
+                                                   level='H')
         tmp_data = get_data(dfobj, error_noqty=False, **read_data)
 
         do_calc = force_calc

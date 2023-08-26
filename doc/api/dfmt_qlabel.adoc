@@ -41,7 +41,7 @@ This is the basic identifier of the quantity
 | AtCrd   | Coordinates
 | Atoms   | Atoms (can be numbers or labels)
 | HessVec | Hessian eigenvectors
-| HessVal | Hessian eigenvalues
+| HessDat | Hessian-related data: frequencies, red. mass...
 | SWOpt   | Software runtime options
 | SWVer   | Software version
 | VTrans  | Vibrational transitions
@@ -107,63 +107,66 @@ This is the basic identifier of the quantity
 
 A label-specific option.
 
-[cols="^10,^10,<80",option=header,frame=topbot,grid=rows]
+[cols="^10,^10,^10,<70",option=header,frame=topbot,grid=rows]
 |====
-| Label | Option | Description
+| Label | Option | Aliases | Description
 
-.^4+| `AtCrd` | `last` | Only last geometry if multiple present.
-| `first` <| Only the first geometry if multiple present.
-| `all`   <| All geometries should be extracted.
-| `scan`  <| Geometries relative to a scan procedure
+.^4+| `AtCrd` | `last` | | Only last geometry if multiple present.
+| `first` <| | Only the first geometry if multiple present.
+| `all`   <| | All geometries should be extracted.
+| `scan`  <| | Geometries relative to a scan procedure
 
-.^2+| `101` | `len` | Use length gauge if available (default).
-| `vel` <| Use velocity gauge if available.
+.^2+| `101` | `len` | | Use length gauge if available (default).
+| `vel` <| | Use velocity gauge if available.
 
-.^2+| `DipStr` | `len` | Use length gauge if available (default).
-| `vel` <| Use velocity gauge if available.
+.^2+| `DipStr` | `len` | | Use length gauge if available (default).
+| `vel` <| | Use velocity gauge if available.
 
-.^2+| `RotStr` | `len` | Use length gauge if available.
-| `vel` <| Use velocity gauge if available (default).
+.^2+| `RotStr` | `len` | | Use length gauge if available.
+| `vel` <| | Use velocity gauge if available (default).
 
-.2+| `3xx` | `0` | Data for all incident frequencies
-| _N_ <| Data for _N_-th incident frequency
+.2+| `3xx` | `0` | | Data for all incident frequencies
+| _N_ <| | Data for _N_-th incident frequency
 
-.2+| `AnySpc` | `Spec` | Spectrum/spectra
-| `SpcPar` <| Spectrum parameters
+.2+| `AnySpc` | `Spec` | | Spectrum/spectra
+| `SpcPar` <| | Spectrum parameters
 
-.1+| `Intens` | `IR` | Infrared intensity (normally, integrated intensity)
+.1+| `Intens` | `IR` | | Infrared intensity (normally, integrated intensity)
 
-.19+| `FCDat` | `SimInf` | Simulation information/parameters
-| `JMat`   <| Duschinsky matrix
-| `JMatF`  <| Duschinsky matrix (full dimension if red-dim requested)
-| `KVec`   <| Shift vector
-| `SRAMat` <| Sharp and Rosenstock A matrix
-| `SRBVec` <| Sharp and Rosenstock B vector
-| `SRCMat` <| Sharp and Rosenstock C matrix
-| `SRDVec` <| Sharp and Rosenstock D vector
-| `SREMat` <| Sharp and Rosenstock E matrix
-| `GeomIS` <| Initial-state geometry
-| `GeomFS` <| Final-state geometry
-| `GeomMS` <| Intermediate geometry
-| `ExGeom` <| Extrapolated geometry
-| `Spec`   <| Spectrum/spectra
-| `SpcPar` <| Spectrum parameters (legend and broadening)
-| `Conv`   <| Convergence Data
-| `Assign` <| Assignment data
-| `E(0-0)` <| Energy difference between vibrational ground states
-| `RedDim` <| Reduced-dimensionality equivalency tables
+.19+| `FCDat` | `SimInf` | | Simulation information/parameters
+| `JMat`   <| | Duschinsky matrix
+| `JMatF`  <| | Duschinsky matrix (full dimension if red-dim requested)
+| `KVec`   <| | Shift vector
+| `SRAMat` <| | Sharp and Rosenstock A matrix
+| `SRBVec` <| | Sharp and Rosenstock B vector
+| `SRCMat` <| | Sharp and Rosenstock C matrix
+| `SRDVec` <| | Sharp and Rosenstock D vector
+| `SREMat` <| | Sharp and Rosenstock E matrix
+| `GeomIS` <| | Initial-state geometry
+| `GeomFS` <| | Final-state geometry
+| `GeomMS` <| | Intermediate geometry
+| `ExGeom` <| | Extrapolated geometry
+| `Spec`   <| | Spectrum/spectra
+| `SpcPar` <| | Spectrum parameters (legend and broadening)
+| `Conv`   <| | Convergence Data
+| `Assign` <| | Assignment data
+| `E(0-0)` <| | Energy difference between vibrational ground states
+| `RedDim` <| | Reduced-dimensionality equivalency tables
 
-.3+| `VPTDat` | `XMat` | Anharmonic stem:[bb{chi}] matrix
-| `GMat` <| Variational correction matrix (for _Generalized_...)
-| `CICoef` <| CI coefficient from the variational correction in GVPT2.
+.3+| `VPTDat` | `XMat` | | Anharmonic stem:[bb{chi}] matrix
+| `GMat` <| | Variational correction matrix (for _Generalized_...)
+| `CICoef` <| | CI coefficient from the variational correction in GVPT2.
 
-.3+| `VLevel` | None | Read vibrational energies from standard vibrational structure
-| `SOS` <| Read from a vibronic sum over states-like structure (e.g., vRR)
-| `RR` <| Same as `SOS` but with frequency-dependency parameter
+.3+| `VLevel` | None | | Read vibrational energies from standard vibrational structure
+| `SOS` <| | Read from a vibronic sum over states-like structure (e.g., vRR)
+| `RR` <| | Same as `SOS` but with frequency-dependency parameter
 
-.3+| `VTrans` | None | Read vibrational transitions data from standard vibrational structure
-| `SOS` <| Read from a vibronic sum over states-like structure (e.g., vRR)
-| `RR` <| Same as `SOS` but with frequency-dependency parameter
+.3+| `VTrans` | None | | Read vibrational transitions data from standard vibrational structure
+| `SOS` <| | Read from a vibronic sum over states-like structure (e.g., vRR)
+| `RR` <| | Same as `SOS` but with frequency-dependency parameter
+
+.2+| `HessDat` | `freq` | `frq`, `w`, `eval`, `eigval` | Read the frequencies deriving from the eigenvalues of the Hessian matrix
+| `redmas` <| `rmas`, `redmass`, `u` | Read the reduced masses associated to the vibrations
 |====
 
 

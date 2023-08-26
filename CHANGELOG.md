@@ -22,8 +22,15 @@ Other blocks are:
 
 ## Unreleased
 
+### Added
+- **API** - Support of vibrational reduced masses as a `qlabel` and from available parsers.
+
 ### Fixed
 - **API** - Broken support of non-active modes from Gaussian anharmonic log files.
+
+### Changed
+- **API** - `qlabel` "hessval" is renamed "hessdat" to underline the fact that it can be used to extract different types of data connected to the Hessian matrix.
+
 
 ## [0.4.4] - 2023-18-21
 

@@ -87,7 +87,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     AtCrd      Coordinates
     Atoms      Atoms (can be numbers or labels)
     HessVec    Hessian eigenvectors
-    HessVal    Hessian eigenvalues
+    HessDat    Hessian-related data: frequencies, red. mass...
     SWOpt      Software runtime options
     SWVer      Software version
     VTrans     Vibrational transitions
@@ -162,6 +162,9 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
      DipStr    Len        Length-gauge dipole strength
 
                Vel        Velocity-gauge dipole strength
+     HessDat   freq       Frequency of each vibration
+
+               redmas     Reduced mass of each vibration
     =========  ========  ===========================================
 
     **Possible coordinates**
@@ -212,9 +215,20 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
         if qlist[1] is None or not qlist[1].strip():
             qty_opt = 'IR'
         else:
-            spec = qlist[1].upper()
-            if spec == 'IR':
+            key = qlist[1].upper()
+            if key == 'IR':
                 qty_opt = 'IR'
+            else:
+                raise ValueError('Unsupported spectral intensity')
+    elif qty_tag == 'hessdat':
+        if qlist[1] is None or not qlist[1].strip():
+            qty_opt = 'freq'
+        else:
+            key = qlist[1].lower()
+            if key in ('freq', 'frq', 'eval', 'eigval', 'w'):
+                qty_opt = 'freq'
+            elif key in ('redmass', 'rmass', 'redmas', 'u'):
+                qty_opt = 'redmas'
             else:
                 raise ValueError('Unsupported spectral intensity')
     elif qty_tag in ('atcrd', 2, 1):
@@ -229,10 +243,10 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
         if qlist[1] is None:
             qty_opt = 'Spec'
         else:
-            val = qlist[1].upper()
-            if val in ('SPEC', 'SPECTRUM', 'SPECTRA'):
+            key = qlist[1].upper()
+            if key in ('SPEC', 'SPECTRUM', 'SPECTRA'):
                 qty_opt = 'Spec'
-            elif val in ('SPCPAR', 'SPCPARS', 'SPCPARAMS', 'SPCPARAMETERS'):
+            elif key in ('SPCPAR', 'SPCPARS', 'SPCPARAMS', 'SPCPARAMETERS'):
                 qty_opt = 'SpcPar'
             else:
                 raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
@@ -240,44 +254,44 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
         if qlist[1] is None:
             qty_opt = 'JMat'
         else:
-            val = qlist[1].upper()
-            if val in ('J', 'JMAT'):
+            key = qlist[1].upper()
+            if key in ('J', 'JMAT'):
                 qty_opt = 'JMat'
-            elif val in ('JF', 'JMATF'):
+            elif key in ('JF', 'JMATF'):
                 qty_opt = 'JMatF'
-            elif val in ('K', 'KVEC'):
+            elif key in ('K', 'KVEC'):
                 qty_opt = 'KVec'
-            elif val in ('A', 'AMAT', 'SRAMAT'):
+            elif key in ('A', 'AMAT', 'SRAMAT'):
                 qty_opt = 'SRAMat'
-            elif val in ('B', 'BVEC', 'SRBVEC'):
+            elif key in ('B', 'BVEC', 'SRBVEC'):
                 qty_opt = 'SRBVec'
-            elif val in ('C', 'CMAT', 'SRCMAT'):
+            elif key in ('C', 'CMAT', 'SRCMAT'):
                 qty_opt = 'SRCMat'
-            elif val in ('D', 'DVEC', 'SRDVEC'):
+            elif key in ('D', 'DVEC', 'SRDVEC'):
                 qty_opt = 'SRDVec'
-            elif val in ('E', 'EMAT', 'SREMAT'):
+            elif key in ('E', 'EMAT', 'SREMAT'):
                 qty_opt = 'SREMat'
-            elif val in ('SPEC', 'SPECTRUM', 'SPECTRA'):
+            elif key in ('SPEC', 'SPECTRUM', 'SPECTRA'):
                 qty_opt = 'Spec'
-            elif val in ('CONV', 'CONVERGENCE', 'PROGRESSION'):
+            elif key in ('CONV', 'CONVERGENCE', 'PROGRESSION'):
                 qty_opt = 'Conv'
-            elif val in ('ASSIGN', 'ASSIGNMENT'):
+            elif key in ('ASSIGN', 'ASSIGNMENT'):
                 qty_opt = 'Assign'
-            elif val in ('REDDIM', 'RED-DIM', 'REDUCED', 'REDUCED-DIMENSION'):
+            elif key in ('REDDIM', 'RED-DIM', 'REDUCED', 'REDUCED-DIMENSION'):
                 qty_opt = 'RedDim'
-            elif val in ('IS', 'ISGEOM', 'GEOMIS'):
+            elif key in ('IS', 'ISGEOM', 'GEOMIS'):
                 qty_opt = 'GeomIS'
-            elif val in ('FS', 'FSGEOM', 'GEOMFS'):
+            elif key in ('FS', 'FSGEOM', 'GEOMFS'):
                 qty_opt = 'GeomFS'
-            elif val in ('MS', 'MSGEOM', 'GEOMMS'):
+            elif key in ('MS', 'MSGEOM', 'GEOMMS'):
                 qty_opt = 'GeomMS'
-            elif val in ('EXTRGEOM', 'EXGEOM'):
+            elif key in ('EXTRGEOM', 'EXGEOM'):
                 qty_opt = 'ExGeom'
-            elif val in ('SIMINF', 'SIMINFO', 'INFO'):
+            elif key in ('SIMINF', 'SIMINFO', 'INFO'):
                 qty_opt = 'SimInf'
-            elif val in ('SPCPAR', 'SPCPARS', 'SPCPARAMS', 'SPCPARAMETERS'):
+            elif key in ('SPCPAR', 'SPCPARS', 'SPCPARAMS', 'SPCPARAMETERS'):
                 qty_opt = 'SpcPar'
-            elif val in ('E(0-0)', 'E0-0', 'DE(0-0)', 'DE0-0', 'E00', 'DE00'):
+            elif key in ('E(0-0)', 'E0-0', 'DE(0-0)', 'DE0-0', 'E00', 'DE00'):
                 qty_opt = 'E(0-0)'
             else:
                 raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
@@ -285,21 +299,21 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
         if qlist[1] is None:
             qty_opt = 'XMat'
         else:
-            val = qlist[1].upper()
-            if val in ('X', 'XMAT'):
+            key = qlist[1].upper()
+            if key in ('X', 'XMAT'):
                 qty_opt = 'XMat'
-            elif val == 'GMAT':
+            elif key == 'GMAT':
                 qty_opt = 'GMat'
-            elif val in ('CICOEF', 'VARCOEF'):
+            elif key in ('CICOEF', 'VARCOEF'):
                 qty_opt = 'CICoef'
             else:
                 raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
     elif qty_tag in ('vtrans', 'vlevel'):
         if qlist[1] is not None:
-            val = qlist[1].upper()
-            if val == 'SOS':
+            key = qlist[1].upper()
+            if key == 'SOS':
                 qty_opt = 'SOS'
-            elif val in ('RR', 'RROA'):
+            elif key in ('RR', 'RROA'):
                 qty_opt = 'RR'
             else:
                 raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
