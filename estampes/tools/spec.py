@@ -92,7 +92,7 @@ def broaden(xval: tp.Sequence[float],
         # hwtimes: Function is computer over an interval of 2*hwhm*hwtimes
         # 3.5*hwhm represents 99.7% of the Gaussian area
         # For lorentzian, the same coverage requires 212*hwhm, truncated to 15.
-        hwtimes = {'gaussian': 3.5, 'lorentzian': 15}[func]
+        hwtimes = {'gaussian': 3.5, 'lorentzian': 15}[funcname]
         xmin = xaxis[0]
         dx = abs(xaxis[-1] - xaxis[0])/(npoints-1)
         nhwpoints = int(ceil(hwhm*hwtimes/dx))

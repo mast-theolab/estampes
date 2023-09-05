@@ -26,6 +26,7 @@ Other blocks are:
 - **API** - Support of vibrational reduced masses as a `qlabel` and from available parsers.
 
 ### Fixed
+- **LIB** - Error when trying to truncate the broadening in `tools.spec.broaden`.
 - **API** - Broken support of non-active modes from Gaussian anharmonic log files.
 
 ### Changed
