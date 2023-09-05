@@ -98,7 +98,7 @@ class GLogIO(object):
     @property
     def full_version(self) -> tp.Tuple[str, tp.Any]:
         """Full version of Gaussian, for the parser interface.
-        
+
         Returns the full version of Gaussian used to generate the log file.
         Available keys:
 
@@ -568,10 +568,10 @@ def qlab_to_linkdata(qtag: TypeQTag,
                lambda s: s.startswith(' - Thermochemistry'))
         if qopt == 'freq':
             fmt = (r'^\s+Frequencies --- \s*(?P<val>\d.*)\s*$',
-                r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$')
+                   r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$')
         elif qopt == 'redmas':
             fmt = (r'^\s+Reduced masses --- \s*(?P<val>\d.*)\s*$',
-                r'^\s+Red. masses -- \s*(?P<val>\d.*)\s*$')
+                   r'^\s+Red. masses -- \s*(?P<val>\d.*)\s*$')
         else:
             raise NotImplementedError('Unknown subopt for HessDat')
         num = (0, -1)
@@ -1638,7 +1638,7 @@ def parse_data(qdict: TypeQInfo,
                 raise ParseKeyError(msg_noqty)
             if qopt == 'freq':
                 data[qkey]['unit'] = 'cm-1'
-            elif qopt == 'redmass':
+            elif qopt == 'redmas':
                 data[qkey]['unit'] = 'amu'
             else:
                 raise NotImplementedError('Unknown subopt for HessDat')
@@ -1814,7 +1814,7 @@ def parse_data(qdict: TypeQInfo,
                 if discard:
                     discard.reverse()
                     for i in discard:
-                        del(datablocks[last][i])
+                        del datablocks[last][i]
                 # First block contains the full initial legend block
                 # Necessary for the different parameters
                 iref = first
@@ -1876,7 +1876,7 @@ def parse_data(qdict: TypeQInfo,
                 if discard:
                     discard.reverse()
                     for i in discard:
-                        del(datablocks[last][i])
+                        del datablocks[last][i]
                 # First block contains the full initial legend block
                 # Necessary for the different parameters
                 iref = first
@@ -2127,7 +2127,7 @@ def parse_data(qdict: TypeQInfo,
                     for line in datablocks[iref]:
                         cols = line.strip().split()
                         if cols[-1] in ('active', 'inactive', 'passive'):
-                            del(cols[-1])
+                            del cols[-1]
                         for col in cols:
                             i += 1
                             res = col.split('(')
@@ -2141,7 +2141,7 @@ def parse_data(qdict: TypeQInfo,
                         cols = line.strip().split()
                         if cols[-1] in ('active', 'inactive', 'passive'):
                             status = cols[-1]
-                            del(cols[-1])
+                            del cols[-1]
                         else:
                             status = None
                         for col in cols:
@@ -3012,7 +3012,6 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
     if calc_evec or calc_eval:
         # We are missing data, now extracting data and recomputing.
         read_data = {}
-        key_FC = ep.build_qlabel(1, None, 2, 'X')
         if calc_evec or calc_eval:
             read_data['natoms'] = 'natoms'
             read_data['d2EdX2'] = ep.build_qlabel(1, None, 2, 'X')

@@ -1380,7 +1380,8 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
                     do_calc = True
 
         if do_calc:
-            if tmp_data['d2EdX2'] is not None and tmp_data['atmas'] is not None:
+            if tmp_data['d2EdX2'] is not None and \
+                    tmp_data['atmas'] is not None:
                 # Rediagonlizing is more accurate, but require being
                 atmas = np.repeat(np.array(tmp_data['atmas']['data']), 3)
                 ffx = square_ltmat(tmp_data['d2EdX2']['data'])

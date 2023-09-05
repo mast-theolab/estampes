@@ -230,7 +230,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
             elif key in ('redmass', 'rmass', 'redmas', 'u'):
                 qty_opt = 'redmas'
             else:
-                raise ValueError('Unsupported spectral intensity')
+                raise ValueError('Unsupported option for hessdat')
     elif qty_tag in ('atcrd', 2, 1):
         if qlist[1] is None:
             qty_opt = 'last'
@@ -400,7 +400,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                 qty_lvl = 'H'
         elif qty_tag in ('ramact', 'roaact', 'vtrans', 'vlevel'):
             qty_lvl = 'H'
-        elif qty_tag in ('fcdat', 'hessvec', 'hessval'):
+        elif qty_tag in ('fcdat', 'hessvec', 'hessdat'):
             qty_lvl = 'H'
         elif qty_tag in ('vptdat', ):
             qty_lvl = 'A'
