@@ -29,6 +29,7 @@ Other blocks are:
 - **API** - Broken support of non-active modes from Gaussian anharmonic log files.
 
 ### Changed
+- **LIB** - Function `data.atom.atomic_data` now respects the types of data in `atoms` and will preserve them as keys for the generated dictionary.  This simplifies working with atomic numbers or labels.
 - **API** - `qlabel` "hessval" is renamed "hessdat" to underline the fact that it can be used to extract different types of data connected to the Hessian matrix.
 
 
