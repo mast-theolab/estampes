@@ -65,8 +65,8 @@ def convert_storage(label: str) -> int:
         str_num = _label
     try:
         value = int(str_num)
-    except ValueError:
-        raise ValueError('Unsupported storage format.')
+    except ValueError as err:
+        raise ValueError('Unsupported storage format.') from err
     if magnitude is not None:
         if magnitude not in __BIT_POWERS:
             raise ValueError('Unsupported byte unit.')
@@ -122,8 +122,8 @@ def bytes_units(num_bytes: int,
         try:
             magnitude = __BIT_POWERS.index(power.lower()[0])
             value = num_bytes/metric**magnitude
-        except ValueError:
-            raise ValueError('Unknown byte power.')
+        except ValueError as err:
+            raise ValueError('Unknown byte power.') from err
     return fmt.format(value, __BIT_POWERS[magnitude].upper()+end_unit)
 
 

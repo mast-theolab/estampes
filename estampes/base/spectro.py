@@ -144,18 +144,18 @@ class RamanInvariants():
                  E_inc: tp.Optional[TypeRlCx] = None,
                  E_scat: tp.Optional[TypeRlCx] = None,
                  is_complex: tp.Optional[bool] = None):
-        self.__alph_s = None
-        self.__alph_a = None
-        self.__romG_s = None
-        self.__romG_a = None
-        self.__romA1_s = None
-        self.__romA1_a = None
-        self.__romA2_a = None
-        self.__calG_s = None
-        self.__calG_a = None
-        self.__calA1_s = None
-        self.__calA1_a = None
-        self.__calA2_a = None
+        self.__Winc = self.__Wscat = None
+        self.__alpha = self.__alph_s = self.__alph_a = None
+        self.__romG_s = self.__romG_a = None
+        self.__romA1_s = self.__romA1_a = self.__romA2_a = None
+        self.__calG_s = self.__calG_a = None
+        self.__calA1_s = self.__calA1_a = self.__calA2_a = None
+        self.__alpha2 = None
+        self.__alp_romG = self.__b_s_alph = self.__b_a_alph = None
+        self.__b_s_romG = self.__b_a_romG = None
+        self.__alp_calG = self.__b_s_calG = self.__b_a_calG = None
+        self.__b_s_romA = self.__b_a_romA = None
+        self.__b_s_calA = self.__b_a_calA = None
 
         self.alpha = alpha
         if is_complex is None:
@@ -345,8 +345,8 @@ class RamanInvariants():
                 self.__alpha = np.array(tens)
         else:
             raise NotImplementedError('Non-sequence tensor NYI.')
-        self.__alph_s = (self.alpha + self.alpha.T)/2.0
-        self.__alph_a = (self.alpha - self.alpha.T)/2.0
+        self.__alph_s = (self.__alpha + self.__alpha.T)/2.0
+        self.__alph_a = (self.__alpha - self.__alpha.T)/2.0
         self.__alpha2 = None
         self.__b_s_alph = None
         self.__b_a_alph = None
@@ -365,7 +365,7 @@ class RamanInvariants():
         return self.__alpha
 
     alpha = property(__get_alpha, __set_alpha,
-        doc="""Electric dipole-electric dipole tensor""")
+                     doc="Electric dipole-electric dipole tensor")
 
     def __set_G_indED(self, tens: TypeTensor2D):
         if isinstance(tens, np.ndarray):
@@ -387,9 +387,9 @@ class RamanInvariants():
         return self.__G_indED
 
     G_indED = property(__get_G_indED, __set_G_indED,
-        doc="""Induced electric dipole-magnetic dipole tensor""")
+                       doc="Induced electric dipole-magnetic dipole tensor")
     Gtensor = property(__get_G_indED, __set_G_indED,
-                       doc="""Alias for ``G_indED``""")
+                       doc="Alias for ``G_indED``")
 
     def __set_A_indED(self, tens: TypeTensor3D):
         if isinstance(tens, np.ndarray):
@@ -414,9 +414,10 @@ class RamanInvariants():
         return self.__A_indED
 
     A_indED = property(__get_A_indED, __set_A_indED,
-        doc="""Induced electric dipole-electric quadrupole tensor""")
+                       doc="Induced electric dipole-electric quadrupole "
+                       + "tensor")
     Atensor = property(__get_A_indED, __set_A_indED,
-        doc="""Alias for ``A_indED``""")
+                       doc="Alias for ``A_indED``")
 
     def __set_G_indMD(self, tens: TypeTensor2D):
         if isinstance(tens, np.ndarray):
@@ -438,7 +439,7 @@ class RamanInvariants():
         return self.__G_indMD
 
     G_indMD = property(__get_G_indMD, __set_G_indMD,
-        doc="""Electric dipole-induced magnetic dipole tensor""")
+                       doc="Electric dipole-induced magnetic dipole tensor")
 
     def __set_A_indEQ(self, tens: TypeTensor3D):
         if isinstance(tens, np.ndarray):
@@ -466,7 +467,8 @@ class RamanInvariants():
         return self.__A_indEQ
 
     A_indEQ = property(__get_A_indEQ, __set_A_indEQ,
-        doc="""Electric dipole-induced electric quadrupole tensor""")
+                       doc="Electric dipole-induced electric quadrupole "
+                       + "tensor")
 
     def __set_incfrq(self, energy: tp.Optional[float]):
         if energy is not None:

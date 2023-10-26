@@ -46,7 +46,7 @@ class FileXYZ(object):
     @property
     def full_version(self) -> tp.Tuple[str, tp.Any]:
         """Full version of the program, which generated the file.
-        
+
         Full program version, for the parser interface.
 
         * "XYZ".
@@ -75,11 +75,11 @@ class FileXYZ(object):
             line = fobj.readline()
             try:
                 self.__natoms = int(line.strip())
-            except ValueError:
+            except ValueError as err:
                 msg = '1st line should contain the number of atoms'
-                raise ParseDataError(msg)
+                raise ParseDataError(msg) from err
             line = fobj.readline()
-            self.__title = line.strip()
+            line.strip()   # Read title line
             for _ in range(self.__natoms):
                 line = fobj.readline()
                 if not line:
@@ -92,13 +92,14 @@ class FileXYZ(object):
                 except ParseDataError:
                     fmt = 'Error in geometry num. {}.\n' \
                         + 'Empty lines found between configurations.'
-                    raise ParseDataError(fmt.self.__ngeoms+1) from None
-                except ValueError as e:
+                    raise ParseDataError(fmt.format(self.__ngeoms+1)) from None
+                except ValueError as err:
                     fmt = 'Error in geometry num. {}.\n{}'
-                    raise ValueError(fmt.format(self.__ngeoms+1, e)) from None
-                except EOFError:
+                    raise ValueError(fmt.format(self.__ngeoms+1, err)) \
+                        from None
+                except EOFError as err:
                     fmt = 'File ended while parsing geometry {}'
-                    raise ParseDataError(fmt.format(self.__ngeoms+1))
+                    raise ParseDataError(fmt.format(self.__ngeoms+1)) from err
                 if datlist is None:
                     break
                 else:
@@ -219,9 +220,9 @@ def parse_xyz(fobj: tp.IO,
         raise ParseDataError('Leading blank lines found.')
     try:
         natoms = int(line)
-    except ValueError:
+    except ValueError as err:
         msg = '1st line should be the number of atoms'
-        raise ValueError(msg)
+        raise ValueError(msg) from err
     if 'natoms' in data:
         data['natoms'] = natoms
     # Line 2: title
@@ -235,9 +236,9 @@ def parse_xyz(fobj: tp.IO,
         atom = cols[0]
         try:
             coord = [float(item)*__ang2au for item in cols[1:]]
-        except ValueError:
+        except ValueError as err:
             msg = 'Wrong XYZ geometry specification.'
-            raise ValueError(msg)
+            raise ValueError(msg) from err
         if 'atoms' in data:
             data['atoms'].append(atom)
         if 'atcrd' in data:

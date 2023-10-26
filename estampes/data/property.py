@@ -13,11 +13,11 @@ property_units
     Returns conversion factors and unit labels.
 """
 
-from math import *
+from math import pi
 import typing as tp
 
 from estampes.base import TypeQOpt, TypeQTag
-from estampes.data.physics import PHYSCNST, PHYSFACT, phys_fact
+from estampes.data.physics import PHYSCNST, PHYSFACT
 
 
 # ================

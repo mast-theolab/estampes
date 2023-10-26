@@ -60,7 +60,7 @@ def list_bonds(at_lab: TypeAtLab,
     Parameters
     ----------
     at_lab
-        List of atoms labels (as string).
+        List of atoms labels (as string or integer).
     at_crd
         Atomic coordinates as XYZ vectors, in Ang.
     rtol
@@ -94,17 +94,17 @@ def list_bonds(at_lab: TypeAtLab,
 def inertia_mom(at_crd: TypeAtCrd,
                 at_mass: TypeAtMas) -> tp.Tuple[np.ndarray, np.ndarray]:
     """Build inertia moments
-    
+
     Computes the inertia moments and the returns the principal moments
     of inertia and the corresponding eigenvectors.
-      
+
     Parameters
     ----------
     at_crd
         Atomic coordinates as XYZ vectors, as a 2D array.
     at_mass
         Atomic masses, as a 1D array.
-    
+
     Returns
     -------
     np.ndarray
@@ -114,24 +114,24 @@ def inertia_mom(at_crd: TypeAtCrd,
     """
     if at_crd.shape[0] != at_mass.shape[0]:
         raise IndexError('Size inconsistency between masses and coordinates.')
-    
+
     Imom = np.zeros((3, 3))
     for i in range(at_mass):
         mi = at_mass[i]
-        Imom[0, 0] += mi*(at_crd[i,1]**2 + at_crd[i,2]**2)
-        Imom[1, 1] += mi*(at_crd[i,0]**2 + at_crd[i,2]**2)
-        Imom[2, 2] += mi*(at_crd[i,0]**2 + at_crd[i,1]**2)
-        Imom[0, 1] -= mi * at_crd[i,0] * at_crd[i,1]
-        Imom[0, 2] -= mi * at_crd[i,0] * at_crd[i,2]
-        Imom[1, 2] -= mi * at_crd[i,1] * at_crd[i,2]
+        Imom[0, 0] += mi*(at_crd[i, 1]**2 + at_crd[i, 2]**2)
+        Imom[1, 1] += mi*(at_crd[i, 0]**2 + at_crd[i, 2]**2)
+        Imom[2, 2] += mi*(at_crd[i, 0]**2 + at_crd[i, 1]**2)
+        Imom[0, 1] -= mi * at_crd[i, 0] * at_crd[i, 1]
+        Imom[0, 2] -= mi * at_crd[i, 0] * at_crd[i, 2]
+        Imom[1, 2] -= mi * at_crd[i, 1] * at_crd[i, 2]
     Imom[1, 0] = Imom[0, 1]
     Imom[2, 0] = Imom[0, 2]
     Imom[2, 1] = Imom[1, 2]
 
     if abs(Imom[0, 1]) + abs(Imom[0, 2]) + abs(Imom[1, 2]) > 1.0e-6:
-        eval, evec = np.linalg.eigh(Imom, UPLO='u')
+        eigval, eigvec = np.linalg.eigh(Imom, UPLO='u')
     else:
-        eval = np.diag(Imom)
-        evec = np.eye(3)
-    
-    return eval, evec
+        eigval = np.diag(Imom)
+        eigvec = np.eye(3)
+
+    return eigval, eigvec

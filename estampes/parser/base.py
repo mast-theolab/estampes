@@ -184,12 +184,12 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
              qlabel.split(':')]  # type: tp.List[tp.Any]
     qlist.extend((nparts-len(qlist))*[None])
 
-    qty_tag = 0  # type: tp.Union[int, str]
-    qty_opt = None  # type: tp.Union[str, None]
-    der_ord = 0  # type: int
-    der_crd = None  # type: tp.Union[str, None]
-    ref_sta = 'c'  # type: TypeRSta
-    qty_lvl = None  # type: tp.Union[str, None]
+    qty_tag: tp.Union[int, str] = 0
+    qty_opt: tp.Union[str, None] = None
+    der_ord: int = 0
+    der_crd: tp.Union[str, None] = None
+    ref_sta: TypeRSta = 'c'
+    qty_lvl: tp.Union[str, None] = None
     # Main label
     try:
         qty_tag = int(qlist[0])
@@ -209,8 +209,8 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
             try:
                 val = float(qlist[1])
                 qty_opt = qlist[1]
-            except ValueError:
-                raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
+            except ValueError as err:
+                raise ValueError(f'Incorrect sup-opt for {qty_tag}') from err
     elif qty_tag == 'intens':
         if qlist[1] is None or not qlist[1].strip():
             qty_opt = 'IR'
@@ -327,7 +327,7 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
             if qlist[1][:3].lower() in ('len', 'vel'):
                 qty_opt = qlist[1][:3].lower()
             else:
-                raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
+                raise ValueError(f'Incorrect sup-opt for {qty_tag}')
     elif qty_tag in range(300, 310) or qty_tag in range(1300, 1310):
         if qlist[1] is None:
             qty_opt = 0
@@ -339,8 +339,8 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
                 else:
                     fmt = 'Incorrect sup-opt for {}'
                     raise ValueError(fmt.format(qty_tag))
-            except ValueError:
-                raise ValueError('Incorrect sup-opt for {}'.format(qty_tag))
+            except ValueError as err:
+                raise ValueError(f'Incorrect sup-opt for {qty_tag}') from err
     else:
         qty_opt = qlist[1]
     # Derivative order
@@ -349,8 +349,8 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
     else:
         try:
             der_ord = int(qlist[2])
-        except ValueError:
-            raise ValueError('Incorrect derivative order')
+        except ValueError as err:
+            raise ValueError('Incorrect derivative order') from err
     # Derivative coordinate
     if qlist[3] is None or not qlist[3].strip():
         der_crd = None
@@ -374,8 +374,9 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
         else:
             try:
                 val1 = int(data['start'])
-            except ValueError:
-                raise ValueError('Incorrect reference state definition')
+            except ValueError as err:
+                raise ValueError('Incorrect reference state definition') \
+                    from err
         if data['end'] is None:
             ref_sta = val1
         else:
@@ -386,8 +387,9 @@ def parse_qlabel(qlabel: str) -> TypeQLab:
             else:
                 try:
                     val2 = int(data['end'])
-                except ValueError:
-                    raise ValueError('Incorrect final state definition')
+                except ValueError as err:
+                    raise ValueError('Incorrect final state definition') \
+                        from err
             if val2 == val1:
                 raise ValueError('Equivalent states in transition')
             ref_sta = (val1, val2)

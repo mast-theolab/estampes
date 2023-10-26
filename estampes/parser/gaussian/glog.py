@@ -98,7 +98,7 @@ class GLogIO(object):
     @property
     def full_version(self) -> tp.Tuple[str, tp.Any]:
         """Full version of Gaussian, for the parser interface.
-        
+
         Returns the full version of Gaussian used to generate the log file.
         Available keys:
 
@@ -147,8 +147,7 @@ class GLogIO(object):
                 self.__verb = 0
 
     def read_data(self,
-                  *to_find: TypeKData,
-                  raise_error: bool = True) -> TypeDGLog:
+                  *to_find: TypeKData) -> TypeDGLog:
         """Extracts data corresponding to the keys to find.
 
         Parameters
@@ -205,8 +204,8 @@ class GLogIO(object):
                     del keydata[i]
                     del keylist[i]
                     istat = 1
-                for k in range(len(block2id)):
-                    a, b = block2id[k]
+                for k, blk2id in enumerate(block2id):
+                    a, b = blk2id
                     if a > i:
                         block2id[k][0] -= 1
                     elif a == i and b > j:
@@ -568,10 +567,10 @@ def qlab_to_linkdata(qtag: TypeQTag,
                lambda s: s.startswith(' - Thermochemistry'))
         if qopt == 'freq':
             fmt = (r'^\s+Frequencies --- \s*(?P<val>\d.*)\s*$',
-                r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$')
+                   r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$')
         elif qopt == 'redmas':
             fmt = (r'^\s+Reduced masses --- \s*(?P<val>\d.*)\s*$',
-                r'^\s+Red. masses -- \s*(?P<val>\d.*)\s*$')
+                   r'^\s+Red. masses -- \s*(?P<val>\d.*)\s*$')
         else:
             raise NotImplementedError('Unknown subopt for HessDat')
         num = (0, -1)
@@ -1808,13 +1807,13 @@ def parse_data(qdict: TypeQInfo,
                     nblocks = 1
                     nyaxes = 0
                 if nblocks == 0:
-                    msg = 'Inconsistency in spectral data. ' +\
-                        + 'This should not happen!'
+                    msg = 'Inconsistency in spectral data. ' \
+                            + 'This should not happen!'
                     raise IndexError(msg)
                 if discard:
                     discard.reverse()
                     for i in discard:
-                        del(datablocks[last][i])
+                        del datablocks[last][i]
                 # First block contains the full initial legend block
                 # Necessary for the different parameters
                 iref = first
@@ -1876,7 +1875,7 @@ def parse_data(qdict: TypeQInfo,
                 if discard:
                     discard.reverse()
                     for i in discard:
-                        del(datablocks[last][i])
+                        del datablocks[last][i]
                 # First block contains the full initial legend block
                 # Necessary for the different parameters
                 iref = first
@@ -1934,9 +1933,10 @@ def parse_data(qdict: TypeQInfo,
                     else:
                         try:
                             idy = int(key.strip()[0]) - 1
-                        except ValueError:
-                            raise IndexError('Unrecognized key in spc leg.: ' +
-                                             key)
+                        except ValueError as err:
+                            raise IndexError(
+                                f'Unrecognized key in spc leg.: {key}') \
+                                    from err
                         _key = yfmt.format(idy=idy)
                     if nblocks == 1:
                         data[qkey][_key] = title.strip()
@@ -1961,9 +1961,9 @@ def parse_data(qdict: TypeQInfo,
                         elif 'col.' in key:
                             try:
                                 idy = int(key.strip()[0]) - 1
-                            except ValueError:
-                                msg = 'Unrecognized key in spc leg.: ' + key
-                                raise IndexError(msg)
+                            except ValueError as err:
+                                msg = f'Unrecognized key in spc leg.: {key}'
+                                raise IndexError(msg) from err
                             _key = yfmt.format(idy=idy)
                         data[qkey][_key].append(title.strip())
             elif qopt == 'Conv':
@@ -2127,7 +2127,7 @@ def parse_data(qdict: TypeQInfo,
                     for line in datablocks[iref]:
                         cols = line.strip().split()
                         if cols[-1] in ('active', 'inactive', 'passive'):
-                            del(cols[-1])
+                            del cols[-1]
                         for col in cols:
                             i += 1
                             res = col.split('(')
@@ -2141,7 +2141,7 @@ def parse_data(qdict: TypeQInfo,
                         cols = line.strip().split()
                         if cols[-1] in ('active', 'inactive', 'passive'):
                             status = cols[-1]
-                            del(cols[-1])
+                            del cols[-1]
                         else:
                             status = None
                         for col in cols:
@@ -2552,17 +2552,18 @@ def get_data(dfobj: GLogIO,
     # Data Extraction
     # ---------------
     # Use of set to remove redundant keywords
-    ndata, datablocks = dfobj.read_data(*keydata, raise_error=False)
+    ndata, datablocks = dfobj.read_data(*keydata)
     # Data Parsing
     # ------------
     gver = (dfobj.version['major'], dfobj.version['minor'])
     try:
         data = parse_data(qty_dict, key2blocks, qlab2key, ndata, datablocks,
                           gver, error_noqty)
-    except (QuantityError, NotImplementedError):
-        raise QuantityError('Unsupported quantities')
-    except (ParseKeyError, IndexError):
-        raise IndexError('Missing data in Gaussian log')
+    except (QuantityError, NotImplementedError) as err:
+        raise QuantityError('Unsupported quantities') from err
+    except (ParseKeyError, IndexError) as err:
+        raise IndexError(f'Missing data in Gaussian log: {dfobj.filename}') \
+            from err
 
     return data
 
@@ -2615,11 +2616,11 @@ def _parse_logdat_ramact(qopt: str,
                     _ = float(item)
                     incfrq = item
                     data[incfrq] = {}
-                except ValueError:
+                except ValueError as err:
                     if incfrq is None:
                         msg = 'Wrong block structure for Raman/ROA ' \
                             + 'spectroscopy (incident freq/setup)'
-                        raise ParseKeyError(msg)
+                        raise ParseKeyError(msg) from err
                     data[incfrq][item] = {}
                     setups.append((incfrq, item))
             nlines = len(datablocks[iref])/len(setups)
@@ -2698,11 +2699,11 @@ def _parse_logdat_ramact(qopt: str,
                 _ = float(item)
                 incfrq = item
                 data[incfrq] = {}
-            except ValueError:
+            except ValueError as err:
                 if incfrq is None:
                     msg = 'Wrong block structure for Raman/ROA spectroscopy ' \
                         + '(incident freq/setup)'
-                    raise ParseKeyError(msg)
+                    raise ParseKeyError(msg) from err
                 data[incfrq][item] = {}
                 setups.append((incfrq, item))
         nlines = len(datablocks[iref])/len(setups)
@@ -2890,7 +2891,6 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
     import sys
     import numpy as np
     from estampes.tools.math import square_ltmat
-    from estampes.data.physics import phys_fact
 
     def build_evec(fccart, atmas, get_evec, get_eval, nvib=None):
         """Build evec and eval from force constants matrix"""
@@ -2913,18 +2913,18 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
             if np.count_nonzero(vibs) != nvib:
                 msg = 'Unable to identify vibrations from rot/trans'
                 raise QuantityError(msg)
-        evec = norm_evec(hessvec[:, vibs].T) if get_evec else None
-        eval = freqs if get_eval else None
+        eigvec = norm_evec(hessvec[:, vibs].T) if get_evec else None
+        eigval = freqs if get_eval else None
 
-        return evec, eval
+        return eigvec, eigval
 
     def convert_evec(hessvec, atmas=None, natoms=None, form='L.M^{-1/2}'):
         """Convert eigenvector based on form and available data."""
-        evec = None
+        eigvec = None
         if form in ('L.M^-1/2', 'L/M^1/2', 'L.M^{-1/2}', 'L/M^{1/2}'):
             if atmas is not None:
                 nat3 = atmas.size
-                evec = norm_evec(np.einsum(
+                eigvec = norm_evec(np.einsum(
                     'ij,j->ij',
                     np.reshape(hessvec, (-1, nat3)),
                     np.sqrt(atmas)
@@ -2933,7 +2933,7 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
                 raise QuantityError('Missing atomic masses to correct evec')
         else:
             if natoms is not None:
-                evec = np.reshape(hessvec, (-1, 3*natoms))
+                eigvec = np.reshape(hessvec, (-1, 3*natoms))
             else:
                 # Compute nat3 based on: 3*nat*(3nat-ntrro) = size(hessvec)
                 # ntrro = 6 for non-linear, 5 otherwise
@@ -2946,16 +2946,16 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
                 else:
                     nat3 = int(np.polynomial.polynomial.polyroots(
                         (-N, -5, 1))[-1])
-                evec = np.reshape(hessvec, (-1, nat3))
-        return evec
+                eigvec = np.reshape(hessvec, (-1, nat3))
+        return eigvec
 
-    def norm_evec(evec):
+    def norm_evec(eigvec):
         """Normalize eigenvector (assumed to have shape (nvib, nat3))"""
-        res = np.empty(evec.shape)
-        norms = np.sum(evec**2, axis=1)
-        for i in range(evec.shape[0]):
+        res = np.empty(eigvec.shape)
+        norms = np.sum(eigvec**2, axis=1)
+        for i in range(eigvec.shape[0]):
             if norms[i] > sys.float_info.epsilon:
-                res[i, :] = evec[i, :] / sqrt(norms[i])
+                res[i, :] = eigvec[i, :] / sqrt(norms[i])
             else:
                 res[i, :] = 0.0
         return res
@@ -2971,8 +2971,8 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
     fccart = None
     key_ffx = None
     key_evec = None
-    evec = None
-    eval = None
+    eigvec = None
+    eigval = None
     if pre_data is not None:
         for key in pre_data:
             qlabel = pre_data[key].get('qlabel', key)
@@ -2997,22 +2997,21 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
         if (len(fccart.shape) == 1
                 or pre_data[key_ffx]['shape'].lower() == 'lt'):
             fccart = square_ltmat(pre_data[key_ffx]['data'])
-        evec, eval = build_evec(fccart, atmas, get_evec, get_eval, nvib)
+        eigvec, eigval = build_evec(fccart, atmas, get_evec, get_eval, nvib)
     else:
         if get_evec and hessvec is not None:
             # Check if eigenvectors need to be corrected
             #  Default is assumed to be Gaussian fchk
             evec_form = pre_data[key_evec].get('form', 'L.M^{-1/2}')
-            evec = convert_evec(hessvec, atmas, natoms, evec_form)
+            eigvec = convert_evec(hessvec, atmas, natoms, evec_form)
         if get_eval and hessval is not None:
-            eval = hessval
+            eigval = hessval
 
-    calc_evec = get_evec and evec is None
-    calc_eval = get_eval and eval is None
+    calc_evec = get_evec and eigvec is None
+    calc_eval = get_eval and eigval is None
     if calc_evec or calc_eval:
         # We are missing data, now extracting data and recomputing.
         read_data = {}
-        key_FC = ep.build_qlabel(1, None, 2, 'X')
         if calc_evec or calc_eval:
             read_data['natoms'] = 'natoms'
             read_data['d2EdX2'] = ep.build_qlabel(1, None, 2, 'X')
@@ -3031,7 +3030,7 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
             ffx = square_ltmat(tmp_data['d2EdX2']['data'])
             nvib = None if tmp_data['nvib'] is None \
                 else tmp_data['nvib']['data']
-            evec, eval = build_evec(ffx, atmas, get_evec, get_eval, nvib)
+            eigvec, eigval = build_evec(ffx, atmas, get_evec, get_eval, nvib)
         else:
             if calc_evec:
                 if (tmp_data['hessvec'] is not None
@@ -3040,15 +3039,15 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
                     atmas = np.repeat(np.array(tmp_data['atmas']['data']), 3)
                     natoms = tmp_data['natoms']['data']
                     evec_form = tmp_data['hessvec'].get('form', 'L.M^{-1/2}')
-                    evec = convert_evec(hessvec, atmas, natoms, evec_form)
+                    eigvec = convert_evec(hessvec, atmas, natoms, evec_form)
                 else:
                     msg = 'Unable to retrieve force constants eigenvectors'
                     raise QuantityError(msg)
             if calc_eval:
                 if tmp_data['hessval'] is not None:
-                    eval = np.array(tmp_data['hessval']['data'])
+                    eigval = np.array(tmp_data['hessval']['data'])
                 else:
                     msg = 'Unable to retrieve normal mode wavenumbers'
                     raise QuantityError(msg)
 
-    return evec, eval
+    return eigvec, eigval

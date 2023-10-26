@@ -118,7 +118,7 @@ class FChkIO(object):
     @property
     def full_version(self) -> tp.Tuple[str, tp.Any]:
         """Full version of Gaussian, for the parser interface.
-        
+
         Returns the full version of Gaussian used to generate the log file.
         Available keys:
 
@@ -387,8 +387,8 @@ class FChkIO(object):
         # Sets parameters:
         try:
             ncols = NCOLS_FCHK[dtype]
-        except KeyError:
-            raise ParseDataError(dtype, 'Unsupported data type')
+        except KeyError as err:
+            raise ParseDataError(dtype, 'Unsupported data type') from err
         nlines = int(ceil(ndata/ncols))
         return dtype, ndata, ncols, nlines
 
@@ -430,8 +430,8 @@ class FChkIO(object):
         # Sets parameters:
         try:
             fconv = FCONV_FCHK[dtype]
-        except KeyError:
-            raise ParseDataError(dtype, 'Unsupported data type')
+        except KeyError as err:
+            raise ParseDataError(dtype, 'Unsupported data type') from err
         # Data Extraction
         # ---------------
         if nlines == 0:
@@ -567,7 +567,7 @@ def qlab_to_kword(qtag: TypeQTag,
                     if rsta == 'c':
                         keyword = 'Total Energy'
                         del keywords[:]
-                    elif type(rsta) is int:
+                    elif isinstance(rsta, int):
                         if rsta == 0:
                             keyword = 'SCF Energy'
                         else:
@@ -575,11 +575,11 @@ def qlab_to_kword(qtag: TypeQTag,
                         keywords = ['Total Energy', 'ETran scalars']
                 elif dord == 1:
                     if dcrd is None or dcrd == 'X':
-                        if rsta == 'c' or type(rsta) is int:
+                        if rsta == 'c' or isinstance(rsta, int):
                             keyword = 'Cartesian Gradient'
                 elif dord == 2:
                     if dcrd is None or dcrd == 'X':
-                        if rsta == 'c' or type(rsta) is int:
+                        if rsta == 'c' or isinstance(rsta, int):
                             keyword = 'Cartesian Force Constants'
             elif qtag == 50:
                 keywords = ['ETran scalars']
@@ -592,17 +592,17 @@ def qlab_to_kword(qtag: TypeQTag,
                 keyword = 'RotTr to input orientation'
             elif qtag == 101:
                 if dord == 0:
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         keyword = 'Dipole Moment'
                 elif dord == 1:
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         keyword = 'Dipole Derivatives'
             elif qtag == 102:
                 if dord == 0:
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         raise ParseDataError('Magnetic dipole not available')
                 elif dord == 1:
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         keyword = 'AAT'
             elif qtag == 103:
                 raise NotImplementedError()
@@ -634,59 +634,59 @@ def qlab_to_kword(qtag: TypeQTag,
                 raise NotImplementedError()
             elif qtag == 300:
                 if dord == 0:
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         keyword = 'Frequencies for FD properties'
                     else:
                         msg = 'Incident frequencies not available'
                         raise ParseDataError(msg)
                 else:
                     keywords = ['Number of atoms']
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         keyword = 'Frequencies for DFD properties'
                     else:
                         msg = 'Incident frequencies not available'
                         raise ParseDataError(msg)
             elif qtag == 301:
                 if dord == 0:
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         keyword = 'Alpha(-w,w)'
                 elif dord == 1:
                     keywords = ['Number of atoms']
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         keyword = 'Derivative Alpha(-w,w)'
             elif qtag == 302:
                 if dord == 0:
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         keyword = 'FD Optical Rotation Tensor'
                 elif dord == 1:
                     keywords = ['Number of atoms']
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         keyword = 'Derivative FD Optical Rotation Tensor'
             elif qtag == 303:
-                if type(rsta) is int or rsta == 'c':
+                if isinstance(rsta, int) or rsta == 'c':
                     raise ParseDataError('Alpha(w,0) not available')
             elif qtag == 304:
                 if dord == 0:
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         keyword = 'D-Q polarizability'
                 elif dord == 1:
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         keyword = 'Derivative D-Q polarizability'
             elif qtag == 305:
                 if dord == 0:
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         raise NotImplementedError()
                 elif dord == 1:
                     keywords = ['Number of atoms']
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         raise NotImplementedError()
             elif qtag == 306:
                 if dord == 0:
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         raise NotImplementedError()
                 elif dord == 1:
                     keywords = ['Number of atoms']
-                    if type(rsta) is int or rsta == 'c':
+                    if isinstance(rsta, int) or rsta == 'c':
                         raise NotImplementedError()
             else:
                 raise QuantityError('Unknown quantity')
@@ -1015,7 +1015,7 @@ def parse_data(qdict: TypeQInfo,
         else:
             # Transition moments
             # ^^^^^^^^^^^^^^^^^^
-            if type(rsta) is tuple:
+            if isinstance(rsta, tuple):
                 data[qkey]['data'] = _parse_electrans_data(qtag, datablocks,
                                                            kword, qopt, dord,
                                                            dcrd, rsta)
@@ -1028,7 +1028,7 @@ def parse_data(qdict: TypeQInfo,
                         _) = [item for item in datablocks[key][:6]]
                 else:
                     nstates = 1
-                    ndata = 16   # TODO: This may not work in the future.
+                    ndata = 16  # TODO: This may not work in the future.
                     iroot = 0
                 curr_sta = rsta == 'c' or rsta == iroot
                 # Only energy is currently computed for all states:
@@ -1162,10 +1162,10 @@ def get_data(dfobj: FChkIO,
     try:
         data = parse_data(qty_dict, main_kwlist, qlab2key, datablocks, gver,
                           error_noqty)
-    except (QuantityError, NotImplementedError):
-        raise QuantityError('Unsupported quantities')
-    except (ParseKeyError, IndexError):
-        raise IndexError('Missing data in FChk')
+    except (QuantityError, NotImplementedError) as err:
+        raise QuantityError('Unsupported quantities') from err
+    except (ParseKeyError, IndexError) as err:
+        raise IndexError('Missing data in FChk') from err
 
     return data
 
@@ -1249,18 +1249,18 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
             if np.count_nonzero(vibs) != nvib:
                 msg = 'Unable to identify vibrations from rot/trans'
                 raise QuantityError(msg)
-        evec = norm_evec(hessvec[:, vibs].T) if get_evec else None
-        eval = freqs if get_eval else None
+        eigvec = norm_evec(hessvec[:, vibs].T) if get_evec else None
+        eigval = freqs if get_eval else None
 
-        return evec, eval
+        return eigvec, eigval
 
     def convert_evec(hessvec, atmas=None, natoms=None, form='L.M^{-1/2}'):
         """Convert eigenvector based on form and available data."""
-        evec = None
+        eigvec = None
         if form in ('L.M^-1/2', 'L/M^1/2', 'L.M^{-1/2}', 'L/M^{1/2}'):
             if atmas is not None:
                 nat3 = atmas.size
-                evec = norm_evec(np.einsum(
+                eigvec = norm_evec(np.einsum(
                     'ij,j->ij',
                     np.reshape(hessvec, (-1, nat3)),
                     np.sqrt(atmas)
@@ -1269,7 +1269,7 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
                 raise QuantityError('Missing atomic masses to correct evec')
         else:
             if natoms is not None:
-                evec = np.reshape(hessvec, (-1, 3*natoms))
+                eigvec = np.reshape(hessvec, (-1, 3*natoms))
             else:
                 # Compute nat3 based on: 3*nat*(3nat-ntrro) = size(hessvec)
                 # ntrro = 6 for non-linear, 5 otherwise
@@ -1282,16 +1282,16 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
                 else:
                     nat3 = int(np.polynomial.polynomial.polyroots(
                         (-N, -5, 1))[-1])
-                evec = np.reshape(hessvec, (-1, nat3))
-        return evec
+                eigvec = np.reshape(hessvec, (-1, nat3))
+        return eigvec
 
-    def norm_evec(evec):
+    def norm_evec(eigvec):
         """Normalize eigenvector (assumed to have shape (nvib, nat3))"""
-        res = np.empty(evec.shape)
-        norms = np.sum(evec**2, axis=1)
-        for i in range(evec.shape[0]):
+        res = np.empty(eigvec.shape)
+        norms = np.sum(eigvec**2, axis=1)
+        for i in range(eigvec.shape[0]):
             if norms[i] > sys.float_info.epsilon:
-                res[i, :] = evec[i, :] / sqrt(norms[i])
+                res[i, :] = eigvec[i, :] / sqrt(norms[i])
             else:
                 res[i, :] = 0.0
         return res
@@ -1307,8 +1307,8 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
     fccart = None
     key_ffx = None
     key_evec = None
-    evec = None
-    eval = None
+    eigvec = None
+    eigval = None
     do_calc = force_calc
     if pre_data is not None:
         for key in pre_data:
@@ -1334,18 +1334,18 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
         if (len(fccart.shape) == 1
                 or pre_data[key_ffx]['shape'].lower() == 'lt'):
             fccart = square_ltmat(pre_data[key_ffx]['data'])
-        evec, eval = build_evec(fccart, atmas, get_evec, get_eval, nvib)
+        eigvec, eigval = build_evec(fccart, atmas, get_evec, get_eval, nvib)
     elif not force_calc:
         if get_evec and hessvec is not None:
             # Check if eigenvectors need to be corrected
             #  Default is assumed to be Gaussian fchk
             evec_form = pre_data[key_evec].get('form', 'L.M^{-1/2}')
-            evec = convert_evec(hessvec, atmas, natoms, evec_form)
+            eigvec = convert_evec(hessvec, atmas, natoms, evec_form)
         if get_eval and hessval is not None:
-            eval = hessval
+            eigval = hessval
 
-    calc_evec = get_evec and evec is None
-    calc_eval = get_eval and eval is None
+    calc_evec = get_evec and eigvec is None
+    calc_eval = get_eval and eigval is None
     if calc_evec or calc_eval:
         # We are missing data, now extracting data and recomputing.
         read_data = {}
@@ -1370,23 +1370,25 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
                     atmas = np.repeat(np.array(tmp_data['atmas']['data']), 3)
                     natoms = tmp_data['natoms']['data']
                     evec_form = tmp_data['hessvec'].get('form', 'L.M^{-1/2}')
-                    evec = convert_evec(hessvec, atmas, natoms, evec_form)
+                    eigvec = convert_evec(hessvec, atmas, natoms, evec_form)
                 else:
                     do_calc = True
             if calc_eval:
                 if tmp_data['hessval'] is not None:
-                    eval = np.array(tmp_data['hessval']['data'])
+                    eigval = np.array(tmp_data['hessval']['data'])
                 else:
                     do_calc = True
 
         if do_calc:
-            if tmp_data['d2EdX2'] is not None and tmp_data['atmas'] is not None:
+            if (tmp_data['d2EdX2'] is not None
+                    and tmp_data['atmas'] is not None):
                 # Rediagonlizing is more accurate, but require being
                 atmas = np.repeat(np.array(tmp_data['atmas']['data']), 3)
                 ffx = square_ltmat(tmp_data['d2EdX2']['data'])
                 nvib = None if tmp_data['nvib'] is None \
                     else tmp_data['nvib']['data']
-                evec, eval = build_evec(ffx, atmas, get_evec, get_eval, nvib)
+                eigvec, eigval = build_evec(ffx, atmas, get_evec, get_eval,
+                                            nvib)
             else:
                 if calc_evec:
                     msg = 'Unable to retrieve force constants eigenvectors'
@@ -1395,4 +1397,4 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
                     msg = 'Unable to retrieve normal mode wavenumbers'
                     raise QuantityError(msg)
 
-    return evec, eval
+    return eigvec, eigval

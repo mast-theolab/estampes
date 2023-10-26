@@ -34,7 +34,7 @@ def plot_jmat(mat: np.ndarray,
     Axes `canvas`.
 
     The possible modes of normalization are::
-    
+
         none
             no normalization.
         byrow

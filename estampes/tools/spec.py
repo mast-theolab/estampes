@@ -2,6 +2,12 @@
 
 Module providing tools to manipulate data relative to spectra.
 
+Developer notes:
+The warning about eval is not fixed to offer some flexibility in
+handling units with numerical factors for less standard conversions
+which are not directly considered (e.g., 10^-40 esu^2 cm^2).
+The calling functions should make sure that the string is compatible
+with a unit.
 """
 
 from math import ceil, log, pi
@@ -34,7 +40,7 @@ def broaden(xval: tp.Sequence[float],
     Returns the broadened spectrum for each point in `xaxis`.
 
     `yaxis` is computed as:
-    
+
     .. math:: y_a(i) = sum_j y_f*y_v(j)*f(x_a(i))*g(x_a(i)-x_v(j))
 
     * :math:`y_a`: `yaxis`
@@ -120,6 +126,38 @@ def broaden(xval: tp.Sequence[float],
         for i in range(npoints):
             yaxis[i] /= ymax
     return yaxis
+
+
+def convert_x(unit_to: str,
+              unit_from: str,
+              xaxis: tp.Sequence[float],
+              ) -> tp.List[float]:
+    """Returns the converted X unit
+
+    Returns the converted X axis from `unit_from` to `unit_to`.
+    The units are strings.
+
+    Parameters
+    ----------
+    unit_to
+        Final X unit.
+    unit_from
+        Original X unit.
+    xaxis
+        Original X axis values.
+
+    Returns
+    -------
+    list
+        Converted values of X.
+
+    Raises
+    ------
+    ZeroDivisionError
+        The conversion requires an inversion, but `xaxis` contains
+        null or near-null values.
+    """
+    raise NotImplementedError('X conversion not yet available')
 
 
 def convert_y(specabbr: str,
@@ -255,7 +293,6 @@ def convert_y(specabbr: str,
             sfact = eval(convert_expr(sunit[0], None))
     _src_type = res[0].upper()
     yfactor = 1.0
-    xfunc = None
     # Test
     if _spec == 'IR':
         if _dest_type == 'I':
@@ -272,6 +309,7 @@ def convert_y(specabbr: str,
                     if _src_unit in UNIT_II['km/M']:
                         yfactor = 100/log(10)
 
+                        xfunc = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -440,6 +478,7 @@ def convert_y(specabbr: str,
                 elif _src_type == 'II':
                     if _src_unit in UNIT_II['/M/cm2']:
                         yfactor = 1.0
+                        xfunc = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:

@@ -99,10 +99,18 @@ class Molecule(Qt3DCore.QEntity):
                  rad_atom_as_bond: bool = False,
                  molcol: tp.Optional[TypeColor] = None,
                  rootEntity: tp.Optional[Qt3DCore.QEntity] = None):
-        super(Molecule, self).__init__(rootEntity)
+        super().__init__(rootEntity)
 
-        self.__class__.__mol_count += 1
-        self.__mol_id = self.__class__.__mol_count
+        type(self).__mol_count += 1
+        self.__mol_id = type(self).__mol_count
+
+        # The initialization below should be properly handled through
+        # functions.  Just making sure everything declared.
+        self.__atlist = self.__atdata = self.__at_mat = self.__at_rad = None
+        self.__cam = None
+        self.__bo_obj = self.__bo_mesh = self.__bo_trro = None
+        self.__at_obj = self.__at_pick = self.__at_mesh = self.__at_tvec = None
+
         self.set_display_settings(
             col_bond_as_atom=col_bond_as_atom,
             rad_atom_as_bond=rad_atom_as_bond,
@@ -150,7 +158,7 @@ class Molecule(Qt3DCore.QEntity):
         """Sets display settings for the molecule.
 
         Sets color information and rendering.
-        
+
         Parameters
         ----------
         col_bond_as_atom
@@ -208,7 +216,7 @@ class Molecule(Qt3DCore.QEntity):
         cam
             A Qt3Render.QCamera method.
         """
-        self._cam = cam
+        self.__cam = cam
         for at in self.__at_pick:
             at.pressed.connect(self.__clickAtom)
 
@@ -353,7 +361,7 @@ class Molecule(Qt3DCore.QEntity):
             # loc_pos: local position of the clicked point in the object
             loc_pos = clickEvent.localIntersection()
             # Subtracting them give us the origin of the sphere
-            self._cam().setViewCenter(abs_pos-loc_pos)
+            self.__cam().setViewCenter(abs_pos-loc_pos)
         elif clickEvent.button() == QtCore.Qt.LeftButton:
             self.click_molatom.emit(
                 [self.__mol_id,
@@ -361,7 +369,7 @@ class Molecule(Qt3DCore.QEntity):
 
     @classmethod
     def reset_counter(cls):
-        Molecule.__mol_count = 0
+        cls.__mol_count = 0
 
 
 class MolWin(Qt3DExtras.Qt3DWindow):
@@ -498,8 +506,10 @@ def build_box(at_lab: TypeAtLab,
     atrad = rad_atom_as_bond and BONDDATA['rvis']*RAD_VIS_SCL or None
     if atrad is None:
         atdat = atomic_data(*sorted(set(at_lab)))
-    for at, xyz in zip(at_lab, at_crd):
-        x, y, z = xyz
+        _rad = max(atdat, key=lambda x: x['rvis'])
+    else:
+        _rad = atrad
+    for x, y, z in at_crd:
         if x < xmin:
             xmin = x
         if x > xmax:
@@ -790,9 +800,9 @@ light_source {{
                     at1=at_lab[iat1], id1=iat1+1, xyz1=xyz1,
                     at2=at_lab[iat2], id2=iat2+1, xyz2=xyz2))
             # -- Next build atoms
-            for iat in range(len(at_lab)):
+            for iat, lab in enumerate(at_lab):
                 fobj.write(fmt_obj_at.format(
-                    at=at_lab[iat], id=iat+1, xyz=at_crd[iat]))
+                    at=atdat[lab]['symb'], id=iat+1, xyz=at_crd[iat]))
             # -- Close and add molecules
             fobj.write('''}
 
@@ -804,7 +814,7 @@ object {
         else:
             fobj.write('\n// MOLECULES DEFINITION\n')
             for imol in range(nmols):
-                fobj.write('\n#declare mol{:02d} = union {{\n'.format(imol+1))
+                fobj.write(f'\n#declare mol{imol+1:02d} = union {{\n')
                 # -- First build bonds
                 for bond in bonds[imol]:
                     iat1, iat2 = bond

@@ -10,6 +10,7 @@ import numpy as np
 
 from estampes.base import TypeAtCrd, TypeAtMas, ArgumentError
 
+
 # ==============
 # Module Methods
 # ==============
@@ -20,7 +21,7 @@ def build_dusch_J(Lmat_A: np.ndarray,
                   at_mass_A: tp.Optional[np.ndarray] = None,
                   at_mass_B: tp.Optional[np.ndarray] = None) -> np.ndarray:
     """Build Duschinsky matrix J.
-    
+
     Build the Duschinsky matrix J corresponding to:
 
     :math:`Q_A = J Q_B + K`
@@ -42,7 +43,7 @@ def build_dusch_J(Lmat_A: np.ndarray,
         Vector of atomic masses of system A.
     at_mass_B
         Vector of atomic masses of system B.
-    
+
     Returns
     -------
     np.ndarray
@@ -67,27 +68,27 @@ def build_dusch_J(Lmat_A: np.ndarray,
             massB = np.repeat(at_mass_B, 3)**(-1/2)
             Jmat = np.einsum('ij,j,j,jk->ij', Lmat_A, massA, massB,
                              np.linalg.pinv(Lmat_B))
-            
+
     return Jmat
 
 
 def build_dusch_K(Lmat: np.ndarray,
                   at_mass: TypeAtMas,
                   at_deltaR: tp.Optional[TypeAtCrd] = None) -> np.ndarray:
-    """Build Duschinsky-transformation shift vector K.
-    
+    r"""Build Duschinsky-transformation shift vector K.
+
     Build the shift vector associated to the Duschinsky transformation,
-    
+
     :math:`Q_A = J Q_B + K`
 
     The form of K depends on the availability of two equilibrium
     geometries.  In electronic transitions, this is related to the
     adiabatic or vertical models adopted to describe the transition.
-    
+
     Parameters
     ----------
     Lmat
-        Transformation matrix from mass-weighted cart. to normal coord. (N,3Na).
+        Transfo. matrix from mass-weighted cart. to normal coord. (N,3 Na).
     at_mass
         Atomic masses, as a 1D array.
     at_deltaR

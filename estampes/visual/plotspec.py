@@ -7,7 +7,6 @@ import re
 import typing as tp
 
 import numpy as np
-import matplotlib as mpl
 import matplotlib.axes as mpl_axes
 
 from estampes.base import ArgumentError

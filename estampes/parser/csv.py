@@ -300,7 +300,7 @@ def get_data(dfobj: FileCSV,
         if qtag != 'anyspc':
             raise QuantityError('Only spectroscopic data supported.')
         qty_dict[qlabel] = qopt.lower()
-    
+
     # Data Extraction
     # ---------------
     # Use of set to remove redundant keywords

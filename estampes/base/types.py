@@ -50,7 +50,6 @@ TypeRSta : str, int, tuple, optional
 
 import typing as tp
 try:
-    import numpy as np
     import numpy.typing as npt
     has_np = True
 except ImportError:
@@ -112,7 +111,7 @@ TypeDGLog = tp.List[tp.Union[tp.List[str], str]]
 TypeColor = tp.Union[tp.Sequence[int], float, str]
 
 # Atoms-related data
-TypeAtData = tp.Dict[str, tp.Dict[str, tp.List[tp.Any]]]
+TypeAtData = tp.Dict[_tp_StrInt, tp.Dict[str, tp.List[tp.Any]]]
 if has_np:
     TypeAtCrd = npt.ArrayLike
     TypeAtLab = npt.ArrayLike
