@@ -12,6 +12,7 @@ Tools have each one their own trigram
 - **BLS**: _Ballast_
 - **BRS**: _Bars_
 - **ESP**: _ESParser_
+- **MRG**: _Mirage_
 - **GUI**: Main graphical interface
 
 Other blocks are:
@@ -23,6 +24,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **MRG** - New script/program Mirage will provide some facilities for molecular visualization: display, rendering...
 - **LIB** - PovRay-centric routines in `visual.molview` now full supports atomic numbers as atomic labels.
 - **API** - Support of vibrational reduced masses as a `qlabel` and from available parsers.
 
