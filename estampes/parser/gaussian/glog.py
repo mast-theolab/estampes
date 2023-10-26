@@ -1637,7 +1637,7 @@ def parse_data(qdict: TypeQInfo,
                 raise ParseKeyError(msg_noqty)
             if qopt == 'freq':
                 data[qkey]['unit'] = 'cm-1'
-            elif qopt == 'redmass':
+            elif qopt == 'redmas':
                 data[qkey]['unit'] = 'amu'
             else:
                 raise NotImplementedError('Unknown subopt for HessDat')
