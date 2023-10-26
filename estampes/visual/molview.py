@@ -522,10 +522,6 @@ def build_box(at_lab: TypeAtLab,
             zmin = z
         if z > zmax:
             zmax = z
-    if atrad is None:
-        _rad = atdat[at]
-    else:
-        _rad = atrad
     xmin = xmin - _rad
     xmax = xmax + _rad
     ymin = ymin - _rad
@@ -748,11 +744,12 @@ light_source {{
         if nmols == 1:
             fobj.write('\n// ATOMS COLORS AND TEXTURES\n')
             for atom in list_atoms:
-                fobj.write(fmt_col_at.format(at=atom, c=atdat[atom]['rgb']))
+                fobj.write(fmt_col_at.format(at=atdat[atom]['symb'],
+                                             c=atdat[atom]['rgb']))
             fobj.write('\n')
             # Set atoms texture
             for atom in list_atoms:
-                fobj.write(fmt_tex_at.format(at=atom))
+                fobj.write(fmt_tex_at.format(at=atdat[atom]['symb']))
             # Set bonds colors/textures
             fobj.write('\n// BONDS COLORS AND TEXTURES\n')
             if not col_bond_as_atom:
@@ -766,7 +763,8 @@ light_source {{
             else:
                 fmt = 'at_{at}'
             for atom in list_atoms:
-                fobj.write(fmt_tex_bo.format(at=atom, ref=fmt.format(at=atom)))
+                at = atdat[atom]['symb']
+                fobj.write(fmt_tex_bo.format(at=at, ref=fmt.format(at=at)))
         else:
             fobj.write('\n// MOLECULES COLORS AND TEXTURES\n')
             # Set Molecule colors
@@ -784,7 +782,7 @@ light_source {{
                 rval = bo_rad
             else:
                 rval = atdat[atom]['rvis']*RAD_VIS_SCL
-            fobj.write(fmt_rad_at.format(at=atom, r=rval))
+            fobj.write(fmt_rad_at.format(at=atdat[atom]['symb'], r=rval))
         # Molecule specification
         if nmols == 1:
             fobj.write('\n// MOLECULE DEFINITION\n\n')
@@ -797,8 +795,8 @@ light_source {{
                 xyzmid = (xyz1 + xyz2)/2.
                 fobj.write(fmt_obj_bo.format(
                     xyz=xyzmid,
-                    at1=at_lab[iat1], id1=iat1+1, xyz1=xyz1,
-                    at2=at_lab[iat2], id2=iat2+1, xyz2=xyz2))
+                    at1=atdat[at_lab[iat1]]['symb'], id1=iat1+1, xyz1=xyz1,
+                    at2=atdat[at_lab[iat2]]['symb'], id2=iat2+1, xyz2=xyz2))
             # -- Next build atoms
             for iat, lab in enumerate(at_lab):
                 fobj.write(fmt_obj_at.format(
@@ -823,18 +821,20 @@ object {
                     xyzmid = (xyz1 + xyz2)/2.
                     fobj.write(fmt_obj_bo.format(
                         xyz=xyzmid,
-                        at1=at_lab[imol][iat1], id1=iat1+1, xyz1=xyz1,
-                        at2=at_lab[imol][iat2], id2=iat2+1, xyz2=xyz2,
+                        at1=atdat[at_lab[imol][iat1]]['symb'],
+                        id1=iat1+1, xyz1=xyz1,
+                        at2=atdat[at_lab[imol][iat2]]['symb'],
+                        id2=iat2+1, xyz2=xyz2,
                         idmol=imol+1))
                 # -- Next build atoms
                 for iat in range(len(at_lab[imol])):
                     fobj.write(fmt_obj_at.format(
-                        at=at_lab[imol][iat], id=iat+1,
+                        at=atdat[at_lab[imol][iat]]['symb'], id=iat+1,
                         xyz=at_crd[imol][iat], idmol=imol+1))
                 # -- Close
                 fobj.write('}\n')
             # Add block to visualize molecules
             fobj.write('union {\n')
             for i in range(nmols):
-                fobj.write('    object {{ mol{:02d} }}\n'.format(i+1))
+                fobj.write(f'    object {{ mol{i+1:02d} }}\n')
             fobj.write('}\n')

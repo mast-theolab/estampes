@@ -23,6 +23,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **LIB** - PovRay-centric routines in `visual.molview` now full supports atomic numbers as atomic labels.
 - **API** - Support of vibrational reduced masses as a `qlabel` and from available parsers.
 
 ### Fixed
