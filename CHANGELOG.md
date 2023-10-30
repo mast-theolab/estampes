@@ -31,6 +31,7 @@ Other blocks are:
 ### Fixed
 - **LIB** - Error when trying to truncate the broadening in `tools.spec.broaden`.
 - **API** - Broken support of non-active modes from Gaussian anharmonic log files.
+- **API** - Support of energy gradient and second derivatives in fchk file.
 
 ### Changed
 - **LIB** - Function `data.atom.atomic_data` now respects the types of data in `atoms` and will preserve them as keys for the generated dictionary.  This simplifies working with atomic numbers or labels.

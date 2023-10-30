@@ -1052,7 +1052,12 @@ def parse_data(qdict: TypeQInfo,
                         data[qkey]['data'] = \
                             datablocks[kword][offset:offset+ndat]
                     elif qtag == 1:
-                        data[qkey]['data'] = datablocks[kword][0]
+                        if dord == 0:
+                            data[qkey]['data'] = datablocks[kword][0]
+                        elif dord in (1, 2):
+                            data[qkey]['data'] = datablocks[kword]
+                        else:
+                            raise NotImplementedError()
                     elif qtag == 92:
                         data[qkey]['data'] = datablocks[kword][:9]
                     elif qtag == 93:
