@@ -18,7 +18,8 @@ setuptools.setup(
     packages=setuptools.find_packages(include=['estampes', 'estampes.*',
                                                'progs.esparser',
                                                'progs.ballast',
-                                               'progs.bars']),
+                                               'progs.bars',
+                                               'progs.soar']),
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Programming Language :: Python :: 3',
@@ -33,6 +34,7 @@ setuptools.setup(
             'esparser=progs.esparser:main',
             'esballast=progs.ballast:main',
             'esbars=progs.bars:main',
+            'essoar=progs.soar:main',
         ],
     },
 )

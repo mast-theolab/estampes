@@ -13,6 +13,7 @@ Tools have each one their own trigram
 - **BRS**: _Bars_
 - **ESP**: _ESParser_
 - **MRG**: _Mirage_
+- **OAR**: _Soar_
 - **GUI**: Main graphical interface
 
 Other blocks are:
@@ -24,6 +25,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **OAR** - New script/program Soar to analyse structural difference through different metrics (for now the normal-modes overlaps) and display them graphically.
 - **MRG** - New script/program Mirage will provide some facilities for molecular visualization: display, rendering...
 - **LIB** - PovRay-centric routines in `visual.molview` now full supports atomic numbers as atomic labels.
 - **API** - Support of vibrational reduced masses as a `qlabel` and from available parsers.
