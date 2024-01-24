@@ -1510,7 +1510,12 @@ def parse_data(qdict: TypeQInfo,
             num = len(datablocks[iref])
         else:
             iref = -1
-            for i in range(first, last+1):
+            # Check if transition information may be present:
+            if rsta == 'c' and 'Excited State' in ''.join(datablocks[first]):
+                realfirst = first + 1
+            else:
+                realfirst = first
+            for i in range(realfirst, last+1):
                 if num == 0 and ndatablock[i] > 0 and datablocks[i]:
                     iref = i  # Ignore first, null indexes
                     num = len(datablocks[i])
@@ -2260,7 +2265,7 @@ def parse_data(qdict: TypeQInfo,
                             # 1st element is actually transition information
                             # Ignored as we look for the pure energies
                             fmt = re.compile(r'E\(?(.*?)\)?\s+')
-                            iref = first + 1
+                            # iref = first + 1
                             N = 2 if datablocks[last] else 1
                             nblocks = len(datablocks[iref])
                             for i in range(iref, iref+N):

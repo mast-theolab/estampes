@@ -30,6 +30,7 @@ Other blocks are:
 
 ### Fixed
 - **LIB** - Error when trying to truncate the broadening in `tools.spec.broaden`.
+- **API** - Wrong datablock parsed for excited-state quantities read from Gaussian log file.
 - **API** - Broken support of non-active modes from Gaussian anharmonic log files.
 - **API** - Support of energy gradient and second derivatives in fchk file.
 
