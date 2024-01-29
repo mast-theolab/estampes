@@ -200,7 +200,7 @@ def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
     Returns
     -------
     :obj:`argparse.Namespace`
-        Object holding results as attributes
+        Object holding results as attributes.
     """
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter)
@@ -250,10 +250,7 @@ def parse_subid(ident: str, ncols: int = 1
                     j = -1
                 else:
                     j = max(int(res[1]), 1)
-                if i == j:
-                    return i
-                else:
-                    return (i, j)
+                return i if (i == j) else (i, j)
             else:
                 return max(int(res[0]), 1)
 
@@ -624,7 +621,11 @@ def main() -> tp.NoReturn:
     elif args.inpfile:
         print('ERROR: Files in input not yet supported')
     else:
-        figdata, spcdata, curves = parse_inifile(args.optfile)
+        try:
+            figdata, spcdata, curves = parse_inifile(args.optfile)
+        except FileNotFoundError:
+            print('ERROR: Option file "{}" not found.'.format(args.optfile))
+            sys.exit(1)
 
     nrows, ncols = figdata['subp']
     y0lines = np.full((nrows, ncols), False)

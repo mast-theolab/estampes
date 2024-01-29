@@ -37,6 +37,7 @@ Other blocks are:
 - **API** - Support of energy gradient and second derivatives in fchk file.
 
 ### Changed
+- **BLS** - The filename is now displayed when a problem is found with available data.
 - **LIB** - Function `data.atom.atomic_data` now respects the types of data in `atoms` and will preserve them as keys for the generated dictionary.  This simplifies working with atomic numbers or labels.
 - **API** - `qlabel` "hessval" is renamed "hessdat" to underline the fact that it can be used to extract different types of data connected to the Hessian matrix.
 
