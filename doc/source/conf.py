@@ -8,9 +8,9 @@
 import sphinx_rtd_theme
 
 project = 'ESTAMPES'
-copyright = '2023, Julien Bloino'
+copyright = '2024, Julien Bloino'
 author = 'Julien Bloino'
-release = '0.4.4'
+release = '0.4.5'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -23,8 +23,6 @@ extensions = [
 
 templates_path = ['_templates']
 exclude_patterns = []
-
-
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
