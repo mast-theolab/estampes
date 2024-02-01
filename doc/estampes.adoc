@@ -1,16 +1,15 @@
 = ESTAMPES
 :email: julien.bloino@sns.it
-:revnumber: 0.4.5
-:revremark: Creation placeholder for Makefile
+:revnumber: 0.5.0
+:revremark: Updated documentation
 :toc: left
 :toclevels: 3
 :icons: font
 :stem:
 :pygments-style: native
 
-:Gaussian: pass:q[G[small]##AUSSIAN##]
-:Estampes: pass:q[E[small]##STAMPES##]
-
 == Preamble
 
-TODO
+The "`Experimental Support Toolbox for the Analysis, Modelling, Plotting and Elucidation of Spectra`" (ESTAMPES) is a library and programs suite for code prototyping and data visualization.
+Its primary aim is to provide simple interfaces and tools to extract and manipulate data, primarily from [.smallcaps]##Gaussian##, but compatible with any other file format through _ad hoc_ parsers.
+Specialized programs are also provided as demonstrations of the capabilities of the library system and to facilitate data processing and visualization for common tasks.

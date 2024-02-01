@@ -1,4 +1,4 @@
-"""Module providing basic types classes
+"""Provide basic types classes.
 
 A basic module providing types specifications and new types for ESTAMPES.
 
@@ -47,8 +47,8 @@ TypeQTag : str, int
 TypeRSta : str, int, tuple, optional
     Static type for reference state/transition.
 """
-
 import typing as tp
+
 try:
     import numpy.typing as npt
     has_np = True
@@ -70,16 +70,20 @@ class ConstDict(dict):
     ----------
     https://goodcode.io/attributes/python-dict-object/
     """
+
     def __getattr__(self, name):
+        """Get attribute 'name'."""
         if name in self:
             return self[name]
         else:
             raise AttributeError(f'No such attribute: {name}')
 
     def __setattr__(self, name, value):
+        """Set attribute 'name' to 'value'."""
         self[name] = value
 
     def __delattr__(self, name):
+        """Delete attribute 'name'."""
         if name in self:
             del self[name]
         else:
@@ -103,9 +107,7 @@ TypeDCrd = tp.Optional[str]
 TypeRSta = tp.Optional[tp.Union[str, int, tp.Tuple[_tp_StrInt, _tp_StrInt]]]
 TypeQLvl = tp.Optional[str]
 TypeQLab = tp.Tuple[TypeQTag, TypeQOpt, TypeDOrd, TypeDCrd, TypeRSta, TypeQLvl]
-TypeQData = tp.Dict[str, tp.Union[tp.Any, tp.Dict[str, tp.Any]]]
 
-TypeQInfo = tp.Dict[str, tp.List[tp.Any]]
 TypeDFChk = tp.Dict[str, tp.List[tp.Union[str, int, float]]]
 TypeDGLog = tp.List[tp.Union[tp.List[str], str]]
 TypeColor = tp.Union[tp.Sequence[int], float, str]

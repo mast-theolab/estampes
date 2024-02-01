@@ -1,5 +1,6 @@
-"""
-    BARS: Benchmark on Anharmonicity - Results Survey
+"""Program: BARS.
+
+BARS: Benchmark on Anharmonicity - Results Survey
 
 Simple tool to merge, compare and plot results from a set of anharmonic
   calculations.
@@ -8,12 +9,13 @@ Simple tool to merge, compare and plot results from a set of anharmonic
 import sys
 import os
 import argparse
+from collections.abc import Sequence
 import typing as tp
 
 import numpy as np
 
-from estampes.base import ArgumentError, ParseKeyError, QuantityError
-from estampes.parser import DataFile, build_qlabel
+from estampes.base import QLabel, ArgumentError, ParseKeyError, QuantityError
+from estampes.parser import DataFile
 
 try:
     import matplotlib.pyplot as plt
@@ -25,12 +27,12 @@ try:
     # rc('font',**{'family':'serif','serif':['Palatino']})
     rc('text', usetex=True)
     rc('mathtext', fontset='stixsans')
-    mpl_loaded = True
+    MPL_LOADED = True
     # mpl.rcParams['backend'] = 'SVG'
     # mpl.rcParams['backend.qt4'] = 'PyQt4'
     plt.rcParams['font.family'] = 'sans-serif'
 except ImportError:
-    mpl_loaded = False
+    MPL_LOADED = False
 
 
 PROGNAME = 'bars'
@@ -56,30 +58,30 @@ HELP_SORT = '''Sort the electronic structure methods:
 - file: respect the order given in the file
 - alpha: reorder by sorting the methods in alphabetic order'''
 
-TypeMol = tp.List[str]
-TypeESM = tp.List[str]
-TypeGBS = tp.List[str]
-TypeVib = tp.List[str]
-TypeInF = tp.List[str]
-TypeTag = tp.List[tp.Optional[str]]
-TypeCol = tp.List[tp.Optional[str]]
-TypeOptDat = tp.Tuple[TypeMol, TypeESM, TypeGBS, TypeVib, TypeInF, TypeTag,
-                      TypeCol]
+TypeMol = list[str]
+TypeESM = list[str]
+TypeGBS = list[str]
+TypeVib = list[str]
+TypeInF = list[str]
+TypeTag = list[tp.Optional[str]]
+TypeCol = list[tp.Optional[str]]
+TypeOptDat = tuple[TypeMol, TypeESM, TypeGBS, TypeVib, TypeInF, TypeTag,
+                   TypeCol]
 # Type for calculated values (for a given method)
 # [level][mode] = value
-TypeCalc = tp.Dict[str, tp.Dict[int, float]]
+TypeCalc = dict[str, dict[int, float]]
 # Type for labels: [label][level][mode] = value
-TypeMeth = tp.Dict[str, TypeCalc]
+TypeMeth = dict[str, TypeCalc]
 # Type for molecules: [mol][method][level][mode] = value
-TypeMols = tp.Dict[str, TypeMeth]
+TypeMols = dict[str, TypeMeth]
 # Type for statistics: [method][level][mode] = value
-TypeDiff = tp.Dict[str, tp.Dict[int, tp.Dict[str, float]]]
+TypeDiff = dict[str, dict[int, dict[str, float]]]
 # Type for reference data: [mol][mode] = value
-TypeRDat = tp.Dict[str, tp.Dict[int, float]]
+TypeRDat = dict[str, dict[int, float]]
 
 
-def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
-    """Defines and checks options given in arguments.
+def parse_args(args: Sequence[str]) -> argparse.Namespace:
+    """Define and check options given in arguments.
 
     Defines available options in the program, parses a list of arguments
     given in input, and returns the results as a populated namespace.
@@ -150,7 +152,7 @@ def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
 
 
 def parse_optfile(fobj: tp.IO) -> TypeOptDat:
-    """Parses option file.
+    """Parse option file.
 
     Parses Option file and returns the data as series of list:
     1. List of molecule names
@@ -228,7 +230,7 @@ def parse_optfile(fobj: tp.IO) -> TypeOptDat:
 
 def parse_reffile(fobj: tp.IO,
                   mol: str) -> TypeRDat:
-    """Parses reference data file.
+    """Parse reference data file.
 
     Parses the reference data file and returns a dictionary, as:
     molecule -> mode -> value
@@ -274,9 +276,9 @@ def parse_reffile(fobj: tp.IO,
     return data
 
 
-def parse_compfile(fobj: tp.IO
-                   ) -> tp.Tuple[tp.Optional[str], tp.Optional[str]]:
-    """Parses file with methods to compare.
+def parse_compfile(fobj: tp.IO) -> list[tuple[tp.Optional[str],
+                                              tp.Optional[str]]]:
+    """Parse file with methods to compare.
 
     Accepted structure:
     * method ; basis || method ; basis
@@ -289,8 +291,8 @@ def parse_compfile(fobj: tp.IO
 
     Returns
     -------
-    tuple
-        Tuple of methods to compare.
+    List
+        List of tuples of methods to compare.
 
     Raises
     ------
@@ -307,8 +309,8 @@ def parse_compfile(fobj: tp.IO
             groups = line.split(gsep)
             meths = [None, None]
             if len(groups) > 2:
-                fmt = 'Only 2 methods/labels per line (l. {})'
-                raise IndexError(fmt.format(nline))
+                raise IndexError(
+                    f'Only 2 methods/labels per line (l. {nline})')
             for i, group in enumerate(groups):
                 if group.strip():
                     cols = [item.strip() for item in group.split(csep)]
@@ -328,8 +330,8 @@ def parse_compfile(fobj: tp.IO
 
 
 def get_energies(dfname: str,
-                 levels: tp.Sequence[str]) -> TypeCalc:
-    """Gets vibrational energies from data file.
+                 levels: Sequence[str]) -> TypeCalc:
+    """Get vibrational energies from data file.
 
     Gets vibrational fundamental energies from a data file.
 
@@ -363,42 +365,42 @@ def get_energies(dfname: str,
     dkeys = {}
     for item in levels:
         level = item[-1]
-        dkey = {
-            'assign': build_qlabel('vtrans', level=level),
-            'freq': build_qlabel('vlevel', level=level),
+        qkeys = {
+            'assign': QLabel(quantity='vtrans', level=level),
+            'freq': QLabel(quantity='vlevel', level=level),
         }
     # keys = [item for key in dkeys for item in dkeys[key].values()]
         # Extract relevant data
         try:
-            indata[level] = dfile.get_data(*dkey.values())
-            dkeys[level] = dkey.copy()
+            indata[level] = dfile.get_data(**qkeys)
+            dkeys[level] = qkeys.copy()
         except ParseKeyError as e:
             if item[0] != '?':
                 msg = 'Vibrational data missing' + str(e)
                 raise IndexError(msg) from None
     # Check if we have the states are variational or harmonic/DVPT2
     if 'A' in dkeys:
-        state1_nq = indata['A'][dkeys['A']['assign']][1][1][0][1]
+        state1_nq = indata['A']['assign'].data[1][1][0][1]
         if state1_nq == 0:
             raise IndexError('Variational state notation found.')
 
     data = {}
     for level in dkeys:
         data[level] = {}
-        for i in indata[level][dkeys[level]['assign']]:
-            fsta = indata[level][dkeys[level]['assign']][i][1]
+        for i, val in indata[level]['assign'].data.items():
+            fsta = val[1]
             if len(fsta) == 1 and fsta[0][1] == 1:
                 mode = fsta[0][0]
-                data[level][mode] = indata[level][dkeys[level]['freq']][i]
+                data[level][mode] = indata[level]['freq'].data[i]
     return data
 
 
 def print_data(mol: str,
-               labels: tp.List[str],
+               labels: list[str],
                dcalc: TypeMeth,
-               dref: tp.Dict[int, float],
+               dref: dict[int, float],
                skip_on_ref: bool = True) -> TypeDiff:
-    """Prints data
+    """Print data.
 
     Prints data in CSV-compliant files.
     Returns the signed differences, in the form of dictionary
@@ -424,24 +426,24 @@ def print_data(mol: str,
         as `[method][level][mode] = value`
     """
     prec = 0
-    fmt_fp = '{{:{}.{}f}}'.format(prec+7, prec)
+    fmt_fp = f'{{:{prec+7}.{prec}f}}'
     blank = (prec+7)*' '
-    fmt_func = '{{:{}s}}'.format(2*(prec+7)+3)  # 3 for ' ; '
+    fmt_func = f'{{:{2*(prec+7)+3}s}}'  # 3 for ' ; '
     fmt_base = ' {:4d}'
-    fmt_ref = '{{:{}s}}'.format(prec+7)
+    fmt_ref = f'{{:{prec+7}s}}'
     txt_head = ' Mode ; ' + fmt_ref.format('Ref.')
     txt_head2 = '      ; ' + fmt_ref.format(' ')
     fmt_delta = ' {:4s} ; ' + fmt_ref.format(' ')
     diffs = {}
     nmax = 0
-    with open('res_{}.csv'.format(mol), 'w') as fobj:
+    with open(f'res_{mol}.csv', 'w', encoding='utf-8') as fobj:
         txt0 = txt_head
         txt1 = txt_head2
         for key in labels:
             if key not in dcalc:  # pass if method not supported
                 continue
-            NHA = len(dcalc[key].keys())
-            fmt_func = '{{:{}s}}'.format(NHA*(prec+7)+3)  # 3 for ' ; '
+            # Below: 3 for ' ; '
+            fmt_func = f'{{:{len(dcalc[key].keys())*(prec+7)+3}s}}'
             txt0 += ' ; ' + fmt_func.format(key)
             diffs[key] = {}
             for lvl in dcalc[key]:
@@ -507,14 +509,14 @@ def print_data(mol: str,
 
 
 def build_mean_data(op_mol: str,
-                    labels: tp.List[str],
-                    levels: tp.Sequence[str],
-                    dcalc: tp.Dict[str, TypeMeth],
+                    labels: list[str],
+                    levels: Sequence[str],
+                    dcalc: dict[str, TypeMeth],
                     dref: TypeRDat,
                     do_plot: bool,
                     compfile: tp.Optional[str] = None,
                     imgfile: tp.Optional[str] = None):
-    """Builds (and displays) average statistical data.
+    """Build (and display) average statistical data.
 
     Builds average statistical data and displays if requested.
     Also handles call to the function in charge of printing the data.
@@ -552,7 +554,7 @@ def build_mean_data(op_mol: str,
         """Attach a text label above each bar, displaying its height."""
         for rect in rects:
             height = rect.get_height()
-            ax.annotate('{:.0f}'.format(height),
+            ax.annotate(f'{height:.0f}',
                         xy=(rect.get_x() + rect.get_width() / 2, height),
                         xytext=(0, 3),  # 3 points vertical offset
                         textcoords="offset points", fontsize=6,
@@ -581,16 +583,16 @@ def build_mean_data(op_mol: str,
         if mol not in dref:
             print(f'Molecule "{mol}" not available in experiment')
         diffs = print_data(mol, labels, dcalc[mol], dref[mol])
-        for key in diffs:
+        for key, diff in diffs.items():
             for lvl in levels:
-                for mode in diffs[key][lvl]:
-                    val = abs(diffs[key][lvl][mode])
+                for val in (abs(item) for item in diff[lvl].values()):
                     full_nvib[key][lvl] += 1
                     full_dmue[key][lvl] += val
                     if val > full_amax[key][lvl]:
                         full_amax[key][lvl] = val
 
-    compmeths = parse_compfile(open(compfile, 'r')) if compfile else False
+    compmeths = parse_compfile(open(compfile, 'r', encoding="utf-8")) \
+        if compfile else []
     if do_plot:
         c_MAE = {'H': '#1317ff', 'A': '#bd2626'}
         c_MAX = {'H': '#6baff0', 'A': '#ff86db'}
@@ -661,7 +663,7 @@ def build_mean_data(op_mol: str,
                         damax_h.append(amax_h[0][-1] + amax_h[1][-1])
                         damax_a.append(amax_a[0][-1] + amax_a[1][-1])
                         vmax = max([ddmue_h[-1], ddmue_a[-1], damax_h[-1],
-                                    damax_h[-1]], key=lambda x: abs(x))
+                                    damax_h[-1]], key=abs)
                         if vmax > derr_max:
                             derr_max = vmax
                     else:
@@ -763,8 +765,7 @@ def build_mean_data(op_mol: str,
             ax1 = fig.add_subplot(111)
             ax1.bar(ind-width, dmue, width, color=c_MAE[lvl])
             ax1.bar(ind+width, amax, width, color=c_MAX[lvl])
-            ax1.legend((r'MAE ({})'.format(label),
-                        r'$|$MAX$|$ ({})'.format(label)))
+            ax1.legend((f'MAE ({label})', f'$|$MAX$|$ ({label})'))
             ax1.set_ylabel(r'Error wrt Experiment (cm$^{-1}$)')
             ax1.grid(axis='x', lw=.2, ls='--', c='gray')
             ax1.set_xticks(ind)
@@ -781,13 +782,13 @@ def build_mean_data(op_mol: str,
 def build_dist_data(op_mol: str,
                     op_xax: str,
                     absval: bool,
-                    labels: tp.List[str],
-                    colors: tp.Dict[str, str],
-                    levels: tp.Optional[tp.Sequence[str]],
+                    labels: Sequence[str],
+                    colors: Sequence[str],
+                    levels: tp.Optional[Sequence[str]],
                     dcalc: TypeMols,
                     dref: TypeRDat,
                     do_plot: bool) -> None:
-    """Builds (and displays) distribution of data.
+    """Build (and display) distribution of data.
 
     Builds statistical data and displays if requested.
     Also handles call to the function in charge of printing the data.
@@ -807,9 +808,9 @@ def build_dist_data(op_mol: str,
     absval
         Use absolute values for the differences.
     labels
-        "Dictionary" of all labels, in proper order.
+        List of all labels, in proper order.
     colors
-        Dictionary of colors for each method/label.
+        List of colors for each method/label.
     levels
         Sequence with the levels of theory of interest
     dcalc
@@ -826,8 +827,8 @@ def build_dist_data(op_mol: str,
     KeyError
         Mismatch between molecules in `dref` and `dcalc`
     """
-    def get_diff(d: tp.Dict[int, float], mode: int, do_abs: bool):
-        """Gets and transforms differences if needed."""
+    def get_diff(d: dict[int, float], mode: int, do_abs: bool):
+        """Get and transform differences if needed."""
         val = d.get(mode)
         if val is not None and do_abs:
             val = abs(val)
@@ -837,18 +838,18 @@ def build_dist_data(op_mol: str,
         raise NotImplementedError('Inclusive treatment of molecules NYI')
 
     lstyle = {'H': '--', 'A': '-'}
-    figX = 16
-    figY = 8
+    figx = 16
+    figy = 8
     if levels is None:
-        NHA = 1
+        num_HA = 1
     else:
-        NHA = len(levels)
+        num_HA = len(levels)
     nmols = len(set(dcalc) & set(dref))
     if nmols == 0:
         raise KeyError('No overlap between `dref` and `dcalc`')
     if do_plot:
         figid = 1
-        figsize = (figX*NHA, figY*nmols)
+        figsize = (figx*num_HA, figy*nmols)
         fig = plt.figure(figid, figsize=figsize, dpi=300, tight_layout=True)
         panels = {}
         pan_id = 0
@@ -857,11 +858,11 @@ def build_dist_data(op_mol: str,
                 panels[mol] = {}
                 for level in levels:
                     pan_id += 1
-                    panels[mol][level] = fig.add_subplot(nmols, NHA, pan_id)
+                    panels[mol][level] = fig.add_subplot(nmols, num_HA, pan_id)
         else:
             for mol in dcalc:
                 pan_id += 1
-                panels[mol] = fig.add_subplot(nmols, NHA, pan_id)
+                panels[mol] = fig.add_subplot(nmols, num_HA, pan_id)
         # plt.subplots_adjust(hspace=0.001)
 
     for mol in dcalc:
@@ -882,21 +883,22 @@ def build_dist_data(op_mol: str,
             else:
                 raise NotImplementedError('Range NYI')
             nkey = 0
-            for key in labels:
-                if key not in diffs:
+            for label, color in zip(labels, colors):
+                if label not in diffs:
                     continue
                 nkey += 1
-                label = key.replace(r'_', r'\_')
-                for lvl in diffs[key]:
+                pars = {'marker': 'd', 'label': label.replace(r'_', r'\_')}
+                if color is not None:
+                    pars['color'] = color
+                for lvl in diffs[label]:
                     if levels is None:
                         panel = panels[mol]
                     else:
                         panel = panels[mol][lvl]
                     yaxis = []
                     for i, _ in xdat:
-                        yaxis.append(get_diff(diffs[key][lvl], i, absval))
-                    panel.plot(xaxis, yaxis, ls=lstyle[lvl], marker='d',
-                               label=label)
+                        yaxis.append(get_diff(diffs[label][lvl], i, absval))
+                    panel.plot(xaxis, yaxis, ls=lstyle[lvl], **pars)
             if levels is not None:
                 for ilv, lvl in enumerate(levels):
                     panel = panels[mol][lvl]
@@ -931,10 +933,11 @@ def build_dist_data(op_mol: str,
 
 
 def main():
+    """Run the main program."""
     opts = parse_args(sys.argv[1:])
 
     # Basic parameters
-    if mpl_loaded:
+    if MPL_LOADED:
         if opts.fontsize:
             plt.rcParams.update({'font.size': opts.fontsize})
         # Mode-specific MPL parameters
@@ -950,13 +953,13 @@ def main():
             if dmols[i] == opts.mol:
                 i += 1
             else:
-                del(dmols[i])
-                del(dmeth[i])
-                del(dbset[i])
-                del(dvlvl[i])
-                del(dfnam[i])
-                del(dtags[i])
-                del(dcols[i])
+                del dmols[i]
+                del dmeth[i]
+                del dbset[i]
+                del dvlvl[i]
+                del dfnam[i]
+                del dtags[i]
+                del dcols[i]
     if len(dmols) == 0:
         print('ERROR: Molecule not present in option file. Exiting',
               file=sys.stderr)
@@ -993,9 +996,9 @@ def main():
                 levels_ = levels
             data = get_energies(infile, levels_)
             if levels is None and len(data.keys()) > 1:
-                for level in data.keys():
-                    tag = label + ' ({})'.format(level)
-                    dcalc[mol][tag] = {level: data[level]}
+                for level, val in data.items():
+                    tag = label + f' ({level})'
+                    dcalc[mol][tag] = {level: val}
                     if tag not in labels:
                         labels.append(tag)
                         colors.append(dcols[i])
@@ -1042,11 +1045,11 @@ def main():
             if not os.path.exists(opts.compare):
                 print('ERROR: Methods comparison file does not exist.')
                 sys.exit()
-        build_mean_data(opts.mol, labels, levels, dcalc, dref, mpl_loaded,
+        build_mean_data(opts.mol, labels, levels, dcalc, dref, MPL_LOADED,
                         opts.compare, 'image.pdf')
     elif opts.mode == 'dist':
         build_dist_data(opts.mol, opts.xscale, opts.absval, labels, colors,
-                        levels, dcalc, dref, mpl_loaded)
+                        levels, dcalc, dref, MPL_LOADED)
 
 
 if __name__ == '__main__':

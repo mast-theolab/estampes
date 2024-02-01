@@ -22,7 +22,24 @@ Other blocks are:
 - **DEV**: Development conventions/cleanup
 
 
-## Unreleased
+## [0.5.0] - 2024-02-01
+
+### Compatibility issues
+- This version introduces breaking changes at the API level!
+
+### Added
+- **API** - New *QLabel* class provided by `base.qlabel`, to handle _qlabel_ specifications.
+- **API** - New *QData* class provided by `base.qdata` to structure and handle extracted data (_qdata_).
+- **API** - `parser.base.build_qlabel` and `parser.base.parse_qlabel` are obsolete and have been removed.
+- **API** - New submodule `parser.functions` to contain basic functions for the parser.
+
+### Fixed
+- **MRG** - The Mirage program is now properly installed as a `esmirage` executable.
+
+### Changed
+- **API** - `reshape_dblock` has been moved from `parser.base` to `parser.functions`
+
+## [0.4.5] - 2024-01-29
 
 ### Added
 - **OAR** - New script/program Soar to analyse structural difference through different metrics (for now the normal-modes overlaps) and display them graphically.
@@ -42,7 +59,7 @@ Other blocks are:
 - **API** - `qlabel` "hessval" is renamed "hessdat" to underline the fact that it can be used to extract different types of data connected to the Hessian matrix.
 
 
-## [0.4.4] - 2023-18-21
+## [0.4.4] - 2023-08-21
 
 ### Added
 - **VIZ** - Added support of click events in molecule object for the 3D visualization.

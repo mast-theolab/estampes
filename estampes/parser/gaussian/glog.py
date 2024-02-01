@@ -10,10 +10,10 @@ import re  # Used to find keys in log file
 import typing as tp
 from math import sqrt
 
-from estampes import parser as ep
-from estampes.base import ParseKeyError, QuantityError, TypeDCrd, TypeDGLog, \
-    TypeDOrd, TypeQData, TypeQInfo, TypeQLvl, TypeQOpt, TypeQTag, TypeRSta
+from estampes.base import ParseKeyError, QuantityError, TypeDGLog, TypeQData, \
+    TypeQInfo, QLabel, QData
 from estampes.data.physics import PHYSFACT, phys_fact
+from estampes.parser.functions import parse_qlabels
 
 
 # ================
@@ -51,11 +51,24 @@ xyz2id = {'X': 0, 'Y': 1, 'Z': 2}
 # ==============
 
 class GLogIO(object):
-    """Main class to handle Gaussian output file operations.
+    """Carry file operations on Gaussian log file.
 
+    Main class to handle Gaussian output file operations.
     """
+
     def __init__(self, fname: str,
                  load_pos: bool = True) -> None:
+        """Initialize Gaussian logfile IO instance.
+
+        Initializes an instance of GLogIO.
+
+        Parameters
+        ----------
+        fname
+            Log file name.
+        load_pos
+            Preloads links blocks positions if easily recognizable (#P).
+        """
         self.filename = fname
         self.__linkpos = {}
         self.__route = None
@@ -114,25 +127,24 @@ class GLogIO(object):
         return "Gaussian", self.__gversion
 
     def get_head(self):
-        """Returns the header information: Version, Route."""
+        """Return the header information: Version, Route."""
         keydata = []
         qtydata = {}
         key2blk = {}
-        qlab2key = {}
         i = 0
         for item in ('route', 'swopt', 'swver'):
-            qlab2key[item] = item
-            qtydata[item] = ep.parse_qlabel(ep.build_qlabel(item))
+            qlab = QLabel(quantity=item)
             key2blk[item] = (i, i)
             i += 1
-            link, key, skips, fmt, end, num = qlab_to_linkdata(item)
+            link, key, skips, fmt, end, num = qlab_to_linkdata(qlab)
             keydata.append((key, link, skips, re.compile(fmt), num, end))
+            qtydata[item] = qlab
         ndata, data = self.read_data(*keydata)
-        data = parse_data(qtydata, key2blk, qlab2key, ndata, data)
-        self.__route = data['route']['data']
+        dobjs = parse_data(qtydata, key2blk, ndata, data)
+        self.__route = dobjs['route'].data
         self.__links = sorted(set([int(item[0]) for item in self.__route]))
-        self.__gversion = data['swver']
-        self.__rte_opt = data['swopt']['data']
+        self.__gversion = dobjs['swver'].data
+        self.__rte_opt = dobjs['swopt'].data
         # Look at verbosity level of output
         i = self.__rte_opt.index('#') + 1
         if i >= len(self.__rte_opt):
@@ -148,7 +160,7 @@ class GLogIO(object):
 
     def read_data(self,
                   *to_find: TypeKData) -> TypeDGLog:
-        """Extracts data corresponding to the keys to find.
+        """Extract data corresponding to the keys to find.
 
         Parameters
         ----------
@@ -188,14 +200,15 @@ class GLogIO(object):
                       blockskp: tp.Sequence[tp.Union[str, int]],
                       blockfmt: tp.Sequence[tp.Pattern],
                       blockend: tp.Callable[[str], bool]) -> int:
-            """Deletes a block in the lookup tables.
+            """Delete a block in the lookup tables.
 
             Returns
             -------
             int
                 Status, as integer
                 0: block removed
-                1: keylist item removed"""
+                1: keylist item removed
+            """
             istat = 0
             if nocc[iblock] == 0:
                 i, j = block2id[iblock]
@@ -271,7 +284,7 @@ class GLogIO(object):
             blockend = []  # stores the end conditions
             nocc = []  # number of occurrences to extract, used to drop search
             dataid = []  # stores the indexes for the data list
-            with open(self.filename, 'r') as fobj:
+            with open(self.filename, 'r', encoding="utf-8") as fobj:
                 for line in fobj:
                     i = -1
                     for kword in keylist:
@@ -344,7 +357,7 @@ class GLogIO(object):
         return ndatblk, datlist
 
     def __store_linkpos(self):
-        """Stores the link header positions in the file if available.
+        """Store link header positions in the file if available.
 
         Loads the keys present in the file and pointers to their
         position to speed up their search.
@@ -366,7 +379,7 @@ class GLogIO(object):
         #     \n''', re.VERBOSE)
 
         # keys = {}
-        # with open(self.filename, 'r') as fobj:
+        # with open(self.filename, 'r', encoding="utf-8") as fobj:
         #     fpos = 0
         #     for line in fobj:
         #         res = to_search.match(line)
@@ -383,14 +396,8 @@ class GLogIO(object):
 # ================
 
 
-def qlab_to_linkdata(qtag: TypeQTag,
-                     qopt: TypeQOpt = None,
-                     dord: TypeDOrd = None,
-                     dcrd: TypeDCrd = None,
-                     rsta: TypeRSta = None,
-                     qlvl: TypeQLvl = None,
-                     gver: tp.Optional[str] = None) -> TypeQKwrd:
-    """Returns the keyword(s) relevant for a given quantity.
+def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
+    """Return relevant keyword(s) for a given quantity.
 
     Returns the a tuple, containing:
 
@@ -420,20 +427,8 @@ def qlab_to_linkdata(qtag: TypeQTag,
 
     Parameters
     ----------
-    qtag
-        Quantity identifier or label.
-    qopt
-        Quantity-specific options.
-    dord
-        Derivative order.
-    dcrd
-        Reference coordinates for the derivatives.
-    rsta
-        Reference state or transition:
-        * scalar: reference state
-        * tuple: transition
-    qlvl
-        Level of theory use to generate the quantity.
+    qlab
+        Quantity label
     gver
         Gaussian version.
 
@@ -481,21 +476,21 @@ def qlab_to_linkdata(qtag: TypeQTag,
     sub = None
     fmt = None
     num = None
-    if qtag == 'route':  # Log specific extraction, not provided in base
+    if qlab.label == 'route':  # Log specific extraction, not provided in base
         lnk = 1
         key = ' Cite this work as:'
         sub = ' -'
         def end(s): return s.startswith(' Charge =')
         fmt = r'^ (?P<val>\d+\/(?:,?\d+=-?\d+)*\/(?:,?\d+)+(?:\(-\d\))?);\s*$'
         num = 0
-    elif qtag == 'natoms':
+    elif qlab.label == 'natoms':
         lnk = 101
         key = ' NAtoms='
         sub = 0
-        def end(s): return True
+        def end(_s): return True
         fmt = r'^ NAtoms=\s+(?P<val>\d+)\s+N\w+=\s+.*$'
         num = 0
-    elif qtag == 'nvib':
+    elif qlab.label == 'nvib':
         # We load anyway the frequencies to count them.
         # This is a bit of an absurd way to proceed but only way to be
         #   sure that we have the correct number since Gaussian does not
@@ -506,7 +501,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
         def end(s): return s.startswith(' - Thermochemistry')
         fmt = r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$'
         num = -1
-    elif qtag == 'atmas':
+    elif qlab.label == 'atmas':
         lnk = (-101, 716)
         key = (' NAtoms= ', ' - Thermochemistry -')
         sub = (0, 3)
@@ -516,7 +511,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                r'^ Atom\s+\d+ has atomic number\s+\d+ and '
                + r'mass\s+(?P<val>\d+\.\d+)\s*$')
         num = (0, 0)
-    elif qtag == 'atnum':
+    elif qlab.label == 'atnum':
         lnk = (0, 0)
         key = ('                         Standard orientation:',
                '                          Input orientation:')
@@ -526,14 +521,14 @@ def qlab_to_linkdata(qtag: TypeQTag,
         txt = r'^\s+\d+\s+(?P<val>\d+)\s+\d+(?:\s+-?\d+\.\d+){3}\s*$'
         fmt = (txt, txt)
         num = (0, 0)
-    elif qtag == 'molsym':
+    elif qlab.label == 'molsym':
         lnk = 101
         key = ' Framework group '
         sub = 0
-        def end(s): return True
+        def end(_s): return True
         fmt = r'^ Framework group \s+(?P<val>[^ ]+)\s*$'
         num = 0
-    elif qtag == 'atcrd' or qtag == 2:
+    elif qlab.label == 'atcrd' or qlab.label == 2:
         lnk = (0, 0)
         key = ('                         Standard orientation:',
                '                          Input orientation:')
@@ -542,13 +537,13 @@ def qlab_to_linkdata(qtag: TypeQTag,
                lambda s: s.startswith(' ------'))
         txt = r'^(?:\s+\d+){3}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$'
         fmt = (txt, txt)
-        if qopt == 'first':
+        if qlab.kind == 'first':
             num = (0, 0)
-        elif qopt == 'last':
+        elif qlab.kind == 'last':
             num = (-1, -1)
         else:
             num = (1, 1)
-    elif qtag == 'hessvec':
+    elif qlab.label == 'hessvec':
         lnk = (-716, 716)
         key = (' and normal coordinates:',
                ' and normal coordinates:')
@@ -558,39 +553,39 @@ def qlab_to_linkdata(qtag: TypeQTag,
         fmt = (r'^\s+(?P<val>(?:\d+\s+){3}(?:\s+-?\d\.\d+){1,5})\s*$',
                r'^\s+(?P<val>(?:\d+\s+){2}(?:\s+-?\d\.\d+){1,9})\s*$')
         num = (0, -1)
-    elif qtag == 'hessdat':
+    elif qlab.label == 'hessdat':
         lnk = (-716, 716)
         key = (' and normal coordinates:',
                ' and normal coordinates:')
         sub = (1, 1)
         end = (lambda s: s.startswith(' - Thermochemistry'),
                lambda s: s.startswith(' - Thermochemistry'))
-        if qopt == 'freq':
+        if qlab.kind == 'freq':
             fmt = (r'^\s+Frequencies --- \s*(?P<val>\d.*)\s*$',
                    r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$')
-        elif qopt == 'redmas':
+        elif qlab.kind == 'redmas':
             fmt = (r'^\s+Reduced masses --- \s*(?P<val>\d.*)\s*$',
                    r'^\s+Red. masses -- \s*(?P<val>\d.*)\s*$')
         else:
             raise NotImplementedError('Unknown subopt for HessDat')
         num = (0, -1)
-    elif qtag == 'swopt':
+    elif qlab.label == 'swopt':
         lnk = 1
         key = ' Cite this work as:'
         sub = ' #'
         def end(s): return s.startswith(' -')
         fmt = r'^ (?P<val>.*)$'
         num = 0
-    elif qtag == 'swver':
+    elif qlab.label == 'swver':
         lnk = 1
         key = ' ****'
         sub = 1
-        def end(s): return True
+        def end(_s): return True
         fmt = r'^ (?P<val>Gaussian (?:\d\d|DV):\s.*)$'
         num = 0
-    elif qtag == 'intens':
-        if qopt == 'IR':
-            if qlvl == 'H':
+    elif qlab.label == 'intens':
+        if qlab.kind == 'IR':
+            if qlab.level == 'H':
                 lnk = (-716, 716, -717)
                 key = (' and normal coordinates:',
                        ' and normal coordinates:',
@@ -605,7 +600,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                        + r'(?P<val>-?\d+\.\d+|\*+)\s+'
                        + r'(?:-?\d+\.\d+|\*+)\s*$')
                 num = (0, -1, 0)
-            elif qlvl == 'A':
+            elif qlab.level == 'A':
                 lnk = 717
                 key = '        Integrated intensity (I)'
                 sub = 3
@@ -617,15 +612,15 @@ def qlab_to_linkdata(qtag: TypeQTag,
                 raise NotImplementedError()
         else:
             raise NotImplementedError()
-    elif qtag == 'fcdat':
-        if qopt == 'SimInf':
+    elif qlab.label == 'fcdat':
+        if qlab.kind == 'SimInf':
             lnk = -718
             key = '               Information on the Simulation'
             sub = 2
             def end(s): return s.startswith('     ====')
             fmt = r'^\s+(?P<val>.*\w.*)\s*$'
             num = 0
-        elif qopt == 'JMat':
+        elif qlab.kind == 'JMat':
             lnk = (-718, -718)
             key = (' Duschinsky matrix', ' Final Duschinsky matrix')
             sub = (2, 2)
@@ -635,7 +630,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                 + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$'
             fmt = (txt, txt)
             num = (-1, -1)
-        elif qopt == 'JMatF':
+        elif qlab.kind == 'JMatF':
             lnk = -718
             key = ' Full Duschinsky matrix'
             sub = 2
@@ -643,14 +638,14 @@ def qlab_to_linkdata(qtag: TypeQTag,
             fmt = r'^\s+(?P<val>(?:\d+)' \
                 + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$'
             num = 0
-        elif qopt == 'KVec':
+        elif qlab.kind == 'KVec':
             lnk = -718
             key = ' Shift Vector'
             sub = 2
             def end(s): return not s.strip()
             fmt = r'^\s+(?:\d+)\s+(?P<val>-?\d\.\d+D?[\+-]\d{2,3})\s*$'
             num = 0
-        elif qopt == 'SRAMat':
+        elif qlab.kind == 'SRAMat':
             lnk = -718
             key = ' A Matrix'
             sub = 2
@@ -658,14 +653,14 @@ def qlab_to_linkdata(qtag: TypeQTag,
             fmt = r'^\s+(?P<val>(?:\d+)' \
                 + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$'
             num = 0
-        elif qopt == 'SRBVec':
+        elif qlab.kind == 'SRBVec':
             lnk = -718
             key = ' B Vector'
             sub = 2
             def end(s): return not s.strip()
             fmt = r'^\s+(?:\d+)\s+(?P<val>-?\d\.\d+D?[\+-]\d{2,3})\s*$'
             num = 0
-        elif qopt == 'SRCMat':
+        elif qlab.kind == 'SRCMat':
             lnk = -718
             key = ' C Matrix'
             sub = 2
@@ -673,14 +668,14 @@ def qlab_to_linkdata(qtag: TypeQTag,
             fmt = r'^\s+(?P<val>(?:\d+)' \
                 + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$'
             num = 0
-        elif qopt == 'SRDVec':
+        elif qlab.kind == 'SRDVec':
             lnk = -718
             key = ' D Vector'
             sub = 2
             def end(s): return not s.strip()
             fmt = r'^\s+(?:\d+)\s+(?P<val>-?\d\.\d+D?[\+-]\d{2,3})\s*$'
             num = 0
-        elif qopt == 'SREMat':
+        elif qlab.kind == 'SREMat':
             lnk = -718
             key = ' E Matrix'
             sub = 2
@@ -688,7 +683,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
             fmt = r'^\s+(?P<val>(?:\d+)' \
                 + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$'
             num = 0
-        elif qopt == 'Spec':
+        elif qlab.kind == 'Spec':
             lnk = (-718, -718)
             key = ('                       Final Spectrum',
                    ' Legend:')
@@ -700,7 +695,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                    r'^\s+(?P<val>(?:-?\d+.\d+)'
                    + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3})+)\s*$')
             num = (0, 1)
-        elif qopt == 'SpcPar':
+        elif qlab.kind == 'SpcPar':
             lnk = (718, 718)
             key = ('                       Final Spectrum',
                    ' Legend:')
@@ -710,7 +705,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
             fmt = (r'^\s+(?P<val>.*\w.*)\s*$',  # \w to exclude empty lines
                    r'^\s+(?P<val>.*\w.*)\s*$')
             num = (0, 1)
-        elif qopt == 'Conv':
+        elif qlab.kind == 'Conv':
             # 2 sets, one for the main one, one to extract the FCF (HT)
             lnk = (-718, -718)
             key = ('              Calculations of Band Intensities',
@@ -721,7 +716,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
             fmt = (r'^\s+Spectrum progression:\s+(?P<val>-?\d+\.\d+)%\s*$',
                    r'^\s+.+Franck-Condon Factors:\s+(?P<val>-?\d+\.\d+)%)\s*$')
             num = (0, 0)
-        elif qopt == 'Assign':
+        elif qlab.kind == 'Assign':
             lnk = (-718, -718)
             key = ('                 Information on Transitions',
                    '                 Information on Transitions')
@@ -731,14 +726,14 @@ def qlab_to_linkdata(qtag: TypeQTag,
             fmt = (r'^\s+Energy =\s+(?P<val>-?\d+\.\d+ cm.-1: .*)\s*$',
                    r'^\s+-. Intensity =\s+(?P<val>.*)\s*$')
             num = (0, 0)
-        elif qopt == 'RedDim':
+        elif qlab.kind == 'RedDim':
             lnk = -718
             key = ' Reduced system'
             sub = 2
             def end(s): return not s.strip()
             fmt = r'^\s+(?P<val>\d+\s+=\s+\d+\s+\d+\s+=\s+\d+)\s*$'
             num = 0
-        elif qopt == 'E(0-0)':
+        elif qlab.kind == 'E(0-0)':
             lnk = 718
             key = '                 Information on Transitions'
             sub = 2
@@ -746,14 +741,14 @@ def qlab_to_linkdata(qtag: TypeQTag,
             fmt = r'^\s+Energy of the 0-0 transition:\s+' \
                 + r'(?P<val>-?\d+\.\d+ cm\S+)\s*$'
             num = 0
-        elif qopt == 'GeomIS':
+        elif qlab.kind == 'GeomIS':
             lnk = 718
             key = '              New orientation in initial state'
             sub = 5
             def end(s): return s.startswith(' ------')
             fmt = r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$'
             num = 0
-        elif qopt == 'GeomFS':
+        elif qlab.kind == 'GeomFS':
             # The second block is for my working
             lnk = (718, 718)
             key = ('              New orientation in final state',
@@ -764,22 +759,22 @@ def qlab_to_linkdata(qtag: TypeQTag,
             fmt = (r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$',
                    r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$')
             num = (0, 0)
-        elif qopt == 'GeomMS':
+        elif qlab.kind == 'GeomMS':
             lnk = 718
             key = '              New orientation in intermediate state'
             sub = 5
             def end(s): return s.startswith(' ------')
             fmt = r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$'
             num = 0
-        elif qopt == 'ExGeom':
+        elif qlab.kind == 'ExGeom':
             lnk = -718
             key = ' Extrapolated geometry'
             sub = 4
             def end(s): return s.startswith(' ------')
             fmt = r'^\s+\w+(?P<val>(?:\s+-?\d+\.\d+){3})\s*$'
             num = 0
-    elif qtag == 'vptdat':
-        if qopt == 'CICoef':
+    elif qlab.label == 'vptdat':
+        if qlab.kind == 'CICoef':
             # The second group is to correct the numbering if passive modes
             #     present.
             lnk = (717, 717)
@@ -794,8 +789,8 @@ def qlab_to_linkdata(qtag: TypeQTag,
             num = (0, 0)
         else:
             raise NotImplementedError()
-    elif qtag == 'vtrans':
-        if qopt == 'RR':
+    elif qlab.label == 'vtrans':
+        if qlab.kind == 'RR':
             lnk = (718, 718)
             key = ('                 Information on Transitions',
                    '                 Information on Transitions')
@@ -806,10 +801,10 @@ def qlab_to_linkdata(qtag: TypeQTag,
                    + r'(?P<val>\|.+ ->\s+\|.+)\s*$',
                    r'^\s+-> Omega =\s*(?P<val>\d+\.\d+) cm.-1$')
             num = (0, 0)
-        elif qopt == 'SOS':
+        elif qlab.kind == 'SOS':
             raise NotImplementedError()
         else:
-            if qlvl == 'H':
+            if qlab.level == 'H':
                 lnk = (-716, 716, -717)
                 key = (' and normal coordinates:',
                        ' and normal coordinates:',
@@ -823,7 +818,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                        r'^\s+\w?\s+(?P<val>\s*\d+\(\d+\))\s+\w+\s+'
                        + r'(?:\s+-?\d+\.\d+|\*+){4}.*\s*$')
                 num = (0, -1, 0)
-            elif qlvl == 'A':
+            elif qlab.level == 'A':
                 lnk = 717
                 key = ' NOTE: Transition energies are given with'
                 sub = 8
@@ -835,8 +830,8 @@ def qlab_to_linkdata(qtag: TypeQTag,
                 num = 0
             else:
                 raise NotImplementedError()
-    elif qtag == 'vlevel':
-        if qopt == 'RR':
+    elif qlab.label == 'vlevel':
+        if qlab.kind == 'RR':
             lnk = (718, 718)
             key = ('                 Information on Transitions',
                    '                 Information on Transitions')
@@ -846,10 +841,10 @@ def qlab_to_linkdata(qtag: TypeQTag,
             fmt = (r'^\s+Energy = \s*(?P<val>-?\d+\.\d+) cm.-1:\s+\|.+$',
                    r'^\s+-> Omega = \s*(?P<val>\d+\.\d+) cm.-1$')
             num = (0, 0)
-        elif qopt == 'SOS':
+        elif qlab.kind == 'SOS':
             raise NotImplementedError()
         else:
-            if qlvl == 'H':
+            if qlab.level == 'H':
                 lnk = (-716, 716, -717)
                 key = (' and normal coordinates:',
                        ' and normal coordinates:',
@@ -864,7 +859,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                        + r'(?P<val>-?\d+\.\d+|\*+)(?:\s+-?\d+\.\d+|\*+){4}'
                        + r'.*\s*$')
                 num = (0, -1, 0)
-            elif qlvl == 'A':
+            elif qlab.level == 'A':
                 lnk = 717
                 key = ' NOTE: Transition energies are given with'
                 sub = 8
@@ -883,10 +878,10 @@ def qlab_to_linkdata(qtag: TypeQTag,
         fmt0 = r'^\s+(?P<val>Excited State\s+\d+: .*|' +\
             r'This state for optimization.*)\s*$'
         num0 = 0
-        if isinstance(rsta, tuple):
-            Si, Sf = rsta
-            if qtag == 1:
-                if dord == 0:
+        if isinstance(qlab.rstate, tuple):
+            Si, Sf = qlab.rstate
+            if qlab.label == 1:
+                if qlab.derord == 0:
                     if Si == 0:
                         lnk = 0
                         key = ' Excitation energies and oscillator strengths:'
@@ -905,14 +900,14 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         raise NotImplementedError()
                 else:
                     raise NotImplementedError()
-            elif qtag == 'dipstr':
+            elif qlab.label == 'dipstr':
                 if Si == 0:
                     lnk = 0
                     key = ' Ground to excited state transition electric ' \
                         + 'dipole moments (Au):'
                     if isinstance(Sf, int):
                         sub = Sf + 1
-                        def end(s): return True
+                        def end(_s): return True
                     elif Sf == 'a':
                         sub = 1
                         def end(s): return s[2] != ' '
@@ -923,20 +918,20 @@ def qlab_to_linkdata(qtag: TypeQTag,
                     num = -1
                 else:
                     raise NotImplementedError()
-            elif qtag == 'rotstr':
+            elif qlab.label == 'rotstr':
                 if Si == 0:
                     lnk = 0
                     key = ' Rotatory Strengths (R) in cgs (10**-40 erg-esu-cm'\
                         + '/Gauss)'
                     if isinstance(Sf, int):
                         sub = Sf+1
-                        def end(s): return True
+                        def end(_s): return True
                     elif Sf == 'a':
                         sub = 1
                         def end(s): return s[2] != ' '
                     else:
                         raise ValueError('Unsupported final state')
-                    if qopt == 'vel':
+                    if qlab.kind == 'vel':
                         num = 0
                         fmt = r'^\s+\d+(?:\s+-?\d+\.\d+){3}\s+' \
                             + r'(?P<val>-?\d+\.\d+)\s+-?\d+\.\d+\s*$'
@@ -948,17 +943,17 @@ def qlab_to_linkdata(qtag: TypeQTag,
                     raise NotImplementedError()
             else:
                 raise NotImplementedError()
-            #     if qtag == 1 and dord == 0:
+            #     if qlab.label == 1 and dord == 0:
             #         keywords = ['ETran scalars', 'SCF Energy']
         else:
-            if rsta == 'c':
+            if qlab.rstate == 'c':
                 lnk1 = [lnk0]
                 key1 = [key0]
                 sub1 = [sub0]
                 end1 = [end0]
                 fmt1 = [fmt0]
                 num1 = [num0]
-            elif isinstance(rsta, int):
+            elif isinstance(qlab.rstate, int):
                 lnk1 = []
                 key1 = []
                 sub1 = []
@@ -968,10 +963,10 @@ def qlab_to_linkdata(qtag: TypeQTag,
             else:
                 raise NotImplementedError()
             # Add quantity specific subgroups
-            if qtag in ('ramact', 'roaact') and qopt != 'static':
+            if qlab.label in ('ramact', 'roaact') and qlab.kind != 'static':
                 # Information on setup and incident frequency
                 # -- Harmonic level
-                if qopt != 'static' and qlvl == 'H':
+                if qlab.kind != 'static' and qlab.level == 'H':
                     lnk1.append(716)
                     key1.append(' and normal coordinates:')
                     sub1.append(1)
@@ -981,7 +976,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         r'^\s+Incident light \(\S+\):\s+(?P<val>-?\d.*)\s*$')
                 # -- Anharmonic level
                 lnk1.append(-717)
-                if qopt == 'dynamic':
+                if qlab.kind == 'dynamic':
                     key1.append(
                         '          Anharmonic Raman Spectroscopy (Dynamic)')
                     end1.append(
@@ -990,7 +985,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                     sub1.append(2)
                 else:
                     fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
-                    key1.append(fmt.format(qopt))
+                    key1.append(fmt.format(qlab.kind))
                     end1.append(
                         lambda s: s.startswith('     =====')
                         or s.startswith(' GradGrad')
@@ -999,9 +994,9 @@ def qlab_to_linkdata(qtag: TypeQTag,
                 fmt1.append(r'^ ##+ (?:INCIDENT WAVENUMBER|MEASUREMENT '
                             + r'INFORMATION):\s+(?P<val>\S+).*\s+##+\s*$')
                 num1.append(0)
-            if qtag == 1:
-                if dord == 0:
-                    if rsta == 'c':
+            if qlab.label == 1:
+                if qlab.derord == 0:
+                    if qlab.rstate == 'c':
                         lnk1.extend((0, 0))
                         key1.extend((' SCF Done:', ' E2'))
                         sub1.extend((0, 0))
@@ -1013,18 +1008,18 @@ def qlab_to_linkdata(qtag: TypeQTag,
                              r'^\s+E2.*=.*' +
                              r'(?P<val>E\(?.+?\)?\s+=\s+-?\d+\.\d+' +
                              r'(?:D[+-]\d+)?)\s*'))
-                        if qopt == 'first':
+                        if qlab.kind == 'first':
                             num1.extend((0, 0))
-                        elif qopt == 'last':
+                        elif qlab.kind == 'last':
                             num1.extend((-1, -1))
                         else:
                             num1.extend((1, 1))
-                    elif type(rsta) is int:
+                    elif type(qlab.rstate) is int:
                         raise NotImplementedError()
-                elif dord == 1:
+                elif qlab.derord == 1:
                     raise NotImplementedError()
-                elif dord == 2:
-                    if rsta == 'c':
+                elif qlab.derord == 2:
+                    if qlab.rstate == 'c':
                         lnk1.append(-716)
                         key1.append(
                             ' Force constants in Cartesian coordinates:')
@@ -1036,11 +1031,11 @@ def qlab_to_linkdata(qtag: TypeQTag,
                             r'^\s+(?P<val>\d+(?:\s+\d+|'
                             + r'\s+-?\d+\.\d+D?[-+]\d+){1,5})\s*$')
                         num1.append(0)
-                    elif type(rsta) is int:
+                    elif type(qlab.rstate) is int:
                         raise NotImplementedError()
-            elif qtag == 101:
-                if dord == 0:
-                    if rsta == 'c':
+            elif qlab.label == 101:
+                if qlab.derord == 0:
+                    if qlab.rstate == 'c':
                         lnk1.append(601)
                         key1.append(' Dipole moment (field-independent basis,'
                                     + ' Debye):')
@@ -1049,9 +1044,9 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         fmt1.append(r'^\s+(?P<val>(?:\s*[XYZ]=\s+-?\d+\.\d+)'
                                     + r'{3}).*$')
                         num1.append(0)
-            elif qtag == 1300:
-                if qlvl == 'VE':
-                    if rsta == 'c':
+            elif qlab.label == 1300:
+                if qlab.level == 'VE':
+                    if qlab.rstate == 'c':
                         lnk1.append(718)
                         key1.append(
                             '                 Information on Transitions'
@@ -1065,10 +1060,10 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         raise NotImplementedError()
                 else:
                     raise NotImplementedError()
-            elif qtag == 1301:
-                if qlvl == 'VE':
-                    if dord == 0:
-                        if rsta == 'c':
+            elif qlab.label == 1301:
+                if qlab.level == 'VE':
+                    if qlab.derord == 0:
+                        if qlab.rstate == 'c':
                             lnk1.extend((718, 718))
                             key1.extend((
                                 '     ELECTRIC DIPOLE-ELECTRIC DIPOLE',
@@ -1092,10 +1087,10 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         raise ParseKeyError(msg)
                 else:
                     raise NotImplementedError()
-            elif qtag == 1302:
-                if qlvl == 'VE':
-                    if dord == 0:
-                        if rsta == 'c':
+            elif qlab.label == 1302:
+                if qlab.level == 'VE':
+                    if qlab.derord == 0:
+                        if qlab.rstate == 'c':
                             lnk1.extend((718, 718))
                             key1.extend((
                                 '     ELECTRIC DIPOLE-MAGNETIC DIPOLE',
@@ -1119,10 +1114,10 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         raise ParseKeyError(msg)
                 else:
                     raise NotImplementedError()
-            elif qtag == 1303:
-                if qlvl == 'VE':
-                    if dord == 0:
-                        if rsta == 'c':
+            elif qlab.label == 1303:
+                if qlab.level == 'VE':
+                    if qlab.derord == 0:
+                        if qlab.rstate == 'c':
                             lnk1.extend((718, 718))
                             key1.extend((
                                 '     MAGNETIC DIPOLE-ELECTRIC DIPOLE',
@@ -1146,10 +1141,10 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         raise ParseKeyError(msg)
                 else:
                     raise NotImplementedError()
-            elif qtag == 1304:
-                if qlvl == 'VE':
-                    if dord == 0:
-                        if rsta == 'c':
+            elif qlab.label == 1304:
+                if qlab.level == 'VE':
+                    if qlab.derord == 0:
+                        if qlab.rstate == 'c':
                             lnk1.extend((718, 718))
                             key1.extend((
                                 '   ELECTRIC DIPOLE-ELECTRIC QUADRUPOLE',
@@ -1173,10 +1168,10 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         raise ParseKeyError(msg)
                 else:
                     raise NotImplementedError()
-            elif qtag == 1305:
-                if qlvl == 'VE':
-                    if dord == 0:
-                        if rsta == 'c':
+            elif qlab.label == 1305:
+                if qlab.level == 'VE':
+                    if qlab.derord == 0:
+                        if qlab.rstate == 'c':
                             lnk1.extend((718, 718))
                             key1.extend((
                                 '   ELECTRIC QUADRUPOLE-ELECTRIC DIPOLE',
@@ -1200,8 +1195,8 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         raise ParseKeyError(msg)
                 else:
                     raise NotImplementedError()
-            elif qtag == 'dipstr':
-                if qlvl == 'H':
+            elif qlab.label == 'dipstr':
+                if qlab.level == 'H':
                     lnk1.extend([-716, 716, -717])
                     key1.extend([' and normal coordinates:',
                                  ' and normal coordinates:',
@@ -1219,7 +1214,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                                  + r'(?P<val>-?\d+\.\d+|\*+)\s+'
                                  + r'(?:-?\d+\.\d+|\*+)\s*$'])
                     num1.extend([0, -1, 0])
-                elif qlvl == 'A':
+                elif qlab.level == 'A':
                     lnk1.append(717)
                     key1.append('        Dipole strengths (DS)')
                     sub1.append(3)
@@ -1230,8 +1225,8 @@ def qlab_to_linkdata(qtag: TypeQTag,
                     num1.append(0)
                 else:
                     raise NotImplementedError()
-            elif qtag == 'rotstr':
-                if qlvl == 'H':
+            elif qlab.label == 'rotstr':
+                if qlab.level == 'H':
                     lnk1.extend([-716, 716, -717])
                     key1.extend([' and normal coordinates:',
                                  ' and normal coordinates:',
@@ -1249,7 +1244,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                                  + r'(?P<val>-?\d+\.\d+|\*+)\s+'
                                  + r'(?:-?\d+\.\d+|\*+)\s*$'])
                     num1.extend([0, -1, 0])
-                elif qlvl == 'A':
+                elif qlab.level == 'A':
                     lnk1.append(717)
                     key1.append('        Rotational strengths (RS)')
                     sub1.append(3)
@@ -1259,8 +1254,8 @@ def qlab_to_linkdata(qtag: TypeQTag,
                     num1.append(0)
                 else:
                     raise NotImplementedError()
-            elif qtag == 'ramact':
-                if qlvl == 'H':
+            elif qlab.label == 'ramact':
+                if qlab.level == 'H':
                     lnk1.extend([-716, 716])
                     key1.extend([' and normal coordinates:',
                                  ' and normal coordinates:'])
@@ -1269,7 +1264,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         lambda s: s.startswith(' - Thermochemistry')])
                     sub1.extend([1, 1])
                     num1.extend([0, -1])
-                    if qopt == 'static':
+                    if qlab.kind == 'static':
                         fmt1.extend(
                             [r'^\s+Raman Activities ---\s+(?P<val>-?\d.*)\s*$',
                              r'^\s+Raman Activ -- \s*(?P<val>-?\d.*)\s*$'])
@@ -1286,9 +1281,9 @@ def qlab_to_linkdata(qtag: TypeQTag,
                              r'^\s+RamAct Fr=\s?\d+--\s+(?P<val>\d.*)\s*$',
                              r'^\s+Raman\d Fr=\s?\d+--\s+(?P<val>\d.*)\s*$'])
                     lnk1.append(-717)
-                    if qopt in ('static', 'dynamic'):
+                    if qlab.kind in ('static', 'dynamic'):
                         fmt = 'Anharmonic Raman Spectroscopy ({})'
-                        txt = fmt.format(qopt.capitalize())
+                        txt = fmt.format(qlab.kind.capitalize())
                         key1.append('{:>49s}'.format(txt))
                         end1.append(
                             lambda s: s.startswith('     =====')
@@ -1296,7 +1291,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         sub1.append(2)
                     else:
                         fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
-                        key1.append(fmt.format(qopt))
+                        key1.append(fmt.format(qlab.kind))
                         end1.append(
                             lambda s: s.startswith('     =====')
                             or s.startswith(' GradGrad')
@@ -1307,11 +1302,11 @@ def qlab_to_linkdata(qtag: TypeQTag,
                                 + r'(?P<val>-?\d+\.\d+|\*+)\s+'
                                 + r'(?:-?\d+\.\d+|\*+)\s*$')
                     num1.append(0)
-                elif qlvl == 'A':
+                elif qlab.level == 'A':
                     lnk1.append(717)
-                    if qopt in ('static', 'dynamic'):
+                    if qlab.kind in ('static', 'dynamic'):
                         fmt = 'Anharmonic Raman Spectroscopy ({})'
-                        txt = fmt.format(qopt.capitalize())
+                        txt = fmt.format(qlab.kind.capitalize())
                         key1.append('{:>49s}'.format(txt))
                         end1.append(
                             lambda s: s.startswith('     =====')
@@ -1319,7 +1314,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                         sub1.append(2)
                     else:
                         fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
-                        key1.append(fmt.format(qopt))
+                        key1.append(fmt.format(qlab.kind))
                         end1.append(
                             lambda s: s.startswith('     =====')
                             or s.startswith(' GradGrad')
@@ -1330,12 +1325,12 @@ def qlab_to_linkdata(qtag: TypeQTag,
                     num1.append(0)
                 else:
                     raise NotImplementedError()
-            elif qtag == 'roaact':
-                if qlvl == 'H':
+            elif qlab.label == 'roaact':
+                if qlab.level == 'H':
                     lnk1.extend([716, -717])
                     key1.append(' and normal coordinates:')
                     end1.append(lambda s: s.startswith(' - Thermochemistry'))
-                    if qopt == 'dynamic':
+                    if qlab.kind == 'dynamic':
                         key1.append(
                             '             Anharmonic Raman Optical Activity')
                         end1.append(
@@ -1344,7 +1339,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                                 + 'intensity difference (CID)')
                     else:
                         fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
-                        key1.append(fmt.format(qopt))
+                        key1.append(fmt.format(qlab.kind))
                         end1.append(
                             lambda s:
                                 s.strip() == 'Dimensionless circular '
@@ -1358,9 +1353,9 @@ def qlab_to_linkdata(qtag: TypeQTag,
                                  + r'(?P<val>-?\d+\.\d+|\*+)\s+'
                                  + r'(?:-?\d+\.\d+|\*+)\s*$'])
                     num1.extend([-1, 0])
-                elif qlvl == 'A':
+                elif qlab.level == 'A':
                     lnk1.append(717)
-                    if qopt == 'dynamic':
+                    if qlab.kind == 'dynamic':
                         key1.append(
                             '             Anharmonic Raman Optical Activity')
                         end1.append(
@@ -1369,7 +1364,7 @@ def qlab_to_linkdata(qtag: TypeQTag,
                                 + 'intensity difference (CID)')
                     else:
                         fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
-                        key1.append(fmt.format(qopt))
+                        key1.append(fmt.format(qlab.kind))
                         end1.append(
                             lambda s:
                                 s.strip() == 'Dimensionless circular '
@@ -1381,57 +1376,57 @@ def qlab_to_linkdata(qtag: TypeQTag,
                     num1.append(0)
                 else:
                     raise NotImplementedError()
-        #     elif qtag == 50:
+        #     elif qlab.label == 50:
         #         raise NotImplementedError()
-        #     elif qtag == 91:
+        #     elif qlab.label == 91:
         #         raise NotImplementedError()
-        #     elif qtag == 92:
+        #     elif qlab.label == 92:
         #         raise NotImplementedError()
-        #     elif qtag == 93:
+        #     elif qlab.label == 93:
         #         raise NotImplementedError()
-        #     elif qtag == 102:
+        #     elif qlab.label == 102:
         #         raise NotImplementedError()
-        #     elif qtag == 103:
+        #     elif qlab.label == 103:
         #         raise NotImplementedError()
-        #     elif qtag == 104:
+        #     elif qlab.label == 104:
         #         raise NotImplementedError()
-        #     elif qtag == 105:
+        #     elif qlab.label == 105:
         #         raise NotImplementedError()
-        #     elif qtag == 106:
+        #     elif qlab.label == 106:
         #         raise NotImplementedError()
-        #     elif qtag == 107:
+        #     elif qlab.label == 107:
         #         raise NotImplementedError()
-        #     elif qtag == 201:
+        #     elif qlab.label == 201:
         #         raise NotImplementedError()
-        #     elif qtag == 202:
+        #     elif qlab.label == 202:
         #         raise NotImplementedError()
-        #     elif qtag == 203:
+        #     elif qlab.label == 203:
         #         raise NotImplementedError()
-        #     elif qtag == 204:
+        #     elif qlab.label == 204:
         #         raise NotImplementedError()
-        #     elif qtag == 205:
+        #     elif qlab.label == 205:
         #         raise NotImplementedError()
-        #     elif qtag == 206:
+        #     elif qlab.label == 206:
         #         raise NotImplementedError()
-        #     elif qtag == 207:
+        #     elif qlab.label == 207:
         #         raise NotImplementedError()
-        #     elif qtag == 208:
+        #     elif qlab.label == 208:
         #         raise NotImplementedError()
-        #     elif qtag == 209:
+        #     elif qlab.label == 209:
         #         raise NotImplementedError()
-        #     elif qtag == 300:
+        #     elif qlab.label == 300:
         #         raise NotImplementedError()
-        #     elif qtag == 301:
+        #     elif qlab.label == 301:
         #         raise NotImplementedError()
-        #     elif qtag == 302:
+        #     elif qlab.label == 302:
         #         raise NotImplementedError()
-        #     elif qtag == 303:
+        #     elif qlab.label == 303:
         #         raise NotImplementedError()
-        #     elif qtag == 304:
+        #     elif qlab.label == 304:
         #         raise NotImplementedError()
-        #     elif qtag == 305:
+        #     elif qlab.label == 305:
         #         raise NotImplementedError()
-        #     elif qtag == 306:
+        #     elif qlab.label == 306:
         #         raise NotImplementedError()
         #     else:
         #         raise QuantityError('Unknown quantity')
@@ -1447,12 +1442,11 @@ def qlab_to_linkdata(qtag: TypeQTag,
 
 def parse_data(qdict: TypeQInfo,
                key2blocks: tp.Dict[str, tp.Tuple[int, int]],
-               qlab2key: tp.Dict[str, str],
                ndatablock: tp.Sequence[int],
                datablocks: TypeDGLog,
                gver: tp.Optional[tp.Tuple[str, str]] = None,
                raise_error: bool = True) -> TypeQData:
-    """Parses data arrays to extract specific quantity.
+    """Parse data arrays to extract specific quantity.
 
     Parses data array to extract relevant information for each quantity.
 
@@ -1462,8 +1456,6 @@ def parse_data(qdict: TypeQInfo,
         Dictionary of quantities.
     key2blocks
         Range tuples associating each keyword to the data blocks.
-    qlab2key
-        Associates for each qlabel a key to use in final dictionary.
     ndatablock
         Number of occurrences of the data blocks extracted.
     datablocks
@@ -1493,14 +1485,12 @@ def parse_data(qdict: TypeQInfo,
     def empty_cases_ok(qtag, qopt):
         return qtag == 'nvib' or \
             (qtag == 'fcdat' and qopt in ('JMat', 'JMatF'))
-    data = {}
+    dobjs = {}
     all_tags = []
-    for qlabel in qdict:
-        msg_noqty = 'Missing quantity in file: ' + qlabel
-        qkey = qlab2key[qlabel]
-        qtag, qopt, dord, dcrd, rsta, qlvl = qdict[qlabel]
-        all_tags.append(qtag)
-        first, last = key2blocks[qlabel]
+    for qkey, qlabel in qdict.items():
+        msg_noqty = f'Missing quantity "{qlabel}" in file'
+        all_tags.append(qlabel.label)
+        first, last = key2blocks[qkey]
         # Basic Check: property available
         # -----------
         # Check if some data extracted
@@ -1511,7 +1501,8 @@ def parse_data(qdict: TypeQInfo,
         else:
             iref = -1
             # Check if transition information may be present:
-            if rsta == 'c' and 'Excited State' in ''.join(datablocks[first]):
+            if (qlabel.rstate == 'c'
+                    and 'Excited State' in ''.join(datablocks[first])):
                 realfirst = first + 1
             else:
                 realfirst = first
@@ -1519,18 +1510,17 @@ def parse_data(qdict: TypeQInfo,
                 if num == 0 and ndatablock[i] > 0 and datablocks[i]:
                     iref = i  # Ignore first, null indexes
                     num = len(datablocks[i])
-        if num == 0 and not empty_cases_ok(qtag, qopt):
+        if num == 0 and not empty_cases_ok(qlabel.label, qlabel.kind):
             if raise_error:
                 raise ParseKeyError(msg_noqty)
-            else:
-                data[qkey] = None
-                continue
-        data[qkey] = {'qlabel': qlabel}
+            dobjs[qkey] = None
+            continue
+        dobjs[qkey] = QData(qlabel)
         # Basic Properties/Quantities
         # ---------------------------
-        if qtag == 'route':
+        if qlabel.label == 'route':
             fmt = '{:d}{:02d}'
-            _dat = []
+            data = []
             for num, line in enumerate(datablocks[iref]):
                 ov, iops, links = line.split('/')
                 if '(' in links:
@@ -1541,71 +1531,72 @@ def parse_data(qdict: TypeQInfo,
                 iops = tuple(iops.split(','))
                 for link in links.split(','):
                     fulllink = fmt.format(int(ov), int(link))
-                    _dat.append((fulllink, num+1, iops, toline))
-            data[qkey]['data'] = _dat
-        elif qtag == 'natoms':
-            data[qkey]['data'] = int(datablocks[iref][0])
-        elif qtag == 'atcrd' or qtag == 2:
+                    data.append((fulllink, num+1, iops, toline))
+            dobjs[qkey].set(data=data)
+        elif qlabel.label == 'natoms':
+            dobjs[qkey].set(data=int(datablocks[iref][0]))
+        elif qlabel.label == 'atcrd' or qlabel.label == 2:
             # By default, we choose the standard orientation if present
             if datablocks[last]:
                 i = last
             else:
                 i = first
-            _dat = []
-            if qopt in ('all', 'scan'):
-                for step, block in enumerate(datablocks[i]):
+            data = []
+            if qlabel.kind in ('all', 'scan'):
+                for block in datablocks[i]:
                     _block = []
                     for line in block:
                         _block.append([float(item)*__ang2au
                                        for item in line.split()])
-                    _dat.append(_block)
+                    data.append(_block)
                 num = len(datablocks[i])
             else:
                 for line in datablocks[i]:
-                    _dat.append([float(item)*__ang2au
+                    data.append([float(item)*__ang2au
                                  for item in line.split()])
                 num = 1
-            data[qkey]['data'] = _dat
-            data[qkey]['ngeoms'] = num
-        elif qtag == 'atmas':
-            _dat = []
+            dobjs[qkey].set(data=data)
+            dobjs[qkey].add_field('ngeoms', value=num)
+        elif qlabel.label == 'atmas':
+            data = []
             for line in datablocks[iref]:
-                _dat.extend(float(item) for item in line.split())
-            data[qkey]['data'] = _dat
-        elif qtag in ('atnum',):
-            data[qkey]['data'] = []
+                data.extend(float(item) for item in line.split())
+            dobjs[qkey].set(data=data)
+        elif qlabel.label in ('atnum',):
+            data = []
             for line in datablocks[iref]:
-                data[qkey]['data'].extend(int(item) for item in line.split())
-        elif qtag == 'swopt':
+                data.extend(int(item) for item in line.split())
+            dobjs[qkey].set(data=data)
+        elif qlabel.label == 'swopt':
             # The last line are the final dashes
-            data[qkey]['data'] = ' '.join(datablocks[iref][:-1])
-        elif qtag == 'molsym':
+            dobjs[qkey].set(data=' '.join(datablocks[iref][:-1]))
+        elif qlabel.label == 'molsym':
             raise NotImplementedError()
-        elif qtag == 'swver':
+        elif qlabel.label == 'swver':
             txt = r'\s*Gaussian (\w+):\s+(\w+)-(\w{3})Rev([\w.+]+) {1,2}' \
                 + r'(\d+-\w{3}-\d{4})\s*'
             pattern = re.compile(txt)
             res = re.match(pattern, ''.join(datablocks[iref])).groups()
-            data[qkey] = {'major': res[2], 'minor': res[3],
-                          'system': res[1], 'release': res[4]}
+            dobjs[qkey].set(data={'major': res[2], 'minor': res[3],
+                                  'system': res[1], 'release': res[4]})
         # Vibrational Information
         # -----------------------
         # Technically state should be checked but considered irrelevant.
-        elif qtag == 'nvib':
+        elif qlabel.label == 'nvib':
             i = 0
             for line in datablocks[iref]:
                 i += len(line.split())
 
-            data[qkey]['data'] = i
-        elif qtag == 'hessvec':
+            dobjs[qkey].set(data=i)
+        elif qlabel.label == 'hessvec':
             for i in range(first, last+1):
                 if datablocks[i]:
                     iref = i
                     break
             else:
                 raise ParseKeyError(msg_noqty)
-            data[qkey]['form'] = 'L.M^{-1/2}'
-            data[qkey]['data'] = []
+            dobjs[qkey].set(dtype='L.M^{-1/2}')
+            data = []
             # We analyze the first line to find if HPModes or normal
             res = datablocks[iref][0].split()[-1]
             if len(res.split('.')[1]) == 2:
@@ -1616,10 +1607,10 @@ def parse_data(qdict: TypeQInfo,
                     nmodes = (len(cols)-2)//3
                     if cols[0] == '1':
                         ioff += ncols
-                        data[qkey]['data'].extend(
+                        data.extend(
                             [[] for _ in range(nmodes)])
                     for i in range(nmodes):
-                        data[qkey]['data'][ioff+i].extend(
+                        data[ioff+i].extend(
                             [float(item) for item in cols[2+i*3:2+(i+1)*3]])
             else:
                 ncols = 5
@@ -1629,70 +1620,74 @@ def parse_data(qdict: TypeQInfo,
                     nmodes = len(cols) - 3
                     if cols[0] == '1' and cols[1] == '1':
                         ioff += ncols
-                        data[qkey]['data'].extend(
+                        data.extend(
                             [[] for _ in range(nmodes)])
                     for i in range(nmodes):
-                        data[qkey]['data'][ioff+i].append(float(cols[3+i]))
-        elif qtag == 'hessdat':
+                        data[ioff+i].append(float(cols[3+i]))
+            dobjs[qkey].set(data=data)
+        elif qlabel.label == 'hessdat':
             for i in range(first, last+1):
                 if datablocks[i]:
                     iref = i
                     break
             else:
                 raise ParseKeyError(msg_noqty)
-            if qopt == 'freq':
-                data[qkey]['unit'] = 'cm-1'
-            elif qopt == 'redmas':
-                data[qkey]['unit'] = 'amu'
+            if qlabel.kind == 'freq':
+                dobjs[qkey].set(unit='cm-1')
+            elif qlabel.kind == 'redmas':
+                dobjs[qkey].set(unit='amu')
             else:
                 raise NotImplementedError('Unknown subopt for HessDat')
-            data[qkey]['data'] = []
+            data = []
             i = 0
             for line in datablocks[iref]:
-                data[qkey]['data'].extend(
+                data.extend(
                     [float(item) if '*' not in item else float('inf')
                      for item in line.split()])
+            dobjs[qkey].set(data=data)
         # General Spectroscopy
         # --------------------
-        elif qtag == 'intens':
-            if qlvl == 'H':
+        elif qlabel.label == 'intens':
+            if qlabel.level == 'H':
                 for i in range(last, first-1, -1):
                     if datablocks[i]:
                         iref = i
                         break
                 else:
                     raise ParseKeyError(msg_noqty)
-                if qopt == 'IR':
-                    data[qkey]['unit'] = 'II:km.mol-1'
+                if qlabel.kind == 'IR':
+                    dobjs[qkey].set(unit='II:km.mol-1')
                 else:
-                    data[qkey]['unit'] = 'II:N/A'
+                    dobjs[qkey].set(unit='II:N/A')
                 i = 0
+                data = {}
                 for line in datablocks[iref]:
                     for col in line.strip().split():
                         i += 1
                         try:
-                            data[qkey][i] = float(col)
+                            data[i] = float(col)
                         except ValueError:
-                            data[qkey][i] = float('inf')
-            elif qlvl == 'A':
-                if qopt == 'IR':
-                    data[qkey]['unit'] = 'II:km.mol-1'
+                            data[i] = float('inf')
+            elif qlabel.level == 'A':
+                if qlabel.kind == 'IR':
+                    data.set(unit='II:km.mol-1')
                 else:
-                    data[qkey]['unit'] = 'II:N/A'
+                    data.set(unit='II:N/A')
                 i = 0
                 for line in datablocks[iref]:
                     i += 1
                     try:
-                        data[qkey][i] = float(line)
+                        data[i] = float(line)
                     except ValueError:
-                        data[qkey][i] = float('inf')
+                        data[i] = float('inf')
             else:
                 raise NotImplementedError()
+            dobjs[qkey].set(data=data)
 
         # Vibronic Information
         # --------------------
-        elif qtag == 'fcdat':
-            if qopt == 'SimInf':
+        elif qlabel.label == 'fcdat':
+            if qlabel.kind == 'SimInf':
                 def getval(s):
                     return s.split(':', maxsplit=1)[-1].strip().title()
                 for line in datablocks[iref]:
@@ -1701,100 +1696,107 @@ def parse_data(qdict: TypeQInfo,
                             val = None
                         else:
                             val = float(line.split()[-1][:-1])
-                        data[qkey]['temp'] = val
+                        dobjs[qkey].add_field('temp', value=val)
                     elif 'framework' in line:
-                        data[qkey]['frame'] = getval(line)
+                        dobjs[qkey].add_field('frame', value=getval(line))
                     elif 'Spectroscopy' in line:
-                        data[qkey]['spec'] = getval(line)
+                        dobjs[qkey].add_field('spec', value=getval(line))
                     elif 'Model' in line:
-                        data[qkey]['model'] = getval(line)
+                        dobjs[qkey].add_field('model', value=getval(line))
                     elif 'electronic transition moment' in line:
-                        data[qkey]['tmom'] = \
-                            line.split(':', maxsplit=1)[-1].strip()
-            elif qopt == 'JMat':
+                        dobjs[qkey].add_field(
+                            'tmom',
+                            value=line.split(':', maxsplit=1)[-1].strip())
+            elif qlabel.kind == 'JMat':
                 if datablocks[last]:
                     i = last
                 else:
                     i = first
                 if 'diagonal' in datablocks[i]:
-                    data[qkey]['data'] = []
+                    dobjs[qkey].set(data=[])
                 else:
-                    data[qkey]['data'] = []
+                    data = []
                     N = 0
                     for line in datablocks[i]:
                         cols = line.split()
                         irow = int(cols[0]) - 1
                         if irow == N:
-                            data[qkey]['data'].append([])
+                            data.append([])
                             N += 1
-                        data[qkey]['data'][irow].extend(
-                            [float(item.replace('D', 'e'))
-                             for item in cols[1:]])
-            elif qopt == 'JMatF':
+                        data[irow].extend([float(item.replace('D', 'e'))
+                                           for item in cols[1:]])
+                    dobjs[qkey].set(data=data)
+            elif qlabel.kind == 'JMatF':
                 if 'diagonal' in datablocks[iref]:
-                    data[qkey]['data'] = []
+                    dobjs[qkey].set(data=[])
                 else:
-                    data[qkey]['data'] = []
+                    data = []
                     N = 0
                     for line in datablocks[iref]:
                         cols = line.split()
                         irow = int(cols[0]) - 1
                         if irow == N:
-                            data[qkey]['data'].append([])
+                            data.append([])
                             N += 1
-                        data[qkey]['data'][irow].extend(
-                            [float(item.replace('D', 'e'))
-                             for item in cols[1:]])
-            elif qopt == 'KVec':
-                data[qkey]['data'] = []
+                        data[irow].extend([float(item.replace('D', 'e'))
+                                           for item in cols[1:]])
+                    dobjs[qkey].set(data=data)
+            elif qlabel.kind == 'KVec':
+                data = []
                 for line in datablocks[iref]:
-                    data[qkey]['data'].append(float(line.replace('D', 'e')))
-            elif qopt == 'SRAMat':
-                data[qkey]['data'] = []
+                    data.append(float(line.replace('D', 'e')))
+                dobjs[qkey].set(data=data)
+            elif qlabel.kind == 'SRAMat':
+                data = []
                 N = 0
                 for line in datablocks[iref]:
                     cols = line.split()
                     irow = int(cols[0]) - 1
                     if irow == N:
-                        data[qkey]['data'].append([])
+                        data.append([])
                         N += 1
-                    data[qkey]['data'][irow].extend(
-                        [float(item.replace('D', 'e'))
-                            for item in cols[1:]])
-            elif qopt == 'SRBVec':
-                data[qkey]['data'] = []
+                    data[irow].extend([float(item.replace('D', 'e'))
+                                       for item in cols[1:]])
+                dobjs[qkey].set(data=data)
+            elif qlabel.kind == 'SRBVec':
+                data = []
                 for line in datablocks[iref]:
-                    data[qkey]['data'].append(float(line.replace('D', 'e')))
-            elif qopt == 'SRCMat':
-                data[qkey]['data'] = []
+                    data.append(float(line.replace('D', 'e')))
+                dobjs[qkey].set(data=data)
+            elif qlabel.kind == 'SRCMat':
+                data = []
                 N = 0
                 for line in datablocks[iref]:
                     cols = line.split()
                     irow = int(cols[0]) - 1
                     if irow == N:
-                        data[qkey]['data'].append([])
+                        data.append([])
                         N += 1
-                    data[qkey]['data'][irow].extend(
-                        [float(item.replace('D', 'e'))
-                            for item in cols[1:]])
-            elif qopt == 'SRDVec':
-                data[qkey]['data'] = []
+                    data[irow].extend([float(item.replace('D', 'e'))
+                                       for item in cols[1:]])
+                dobjs[qkey].set(data=data)
+            elif qlabel.kind == 'SRDVec':
+                data = []
                 for line in datablocks[iref]:
-                    data[qkey]['data'].append(float(line.replace('D', 'e')))
-            elif qopt == 'SREMat':
-                data[qkey]['data'] = []
+                    data.append(float(line.replace('D', 'e')))
+                dobjs[qkey].set(data=data)
+            elif qlabel.kind == 'SREMat':
+                data = []
                 N = 0
                 for line in datablocks[iref]:
                     cols = line.split()
                     irow = int(cols[0]) - 1
                     if irow == N:
-                        data[qkey]['data'].append([])
+                        data.append([])
                         N += 1
-                    data[qkey]['data'][irow].extend(
-                        [float(item.replace('D', 'e'))
-                            for item in cols[1:]])
-            elif qopt == 'Spec':
+                    data[irow].extend([float(item.replace('D', 'e'))
+                                       for item in cols[1:]])
+                dobjs[qkey].set(data=data)
+            elif qlabel.kind == 'Spec':
                 # Look for last blocks first, which should contain all blocks:
+                # Note: For the vibronic spectrum, X is necessarily the same
+                #       over multiple blocks.  We take this for granted to
+                #       simplify the processing and the output.
                 discard = []
                 if last != first:
                     nblocks = 0
@@ -1802,7 +1804,7 @@ def parse_data(qdict: TypeQInfo,
                     for i, bloc in enumerate(datablocks[last]):
                         lbloc = len(bloc)
                         if lbloc > 1:
-                            # 3 for: Legend title, X axis, Intensity unit
+                            # 1 for the x axis
                             nblocks += 1
                             nyaxes += len(bloc[0].split()) - 1
                         else:
@@ -1819,45 +1821,51 @@ def parse_data(qdict: TypeQInfo,
                     discard.reverse()
                     for i in discard:
                         del datablocks[last][i]
+                data = {}
                 # First block contains the full initial legend block
                 # Necessary for the different parameters
                 iref = first
-                data[qkey] = {'x': []}
+                data['x'] = []
                 if nyaxes == 0:
                     nyaxes = len(datablocks[iref][0].split()) - 1
                 if nyaxes == 1:
                     yfmt = 'y'
-                    data[qkey]['y'] = []
+                    data['y'] = []
                 else:
-                    yfmt = 'y{{idy:0{}d}}'.format(len(str(nyaxes)))
+                    yfmt = f'y{{idy:0{len(str(nyaxes))}d}}'
                     for i in range(nyaxes):
-                        data[qkey][yfmt.format(idy=i+1)] = []
+                        data[yfmt.format(idy=i)] = []
                 # If multiple blocks, the reading with first parsing method
                 #   is wrong since it combines all blocks together
                 # We fix it by only considering the last one which should be
                 #   always right.
                 iref = last
+                yoffset = 0
                 for bloc in range(nblocks):
                     yax = {}
                     if nblocks > 1:
-                        data[qkey]['x'].append([])
-                        xax = data[qkey]['x'][-1]
+                        data['x'].append([])
+                        xax = data['x'][-1]
                         for i in range(nyaxes):
                             y = yfmt.format(idy=i+1)
-                            data[qkey][y].append([])
-                            yax[y] = data[qkey][y][-1]
+                            data[y].append([])
+                            yax[y] = data[y][-1]
                     else:
-                        xax = data[qkey]['x']
+                        xax = data['x']
                         for i in range(nyaxes):
                             y = yfmt.format(idy=i+1)
-                            yax[y] = data[qkey][y]
+                            yax[y] = data[y]
                     for line in datablocks[iref][bloc]:
                         cols = [float(item.replace('D', 'e'))
                                 for item in line.split()]
-                        xax.append(cols[0])
+                        if block == 0:
+                            xax.append(cols[0])
                         for i, item in enumerate(cols[1:]):
-                            yax[yfmt.format(idy=i+1)].append(item)
-            elif qopt == 'SpcPar':
+                            yax[yfmt.format(idy=yoffset+i+1)].append(item)
+                    yoffset += len(cols) - 1
+                for key, val in data.items():
+                    dobjs[qkey].add_field(key, value=val)
+            elif qlabel.kind == 'SpcPar':
                 # Look for last blocks first, which should contain all blocks:
                 discard = []
                 if last != first:
@@ -1890,13 +1898,13 @@ def parse_data(qdict: TypeQInfo,
                     if i >= len(datablocks[iref]):
                         raise IndexError('Legend not found')
                 if 'No' in datablocks[iref][i-1]:
-                    data[qkey]['func'] = 'stick'
-                    data[qkey]['hwhm'] = None
+                    dobjs[qkey].add_field('func', value='stick')
+                    dobjs[qkey].add_field('hwhm', value=None)
                 elif 'broadening' in datablocks[iref][i-2]:
                     func = datablocks[iref][i-2].split()[-3].lower()
                     hwhm = float(datablocks[iref][i-1].split()[-2])
-                    data[qkey]['func'] = func
-                    data[qkey]['hwhm'] = hwhm
+                    dobjs[qkey].add_field('func', value=func)
+                    dobjs[qkey].add_field('hwhm', value=hwhm)
                 else:
                     raise IndexError('Unrecognized broadening function.')
                 offset = i + 1
@@ -1907,7 +1915,9 @@ def parse_data(qdict: TypeQInfo,
                     # X, Y, Int, don't use numbering
                     yfmt = 'y'
                 else:
-                    yfmt = 'y{{idy:0{}d}}'.format(len(str(nyaxes)))
+                    yfmt = f'y{{idy:0{len(str(nyaxes))}d}}'
+                yoffset = 0
+                nyi = 0
                 for line in datablocks[iref][offset:]:
                     res = line.split(':', 1)
                     if len(res) == 2:
@@ -1921,12 +1931,12 @@ def parse_data(qdict: TypeQInfo,
                         _key = 'x'
                         txt = title.rsplit('in ', maxsplit=1)[1].\
                             replace(')', '').strip()
-                        data[qkey]['unitx'] = txt
+                        dobjs[qkey].add_field('unitx', value=txt)
                     elif key.strip() == 'Intensity':
                         _key = 'I'
                         txt = title.rsplit('in ', maxsplit=1)[1].\
                             replace(')', '').strip()
-                        if data[qkey]['func'] == 'stick':
+                        if dobjs[qkey].get('func') == 'stick':
                             _desc = 'II:'
                             # Fix a stupidity in the unit in some versions
                             #   for the stick spectrum
@@ -1934,61 +1944,58 @@ def parse_data(qdict: TypeQInfo,
                                 txt = 'dm^3.mol^-1.cm^-2'
                         else:
                             _desc = 'I:'
-                        data[qkey]['unity'] = _desc + txt
+                        dobjs[qkey].add_field('unity', value=_desc + txt)
                     else:
                         try:
-                            idy = int(key.strip()[0]) - 1
+                            idy = int(key.strip()[0]) - 1 + yoffset
                         except ValueError as err:
                             raise IndexError(
                                 f'Unrecognized key in spc leg.: {key}') \
                                     from err
                         _key = yfmt.format(idy=idy)
+                        nyi += 1
                     if nblocks == 1:
-                        data[qkey][_key] = title.strip()
+                        dobjs[qkey].add_field(_key, value=title.strip())
                     else:
                         if _key[0] == 'I':
-                            data[qkey][_key] = title.strip()
+                            dobjs[qkey].add_field(_key, value=title.strip())
                         else:
-                            data[qkey][_key] = [title.strip()]
+                            dobjs[qkey].add_field(_key, value=title.strip())
                 # More than 1 block, read the new ones
                 for bloc in range(1, nblocks):
+                    nyi = 0
                     for line in datablocks[last][bloc][1:]:
                         res = line.split(':', 1)
                         if len(res) == 2:
                             key, title = res
-                        elif 'intensity' in res[0]:
-                            title = res[0]
-                            key = 'Intensity'
-                        else:
+                            if 'col.' in key and key.strip() != '1st col.':
+                                try:
+                                    idy = int(key.strip()[0]) - 1 + yoffset
+                                except ValueError as err:
+                                    msg = f'Unknown key in spc leg.: {key}'
+                                    raise IndexError(msg) from err
+                                _key = yfmt.format(idy=idy)
+                                dobjs[qkey].add_field(_key,
+                                                      value=title.strip())
+                        elif 'intensity' not in res[0]:
                             raise NotImplementedError('Unrecognized legend')
-                        if key.strip() == '1st col.':
-                            _key = 'x'
-                        elif 'col.' in key:
-                            try:
-                                idy = int(key.strip()[0]) - 1
-                            except ValueError as err:
-                                msg = f'Unrecognized key in spc leg.: {key}'
-                                raise IndexError(msg) from err
-                            _key = yfmt.format(idy=idy)
-                        data[qkey][_key].append(title.strip())
-            elif qopt == 'Conv':
+                    yoffset += nyi
+            elif qlabel.kind == 'Conv':
                 raise NotImplementedError()
-            elif qopt == 'Assign':
-                data[qkey]['T'] = []
-                data[qkey]['E'] = []
-                data[qkey]['I'] = []
-                if qtag == 'DipStr':
+            elif qlabel.kind == 'Assign':
+                data = {'T': [], 'E': [], 'I': []}
+                if qlabel.label == 'DipStr':
                     qty = 'DS'
-                elif qtag == 'RotStr':
+                elif qlabel.label == 'RotStr':
                     qty = 'RS'
                 else:
                     msg = 'Unrecognized spectroscopy-specific quantity'
                     raise IndexError(msg)
-                data[qkey]['other'] = qty
-                data[qkey][qty] = []
+                dobjs[qkey].add_field('other', value=qty)
+                data[qty] = []
                 for l1, l2 in zip(datablocks[first], datablocks[last]):
                     txt_E, txt_T = l1.split(':')
-                    data[qkey]['E'].append(float(txt_E.split()[0]))
+                    data['E'].append(float(txt_E.split()[0]))
                     trans = []
                     for state in txt_T.split('->'):
                         trans.append([])
@@ -1999,111 +2006,126 @@ def parse_data(qdict: TypeQInfo,
                                 i = int(item)
                                 n = 0
                             trans[-1].append((i, n))
-                    data[qkey]['T'].append((tuple(trans[0]),
-                                            tuple(trans[1])))
+                    data['T'].append((tuple(trans[0]), tuple(trans[1])))
                     line = l2.strip(')').split()
-                    data[qkey]['I'].append(float(line[0]))
-                    data[qkey][qty].append(float(line[-1]))
-            elif qopt == 'GeomIS':
-                data[qkey]['data'] = []
+                    data['I'].append(float(line[0]))
+                    data[qty].append(float(line[-1]))
+                for key, val in data.items():
+                    dobjs[qkey].add_field(key, value=val)
+            elif qlabel.kind == 'GeomIS':
+                data = []
                 # By default, we choose the standard orientation if present
                 for line in datablocks[iref]:
-                    data[qkey]['data'].append([float(item)*__ang2au
-                                               for item in line.split()])
-            elif qopt == 'GeomFS':
-                data[qkey]['data'] = []
+                    data.append([float(item)*__ang2au
+                                 for item in line.split()])
+                dobjs[qkey].set(data=data)
+            elif qlabel.kind == 'GeomFS':
+                data = []
                 # By default, we choose the standard orientation if present
                 for line in datablocks[iref]:
-                    data[qkey]['data'].append([float(item)*__ang2au
-                                               for item in line.split()])
-            elif qopt == 'ExGeom':
-                data[qkey]['data'] = []
+                    data.append([float(item)*__ang2au
+                                 for item in line.split()])
+                dobjs[qkey].set(data=data)
+            elif qlabel.kind == 'ExGeom':
+                data = []
                 # By default, we choose the standard orientation if present
                 for line in datablocks[iref]:
-                    data[qkey]['data'].append([float(item)*__ang2au
-                                               for item in line.split()])
-            elif qopt == 'E(0-0)':
+                    data.append([float(item)*__ang2au
+                                 for item in line.split()])
+                dobjs[qkey].set(data=data)
+            elif qlabel.kind == 'E(0-0)':
                 if len(set(datablocks[iref])) > 1:
                     msg = 'Excessive information on 0-0 energy.'
                     raise ParseKeyError(msg)
                 val, unit = datablocks[iref][0].split()
                 if re.match(r'cm\^.?-1.?\s*', unit, re.I):
-                    data[qkey]['unit'] = 'cm^-1'
+                    dobjs[qkey].set(unit='cm^-1')
                 else:
-                    data[qkey]['unit'] = '???'
-                data[qkey]['data'] = float(val)
-            elif qopt == 'RedDim':
+                    dobjs[qkey].set(unit='???')
+                dobjs[qkey].set(data=float(val))
+            elif qlabel.kind == 'RedDim':
                 if len(datablocks[iref][0].split()) % 3 != 0:
                     raise ParseKeyError('Expected reddim structure: num = num')
                 nstates = len(datablocks[iref][0].split())//3
+                data = {}
                 for i in range(nstates):
-                    data[qkey]['state{}'.format(i+1)] = {}
+                    data['state{}'.format(i+1)] = {}
                 for line in datablocks[iref]:
                     cols = line.split()
                     for i in range(nstates):
-                        data[qkey]['state{}'.format(i+1)][int(cols[i*3])] = \
+                        data['state{}'.format(i+1)][int(cols[i*3])] = \
                             int(cols[i*3+2])
+                for key, val in data.items():
+                    dobjs[qkey].add_field(key, value=val)
             else:
                 raise NotImplementedError('Unknown option for FCDat')
         # Vibrational transitions
         # -----------------------
-        elif qtag == 'vlevel':
-            if qopt == 'RR':
+        elif qlabel.label == 'vlevel':
+            if qlabel.kind == 'RR':
                 if len(datablocks[last]) != len(datablocks[last-1]):
                     msg = 'Incident frequencies data and transition energies' \
                         + ' do not match.'
                     raise ParseKeyError(msg)
-                data[qkey]['unit'] = 'cm-1'
+                dobjs[qkey].set(unit='cm-1')
                 counts = {}
+                data = {}
                 for incfrq, trans in zip(datablocks[last], datablocks[last-1]):
-                    if incfrq not in data[qkey]:
-                        data[qkey][incfrq] = {}
+                    if incfrq not in data:
+                        data[incfrq] = {}
                         counts[incfrq] = 1
                     else:
                         counts[incfrq] += 1
-                    data[qkey][incfrq][counts[incfrq]] = float(trans)
+                    data[incfrq][counts[incfrq]] = float(trans)
+                for key, val in data.items():
+                    dobjs[qkey].add_field(key, value=val)
             else:
-                if qlvl == 'H':
+                if qlabel.level == 'H':
                     for i in range(last, first-1, -1):
                         if datablocks[i]:
                             iref = i
                             break
                     else:
                         raise ParseKeyError(msg_noqty)
-                    data[qkey]['unit'] = 'cm-1'
+                    dobjs[qkey].set(unit='cm-1')
                     i = 0
+                    data = {}
                     for line in datablocks[iref]:
                         for col in line.strip().split():
                             i += 1
                             try:
-                                data[qkey][i] = float(col)
+                                data[i] = float(col)
                             except ValueError:
-                                data[qkey][i] = float('inf')
-                elif qlvl == 'A':
+                                data[i] = float('inf')
+                    dobjs[qkey].set(data=data)
+                elif qlabel.level == 'A':
                     if datablocks[last]:
                         iref = last
                     else:
                         iref = first
-                    data[qkey]['unit'] = 'cm-1'
+                    dobjs[qkey].set(unit='cm-1')
                     i = 0
+                    data = {}
                     for line in datablocks[iref]:
                         i += 1
                         try:
-                            data[qkey][i] = float(line)
+                            data[i] = float(line)
                         except ValueError:
-                            data[qkey][i] = float('inf')
+                            data[i] = float('inf')
+                    dobjs[qkey].set(data=data)
                 else:
                     raise NotImplementedError()
-        elif qtag == 'vtrans':
-            if qopt == 'RR':
+        elif qlabel.label == 'vtrans':
+            if qlabel.kind == 'RR':
                 if len(datablocks[last]) != len(datablocks[last-1]):
                     msg = 'Incident frequencies data and transition data ' \
                         + 'do not match.'
                     raise ParseKeyError(msg)
                 counts = {}
+                data = {}
                 for incfrq, trans in zip(datablocks[last], datablocks[last-1]):
-                    if incfrq not in data[qkey]:
-                        data[qkey][incfrq] = {}
+                    if incfrq not in data:
+                        data[incfrq] = {}
                         counts[incfrq] = 1
                     else:
                         counts[incfrq] += 1
@@ -2119,9 +2141,10 @@ def parse_data(qdict: TypeQInfo,
                                     int(i) for i in osc.split('^')
                                 ]))
                             svals.append(tuple(state))
-                    data[qkey][incfrq][counts[incfrq]] = tuple(svals)
+                    data[incfrq][counts[incfrq]] = tuple(svals)
+                dobjs[qkey].set(data=data)
             else:
-                if qlvl == 'H':
+                if qlabel.level == 'H':
                     for i in range(last, first-1, -1):
                         if datablocks[i]:
                             iref = i
@@ -2129,6 +2152,7 @@ def parse_data(qdict: TypeQInfo,
                     else:
                         raise ParseKeyError(msg_noqty)
                     i = 0
+                    data = {}
                     for line in datablocks[iref]:
                         cols = line.strip().split()
                         if cols[-1] in ('active', 'inactive', 'passive'):
@@ -2136,10 +2160,11 @@ def parse_data(qdict: TypeQInfo,
                         for col in cols:
                             i += 1
                             res = col.split('(')
-                            data[qkey][i] = (((0, 0), ),
-                                             ((int(res[0]), 1), ))
-                elif qlvl == 'A':
+                            data[i] = (((0, 0), ), ((int(res[0]), 1), ))
+                    dobjs[qkey].set(data=data)
+                elif qlabel.level == 'A':
                     i = 0
+                    data = {}
                     for line in datablocks[iref]:
                         i += 1
                         val = []
@@ -2156,13 +2181,14 @@ def parse_data(qdict: TypeQInfo,
                             else:
                                 val.append((int(res[0]),
                                             int(res[1].replace(')', ''))))
-                            data[qkey][i] = (((0, 0), ), tuple(val), status)
+                            data[i] = (((0, 0), ), tuple(val), status)
+                    dobjs[qkey].set(data=data)
                 else:
                     raise NotImplementedError()
         # Anharmonic Information
         # ----------------------
-        elif qtag == 'vptdat':
-            if qopt == 'CICoef':
+        elif qlabel.label == 'vptdat':
+            if qlabel.kind == 'CICoef':
                 # First, check if reduced-dimensionality used.
                 if datablocks[last]:
                     eqv = {}
@@ -2173,18 +2199,17 @@ def parse_data(qdict: TypeQInfo,
                     def idx(i):
                         return eqv.get(i, 0)
                 else:
-
                     def idx(i):
                         return i
                 # Now parses the main assignment:
-                data[qkey]['data'] = {}
+                data = {}
                 i = 0
                 for line in datablocks[first]:
                     if ':' in line:
                         key, dat = line.split(':')
                         i = idx(int(key))
                         if i > 0:
-                            data[qkey][i] = []
+                            data[i] = []
                         coef, state = dat.split('x')
                     else:
                         coef, state = line.split('x')
@@ -2200,7 +2225,8 @@ def parse_data(qdict: TypeQInfo,
                                 i0 = 1
                                 i1 = 2
                             dat.append((int(res[i0]), int(res[i1])))
-                        data[qkey][i].append((float(coef), tuple(dat)))
+                        data[i].append((float(coef), tuple(dat)))
+                dobjs[qkey].set(data=data)
             else:
                 raise NotImplementedError()
         # State(s)-dependent quantities
@@ -2208,44 +2234,46 @@ def parse_data(qdict: TypeQInfo,
         else:
             # Transition moments
             # ^^^^^^^^^^^^^^^^^^
-            if type(rsta) is tuple:
-                Si, Sf = rsta
-                if qtag == 1:
-                    if dord == 0:
+            if isinstance(qlabel.rstate, tuple):
+                Si, Sf = qlabel.rstate
+                if qlabel.label == 1:
+                    if qlabel.derord == 0:
                         if Si == 0:
                             if isinstance(Sf, int):
-                                data[qkey]['data'] = float(datablocks[iref])
-                                data[qkey]['unit'] = 'eV'
+                                dobjs[qkey].set(data=float(datablocks[iref]))
+                                dobjs[qkey].set(unit='eV')
                             else:
-                                data[qkey]['unit'] = 'eV'
-                                data[qkey]['data'] = \
-                                    [float(item) for item in datablocks[iref]]
+                                dobjs[qkey].set(unit='eV')
+                                dobjs[qkey].set(
+                                    data=[float(item)
+                                          for item in datablocks[iref]])
                         else:
                             pass
                     else:
                         pass
-                elif qtag == 'dipstr':
+                elif qlabel.label == 'dipstr':
                     if Si == 0:
                         if isinstance(Sf, int):
-                            data[qkey]['data'] = float(datablocks[iref])
-                            data[qkey]['unit'] = 'DS:au'
+                            dobjs[qkey].set(data=float(datablocks[iref]))
+                            dobjs[qkey].set(unit='DS:au')
                         else:
-                            data[qkey]['unit'] = 'DS:au'
-                            data[qkey]['data'] = \
-                                [float(item) for item in datablocks[iref]]
+                            dobjs[qkey].set(unit='DS:au')
+                            dobjs[qkey].set(
+                                data=[float(item)
+                                      for item in datablocks[iref]])
                     else:
                         pass
-                elif qtag == 'rotstr':
+                elif qlabel.label == 'rotstr':
                     if Si == 0:
                         if isinstance(Sf, int):
-                            data[qkey]['data'] \
-                                = float(datablocks[iref])*1.0e-40
-                            data[qkey]['unit'] = 'RS:esu^2.cm^2'
+                            dobjs[qkey].set(
+                                data=float(datablocks[iref])*1.0e-40)
+                            dobjs[qkey].set(unit='RS:esu^2.cm^2')
                         else:
-                            data[qkey]['unit'] = 'RS:esu^2.cm^2'
-                            data[qkey]['data'] = \
-                                [float(item) * 1.0e-40
-                                 for item in datablocks[iref]]
+                            dobjs[qkey].set(unit='RS:esu^2.cm^2')
+                            dobjs[qkey].set(
+                                data=[float(item) * 1.0e-40
+                                      for item in datablocks[iref]])
                     else:
                         pass
                 else:
@@ -2253,21 +2281,19 @@ def parse_data(qdict: TypeQInfo,
             # States-specific Quantities
             # ^^^^^^^^^^^^^^^^^^^^^^^^^^
             else:
-                if rsta != 'c':
+                if qlabel.rstate != 'c':
                     # we should check if the state is the right one.
                     raise NotImplementedError()
-                if qtag == 1:
-                    if dord == 0:
-                        if rsta == 'c':
+                if qlabel.label == 1:
+                    if qlabel.derord == 0:
+                        if qlabel.rstate == 'c':
                             def conv(s):
                                 return float(s.split('=')[1].replace('D', 'e'))
 
-                            # 1st element is actually transition information
-                            # Ignored as we look for the pure energies
                             fmt = re.compile(r'E\(?(.*?)\)?\s+')
-                            # iref = first + 1
                             N = 2 if datablocks[last] else 1
                             nblocks = len(datablocks[iref])
+                            data = {}
                             for i in range(iref, iref+N):
                                 if nblocks > 1:
                                     txt = datablocks[i][0][0]
@@ -2282,28 +2308,18 @@ def parse_data(qdict: TypeQInfo,
                                 except AttributeError:
                                     msg = 'Unsupported energy format'
                                     raise ParseKeyError(msg) from None
-                                data[qkey][tag] = val
-                            data[qkey]['data'] = data[qkey][tag]
-                            data[qkey]['unit'] = 'Eh'
-                    elif dord == 2:
-                        if rsta == 'c':
+                                data[tag] = val
+                            dobjs[qkey].set(data=data[tag])
+                            dobjs[qkey].set(unit='Eh')
+                            for key, val in data.items():
+                                dobjs[qkey].add_field(key, value=val)
+                    elif qlabel.derord == 2:
+                        if qlabel.rstate == 'c':
                             maxcols = 5
                             nbloc = 0
-                            data[qkey]['unit'] = 'Eh.a0^{-2}'
-                            data[qkey]['data'] = []
-                            data[qkey]['shape'] = 'lt'
-                            # Store as triangle
-                            # for line in datablocks[iref]:
-                            #     if '.' not in line:
-                            #         nbloc += 1
-                            #     else:
-                            #         cols = line.split()
-                            #         i = int(cols[0]) - 1
-                            #         if nbloc == 1:
-                            #             data[qkey]['data'].append([])
-                            #         data[qkey]['data'][i].extend(
-                            #             [float(item.replace('D', 'e'))
-                            #              for item in cols[1:]])
+                            dobjs[qkey].set(unit='Eh.a0^{-2}')
+                            dobjs[qkey].set(shape='lt')
+                            data = {}
                             # store in linear form
                             for line in datablocks[iref]:
                                 if '.' not in line:
@@ -2312,104 +2328,114 @@ def parse_data(qdict: TypeQInfo,
                                     cols = line.split()
                                     i = int(cols[0])
                                     if nbloc == 1:
-                                        data[qkey]['data'].extend(
+                                        data.extend(
                                             [float(item.replace('D', 'e'))
                                              for item in cols[1:]])
                                         if i > 5:
-                                            data[qkey]['data'].extend(
+                                            data.extend(
                                                 0.0 for _ in range(maxcols, i))
                                     else:
                                         ioff = i*(i-1)//2 + (nbloc-1)*maxcols
                                         ncols = len(cols) - 1
-                                        data[qkey]['data'][ioff:ioff+ncols] \
+                                        data[ioff:ioff+ncols] \
                                             = [float(item.replace('D', 'e'))
                                                for item in cols[1:]]
-                elif qtag == 101:
-                    if dord == 0:
-                        if rsta == 'c':
+                            dobjs[qkey].set(data=data)
+                elif qlabel.label == 101:
+                    if qlabel.derord == 0:
+                        if qlabel.rstate == 'c':
                             val = [float(item)/phys_fact('au2Deb') for item in
                                    datablocks[last][0].split()[1::2]]
-                            data[qkey]['data'] = val
-                            data[qkey]['unit'] = 'e.a0'
+                            dobjs[qkey].set(data=val)
+                            dobjs[qkey].set(unit='e.a0')
                         else:
                             raise NotImplementedError()
                     else:
                         raise NotImplementedError()
-                elif qtag == 1300:
+                elif qlabel.label == 1300:
                     unit = datablocks[iref][0].split()[-1]
-                    data[qkey]['unit'] = unit.lower()
-                    data[qkey]['data'] = []
-                    data[qkey]['keys'] = []
+                    dobjs[qkey].set(unit=unit.lower())
+                    data = {'data': [], 'keys': []}
                     for line in datablocks[iref]:
                         key, unit = line.split()
-                        if key not in data[qkey]['keys']:
-                            data[qkey]['keys'].append(key)
-                            data[qkey]['data'].append(float(key))
-                elif qtag in (1301, 1302, 1303, 1304, 1305):
-                    data[qkey] = _parse_logdat_vtransprop(
-                        qtag, qopt, qlvl, datablocks, first, last)
-                elif qtag == 'dipstr':
-                    if qlvl == 'H':
+                        if key not in data['keys']:
+                            data['keys'].append(key)
+                            data['data'].append(float(key))
+                    dobjs[qkey].set(data=data['data'])
+                    dobjs[qkey].add_field('keys', value=data['keys'])
+                elif qlabel.label in (1301, 1302, 1303, 1304, 1305):
+                    dobjs[qkey] = _parse_logdat_vtransprop(qlabel, datablocks,
+                                                           first, last)
+                elif qlabel.label == 'dipstr':
+                    if qlabel.level == 'H':
                         for i in range(last, first-1, -1):
                             if datablocks[i]:
                                 iref = i
                                 break
                         else:
                             raise ParseKeyError(msg_noqty)
-                        data[qkey]['unit'] = 'DS:esu^2.cm^2'
+                        dobjs[qkey].set(unit='DS:esu^2.cm^2')
                         i = 0
+                        data = {}
                         for line in datablocks[iref]:
                             for col in line.strip().split():
                                 i += 1
                                 try:
-                                    data[qkey][i] = float(col)*1.0e-40
+                                    data[i] = float(col)*1.0e-40
                                 except ValueError:
-                                    data[qkey][i] = float('inf')
-                    elif qlvl == 'A':
-                        data[qkey]['unit'] = 'DS:esu^2.cm^2'
+                                    data[i] = float('inf')
+                        dobjs[qkey].set(data=data)
+                    elif qlabel.level == 'A':
+                        dobjs[qkey].set(unit='DS:esu^2.cm^2')
                         i = 0
+                        data = {}
                         for line in datablocks[iref]:
                             i += 1
                             try:
-                                data[qkey][i] = float(line)*1.0e-40
+                                data[i] = float(line)*1.0e-40
                             except ValueError:
-                                data[qkey][i] = float('inf')
+                                data[i] = float('inf')
+                        dobjs[qkey].set(data=data)
                     else:
                         raise NotImplementedError()
-                elif qtag == 'rotstr':
-                    if qlvl == 'H':
+                elif qlabel.label == 'rotstr':
+                    if qlabel.level == 'H':
                         for i in range(last, first-1, -1):
                             if datablocks[i]:
                                 iref = i
                                 break
                         else:
                             raise ParseKeyError(msg_noqty)
-                        data[qkey]['unit'] = 'RS:esu^2.cm^2'
+                        dobjs[qkey].set(unit='RS:esu^2.cm^2')
                         i = 0
+                        data = {}
                         for line in datablocks[iref]:
                             for col in line.strip().split():
                                 i += 1
                                 try:
-                                    data[qkey][i] = float(col)*1.0e-44
+                                    data[i] = float(col)*1.0e-44
                                 except ValueError:
-                                    data[qkey][i] = float('inf')
-                    elif qlvl == 'A':
-                        data[qkey]['unit'] = 'RS:esu^2.cm^2'
+                                    data[i] = float('inf')
+                        dobjs[qkey].set(data=data)
+                    elif qlabel.level == 'A':
+                        dobjs[qkey].set(unit='RS:esu^2.cm^2')
                         i = 0
+                        data = {}
                         for line in datablocks[iref]:
                             i += 1
                             try:
-                                data[qkey][i] = float(line)*1.0e-44
+                                data[i] = float(line)*1.0e-44
                             except ValueError:
-                                data[qkey][i] = float('inf')
+                                data[i] = float('inf')
+                        dobjs[qkey].set(data=data)
                     else:
                         raise NotImplementedError()
-                elif qtag == 'ramact':
-                    data[qkey] = _parse_logdat_ramact(qopt, qlvl, datablocks,
-                                                      first, last)
-                elif qtag == 'roaact':
-                    data[qkey] = _parse_logdat_ramact(qopt, qlvl, datablocks,
-                                                      first, last, ROA=True)
+                elif qlabel.label == 'ramact':
+                    dobjs[qkey] = _parse_logdat_ramact(qlabel, datablocks,
+                                                       first, last)
+                elif qlabel.label == 'roaact':
+                    dobjs[qkey] = _parse_logdat_ramact(qlabel, datablocks,
+                                                       first, last, ROA=True)
             #     key = 'ETran scalars'
             #     if key in datablocks:
             #         (nstates, ndata, _, _, iroot,
@@ -2464,23 +2490,26 @@ def parse_data(qdict: TypeQInfo,
     # final checks/corrections
     if not {'vlevel', 'vtrans'} - set(all_tags):
         args = {}
-        for qlabel in qdict:
-            qtag, qopt, dord, dcrd, rsta, qlvl = qdict[qlabel]
-            qkey = qlab2key[qlabel]
-            if qtag == 'vlevel' and qlvl == 'A':
+        for qkey, qlabel in qdict.items():
+            if qlabel.label == 'vlevel' and qlabel.level == 'A':
                 args['vlevel'] = qkey
-            elif qtag == 'vtrans' and qlvl == 'A':
+            elif qlabel.label == 'vtrans' and qlabel.level == 'A':
                 args['vtrans'] = qkey
         if 'vtrans' in args and 'vlevel' in args:
-            __del_nonactive_modes(data[args['vtrans']], data[args['vlevel']])
-    return data
+            print(dobjs[args['vlevel']].data)
+            print('--- cut here ---')
+            dobjs[args['vtrans']], dobjs[args['vlevel']] = \
+                __del_nonactive_modes(dobjs[args['vtrans']],
+                                      dobjs[args['vlevel']])
+
+    return dobjs
 
 
 def get_data(dfobj: GLogIO,
-             *qlabels: str,
+             *qlabels: tp.Union[str, QLabel],
              error_noqty: bool = True,
              **keys4qlab) -> TypeQData:
-    """Gets data from a GLog file for each quantity label.
+    """Get data from a GLog file for each quantity label.
 
     Reads one or more full quantity labels from `qlab` and returns the
     corresponding data.
@@ -2491,7 +2520,7 @@ def get_data(dfobj: GLogIO,
         Gaussian output file as `GLogIO` object.
 
     *qlabels
-        List of full quantity labels to parse.
+        List of quantity labels, as strings to parse or QLabel objects.
     error_noqty
         If True, error is raised if the quantity is not found.
     **keys4qlab
@@ -2504,6 +2533,8 @@ def get_data(dfobj: GLogIO,
 
     Raises
     ------
+    ArgumentError
+        Unrecognized qlabel structure.
     TypeError
         Wrong type of data file object.
     ParseKeyError
@@ -2522,36 +2553,24 @@ def get_data(dfobj: GLogIO,
     # Build Keyword List
     # ------------------
     # Build full list of qlabels
-    full_qlabs = []
-    qlab2key = {}
-    for qlabel in qlabels:
-        if qlabel not in full_qlabs:
-            full_qlabs.append(qlabel)
-        qlab2key[qlabel] = qlabel
-    for key, qlabel in keys4qlab.items():
-        if qlabel not in full_qlabs:
-            full_qlabs.append(qlabel)
-        qlab2key[qlabel] = key
+    qty_dict, dupl_keys = parse_qlabels(qlabels, keys4qlab)
     # List of keywords
     keydata = []
     key2blocks = {}
     idata = 0
-    qty_dict = {}
-    for qlabel in full_qlabs:
+    for qkey, qlabel in qty_dict.items():
         # Label parsing
         # ^^^^^^^^^^^^^
-        qty_dict[qlabel] = ep.parse_qlabel(qlabel)
-        links, keys, skips, fmts, ends, nums = \
-            qlab_to_linkdata(*qty_dict[qlabel])
+        links, keys, skips, fmts, ends, nums = qlab_to_linkdata(qlabel)
         if isinstance(links, tuple):
             nblocks = len(links)
-            key2blocks[qlabel] = (idata, idata+nblocks-1)
+            key2blocks[qkey] = (idata, idata+nblocks-1)
             for i in range(nblocks):
                 keydata.append((keys[i], links[i], skips[i],
                                 re.compile(fmts[i]), nums[i], ends[i]))
             idata += nblocks
         else:
-            key2blocks[qlabel] = (idata, idata)
+            key2blocks[qkey] = (idata, idata)
             keydata.append((keys, links, skips, re.compile(fmts), nums, ends))
             idata += 1
     # Data Extraction
@@ -2562,30 +2581,49 @@ def get_data(dfobj: GLogIO,
     # ------------
     gver = (dfobj.version['major'], dfobj.version['minor'])
     try:
-        data = parse_data(qty_dict, key2blocks, qlab2key, ndata, datablocks,
-                          gver, error_noqty)
+        data = parse_data(qty_dict, key2blocks, ndata, datablocks, gver,
+                          error_noqty)
     except (QuantityError, NotImplementedError) as err:
         raise QuantityError('Unsupported quantities') from err
     except (ParseKeyError, IndexError) as err:
         raise IndexError(f'Missing data in Gaussian log: {dfobj.filename}') \
             from err
+    # Fill redundant keys
+    if dupl_keys:
+        for item, key in dupl_keys.items():
+            data[item] = data[key]
 
     return data
 
 
-def _parse_logdat_ramact(qopt: str,
-                         qlvl: str,
+def _parse_logdat_ramact(qlabel: QLabel,
                          datablocks: TypeDGLog,
                          first: int,
                          last: int,
-                         ROA: bool = False) -> tp.Dict[str, tp.Any]:
-    """Sub-function to parse GLog data for Raman activity
+                         ROA: bool = False) -> QData:
+    """Parse GLog data for Raman activity.
 
     Sub-functions dedicated to parsing data stored in datablocks.
 
     Parameters
     ----------
+    qlabel
+        QLabel instance.
+    datablock
+        Datablocks generated from Gaussian logfile.
+    first
+        Index of first block of interest in `datablocks`.
+    last
+        Index of last block of interest in `datablocks`.
+    ROA
+        If true, data are related to ROA.
+
+    Returns
+    -------
+    QData
+        QData instance
     """
+    dobj = QData(qlabel)
     data = {}
     for i in range(last, first-1, -1):
         if datablocks[i]:
@@ -2596,15 +2634,15 @@ def _parse_logdat_ramact(qopt: str,
     # Data in Gaussian log are multiplied by 10^4 for ROA, so we need to take
     #   this into account
     yfactor = 1.0e-4 if ROA else 1.0
-    if qlvl == 'H':
+    if qlabel.level == 'H':
         if iref == last:
-            data['unit'] = 'ROA:Ang^6' if ROA else 'RA:Ang^6'
+            dobj.set(unit='ROA:Ang^6' if ROA else 'RA:Ang^6')
             an_blk = True
         else:
-            data['unit'] = 'ROA:amu.Ang^4' if ROA else 'RA:amu.Ang^4'
+            dobj.set(unit='ROA:amu.Ang^4' if ROA else 'RA:amu.Ang^4')
             an_blk = False
         # We create the database based on the quantity
-        if qopt == 'static':
+        if qlabel.kind == 'static':
             i = 0
             for line in datablocks[iref]:
                 for col in line.strip().split():
@@ -2646,7 +2684,7 @@ def _parse_logdat_ramact(qopt: str,
         else:
             incfreqs = [item for line in datablocks[first+1]
                         for item in line.split()]
-            if qopt == 'dynamic':
+            if qlabel.kind == 'dynamic':
                 for freq in incfreqs:
                     data[freq] = {
                         'SCP(180)u': {}, 'SCP(90)z': {}, 'DCPI(180)': {}}
@@ -2668,8 +2706,8 @@ def _parse_logdat_ramact(qopt: str,
                         except ValueError:
                             d[ioff+i] = float('inf')
             else:
-                if qopt in incfreqs:
-                    ref_freq = incfreqs.index(qopt)
+                if qlabel.kind in incfreqs:
+                    ref_freq = incfreqs.index(qlabel.kind)
                     data[incfreqs[ref_freq]] = {
                         'SCP(180)u': {}, 'SCP(90)z': {}, 'DCPI(180)': {}}
                     iline = 0
@@ -2695,8 +2733,8 @@ def _parse_logdat_ramact(qopt: str,
                                 d[iref+i+1] = float('inf')
                 else:
                     raise ParseKeyError('Missing incident frequency')
-    elif qlvl == 'A':
-        data['unit'] = 'ROA:Ang^6' if ROA else 'RA:Ang^6'
+    elif qlabel.level == 'A':
+        dobj.set(unit='ROA:Ang^6' if ROA else 'RA:Ang^6')
         incfrq = None
         setups = []
         for item in datablocks[first+1]:
@@ -2728,29 +2766,42 @@ def _parse_logdat_ramact(qopt: str,
                     d[i] = float('inf')
     else:
         raise NotImplementedError()
-    return data
+    dobj.set(data=data)
+    return dobj
 
 
-def _parse_logdat_vtransprop(qtag: int,
-                             qopt: str,
-                             qlvl: str,
+def _parse_logdat_vtransprop(qlabel: QLabel,
                              datablocks: TypeDGLog,
                              first: int,
                              last: int) -> tp.Dict[str, tp.Any]:
-    """Sub-function to parse GLog data for vib. transition moment.
+    """Parse GLog data for vib. transition moment.
 
     Sub-function dedicated to parsing data related to vibrational,
     transition moments of properties, stored in datablocks.
 
     Parameters
     ----------
+    qlabel
+        QLabel instance.
+    datablock
+        Datablocks generated from Gaussian logfile.
+    first
+        Index of first block of interest in `datablocks`.
+    last
+        Index of last block of interest in `datablocks`.
+
+    Returns
+    -------
+    QData
+        QData instance
     """
-    if qtag in range(1301, 1310):
+    if qlabel.label in range(1301, 1310):
         if len(datablocks[last]) != len(datablocks[last-1]):
             msg = 'Incident frequencies data and properties moments ' \
                 + 'do not match.'
             raise ParseKeyError(msg)
     counts = {}
+    dobj = QData(qlabel)
     data = {}
     dosym = False
     for incfrq, dtens in zip(datablocks[last], datablocks[last-1]):
@@ -2759,13 +2810,13 @@ def _parse_logdat_vtransprop(qtag: int,
             counts[incfrq] = 1
         else:
             counts[incfrq] += 1
-        if qtag in (1301, 1302, 1303):
+        if qlabel.label in (1301, 1302, 1303):
             tensor = [
                 [None, None, None],
                 [None, None, None],
                 [None, None, None]
             ]
-        elif qtag in (1304, 1305):
+        elif qlabel.label in (1304, 1305):
             dosym = len(dtens) == 18
             tensor = [
                 [[None, None, None],
@@ -2799,25 +2850,32 @@ def _parse_logdat_vtransprop(qtag: int,
                 tensor[ixyz[0]][ixyz[1]] = val
         data[incfrq][counts[incfrq]] = tensor
 
-    return data
+    dobj.set(data=data)
+    return dobj
 
 
-def __del_nonactive_modes(vtrans: tp.Dict[int, tp.Sequence[tp.Any]],
-                          vlevel: tp.Dict[tp.Any, tp.Any]):
-    """
+def __del_nonactive_modes(dobj_vtrans: QData,
+                          dobj_vlevel: QData) -> tuple[QData, QData]:
+    """Delete non-active modes.
+
     Selects and extracts only active mode from `vlevel`.
 
     Parameters
     ----------
-    vtrans
-        Information on transition levels.
-    vlevel
-        Vibrational transition energies.
+    dobj_vtrans
+        QData object with information on transition levels.
+    dobj_vlevel
+        QData object with Vibrational transition energies.
 
-    Notes
-    -----
-    The function returns the arguments modified in-place.
+    Returns
+    -------
+    QData
+        `dobj_vtrans` with only active modes kept.
+    QData
+        `dobj_vlevel` with only active modes kept.
     """
+    vtrans = dobj_vtrans.data
+    vlevel = dobj_vlevel.data
     nonact_modes = []
     for _, dtrans in vtrans.items():
         if dtrans[-1] is not None:
@@ -2844,6 +2902,12 @@ def __del_nonactive_modes(vtrans: tp.Dict[int, tp.Sequence[tp.Any]],
                 vtrans[key0] = vtrans.pop(key)
                 vlevel[key0] = vlevel.pop(key)
                 key0 += 1
+    new_vtrans = dobj_vtrans.copy(exclude=('data',))
+    new_vlevel = dobj_vlevel.copy(exclude=('data',))
+    new_vtrans.set(data=vtrans)
+    new_vlevel.set(data=vlevel)
+
+    return new_vtrans, new_vlevel
 
 
 def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
@@ -2851,7 +2915,7 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
                   get_eval: bool = True,
                   pre_data: tp.Optional[TypeQData] = None
                   ) -> tp.Tuple[tp.Any]:
-    """Gets or builds Hessian data (eigenvectors and values).
+    """Get or build Hessian data (eigenvectors and values).
 
     This function retrieves or builds the eigenvectors and eigenvalues.
     Contrary to ``get_data`` which only looks for available data, this
@@ -2898,7 +2962,7 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
     from estampes.tools.math import square_ltmat
 
     def build_evec(fccart, atmas, get_evec, get_eval, nvib=None):
-        """Build evec and eval from force constants matrix"""
+        """Build evec and eval from force constants matrix."""
         inv_sqmas = 1./np.sqrt(atmas)
         nat3 = fccart.shape[0]
         ffx = np.einsum('i,ij,j->ij', inv_sqmas, fccart, inv_sqmas)
@@ -2955,7 +3019,7 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
         return eigvec
 
     def norm_evec(eigvec):
-        """Normalize eigenvector (assumed to have shape (nvib, nat3))"""
+        """Normalize eigenvector (assumed to have shape (nvib, nat3))."""
         res = np.empty(eigvec.shape)
         norms = np.sum(eigvec**2, axis=1)
         for i in range(eigvec.shape[0]):
@@ -2980,34 +3044,33 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
     eigval = None
     if pre_data is not None:
         for key in pre_data:
-            qlabel = pre_data[key].get('qlabel', key)
-            qtag, qopt, dord, dcrd, *_ = ep.parse_qlabel(qlabel)
-            if qtag == 'natoms':
-                natoms = pre_data['natoms']['data']
-            elif qtag == 'nvib':
-                natoms = pre_data['nvib']['data']
-            elif qtag == 'atmas':
+            qlab = pre_data[key].get('qlabel', key)
+            if qlab.label == 'natoms':
+                natoms = pre_data['natoms'].data
+            elif qlab.label == 'nvib':
+                natoms = pre_data['nvib'].data
+            elif qlab.label == 'atmas':
                 # np.repeat used to duplicate atmas for each Cart. coord.
-                atmas = np.repeat(np.array(pre_data[key]['data']), 3)
-            elif qtag == 'hessvec':
+                atmas = np.repeat(np.array(pre_data[key].data), 3)
+            elif qlab.label == 'hessvec':
                 key_evec = key
-                hessvec = np.array(pre_data[key]['data'])
-            elif qtag == 'hessval' and qopt == 'freq':
-                hessval = np.array(pre_data[key]['data'])
-            elif qtag == 1 and dord == 2 and dcrd == 'X':
+                hessvec = np.array(pre_data[key].data)
+            elif qlab.label == 'hessval' and qlab.kind == 'freq':
+                hessval = np.array(pre_data[key].data)
+            elif qlab.label == 1 and qlab.derord == 2 and qlab.dercrd == 'X':
                 key_ffx = key
-                fccart = np.array(pre_data[key]['data'])
+                fccart = np.array(pre_data[key].data)
 
     if fccart is not None and atmas is not None:
         if (len(fccart.shape) == 1
-                or pre_data[key_ffx]['shape'].lower() == 'lt'):
-            fccart = square_ltmat(pre_data[key_ffx]['data'])
+                or pre_data[key_ffx].shape.lower() == 'lt'):
+            fccart = square_ltmat(pre_data[key_ffx].data)
         eigvec, eigval = build_evec(fccart, atmas, get_evec, get_eval, nvib)
     else:
         if get_evec and hessvec is not None:
             # Check if eigenvectors need to be corrected
             #  Default is assumed to be Gaussian fchk
-            evec_form = pre_data[key_evec].get('form', 'L.M^{-1/2}')
+            evec_form = pre_data[key_evec].dtype == 'L.M^{-1/2}'
             eigvec = convert_evec(hessvec, atmas, natoms, evec_form)
         if get_eval and hessval is not None:
             eigval = hessval
@@ -3018,39 +3081,38 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
         # We are missing data, now extracting data and recomputing.
         read_data = {}
         if calc_evec or calc_eval:
-            read_data['natoms'] = 'natoms'
-            read_data['d2EdX2'] = ep.build_qlabel(1, None, 2, 'X')
-            read_data['atmas'] = 'atmas'
-            read_data['nvib'] = 'nvib'
+            read_data['natoms'] = QLabel(quantity='natoms')
+            read_data['d2EdX2'] = QLabel(quantity=1, derorder=2, dercoord='X')
+            read_data['atmas'] = QLabel(quantity='atmas')
+            read_data['nvib'] = QLabel('nvib')
         if calc_evec:
-            read_data['hessvec'] = ep.build_qlabel('hessvec', level='H')
+            read_data['hessvec'] = QLabel(quantity='hessvec', level='H')
         if calc_eval:
-            read_data['hessval'] = ep.build_qlabel('hessdat', 'freq',
-                                                   level='H')
+            read_data['hessval'] = QLabel(quantity='hessdat',
+                                          descriptor='freq', level='H')
         tmp_data = get_data(dfobj, error_noqty=False, **read_data)
 
         if tmp_data['d2EdX2'] is not None and tmp_data['atmas'] is not None:
             # Rediagonlizing is more accurate, but require being
-            atmas = np.repeat(np.array(tmp_data['atmas']['data']), 3)
-            ffx = square_ltmat(tmp_data['d2EdX2']['data'])
-            nvib = None if tmp_data['nvib'] is None \
-                else tmp_data['nvib']['data']
+            atmas = np.repeat(np.array(tmp_data['atmas'].data), 3)
+            ffx = square_ltmat(tmp_data['d2EdX2'].data)
+            nvib = None if tmp_data['nvib'] is None else tmp_data['nvib'].data
             eigvec, eigval = build_evec(ffx, atmas, get_evec, get_eval, nvib)
         else:
             if calc_evec:
                 if (tmp_data['hessvec'] is not None
                         and tmp_data['atmas'] is not None):
-                    hessvec = tmp_data['hessvec']['data']
-                    atmas = np.repeat(np.array(tmp_data['atmas']['data']), 3)
-                    natoms = tmp_data['natoms']['data']
-                    evec_form = tmp_data['hessvec'].get('form', 'L.M^{-1/2}')
+                    hessvec = tmp_data['hessvec'].data
+                    atmas = np.repeat(np.array(tmp_data['atmas'].data), 3)
+                    natoms = tmp_data['natoms'].data
+                    evec_form = tmp_data['hessvec'].dtype == 'L.M^{-1/2}'
                     eigvec = convert_evec(hessvec, atmas, natoms, evec_form)
                 else:
                     msg = 'Unable to retrieve force constants eigenvectors'
                     raise QuantityError(msg)
             if calc_eval:
                 if tmp_data['hessval'] is not None:
-                    eigval = np.array(tmp_data['hessval']['data'])
+                    eigval = np.array(tmp_data['hessval'].data)
                 else:
                     msg = 'Unable to retrieve normal mode wavenumbers'
                     raise QuantityError(msg)

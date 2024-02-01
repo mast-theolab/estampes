@@ -2,27 +2,26 @@ The data format expected for each type of quantity are listed below, sorted by q
 While the data formats are relatively free, following the recommendations below will improve the compatibility and provide a more versatile interface.
 
 
-==== Structural information
+== Structural information
 
 
-===== Atomic coordinates
+=== Atomic coordinates
 
-[TIP]
-._qlabel_
-====
-* `AtCrd:`
-====
+.Reference _qlabel(s)_
+****
+* ``[.codecls]##QLabel##([.codepar]##quantity##=[.codestr]##"AtCrd"##)``
+****
 
 [cols="1,2,12",grid=rows,stripes=none]
 |====
-.5+| `ngeoms`
+.5+| ``[.codecls]##QLabel##.[.codefun]##get##([.codecls]##"ngeoms"##)``
 2+s| Number of geometries stored in `data` (as list of list)
 | _Type_     | `int`
 | _Accepted_ | Any strictly positive value
 | 1          | Only 1 geometry, coordinates are given at top level.
 | >1         | Multiple coordinates, the top list contains lists of coordinates
 
-.4+| `data`
+.4+| ``[.codecls]##QLabel##.[.codekey]##data##``
 2+s| Coordinates
 | _Type_     | `list`
 | _Accepted_ | numeric values
@@ -31,7 +30,7 @@ While the data formats are relatively free, following the recommendations below 
 |====
 
 
-==== Vibrational transitions
+== Vibrational transitions
 
 [NOTE]
 ====
@@ -40,19 +39,18 @@ While the data formats are relatively free, following the recommendations below 
 * With the `RR` sub-option, the structure is slightly altered and have the following hierarchy: `["_incfrq_"][_N_]`, with `"_incfrq_"` the incident frequency, as a *string* (e.g., `"17800.00"`).
 ====
 
-===== Vibrational transitions assignment
+=== Vibrational transitions assignment
 
-[TIP]
-._qlabel_
-====
-* `VTrans:`
-====
+.Reference _qlabel(s)_
+****
+* ``[.codecls]##QLabel##([.codepar]##quantity##=[.codestr]##"VTrans"##)``
+****
 
 [cols="1,2,12",grid=rows,stripes=none]
 |====
-.4+| `__N__`
-2+s| Assignment data, in the form "`[__initial__, __final__]`", with each state defined as "`((mode1, quanta1), (mode2, quanta2)...)`"
-| _Type_     | `list`
+.4+| ``[.codecls]##QLabel##.[.codekey]##data##``
+2+s| Assignment data, in the form "```__N__``: [__initial__, __final__]`", with each state defined as "`((mode1, quanta1), (mode2, quanta2)...)`"
+| _Type_     | `dict[str, Sequence[Sequence[int] | int]]`
 | _Accepted_ | lists of lists of integers
 | `None`     | No band assignment
 |====
@@ -63,26 +61,25 @@ While the data formats are relatively free, following the recommendations below 
 ====
 
 
-===== Vibrational energies
+=== Vibrational energies
 
-[TIP]
-._qlabel_
-====
-* `VLevel:`
-====
+.Reference _qlabel(s)_
+****
+* ``[.codecls]##QLabel##([.codepar]##quantity##=[.codestr]##"VLevel"##)``
+****
 
 [cols="1,2,12",grid=rows,stripes=none]
 |====
-.5+| `unit`
+.5+| ``[.codecls]##QLabel##.[.codekey]##unit##``
 2+s| Unit of the vibrational energies.
 | _Type_     | `str`
 | _Accepted_ | string compatible with `convert_x` in `estampes.tools.spec`
 | `None`     | Unknown unit / unit not found.
 | `False`    | No unit applicable.
 
-.5+| `_N_`
-2+s| Energy of the vibrational transition
-| _Type_     | `float`
+.5+| ``[.codecls]##QLabel##.[.codekey]##data##``
+2+s| Energy of the vibrational transitions, in the form "```__N__``: _float_`"
+| _Type_     | `dict[int, float]`
 | _Accepted_ | numeric values
 | `math.inf` | Excessive value (typically `****` in Fortran output).
 | `None`     | Value not available.
@@ -90,37 +87,36 @@ While the data formats are relatively free, following the recommendations below 
 |====
 
 
-===== Transition intensities
+=== Transition intensities
 
-====== Static properties
+==== Static properties
 
-[TIP]
-._qlabel_
-====
-* `DipStr:`
-* `RotStr:`
-* `RamAct:static`
-====
+.Reference _qlabel(s)_
+****
+* ``[.codecls]##QLabel##([.codepar]##quantity##=[.codestr]##"DipStr"##)``
+* ``[.codecls]##QLabel##([.codepar]##quantity##=[.codestr]##"RotStr"##)``
+* ``[.codecls]##QLabel##([.codepar]##quantity##=[.codestr]##"RamAct"##, [.codepar]##descriptor##=[.codestr]##"static"##)``
+****
 
 [cols="1,2,12",grid=rows,stripes=none]
 |====
-.5+| `unit`
+.5+| ``[.codecls]##QLabel##.[.codekey]##unit##``
 2+s| Unit of the intensity, as `qty:unit`
 | _Type_     | `str`
 | _Accepted_ | string compatible with `convert_y` in `estampes.tools.spec`.  `qty` is an abbreviation for the quantity of interest
 | `None`     | Unknown unit / unit not found.
 | `False`    | No unit applicable.
 
-.5+| `_N_`
-2+s| Value of the intensity
-| _Type_     | `float`
+.5+| ``[.codecls]##QLabel##.[.codekey]##data##``
+2+s| Value of the intensity, as "```__N__``: _float_`"
+| _Type_     | `dict[int, float]`
 | _Accepted_ | numeric values
 | `math.inf` | Excessive value (typically `****` in Fortran output).
 | `None`     | Value not available.
 
 |====
 
-====== Frequency-dependent properties (Raman)
+==== Frequency-dependent properties (Raman)
 
 [NOTE]
 ====
@@ -137,24 +133,24 @@ with
      state/transition
 ====
 
-._qlabel_
-====
-* `RamAct:dynamic`
-* `ROAAct:dynamic`
-====
+.Reference _qlabel(s)_
+****
+* ``[.codecls]##QLabel##([.codepar]##quantity##=[.codestr]##"RamAct"##, [.codepar]##descriptor##=[.codestr]##"dynamic"##)``
+* ``[.codecls]##QLabel##([.codepar]##quantity##=[.codestr]##"ROAAct"##, [.codepar]##descriptor##=[.codestr]##"dynamic"##)``
+****
 
 [cols="1,2,12",grid=rows,stripes=none]
 |====
-.5+| `unit`
+.5+| ``[.codecls]##QLabel##.[.codekey]##unit##``
 2+s| Unit of the intensity, as `qty:unit`
 | _Type_     | `str`
 | _Accepted_ | string compatible with `convert_y` in `estampes.tools.spec`.  `qty` is an abbreviation for the quantity of interest
 | `None`     | Unknown unit / unit not found.
 | `False`    | No unit applicable.
 
-.5+| `"_incfrq_"`/`"_setup_"`/`_N_`
-2+s| Value of the intensity
-| _Type_     | `float`
+.5+| ``[.codecls]##QLabel##.[.codekey]##data##``
+2+s| Value of the intensity, as a nested dictionaries (`"_incfrq_"`: {`"_setup_"`: {`_N_`: {_float_}}})
+| _Type_     | `dict[str, dict[str, dict[int, float]]]`
 | _Accepted_ | numeric values
 | `math.inf` | Excessive value (typically `****` in Fortran output).
 | `None`     | Value not available.
@@ -162,11 +158,11 @@ with
 |====
 
 
-==== Vibronic calculations
+== Vibronic calculations
 
 Data for vibronic calculations within the Franck-Condon principle are gathered under the label `FCDat`.
 
-===== Reduced-dimensionality schemes
+=== Reduced-dimensionality schemes
 
 Reduced-dimensionality schemes refer to the truncation of the full system by excluding a subset of normal modes.
 The output may be affected, and consequently the extracted data.
@@ -174,13 +170,13 @@ The size of matrices should be checked for consistency.
 
 Specific options are:
 
-`FCDat:JMatF`::
+``[.codecls]##QLabel##([.codepar]##quantity##=[.codestr]##"FCDat"##, [.codepar]##descriptor##=[.codestr]##"JMatF"##)``::
      Full Duschinsky matrix, independently of the use of reduced-dimensionality schemes
 +
 --
 [cols="1,2,12",grid=rows,stripes=none]
 |====
-.3+| `data`
+.3+| ``[.codecls]##QLabel##.[.codekey]##data##``
 2+s| Matrix, as a sequence
 | _Type_     | `list`
 | _Accepted_ | `lists` of `float` values.
@@ -189,18 +185,18 @@ Specific options are:
 
 --
 +
-`FCDat:RedDim`::
-     provide equivalence information between the reduced-dimension numbering and the full-size numbering of normal modes.
+``[.codecls]##QLabel##([.codepar]##quantity##=[.codestr]##"FCDat"##, [.codepar]##descriptor##=[.codestr]##"RedDim"##)``::
+     provides equivalence information between the reduced-dimension numbering and the full-size numbering of normal modes.
 +
 --
 [cols="1,2,12",grid=rows,stripes=none]
 |====
-.3+| `state__N__`
+.3+| ``[.codecls]##QLabel##.[.codefun]##get##([.codecls]##"stateN"##)``
 2+s| Equivalence table for state num. _N_.
 | _Type_     | `dict`
 | _Accepted_ | Dictionary where the keys are the indexes of the mode in the _reduced system_ (`int`) and the values the indexes in the _full system_.
 
-.3+| `labels`
+.3+| ``[.codecls]##QLabel##.[.codefun]##get##([.codecls]##"labels"##)``
 2+s| Labels of the states (optional).
 | _Type_     | `dict`
 | _Accepted_ | keys should be the state labels (ex: `state1`) and the values an identifier (ex: `initial`).
@@ -210,35 +206,33 @@ Specific options are:
 --
 
 
-==== Spectra
+== Spectra
 
 Spectra refer to fully generated spectra, for instance vibronic, where storing all transitions could be too large, or for data file with the generated spectra (ex: CSV files).
 
-===== Spectral data
+=== Spectral data
 
-[TIP]
-._qlabel_
-====
-* `FCDat:Spec:...`
-* `AnySpc:Spec:...`
-====
-
+.Reference _qlabel(s)_
+****
+* ``[.codecls]##QLabel##([.codepar]##quantity##=[.codestr]##"FCDat"##, [.codepar]##descriptor##=[.codestr]##"Spec"##)``
+* ``[.codecls]##QLabel##([.codepar]##quantity##=[.codestr]##"AnySpec"##, [.codepar]##descriptor##=[.codestr]##"Spec"##)``
+****
 
 [cols="1,2,12",grid=rows,stripes=none]
 |====
-.4+| `x`
+.4+| ``[.codecls]##QLabel##.[.codefun]##get##([.codecls]##"x"##)``
 2+s| X axis values.
 | _Type_     | `list`
 | _Accepted_ | numeric values
 | `None`     | No X axis found
 
-.4+| `y`
+.4+| ``[.codecls]##QLabel##.[.codefun]##get##([.codecls]##"y"##)``
 2+s| Y axis values, if only 1 axis is present.
 | _Type_     | `list`
 | _Accepted_ | numeric values
 | `None`     | No Y axis found
 
-.4+| `y__N__`
+.4+| ``[.codecls]##QLabel##.[.codefun]##get##([.codecls]##"yN"##)``
 2+s| Values of the _N_-th Y axis.
      The number of digits should be constant, so `y1` if less than 10 Y axes, `y01` between 10 and 99 Y axes...
 | _Type_     | `list`
@@ -247,56 +241,56 @@ Spectra refer to fully generated spectra, for instance vibronic, where storing a
 |====
 
 
-===== Spectral parameters
+=== Spectral parameters
 
-[TIP]
-._qlabel_
-====
-* `FCDat:SpcPar:...`
-* `AnySpc:SpcPar:...`
-====
+.Reference _qlabel(s)_
+****
+* ``[.codecls]##QLabel##([.codepar]##quantity##=[.codestr]##"FCDat"##, [.codepar]##descriptor##=[.codestr]##"SpcPar"##)``
+* ``[.codecls]##QLabel##([.codepar]##quantity##=[.codestr]##"AnySpec"##, [.codepar]##descriptor##=[.codestr]##"SpcPar"##)``
+****
 
 [cols="1,2,12",grid=rows,stripes=none]
 |====
-.4+| `func`
+.4+| ``[.codecls]##QLabel##.[.codefun]##get##([.codecls]##"func"##)``
 2+s| Broadening function.
 | _Type_     | `str`
 | _Accepted_ | `'gaussian`', `'stick'`, `'lorentzian'`
 | `None`     | Unknown broadening function.
 
-.4+| `hwhm`
+.4+| ``[.codecls]##QLabel##.[.codefun]##get##([.codecls]##"hwhm"##)``
 2+s| Half-width at half-maximum.
 | _Type_     | `float`
 | _Accepted_ | positive numeric value
 | `None`     | Unknown half-width at half-maximum.
 
-.5+| `unitx`
+.5+| ``[.codecls]##QLabel##.[.codefun]##get##([.codecls]##"unitx"##)``
 2+s| Unit used for the X axis.
 | _Type_     | `str`
 | _Accepted_ | string compatible with `convert_x` in `estampes.visual.plotspec`
 | `None`     | Unknown unit.
 | `False`    | No unit.
 
-.5+| `unity`
+.5+| ``[.codecls]##QLabel##.[.codefun]##get##([.codecls]##"unity"##)``
 2+s| Unit used for the Y axis/axes.
 | _Type_     | `str`
 | _Accepted_ | string compatible with `convert_y` in `estampes.visual.plotspec`
 | `None`     | Unknown unit.
 | `False`    | No unit.
 
-.4+| `x`
+.4+| ``[.codecls]##QLabel##.[.codefun]##get##([.codecls]##"x"##)``
 2+s| Label for Y.
 | _Type_     | `str`
 | _Accepted_ | Any string
 | `None`     | Label not found/available.
 
-.4+| `y`, `y__N__`
+.4+| ``[.codecls]##QLabel##.[.codefun]##get##([.codecls]##"y")## +
+``[.codecls]##QLabel##.[.codefun]##get##([.codecls]##"yN")##
 2+s| Label for Y/Y~N~.
 | _Type_     | `str`
 | _Accepted_ | Any string
 | `None`     | Label not found/available.
 
-.4+| `I`
+.4+| ``[.codecls]##QLabel##.[.codefun]##get##([.codecls]##"I"##)``
 2+s| Label for the intensity.
 | _Type_     | `str`
 | _Accepted_ | Any string

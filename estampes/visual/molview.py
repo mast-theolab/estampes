@@ -58,24 +58,9 @@ RAD_VIS_SCL = .6
 # ==============
 
 class Molecule(Qt3DCore.QEntity):
-    """Molecule class for the visualization.
+    """The Molecule class for the visualization.
 
-    Attributes
-    ----------
-    at_lab
-        Atomic labels.
-    at_crd
-        3-tuples with atomic coordinates, in Ang.
-    bonds
-        2-tuples listing connected atoms.
-    col_bond_as_atom
-        If true, bonds are colored based on the connected atoms
-    rad_atom_as_bond
-        If true, atomic radii are set equal to the bonds (tubes).
-    molcol
-        If not None, the whole molecule is set with the given color.
-    rootEntity
-        Qt root entity to connect the new `Molecule` QEntity.
+    Defines a molecule for the visualization.
 
     Methods
     -------
@@ -88,6 +73,7 @@ class Molecule(Qt3DCore.QEntity):
     addMouse(cam)
         Add mouse support.
     """
+
     click_molatom = QtCore.Signal(list)
     __mol_count = 0
 
@@ -99,6 +85,27 @@ class Molecule(Qt3DCore.QEntity):
                  rad_atom_as_bond: bool = False,
                  molcol: tp.Optional[TypeColor] = None,
                  rootEntity: tp.Optional[Qt3DCore.QEntity] = None):
+        """Initialize a Molecule instance.
+
+        Initializes an instance of the Molecule class.
+
+        Parameters
+        ----------
+        at_lab
+            Atomic labels.
+        at_crd
+            3-tuples with atomic coordinates, in Ang.
+        bonds
+            2-tuples listing connected atoms.
+        col_bond_as_atom
+            If true, bonds are colored based on the connected atoms
+        rad_atom_as_bond
+            If true, atomic radii are set equal to the bonds (tubes).
+        molcol
+            If not None, the whole molecule is set with the given color.
+        rootEntity
+            Qt root entity to connect the new `Molecule` QEntity.
+        """
         super().__init__(rootEntity)
 
         type(self).__mol_count += 1
@@ -122,7 +129,7 @@ class Molecule(Qt3DCore.QEntity):
                     at_crd: TypeAtCrd,
                     bonds: TypeBonds,
                     render: bool = True):
-        """Updates geometry information.
+        """Update geometry information.
 
         Updates atomic labels and coordinates.
 
@@ -155,7 +162,7 @@ class Molecule(Qt3DCore.QEntity):
                              col_bond_as_atom: bool = False,
                              rad_atom_as_bond: bool = False,
                              molcol: tp.Optional[TypeColor] = None):
-        """Sets display settings for the molecule.
+        """Set display settings for the molecule.
 
         Sets color information and rendering.
 
@@ -198,7 +205,7 @@ class Molecule(Qt3DCore.QEntity):
         self.__bo_rad = BONDDATA['rvis']*RAD_VIS_SCL
 
     def update_render(self):
-        """Updates rendering of the molecules.
+        """Update rendering of the molecules.
 
         Updates the rendering of the molecules with the current display
           settings.
@@ -207,7 +214,7 @@ class Molecule(Qt3DCore.QEntity):
         self.__build_atoms()
 
     def addMouse(self, cam: Qt3DRender.QCamera):
-        """Adds mouse support.
+        """Add mouse support.
 
         Adds mouse support (clicks) on the molecule object.
 
@@ -221,7 +228,7 @@ class Molecule(Qt3DCore.QEntity):
             at.pressed.connect(self.__clickAtom)
 
     def __upd_atdat(self):
-        """Updates internal atomic data information.
+        """Update internal atomic data information.
 
         Builds arrays with unique atomic data:
         - list of unique atoms by alphabetical order
@@ -253,7 +260,7 @@ class Molecule(Qt3DCore.QEntity):
             self.__at_rad[atom] = rval
 
     def __build_bonds(self):
-        """Builds bonds objects and associated properties.
+        """Build bonds objects and associated properties.
 
         Builds bonds objects and data in the molecule.
         """
@@ -318,7 +325,7 @@ class Molecule(Qt3DCore.QEntity):
             self.__bo_mesh.append(bo_mesh)
 
     def __build_atoms(self):
-        """Builds atoms objects and associated properties.
+        """Build atom objects and associated properties.
 
         Builds atoms objects and data in the molecule.
         """
@@ -369,32 +376,17 @@ class Molecule(Qt3DCore.QEntity):
 
     @classmethod
     def reset_counter(cls):
+        """Reset molecule instance counter."""
         cls.__mol_count = 0
 
 
 class MolWin(Qt3DExtras.Qt3DWindow):
-    """Qt3D Window for the visualization of molecule(s)
+    """The Molecule Window clas (Qt3D).
 
-    Attributes
-    ----------
-    nmols
-        Number of molecules stored in `atlabs`, `atcrds` and `bonds`.
-    atlabs
-        Atomic labels.
-        If `nmols>1`, list of lists.
-    atcrds
-        3-tuples with atomic coordinates, in Ang.
-        If `nmols>1`, list of lists.
-    bonds
-        2-tuples listing connected atoms.
-        If `nmols>1`, list of lists.
-    col_bond_as_atom
-        If true, bonds are colored based on the connected atoms
-    rad_atom_as_bond
-        If true, atomic radii are set equal to the bonds (tubes).
-    molcols
-        If not `None`, color of the each molecule.
+    Generates a Qt3D window instance for the visualization of
+    molecule(s).
     """
+
     click_mol = QtCore.Signal(list)
 
     def __init__(self, nmols: int,
@@ -404,6 +396,29 @@ class MolWin(Qt3DExtras.Qt3DWindow):
                  col_bond_as_atom: bool = False,
                  rad_atom_as_bond: bool = False,
                  molcols: tp.Optional[TypeColor] = None):
+        """Build an instance of MolWin.
+
+        Builds an instance of MolWin.
+
+        ----------
+        nmols
+            Number of molecules stored in `atlabs`, `atcrds` and `bonds`.
+        atlabs
+            Atomic labels.
+            If `nmols>1`, list of lists.
+        atcrds
+            3-tuples with atomic coordinates, in Ang.
+            If `nmols>1`, list of lists.
+        bonds
+            2-tuples listing connected atoms.
+            If `nmols>1`, list of lists.
+        col_bond_as_atom
+            If true, bonds are colored based on the connected atoms
+        rad_atom_as_bond
+            If true, atomic radii are set equal to the bonds (tubes).
+        molcols
+            If not `None`, color of the each molecule.
+        """
         super(MolWin, self).__init__()
 
         # Camera
@@ -447,7 +462,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
 
     @QtCore.Slot(list)
     def atom_clicked(self, molatom: tp.Sequence[int]):
-        """Captures the information on the clicked atom.
+        """Capture the information on the clicked atom.
 
         Captures the information from the clicked atom on one of the
         molecules.
@@ -460,6 +475,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         self.click_mol.emit(molatom)
 
     def mousePressEvent(self, mouseEvent):
+        """Define the event for mouse pressing."""
         if mouseEvent.button() == QtCore.Qt.RightButton:
             self.camera().setViewCenter(QtGui.QVector3D(0, 0, 0))
         # print(mouseEvent.x())
@@ -475,7 +491,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
 def build_box(at_lab: TypeAtLab,
               at_crd: TypeAtCrd,
               rad_atom_as_bond: bool = False) -> tp.Dict[str, float]:
-    """Builds the outer box containing the molecule.
+    """Build the outer box containing the molecule.
 
     Builds the outer box containing the whole molecule and returns its
     bounds:
@@ -538,7 +554,7 @@ def build_box(at_lab: TypeAtLab,
 def set_cam_zpos(box_mol: tp.Dict[str, float],
                  xangle: tp.Union[float, int] = 68,
                  yangle: tp.Union[float, int] = 53) -> float:
-    """Sets Z position of camera in POV-Ray.
+    """Set Z position of camera in POV-Ray.
 
     Sets the Z position of the camera in POV-Ray, assuming that the axes
     are the following:
@@ -586,7 +602,7 @@ def write_pov(fname: str,
               zcam: float = -8.0,
               col_bond_as_atom: bool = False,
               rad_atom_as_bond: bool = False):
-    """Writes a Pov-Ray file.
+    """Write a Pov-Ray file.
 
     Builds and writes a Pov-Ray file.
     If `nmols` > 1, `at_lab`, `at_crd`, `bonds` are lists, with each
@@ -738,7 +754,7 @@ light_source {{
     }}
 '''
 
-    with open(fname, 'w') as fobj:
+    with open(fname, 'w', encoding="utf-8") as fobj:
         fobj.write(header.format(scl_bo=rad_bo, scl_at=rad_at, zcam=zcam))
         # Set atoms colors
         if nmols == 1:

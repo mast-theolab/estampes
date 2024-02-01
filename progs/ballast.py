@@ -1,6 +1,6 @@
-"""
-    BALLAST: Builder Assistant to Lay out, Label and Arrange Spectra
-                                Together
+"""Program: BALLAST.
+
+BALLAST: Builder Assistant to Lay out, Label and Arrange Spectra Together
 
 This is a simple program to combine and display spectra together.
 """
@@ -20,7 +20,7 @@ from estampes.tools.char import convert_expr
 from estampes.visual.plotspec import SpecLayout
 
 
-TMPL_INI_BASIC = """\
+TMPL_INI_BASIC = r"""\
 [DEFAULT]
 Spectroscopy = IR
 Level = H
@@ -48,7 +48,7 @@ Label = Curve 1
 Show = Yes
 """
 
-TMPL_INI_EXPL = """\
+TMPL_INI_EXPL = r"""\
 [DEFAULT]
 # Set here default parameters for all curves
 Spectroscopy = IR  # type of spectroscopy: IR, OPA, ECD, RS...
@@ -117,7 +117,7 @@ color = #D2A356        # Color of the spectrum
 
 
 def fscale(expr: str, var: str) -> tp.Callable[[float], float]:
-    """Returns a scaling function.
+    """Return a scaling function.
 
     Analyzes the mathematical expression in `expr` and returns a
       function compatible with `var`.
@@ -144,11 +144,11 @@ def fscale(expr: str, var: str) -> tp.Callable[[float], float]:
     except ValueError:
         return NameError('Wrong mathematical functions detected.')
 
-    return eval('lambda {}: {}'.format(var, _expr))
+    return eval(f'lambda {var}: {_expr}')  # pylint: disable=eval-used
 
 
 def build_opts(parser: argparse.ArgumentParser):
-    """Builds commandline options.
+    """Build commandline options.
 
     Builds commandline options inside input `parser`.
 
@@ -188,7 +188,7 @@ Ex. '3:Test' means that the label 'Test' is for the 3rd file (start at 1).
 
 
 def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
-    """Parses arguments.
+    """Parse arguments.
 
     Parses commandline arguments
 
@@ -211,7 +211,7 @@ def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
 def parse_subid(ident: str, ncols: int = 1
                 ) -> tp.Tuple[tp.Union[int, tp.Tuple[int, int]],
                               tp.Union[int, tp.Tuple[int, int]]]:
-    """Parses a subplot identifier.
+    """Parse a subplot identifier.
 
     Takes a subplot identifier and returns the corresponding row and
       column.
@@ -236,7 +236,7 @@ def parse_subid(ident: str, ncols: int = 1
         Unable to parse the subplot specification.
     """
     def split_coord(coord: str) -> tp.Union[int, tp.Tuple[int, int]]:
-        """Splits correctly a single coordinate."""
+        """Split correctly a single coordinate."""
         if not coord.strip():
             return 1
         else:
@@ -272,7 +272,7 @@ def parse_inifile(fname: str
                   ) -> tp.Tuple[tp.Dict[str, tp.Any],
                                 tp.List[tp.List[SpecLayout]],
                                 tp.Dict[str, tp.Any]]:
-    """Parses INI file.
+    """Parse INI file.
 
     Parses a INI configuration file.
 
@@ -401,14 +401,13 @@ def parse_inifile(fname: str
     }
     if 'layout' in secs:
         optsec = opts[secs['layout']]
-        for key in spckeys:
-            for alias in spckeys[key]:
-                if alias in optsec:
-                    if key == 'legpos' and optsec[alias] == 'auto':
-                        spcbase[key] = 'best'
-                    else:
-                        spcbase[key] = optsec[alias]
-                    break
+        for key, alias in spckeys.items():
+            if alias in optsec:
+                if key == 'legpos' and optsec[alias] == 'auto':
+                    spcbase[key] = 'best'
+                else:
+                    spcbase[key] = optsec[alias]
+                break
 
     for sec in secs:
         if sec.startswith('layout'):
@@ -425,13 +424,12 @@ def parse_inifile(fname: str
                 col -= 1
                 optsec = opts[secs[sec]]
                 val = {}
-                for key in spckeys:
-                    for alias in spckeys[key]:
-                        if alias in optsec:
-                            val[key] = optsec[alias]
-                            break
-                    else:
-                        val[key] = spcbase[key]
+                for key, alias in spckeys.items():
+                    if alias in optsec:
+                        val[key] = optsec[alias]
+                        break
+                else:
+                    val[key] = spcbase[key]
                 spcdat[row][col] = SpecLayout(**val)
     for row in range(nrows):
         for col in range(ncols):
@@ -598,16 +596,15 @@ def parse_inifile(fname: str
 
 
 def main() -> tp.NoReturn:
-    """Main function.
-    """
+    """Run the main program."""
     args = parse_args(sys.argv[1:])
     if args.gen_ini is not None or args.gen_longini is not None:
         if args.gen_longini:
-            with open(args.gen_longini, 'w') as fobj:
+            with open(args.gen_longini, 'w', encoding="utf-8") as fobj:
                 fobj.write(TMPL_INI_EXPL)
             sys.exit()
         if args.gen_ini:
-            with open(args.gen_ini, 'w') as fobj:
+            with open(args.gen_ini, 'w', encoding="utf-8") as fobj:
                 fobj.write(TMPL_INI_BASIC)
             sys.exit()
     if not args.inpfile and not args.optfile:
@@ -624,7 +621,7 @@ def main() -> tp.NoReturn:
         try:
             figdata, spcdata, curves = parse_inifile(args.optfile)
         except FileNotFoundError:
-            print('ERROR: Option file "{}" not found.'.format(args.optfile))
+            print(f'ERROR: Option file "{args.optfile}" not found.')
             sys.exit(1)
 
     nrows, ncols = figdata['subp']
@@ -650,7 +647,7 @@ def main() -> tp.NoReturn:
         xaxis = np.array(curves[key]['data'].xaxis)
         if curves[key]['xscale'] is not None:
             if curves[key]['xrelscale']:
-                shift = min(xaxis, key=lambda x: abs(x))
+                shift = min(xaxis, key=abs)
                 xaxis -= shift
             func = np.vectorize(curves[key]['xscale'])
             xaxis = func(xaxis)
@@ -665,14 +662,14 @@ def main() -> tp.NoReturn:
             min(abs(ymin), ymax)/max(abs(ymin), ymax) > .1)
         if curves[key]['yscale'] is not None:
             if curves[key]['yrelscale']:
-                shift = min(yaxis, key=lambda x: abs(x))
+                shift = min(yaxis, key=abs)
                 yaxis -= shift
             func = np.vectorize(curves[key]['yscale'])
             yaxis = func(yaxis)
             if curves[key]['yrelscale']:
                 yaxis += func(shift)
         if curves[key]['ynorm']:
-            yshift = min(yaxis, key=lambda x: abs(x))
+            yshift = min(yaxis, key=abs)
             yaxis -= yshift
             ymax = np.max(np.abs(yaxis))
             yaxis /= ymax
@@ -692,9 +689,9 @@ def main() -> tp.NoReturn:
         stick = curves[key]['data'].get_broadening('func') == 'stick'
         if 'outfile' in curves[key]:
             fmt = '{:12.5f} {:15.6e}\n'
-            with open(curves[key]['outfile'], 'w') as fobj:
-                for i in range(len(xaxis)):
-                    fobj.write(fmt.format(xaxis[i], yaxis[i]))
+            with open(curves[key]['outfile'], 'w', encoding="utf-8") as fobj:
+                for x, y in zip(xaxis, yaxis):
+                    fobj.write(fmt.format(x, y))
         data = {}
         if curves[key]['data'].label is not None:
             data['label'] = curves[key]['data'].label
@@ -704,7 +701,7 @@ def main() -> tp.NoReturn:
             # stick is done with vertical lines, always black by default
             # For this reason, we set a color.  Otherwise, let the normal
             #   plotting tools select automatically.
-            data['color'] = 'C{:d}'.format(idcurve)
+            data['color'] = f'C{idcurve:d}'
         if curves[key]['data'].linewidth is not None:
             data['linewidth'] = curves[key]['data'].linewidth
         if not stick and curves[key]['data'].linestyle is not None:

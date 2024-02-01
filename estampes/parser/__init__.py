@@ -7,10 +7,8 @@ Sub-modules
 -----------
 DataFile
     Main class to manipulate data.
-parse_qlabel
-    Parses a full quantity label into sub-items.
-build_qlabel
-    Complement `parse_qlabel`, doing the opposite.
+parse_qlabels
+    Parses a list of qlabels as QLabels objects or strings.
 reshape_dblock
     Reshapes data block.
 
@@ -22,4 +20,5 @@ Notes
   obviously depend on the file and the way it was generated.
 """
 
-from estampes.parser.base import parse_qlabel, build_qlabel, reshape_dblock, DataFile  # NOQA
+from estampes.parser.base import DataFile  # noqa: F401
+from estampes.parser.functions import reshape_dblock, parse_qlabels

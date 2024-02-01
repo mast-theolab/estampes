@@ -1,6 +1,6 @@
 = ESParser: A simple parser and proof of concept for ESTAMPES
 :email: julien.bloino@sns.it
-:revnumber: 0.4.5
+:revnumber: 0.5.0
 :revremark: Introduction
 :toc: left
 :toclevels: 1
@@ -9,9 +9,7 @@
 ////:source-highlighter: pygments  ////
 :pygments-style: native
 
-:Gaussian: pass:q[G[small]##AUSSIAN##]
-:Estampes: pass:q[E[small]##STAMPES##]
-:ESParser: pass:q[ESP[small]##ARSER##]
+:ESParser: pass:q[[.smallcaps]##ESParser##]
 
 == Preamble
 

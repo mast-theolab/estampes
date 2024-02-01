@@ -1,0 +1,156 @@
+The _quantity data_ object (_qdata_) is generated as an instance of the class [.codecls]##QData##, provided by "```estampes.base.qdata```".
+
+The _qdata_ object supports standard fields and can be extended with special fields.
+
+The standard fields are:
+_data_::
+     The main field, containing the stored data.
+     It should be used whenever possible, except in cases where it could make little sense (for instance simulation information with very different fields).
+     It can be of any type but should be a basic Python type to consent a broad use without the need for external modules.
+
+_dtype_::
+     The data type, as a *_string_*.
+     Can provide information on the type of data stored in _data_, for instance mass-weighted quantity, or simply the type (int, float, dict...), however only as string to facilitate processing.
+
+_shape_::
+     The shape of the data structure, as a *_string_*, *_integer_* or *_tuple_*.
+     It can be the number of elements for 1D sequence, the shape for multi-dimensional, or a special structure (e.g., "```LT```" for linear storage of lower-triangular matrix).
+
+_unit_::
+     The unit for the stored quantity in _data_, as a *_string_*.
+     Units should follow as much as possible conventional notations.
+
+Other fields can be added and extracted (see below the methods provided by the class).
+
+[IMPORTANT]
+====
+To limit the risk of data corruption or wrong handling, the content can be accessed but cannot be modified once set.
+Resetting the whole content of the _qdata_ structure is necessary, or a partial copy into a new object (see ``[.codecls]##QData##.[.codefun]##copy##()`` for details.)
+====
+
+== Interface
+
+=== Constructor
+
+The constructor of the [.codecls]##QData## class requires only the reference _qlabel_ used to specify the data to extract.
+
+[subs="macros,attributes,quotes"]
+----
+[.codevar]##qdata## = [.codecls]##QData##([.codevar]##qlabel##)
+----
+
+[.codevar]##qlabel## can be provided as a *_string_* or a [.codecls]##QLabel## instance.
+
+
+=== Attributes
+
+``[.codecls]##QData##.[.codekey]##data##``::
+     (*_any type_*, [.codelit]##None##)
+     Access to the main stored data.
+
+``[.codecls]##QData##.[.codekey]##dtype##``::
+     (*_string_*, [.codelit]##None##)
+     Type of stored data, as a Python type (given as string) or information about the type of quantity.
+
+``[.codecls]##QData##.[.codekey]##qlabel##``::
+     ([.codecls]##QLabel##)
+     _qlabel_ used to specify the quantity to extract.
+
+``[.codecls]##QData##.[.codekey]##shape##``::
+     (*_string_*, *_integer_*, *_tuple_* or [.codelit]##None##)
+     Shape of the data structure, number of elements stored linearly or intended shape for the data processing.
+
+``[.codecls]##QData##.[.codekey]##unit##``::
+     (*_string_*, [.codelit]##False##, [.codelit]##None##)
+     Unit of the stored data.
+
+NOTE: Non-standard fields cannot be accessed as attributes.
+
+
+=== Methods
+
+``[.codecls]##QData##.[.codefun]##add_field##([.codepar]##field##, *, [.codepar]##value##=[.codelit]##None##, [.codepar]##desc##=[.codelit]##None##)``::
+     Adds non-standard field "`[.codepar]##field##`" to the [.codecls]##QData## object.
+     If the field already exists, an [.codecls]##ArgumentError## exception is raised.
+     A description and a value (can be scalar or a collection) can be provided for the field.
+     The values should follow the conventions explained <<Conventions,below>>.
+
+``[.codecls]##QData##.[.codefun]##copy##(*, [.codepar]##only##=[.codelit]##None##, [.codepar]##exclude##=[.codelit]##None##)``::
+     Generates a new instance of [.codecls]##QData## containing all or part of the fields and content of the current _qdata_ structure.
+     It is possible to specify only a subset of standard and non-standard fields to copy ([.codepar]##only##) or instead specifically exclude a set of fields ([.codepar]##exclude##).
++
+[NOTE]
+====
+* Excluded non-standard fields are not copied into the new _qdata_ structure, including the field name.
+* [.codepar]##only## and [.codepar]##exclude## are mutually exclusive.
+     An [.codecls]##ArgumentError## exception is raised if both are provided.
+====
+
+``[.codecls]##QData##.[.codefun]##extra_fields##()``::
+     Returns a *_dictionary_* of all non-standard fields as keys and the associated data as values.
+
+``[.codecls]##QData##.[.codefun]##get##([.codepar]##field##)``::
+     Returns the content of field [.codepar]##field##.
++
+--
+NOTE: This method is the only way to access a specific non-standard field.
+
+--
+
+``[.codecls]##QData##.[.codefun]##list_fields##()``::
+     Lists all standard and non-standard fields in the _qdata_ structure, as a *_dictionary_* containing the field name as key and the description as value.
+
+``[.codecls]##QData##.[.codefun]##reset##()``::
+     Resets all standard fields and removes all non-standard fields.
+
+``[.codecls]##QData##.[.codefun]##set##(\*, [.codepar]##data##=[.codelit]##None##, [.codepar]##dtype##=[.codelit]##None##, [.codepar]##unit##=[.codelit]##None##, [.codepar]##shape##=[.codelit]##None##, **[.codevar]##fields##)``::
+    Sets specific field(s).
+    For the standard fields, the conventions described <<Conventions,below>> should be followed as much as possible.
++
+[CAUTION]
+====
+* A field can only be set if it has not been set beforehand.
+* Non-standard fields must be created before.
+     The method does not consent the creation of new field (see ``[.codecls]##QData##.[.codefun]##add_field##()``).
+====
+
+
+==[[Conventions]]Some conventions to generate a _qdata_ structure
+
+As much as possible, data should be returned in atomic units (except the mass, in atomic mass units), except where a different convention is commonly adopted.
+In practice, basic quantities provided by electronic structure calculations methods should be in a.u., higher level structure (e.g., dipole strengths, intensities, frequencies/wavenumbers), can be in more suitable formats.
+
+Some default keys:
+
+`data`::
+    For basic quantities, where the data are unique, the key `data` should be used to refer to the block of data.
+`unit`::
+    If not specified, the atomic units or a common unit in the field should be assumed (see below).
+    To avoid any misinterpretation, the units should be provided for any non-a.u. format.
+    If the quantity does not have a unit, the value `False` can be provided.
+    A value of `None` means that the unit is undefined, which can be used by developers to override (ex: CSV files will often have unknown units, or the units are difficult to parse in the file.) +
+    *General format*: "`[scale ]unit`", with
+    scale:::
+        scale factor, e.g., `10^-44`
+    unit:::
+        unit, without spaces, where dots (`.`) can be used as separators (multipliers, `/` for divisors).
+        * `^` and `**` are both accepted as exponentiation symbols (e.g., `dm\^3.mol^-1`).
+        * If unequivocal, they can be omitted (e.g., `dm3/mol`, `dm3.mol-1`).
++
+--
+NOTE: the _scale_ should be avoided in the unit, except where absolutely necessary, as it makes the parsing of unit and quantity more difficult.  It is better for the parsers to directly apply the scale to the values.
+
+--
+`dtype`::
+    Can be used to specify storage formats (typically Fortran/C). +
+--
+NOTE: If the format is not obvious to parse, it is recommended to provide it in a less ambiguous format, for instance directly as a multi-dim array
+
+--
+`shape`::
+    Shapes should be the ones recommended below (either 1D or a chosen structure), but in some cases, different shapes may be preferred, and can be specified this way.
+
+
+== Data structures for some supported quantities
+
+include::dfmt_qdata_fields.adoc[leveloffset=+1]

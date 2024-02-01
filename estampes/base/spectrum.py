@@ -1,17 +1,13 @@
-"""Module providing basic tools to manipulate spectrum-related data
+"""Provide basic tools to manipulate spectrum-related data.
 
 A basic module providing the main class for manipulating spectral data.
-
-Attributes
-----------
-
 """
 
 from math import ceil
 import typing as tp
 
-from estampes import parser as ep
-from estampes.base import TypeColor
+from estampes.parser import DataFile
+from estampes.base import QLabel, QData, TypeColor
 from estampes.tools.spec import broaden, convert_y
 
 
@@ -28,59 +24,63 @@ VSPC2DATA = {
     'IR': {
         'name': 'Infrared',
         'unit': 'I:/M/cm',
-        'H': {'freq': ep.build_qlabel('vlevel', level='H'),
-              # 'int': ep.build_qlabel('dipstr', level='H'),
-              'int': ep.build_qlabel('intens', 'IR', level='H'),
-              'assign': ep.build_qlabel('vtrans', level='H')},
-        'A': {'freq': ep.build_qlabel('vlevel', level='A'),
-              # 'int': ep.build_qlabel('dipstr', level='A'),
-              'int': ep.build_qlabel('intens', 'IR', level='A'),
-              'assign': ep.build_qlabel('vtrans', level='A')},
+        'H': {'freq': QLabel(quantity='vlevel', level='H'),
+              # 'int': QLabel(quantity='dipstr', level='H'),
+              'int': QLabel(quantity='intens', descriptor='IR', level='H'),
+              'assign': QLabel(quantity='vtrans', level='H')},
+        'A': {'freq': QLabel(quantity='vlevel', level='A'),
+              # 'int': QLabel(quantity='dipstr', level='A'),
+              'int': QLabel(quantity='intens', descriptor='IR', level='A'),
+              'assign': QLabel(quantity='vtrans', level='A')},
         'DS': 'Dipole strength',
         'II': 'Integrated intensity'
     },
     'VCD': {
         'name': 'Vibrational Circular Dichroism',
         'unit': 'I:/M/cm',
-        'H': {'freq': ep.build_qlabel('vlevel', level='H'),
-              'int': ep.build_qlabel('rotstr', level='H'),
-              'assign': ep.build_qlabel('vtrans', level='H')},
-        'A': {'freq': ep.build_qlabel('vlevel', level='A'),
-              'int': ep.build_qlabel('rotstr', level='A'),
-              'assign': ep.build_qlabel('vtrans', level='A')},
+        'H': {'freq': QLabel(quantity='vlevel', level='H'),
+              'int': QLabel(quantity='rotstr', level='H'),
+              'assign': QLabel(quantity='vtrans', level='H')},
+        'A': {'freq': QLabel(quantity='vlevel', level='A'),
+              'int': QLabel(quantity='rotstr', level='A'),
+              'assign': QLabel(quantity='vtrans', level='A')},
         'RS': 'Rotatory strength'
     },
     'RS0': {
         'name': 'Raman Scattering',
         'unit': 'I:cm3/mol/sr',
-        'H': {'freq': ep.build_qlabel('vlevel', level='H'),
-              'int': ep.build_qlabel('ramact', 'static', level='H'),
-              'assign': ep.build_qlabel('vtrans', level='H')},
-        'A': {'freq': ep.build_qlabel('vlevel', level='A'),
-              'int': ep.build_qlabel('ramact', 'static', level='A'),
-              'assign': ep.build_qlabel('vtrans', level='A')},
+        'H': {'freq': QLabel(quantity='vlevel', level='H'),
+              'int': QLabel(quantity='ramact', descriptor='static', level='H'),
+              'assign': QLabel(quantity='vtrans', level='H')},
+        'A': {'freq': QLabel(quantity='vlevel', level='A'),
+              'int': QLabel(quantity='ramact', descriptor='static', level='A'),
+              'assign': QLabel(quantity='vtrans', level='A')},
         'RA': 'Raman activity'
     },
     'RS': {
         'name': 'Raman Scattering',
         'unit': 'I:cm3/mol/sr',
-        'H': {'freq': ep.build_qlabel('vlevel', level='H'),
-              'int': ep.build_qlabel('ramact', 'dynamic', level='H'),
-              'assign': ep.build_qlabel('vtrans', level='H')},
-        'A': {'freq': ep.build_qlabel('vlevel', level='A'),
-              'int': ep.build_qlabel('ramact', 'dynamic', level='A'),
-              'assign': ep.build_qlabel('vtrans', level='A')},
+        'H': {'freq': QLabel(quantity='vlevel', level='H'),
+              'int': QLabel(quantity='ramact', descriptor='dynamic',
+                            level='H'),
+              'assign': QLabel(quantity='vtrans', level='H')},
+        'A': {'freq': QLabel(quantity='vlevel', level='A'),
+              'int': QLabel(quantity='ramact', descriptor='dynamic',
+                            level='A'),
+              'assign': QLabel(quantity='vtrans', level='A')},
         'RA': 'Raman activity'
     },
     'ROA': {
         'name': 'Raman Optical Activity',
         'unit': 'I:cm3/mol/sr',
-        'H': {'freq': ep.build_qlabel('vlevel', level='H'),
-              'int': ep.build_qlabel('roaact', 'dynamic', level='H'),
-              'assign': ep.build_qlabel('vtrans', level='H')},
-        'A': {'freq': ep.build_qlabel('vlevel', level='A'),
-              'int': ep.build_qlabel('roaact', 'dynamic', level='A'),
-              'assign': ep.build_qlabel('vtrans', level='A')},
+        'H': {'freq': QLabel(quantity='vlevel', level='H'),
+              'int': QLabel(quantity='roaact', descriptor='dynamic',
+                            level='H'),
+              'assign': QLabel(quantity='vtrans', level='H')},
+        'A': {'freq': QLabel(quantity='vlevel', level='A'),
+              'int': QLabel(quantity='roaact', descriptor='dynamic',
+                            level='A'),
+              'assign': QLabel(quantity='vtrans', level='A')},
         'ROA': 'Raman optical activity'
     }
 }
@@ -89,54 +89,54 @@ ESPC2DATA = {
     'OPA': {
         'name': 'One-Photon Absorption',
         'unit': 'I:/M/cm',
-        'E': {'ener': ep.build_qlabel(1, state=(0, 'a')),
-              'int': ep.build_qlabel('dipstr', state=(0, 'a'))},
-        'H': {'spc': ep.build_qlabel('fcdat', qopt='Spec'),
-              'par': ep.build_qlabel('fcdat', qopt='SpcPar'),
-              'info': ep.build_qlabel('fcdat', qopt='SimInf')},
+        'E': {'ener': QLabel(quantity=1, refstate=(0, 'a')),
+              'int': QLabel(quantity='dipstr', refstate=(0, 'a'))},
+        'H': {'spc': QLabel(quantity='fcdat', descriptor='Spec'),
+              'par': QLabel(quantity='fcdat', descriptor='SpcPar'),
+              'info': QLabel(quantity='fcdat', descriptor='SimInf')},
         'DS': 'Dipole strength'
     },
     'OPE': {
         'name': 'One-Photon Emission',
         'unit': 'I:uJ/mol',
         'E': {},
-        'H': {'spc': ep.build_qlabel('fcdat', qopt='Spec'),
-              'par': ep.build_qlabel('fcdat', qopt='SpcPar'),
-              'info': ep.build_qlabel('fcdat', qopt='SimInf')}
+        'H': {'spc': QLabel(quantity='fcdat', descriptor='Spec'),
+              'par': QLabel(quantity='fcdat', descriptor='SpcPar'),
+              'info': QLabel(quantity='fcdat', descriptor='SimInf')}
     },
     'ECD': {
         'name': 'Electronic Circular Dichroism',
         'unit': 'I:/M/cm',
-        'E': {'ener': ep.build_qlabel(1, state=(0, 'a')),
-              'int': ep.build_qlabel('rotstr', state=(0, 'a'))},
-        'H': {'spc': ep.build_qlabel('fcdat', qopt='Spec'),
-              'par': ep.build_qlabel('fcdat', qopt='SpcPar'),
-              'info': ep.build_qlabel('fcdat', qopt='SimInf')},
+        'E': {'ener': QLabel(quantity=1, refstate=(0, 'a')),
+              'int': QLabel(quantity='rotstr', refstate=(0, 'a'))},
+        'H': {'spc': QLabel(quantity='fcdat', descriptor='Spec'),
+              'par': QLabel(quantity='fcdat', descriptor='SpcPar'),
+              'info': QLabel(quantity='fcdat', descriptor='SimInf')},
         'RS': 'Rotatory strength'
     },
     'CPL': {
         'name': 'Circularly Polarized Luminescence',
         'unit': 'I:uJ/mol',
         'E': {},
-        'H': {'spc': ep.build_qlabel('fcdat', qopt='Spec'),
-              'par': ep.build_qlabel('fcdat', qopt='SpcPar'),
-              'info': ep.build_qlabel('fcdat', qopt='SimInf')}
+        'H': {'spc': QLabel(quantity='fcdat', descriptor='Spec'),
+              'par': QLabel(quantity='fcdat', descriptor='SpcPar'),
+              'info': QLabel(quantity='fcdat', descriptor='SimInf')}
     },
     'RR': {
         'name': 'Resonance Raman',
         'unit': None,
         'E': {},
-        'H': {'spc': ep.build_qlabel('fcdat', qopt='Spec'),
-              'par': ep.build_qlabel('fcdat', qopt='SpcPar'),
-              'info': ep.build_qlabel('fcdat', qopt='SimInf')}
+        'H': {'spc': QLabel(quantity='fcdat', descriptor='Spec'),
+              'par': QLabel(quantity='fcdat', descriptor='SpcPar'),
+              'info': QLabel(quantity='fcdat', descriptor='SimInf')}
     },
     'RROA': {
         'name': 'Resonance Raman Optical Activity',
         'unit': None,
         'E': {},
-        'H': {'spc': ep.build_qlabel('fcdat', qopt='Spec'),
-              'par': ep.build_qlabel('fcdat', qopt='SpcPar'),
-              'info': ep.build_qlabel('fcdat', qopt='SimInf')}
+        'H': {'spc': QLabel(quantity='fcdat', descriptor='Spec'),
+              'par': QLabel(quantity='fcdat', descriptor='SpcPar'),
+              'info': QLabel(quantity='fcdat', descriptor='SimInf')}
     },
 }
 
@@ -165,42 +165,15 @@ class Spectrum():
     :"RS0": Raman Scattering (static)
     :"RS": Raman Scattering (dynamic)
     :"ROA": Raman Optical Activity
-    
+
     Levels of theory:
-    
+
     :"E[le[ctronic]]": Pure electronic level (only electronic trans.)
     :"H[arm]": Harmonic approximation of nuclear vibrations
     :"A[nh[arm]]": Anharmonic representation of nuclear vibrations
 
     To avoid any ambiguity, spectroscopies and levels of theory **must**
       be provided.
-
-    Parameters
-    ----------
-    fname
-        Filename from which data are to be extracted.
-    specabbr
-        Spectroscopy name (abbreviated version).
-    level
-        Level of theory:
-        - `Anharm`, `Anh`, `A`: anharmonic
-        - `Harm, `H`: harmonic (including Franck-Condon)
-        - `Electronic`, `Ele`, `E`: pure electronic
-    ylabel
-        If multiple spectra may be present, label for the Y axis.
-        Ex: TD OP spectra w/o temperature, Raman scattering setups.
-    load_data
-        If True, load spectral data in memory
-    ftype
-        File type (sent to `ep.DataFile`).
-        If `ftype` is `CSV`, `specabbr` and `level` are ignored.
-    params
-        Spectroscopy-specific parameters:
-        
-        Raman/ROA
-
-            :"incfrq": incident frequency
-            :"setup": experimental setup (e.g., SCP(180))
 
     Raises
     ------
@@ -209,18 +182,50 @@ class Spectrum():
     IndexError
         Mismatch in normal modes
     """
-    def __init__(self, fname: tp.Union[str, ep.DataFile],
+
+    def __init__(self, fname: tp.Union[str, DataFile],
                  specabbr: str,
                  level: str,
                  ylabel: tp.Optional[str] = None,
                  load_data: bool = True,
                  ftype: tp.Optional[str] = None,
                  **params: tp.Dict[str, tp.Any]):
+        """Initialize Spectrum instance.
+
+        Initializes an instance of the class Spectrum.
+
+        Parameters
+        ----------
+        fname
+            Filename from which data are to be extracted.
+        specabbr
+            Spectroscopy name (abbreviated version).
+        level
+            Level of theory:
+            - `Anharm`, `Anh`, `A`: anharmonic
+            - `Harm, `H`: harmonic (including Franck-Condon)
+            - `Electronic`, `Ele`, `E`: pure electronic
+        ylabel
+            If multiple spectra may be present, label for the Y axis.
+            Ex: TD OP spectra w/o temperature, Raman scattering setups.
+        load_data
+            If True, load spectral data in memory
+        ftype
+            File type (sent to `DataFile`).
+            If `ftype` is `CSV`, `specabbr` and `level` are ignored.
+        params
+            Spectroscopy-specific parameters:
+
+            Raman/ROA
+
+                :"incfrq": incident frequency
+                :"setup": experimental setup (e.g., SCP(180))
+        """
         # Initialization internal parameters
-        if isinstance(fname, ep.DataFile):
+        if isinstance(fname, DataFile):
             self.__dfile = fname
         else:
-            self.__dfile = ep.DataFile(fname, ftype)
+            self.__dfile = DataFile(fname, ftype)
         self.__spec = specabbr.upper()
         _level = level.upper()
         if _level in ('H', 'HARM', 'HARMONIC'):
@@ -263,7 +268,7 @@ class Spectrum():
         self.__linewdt = None
 
     def load_data(self, ylabel: tp.Optional[str] = None):
-        """Loads data from data file.
+        """Load data from data file.
 
         Parameters
         ----------
@@ -276,6 +281,13 @@ class Spectrum():
         KeyError
             `ylabel` not found.
         """
+        def dobj_to_ydat(dobj: QData, ykey: str,
+                         yidx: tp.Optional[int] = None) -> tp.Any:
+            if yidx is not None:
+                return dobj.get(ykey)[yidx]
+            else:
+                return dobj.get(ykey)
+
         if self.__spec not in SPEC2DATA:
             raise KeyError('Unsupported spectroscopy: '+self.__spec)
         if self.__theory not in SPEC2DATA[self.__spec]:
@@ -285,75 +297,75 @@ class Spectrum():
             ylabel = self.__ylab
         if self.__dfile.version[0] == 'CSV':
             qkeys = {
-                'spc': ep.build_qlabel('anyspc', qopt='Spec'),
-                'par': ep.build_qlabel('anyspc', qopt='SpcPar')
+                'spc': QLabel(quantity='anyspc', descriptor='Spec'),
+                'par': QLabel(quantity='anyspc', descriptor='SpcPar')
             }
         else:
             qkeys = SPEC2DATA[self.__spec][self.__theory]
             self.__fullspec = SPEC2DATA[self.__spec]['name']
             if not qkeys:
                 raise NotImplementedError('Keywords not available')
-        data = self.__dfile.get_data(**qkeys)
+        dobjs = self.__dfile.get_data(**qkeys)
         if 'spc' in qkeys:
-            if isinstance(data['par']['x'], list):
-                # Post-processing if multiple blocks:
-                nblocks = len(data['par']['x'])
-                if len(data['spc']['x']) != nblocks:
-                    msg = 'Inconsistency between spectral ranges and ' +\
+            if isinstance(dobjs['par'].get('x'), list):
+                # Processing if multiple blocks:
+                # TODO: Add check that parameters and spectra are consistent
+                #       on Y as well
+                nblocks = len(dobjs['par'].get('x'))
+                if len(dobjs['spc'].get('x')) != nblocks:
+                    msg = 'Inconsistency between spectral ranges and ' \
                         + 'parameters.'
                     raise KeyError(msg)
                 # X axis should always be the same
-                data['spc']['x'] = data['spc']['x'][0]
-                data['par']['x'] = data['par']['x'][0]
-                # Y format
-                nidx = len([y for y in data['spc']
-                            if y.startswith('y')][0]) - 1
-                yfmt = 'y{{:0{:d}d}}'.format(nidx)
+                # TODO: Add proper check that X data are consistent.
+                self.__xaxis[0] = dobjs['spc'].get('x')[0]
+                self.__xlabel[0] = dobjs['par'].get('x')[0]
+                # For Y, generate key information to retrieve data
+                ykeys = (key for key in dobjs['spc'].extra_fields()
+                         if key.startswith('y'))
+                nidx = len(ykeys[0]) - 1
+                yfmt = f'y{{:0{nidx:d}d}}'
                 offset = 0
-                _tmpy = {}
-                _tmpax = {}
+                __yindexes = {}
                 for bloc in range(nblocks):
-                    ylabels = [item for
-                               item in data['par'].keys()
+                    ylabels = [item for item in ykeys
                                if (item[0] == 'y' and
-                                   len(data['par']) > bloc)]
+                                   len(dobjs['par'].get(item)) > bloc)]
                     for yax in ylabels:
                         i = int(yax[1:])
                         y = yfmt.format(i+offset)
-                        _tmpax[y] = data['par'][yax][bloc]
-                        _tmpy[y] = data['spc'][yax][bloc]
+                        __yindexes[y] = {'ykey': yax, 'yidx': bloc}
                     offset += len(ylabels)
-                for yax in _tmpax:
-                    data['spc'][yax] = _tmpy[yax]
-                    data['par'][yax] = _tmpax[yax]
-            self.__xaxis[0] = data['spc']['x']
-            self.__xlabel[0] = data['par']['x']
-            self.__xunit[0] = data['par']['unitx']
-            _yindexes = [y for y in data['spc'] if y.startswith('y')]
-            _yindexes.sort()
-            self.__ytags = {y: data['par'] for y in _yindexes}
+            else:
+                self.__xaxis[0] = dobjs['spc'].get('x')
+                self.__xlabel[0] = dobjs['par'].get('x')
+                __yindexes = {key: {'ykey': key}
+                              for key in dobjs['spc'].extra_fields()
+                              if key.startswith('y')}
+            self.__xunit[0] = dobjs['par']['unitx']
+            self.__ytags = {key: dobj_to_ydat(dobjs['par'], **val)
+                            for key, val in __yindexes.items()}
             if ylabel is None:
-                _ylab = _yindexes[0]
+                _ydat = __yindexes[__yindexes.keys()[0]]
             else:
                 try:
-                    _id = [y.lower() for y in _yindexes].index(ylabel.lower())
-                except ValueError:
-                    raise KeyError('Non-existent Y label')
-                _ylab = _yindexes[_id]
-            self.__yaxis[0] = data['spc'][_ylab]
-            self.__ylabel[0] = data['par'][_ylab]
-            self.__yunit[0] = data['par']['unity']
+                    _ydat = __yindexes[ylabel.lower()]
+                except KeyError as err:
+                    raise KeyError('Non-existent Y label') from err
+            self.__yaxis[0] = dobj_to_ydat(dobjs['spc'], **_ydat)
+            self.__ylabel[0] = dobj_to_ydat(dobjs['par'], **_ydat)
+            self.__yunit[0] = dobjs['par'].get('unity')
             self.__label = self.__yunit[0]
-            self.__broad[0]['func'] = data['par']['func']
-            self.__broad[0]['hwhm'] = data['par']['hwhm']
+            self.__broad[0]['func'] = dobjs['par'].get('func')
+            self.__broad[0]['hwhm'] = dobjs['par'].get('hwhm')
             self.__broad_ok = self.__broad[0]['func'] == 'stick'
             if 'info' in qkeys:
-                self.__info = data['info']
+                self.__info = dobjs['info'].extra_fields()
             else:
                 self.__info = None
         elif 'freq' in qkeys:
             modes = []
-            for key in data['freq']:
+            for key in dobjs['freq'].data:
                 if isinstance(key, int):
                     modes.append(key)
             modes.sort()
@@ -362,7 +374,7 @@ class Spectrum():
             if self.__spec in ('RS', 'ROA'):
                 incfrq = self.__params.get('incfrq')
                 if incfrq is None:
-                    for key in data['int'].keys():
+                    for key in dobjs['int'].data:
                         try:
                             _ = float(key)
                             incfrq = key
@@ -374,44 +386,44 @@ class Spectrum():
                     else:
                         self.__params['incfrq'] = incfrq
                 else:
-                    if incfrq not in data['int']:
-                        vals = [item for item in data['int'].keys()
+                    if incfrq not in dobjs['int'].dobjs:
+                        vals = [item for item in dobjs['int'].data
                                 if item.replace('.', '', 1).isdigit()]
                         fmt = '''No incident frequency matches the value {}
 Available: {}'''
                         raise KeyError(fmt.format(incfrq, ', '.join(vals)))
                 setup = self.__params.get('setup')
                 if setup is None:
-                    for key in data['int'][incfrq].keys():
+                    for key in dobjs['int'].data[incfrq].keys():
                         if key in ('SCP(180)', 'SCP(180)u'):
                             setup = key
                             break
                     if setup is None:
-                        setup = data['int'][incfrq].keys()[0]
+                        setup = dobjs['int'].data[incfrq].keys()[0]
                     self.__params['setup'] = setup
                 else:
-                    if setup not in data['int'][incfrq].keys():
-                        vals = data['int'][incfrq].keys()
+                    if setup not in dobjs['int'].data[incfrq].keys():
+                        vals = dobjs['int'].data[incfrq].keys()
                         fmt = '''Setup "{}" not found
 Available: {}'''
                         raise KeyError(fmt.format(setup, vals))
-                ydata = data['int'][incfrq][setup]
+                ydata = dobjs['int'].data[incfrq][setup]
             else:
-                ydata = data['int']
+                ydata = dobjs['int'].data
             for mode in modes:
                 try:
-                    if (isinstance(data['freq'][mode], float) and
+                    if (isinstance(dobjs['freq'].data[mode], float) and
                             isinstance(ydata[mode], float)):
-                        self.__xaxis[0].append(data['freq'][mode])
+                        self.__xaxis[0].append(dobjs['freq'].data[mode])
                         self.__yaxis[0].append(ydata[mode])
-                except KeyError:
+                except KeyError as err:
                     fmt = 'Inconsistency in the list of states between ' \
                         + 'energies and intensities.\nState {} was not ' \
                         + 'found in one of the lists.'
-                    raise IndexError(fmt.format(mode))
+                    raise IndexError(fmt.format(mode)) from err
             self.__xlabel[0] = 'Wavenumbers'
-            self.__xunit[0] = data['freq']['unit']
-            self.__yunit[0] = data['int']['unit']
+            self.__xunit[0] = dobjs['freq'].unit
+            self.__yunit[0] = dobjs['int'].unit
             self.__ylabel[0] = \
                 SPEC2DATA[self.__spec][self.__yunit[0].split(':')[0]]
             self.__label = self.__yunit[0]
@@ -421,12 +433,12 @@ Available: {}'''
         elif 'ener' in qkeys:
             self.__xaxis[0] = []
             self.__yaxis[0] = []
-            for i, ener in enumerate(data['ener']['data']):
+            for i, ener in enumerate(dobjs['ener'].data):
                 self.__xaxis[0].append(ener)
-                self.__yaxis[0].append(data['int']['data'][i])
+                self.__yaxis[0].append(dobjs['int'].data[i])
             self.__xlabel[0] = 'Energy'
-            self.__xunit[0] = data['ener']['unit']
-            self.__yunit[0] = data['int']['unit']
+            self.__xunit[0] = dobjs['ener'].unit
+            self.__yunit[0] = dobjs['int'].unit
             self.__ylabel[0] = \
                 SPEC2DATA[self.__spec][self.__yunit[0].split(':')[0]]
             self.__label = self.__yunit[0]
@@ -437,13 +449,13 @@ Available: {}'''
             raise NotImplementedError()
 
     def get_yaxes(self) -> tp.Dict[str, str]:
-        """Returns all available Y axes in data file."""
+        """Return all available Y axes in data file."""
         if self.__ytags is None:
             self.load_data()
         return self.__ytags
 
     def reset(self):
-        """Resets default axes to original axes.
+        """Reset default axes to original axes.
 
         Resets the pointers/aliases to the original data.
         Note that this is only possible if the data have not been
@@ -457,7 +469,7 @@ Available: {}'''
 
     def overwrite_axis(self, data: tp.Sequence[tp.Union[float, int]],
                        axis: str = 'x'):
-        """Overwrites one of the original axes.
+        """Overwrite one of the original axes.
 
         Note that this should only be used in special cases.
 
@@ -484,7 +496,7 @@ Available: {}'''
         self.reset()
 
     def get_xaxis(self, origin: bool = False) -> tp.List[float]:
-        """Shows X axis.
+        """Show the X axis.
 
         Parameter
         ---------
@@ -498,7 +510,7 @@ Available: {}'''
     xaxis = property(get_xaxis)
 
     def get_yaxis(self, origin: bool = False) -> tp.List[float]:
-        """Shows Y axis.
+        """Show the Y axis.
 
         Parameters
         ----------
@@ -519,7 +531,7 @@ Available: {}'''
     yaxis = property(get_yaxis)
 
     def get_xunit(self, origin: bool = False) -> str:
-        """Gets X unit.
+        """Get the X unit.
 
         Parameter
         ---------
@@ -532,7 +544,7 @@ Available: {}'''
     xunit = property(get_xunit)
 
     def get_yunit(self, origin: bool = False) -> str:
-        """Gets Y unit.
+        """Get the Y unit.
 
         Parameter
         ---------
@@ -546,7 +558,7 @@ Available: {}'''
 
     @property
     def label(self) -> str:
-        """Label for the spectrum."""
+        """Get or set the label for the spectrum."""
         return self.__label
 
     @label.setter
@@ -557,7 +569,7 @@ Available: {}'''
                        origin: bool = False
                        ) -> tp.Union[tp.Dict[str, tp.Union[str, float]], str,
                                      float]:
-        """Shows broadening data.
+        """Show the broadening data.
 
         Parameters
         ----------
@@ -599,7 +611,7 @@ Available: {}'''
                        xmin: tp.Optional[float] = None,
                        xmax: tp.Optional[float] = None,
                        origin: bool = False):
-        """Sets broadening parameters.
+        """Set the broadening parameters.
 
         Parameters
         ----------
@@ -695,7 +707,7 @@ Available: {}'''
 
     @property
     def hwhm(self) -> tp.Optional[float]:
-        """HWHM for the broadening."""
+        """Get or set the HWHM for the broadening."""
         return self.get_broadening(info='hwhm')
 
     @hwhm.setter
@@ -704,7 +716,7 @@ Available: {}'''
 
     @property
     def func(self) -> tp.Optional[str]:
-        """Gets or sets the broadening function."""
+        """Get or set the broadening function."""
         return self.get_broadening(info='func')
 
     @func.setter
@@ -714,7 +726,7 @@ Available: {}'''
     def set_display(self, color: tp.Optional[TypeColor] = None,
                     linestyle: tp.Optional[str] = None,
                     linewidth: tp.Optional[float] = None):
-        """Sets display parameters.
+        """Set the display parameters.
 
         Sets options related to display.
 
@@ -739,8 +751,8 @@ Available: {}'''
         if linewidth is not None:
             try:
                 self.__linewdt = float(linewidth)
-            except ValueError:
-                raise TypeError('Incorrect type for linewidth')
+            except ValueError as err:
+                raise TypeError('Incorrect type for linewidth') from err
 
     @property
     def linecolor(self) -> tp.Optional[TypeColor]:

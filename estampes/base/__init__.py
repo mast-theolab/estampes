@@ -60,9 +60,12 @@ QuantityError
 # flake8: noqa: F401
 
 from estampes.base.types import TypeAtCrd, TypeAtCrdM, TypeAtData, TypeAtLab, \
-    TypeAtLabM, TypeAtMas, TypeBonds, TypeBondsM, TypeColor, TypeQData, \
-    TypeDCrd, TypeDFChk, TypeDGLog, TypeDOrd, TypeQInfo, TypeQLab, TypeQLvl, \
+    TypeAtLabM, TypeAtMas, TypeBonds, TypeBondsM, TypeColor, \
+    TypeDCrd, TypeDFChk, TypeDGLog, TypeDOrd, TypeQLab, TypeQLvl, \
     TypeQOpt, TypeQTag, TypeRSta, ConstDict
 
 from estampes.base.errors import ArgumentError, ParseDataError, \
     ParseKeyError, ParsingError, QuantityError
+
+from estampes.base.qlabel import QLabel, TypeQInfo
+from estampes.base.qdata import QData, TypeQData

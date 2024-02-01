@@ -7,8 +7,8 @@ This module provides basic classes and methods to parse XYZ files.
 import os
 import typing as tp
 
-from estampes import parser as ep
-from estampes.base import ParseDataError, ParseKeyError, TypeQData
+from estampes.parser.functions import parse_qlabels
+from estampes.base import ParseDataError, ParseKeyError, TypeQData, QData
 from estampes.tools.atom import convert_labsymb
 from estampes.data.physics import PHYSFACT
 
@@ -25,16 +25,27 @@ __ang2au = 1.0 / PHYSFACT.bohr2ang
 # ==============
 
 class FileXYZ(object):
-    """Main class to handle XYZ files.
+    """Carry file operations on an XYZ file.
 
+    Main class to handle XYZ files.
     """
+
     def __init__(self, fname: str) -> None:
+        """Initialize XYZ IO file instance.
+
+        Initializes an instance of FileXYZ.
+
+        Parameters
+        ----------
+        fname
+            XYZ file name.
+        """
         self.filename = fname
         self.analyze_file()
 
     @property
     def filename(self) -> str:
-        """Filename associated to the XYZ object."""
+        """Return the filename associated to the XYZ object."""
         return self.__fname
 
     @filename.setter
@@ -56,21 +67,21 @@ class FileXYZ(object):
 
     @property
     def natoms(self) -> int:
-        """Number of atoms"""
+        """Return the number of atoms."""
         return self.__natoms
 
     @property
     def nstruct(self) -> int:
-        """Returns the number of structures stored in the XYZ file"""
+        """Return the number of structures stored in the XYZ file."""
         return self.__ngeoms
 
     def analyze_file(self):
-        """Analyzes XYZ file to get basic structural information.
+        """Analyze XYZ file to get basic structural information.
 
         Analyzes a XYZ file and reports the number of geometries stored
         and the number of atoms to easily parse the file.
         """
-        with open(self.__fname, 'r') as fobj:
+        with open(self.__fname, 'r', encoding="utf-8") as fobj:
             self.__ngeoms = 1
             line = fobj.readline()
             try:
@@ -111,7 +122,9 @@ class FileXYZ(object):
     def read_data(self, *to_find: tp.Sequence[str],
                   geom: tp.Optional[int] = 1,
                   raise_error: bool = True) -> tp.Dict[str, tp.Any]:
-        """Extracts data corresponding to the keys to find.
+        """Extract data corresponding to the keys to find.
+
+        Extracts data based on keywords.
 
         Parameters
         ----------
@@ -141,12 +154,12 @@ class FileXYZ(object):
             raise ParseKeyError(rest[0])
         if {'title', 'atoms', 'atcrd'} & ls_keys:
             if geom_ > 0 or 'atcrd' not in ls_keys:
-                with open(self.__fname, 'r') as fobj:
+                with open(self.__fname, 'r', encoding="utf-8") as fobj:
                     for _ in range((geom_-1)*(self.__natoms+2)):
                         _ = fobj.readline()
                     datlist = parse_xyz(fobj, to_find)
             else:
-                with open(self.__fname, 'r') as fobj:
+                with open(self.__fname, 'r', encoding="utf-8") as fobj:
                     datlist = parse_xyz(fobj, to_find)
                     datlist['atcrd'] = [datlist['atcrd']]
                     i = 1
@@ -165,7 +178,7 @@ def parse_xyz(fobj: tp.IO,
               what: tp.Sequence[str],
               blank_ok: bool = True
               ) -> tp.Optional[tp.Dict[str, tp.Any]]:
-    """Parses a XYZ configuration.
+    """Parse a XYZ configuration.
 
     Parses an xyz configuration, assuming the first line to read is the
     number of atoms.
@@ -251,7 +264,7 @@ def get_data(dfobj: FileXYZ,
              *qlabels: str,
              error_noqty: bool = True,
              **keys4qlab) -> TypeQData:
-    """Gets data from a XYZ file for each quantity label.
+    """Get data from a XYZ file for each quantity label.
 
     Reads one or more full quantity labels from `qlabels` and returns
     the corresponding data.
@@ -292,36 +305,24 @@ def get_data(dfobj: FileXYZ,
     # Build Keyword List
     # ------------------
     # Build full list of qlabels
-    full_qlabs = []
-    qlab2key = {}
-    for qlabel in qlabels:
-        if qlabel not in full_qlabs:
-            full_qlabs.append(qlabel)
-        qlab2key[qlabel] = qlabel
-    for key, qlabel in keys4qlab.items():
-        if qlabel not in full_qlabs:
-            full_qlabs.append(qlabel)
-        qlab2key[qlabel] = key
+    qty_dict, dupl_keys = parse_qlabels(qlabels, keys4qlab)
     # List of keywords
     keydata = {}
-    qty_dict = {}
     geom = None
-    for qlabel in full_qlabs:
+    for qkey, qlabel in qty_dict.items():
         # Label parsing
         # ^^^^^^^^^^^^^
-        qty_dict[qlabel] = ep.parse_qlabel(qlabel)
-        qlab = qty_dict[qlabel][0]
-        if qlab in ('atoms', 'atnum', 'atlab'):
-            keydata[qlabel] = 'atoms'
+        if qlabel.label in ('atoms', 'atnum', 'atlab'):
+            keydata[qkey] = 'atoms'
         else:
-            if qlab == 2:
-                keydata[qlabel] = 'atcrd'
+            if qlabel.label == 2:
+                keydata[qkey] = 'atcrd'
             else:
-                keydata[qlabel] = qlab
-            if qlab in ('atcrd', 2, 1):
-                if qty_dict[qlabel][1] == 'last':
+                keydata[qkey] = qlabel.label
+            if qlabel.label in ('atcrd', 2, 1):
+                if qlabel.kind == 'last':
                     geom = -1
-                elif qty_dict[qlabel][1] == 'first':
+                elif qlabel.kind == 'first':
                     geom = 1
                 else:
                     geom = 0
@@ -332,21 +333,24 @@ def get_data(dfobj: FileXYZ,
     # Use of set to remove redundant keywords
     datablocks = dfobj.read_data(*set(keydata.values()), geom=geom,
                                  raise_error=error_noqty)
-    data = {}
-    for qlabel in full_qlabs:
-        key = keydata[qlabel]
-        qkey = qlab2key[qlabel]
-        data[qkey] = {'qlabel': qlabel}
-        qlab = qty_dict[qlabel][0]
-        if qlab in ('atnum', 'atlab'):
-            data[qkey]['data'] = convert_labsymb(qlab == 'atlab',
-                                                 *datablocks[key])
+    dobjs = {}
+    for qkey, qlabel in qty_dict.items():
+        key = keydata[qkey]
+        dobjs[qkey] = QData(qlabel)
+        if qlabel.label in ('atnum', 'atlab'):
+            dobjs[qkey].set(
+                data=convert_labsymb(qlabel.label == 'atlab',
+                                     *datablocks[key]))
         else:
-            if qlab in ('atcrd', 2):
+            if qlabel.label in ('atcrd', 2):
                 if geom == 0:
                     num = dfobj.nstruct
                 else:
                     num = 1
-                data[qkey]['ngeoms'] = num
-            data[qkey]['data'] = datablocks[key]
-    return data
+                dobjs[qkey].add_field('ngeoms', value=num)
+            dobjs[qkey].set(data=datablocks[key])
+    # Handle possible duplicate keys
+    if dupl_keys:
+        for item, key in dupl_keys.items():
+            dobjs[item] = dobjs[key]
+    return dobjs

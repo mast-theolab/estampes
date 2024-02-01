@@ -1,243 +1,148 @@
-The structure of the _qlabel_ is as follows:
 
-[example]
-.structure
+While the API can handle some simple and unequivocal cases of labels, it is recommended to create an instance of [.codecls]##QLabel##, provided by ``estampes.base.qlabel``.
+The created instance (referred to in the following as _qlabel_, quantity label), provides a full characterization through its attributes.
+
+[IMPORTANT]
 ====
-`id|label`[:[`subopt`][:[`ord`][:[`coord`][:[`state(s)`][:[`level`]]]]]]
+The _qlabel_ instances are built with a protection mechanism.
+It is not possible to modify a field once it is set, developers must reset all _qlabel_ fields before setting.
+This design was intended to avoid a _qlabel_ being modified after data have been created, causing potential inconsistencies in some code logic (note however that the _qdata_ object contains a copy of the _qlabel_ used to generate the data).
 ====
 
-`id` or `label`::
-    quantity identifier (see below) or textual label
-`subopt`::
+
+== Interface
+
+=== Constructor
+
+The constructor of the [.codecls]##QLabel## class supports 2 specifications system:
+
+* Full label characterization, in the format:
++
+--
+[subs="macros,attributes,quotes"]
+----
+[.codevar]##id_label##+[:[+[.codevar]##subopt##+][:[+[.codevar]##ord##+][:[+[.codevar]##coord##+][:[+[.codevar]##state(s)##+][:[+[.codevar]##level##+]]]]]]+
+----
+
+[horizontal]
+[.codevar]##id_label##::
+    quantity identifier as an integer or a string (see below for some examples).
+[.codevar]##subopt##::
     sub-option (e.g., gauge, specific components)
-`ord`::
+[.codevar]##ord##::
     derivative order
-`coord`::
+[.codevar]##coord##::
     reference coordinates (derivatives)
-`state(s)`::
+[.codevar]##state(s)##::
     reference electronic state or transition (as `i->j`)
-`level`::
-    Theoretical level: vibrational (harmonic/anharmonic), electronic...
+[.codevar]##level##::
+    theoretical level: vibrational (harmonic/anharmonic), electronic...
+--
+* Through specific fields, that must be specified:
+
+[horizontal]
+[.codepar]##quantity##::
+    quantity identifier (see below) or textual label
+[.codepar]##descriptor##::
+    sub-option (e.g., gauge, specific components)
+[.codepar]##derorder##::
+    derivative order
+[.codepar]##dercoord##::
+    reference coordinates (derivatives)
+[.codepar]##refstate##::
+    reference electronic state or transition (as [.codestr]##"i->j"##)
+[.codepar]##level##::
+    theoretical level: vibrational (harmonic/anharmonic), electronic...
+
+=== Attributes
+
+``[.codecls]##QLabel##.[.codekey]##qlabel##``::
+    (*_integer_* or *_string_*)
+    The main quantity label or identifier, which specifies what quantity is of interest.
+
+``[.codecls]##QLabel##.[.codekey]##kind##``::
+    (*_string_*, can be [.codelit]##None##)
+    A sub-category, to refine the quantity specification.
+    Possible values can be:
+
+    * a variant specification if the quantity can be computed in different ways, for instance velocity or length gauge.
+    * a sub-field if ``[.codecls]##QLabel##.[.codekey]##qlabel##`` refers to a generic category, for instance Franck--Condon calculations.
+    * a specification if the quantity can be computed for different conditions, such as the incident frequency for Raman spectroscopy.
+
+``[.codecls]##QLabel##.[.codekey]##derord##``::
+    (*_integer_* or [.codelit]##None##)
+    Derivative order, where relevant.
+    `0` specifies the reference quantity.
+
+``[.codecls]##QLabel##.[.codekey]##dercrd##``::
+    (*_string_* or [.codelit]##None##)
+    Reference coordinates system used for the derivation, where relevant.
+
+``[.codecls]##QLabel##.[.codekey]##refstate##``::
+    (*_string_*, *_tuple_*, *_integer_*, [.codelit]##None##)
+    The reference electronic state for which the property/quantity was computed, where relevant. +
+    Possible values are:
++
+[horizontal]
+    *_integer_*:::
+        Electronic state number.
+        `0` for ground state, `>0` for excited states.
+        Mostly relevant to choose the correct electronic state in methods considering several electronic states.
+        Can also be used to exclude data if not done for the state of interest.
+    [.codestr]##"c"##:::
+        (current) Wildcard to indicate the reference state of the calculation used to generate the data file to be parsed.
+        No checks are applied.
+    [.codestr]##"a"##:::
+        (all) Extract data for all states present in the data file
+    *_tuple_*:::
+        Electronic transition moment, as ``(initial, final)``.
+        The _final_ state can be [.codestr]##"a"## to specify all excited electronic states.
+        Transition from the ground state to the first excited electronic state would be noted "```(0, 1)```"
+
+``[.codecls]##QLabel##.[.codekey]##level##``::
+    (*_string_*, can be [.codelit]##None##)
+    Level of calculation used to compute the quantity.
+    Possible values are:
++
+[horizontal]
+    [.codestr]##"E"##:::
+        Electronic structure calculation, the quantity is purely electronic.
+    [.codestr]##"VE"##:::
+        Vibrationally-resolved electronic structure calculation, the quantity contains vibrational information computed on top of the electronic solution.
+    [.codestr]##"H"##:::
+        Vibrational level, within the harmonic-oscillator approximation.
+    [.codestr]##"A"##:::
+        Vibrational level, including anharmonic effects.
 
 
-==== Quantity specification
 
-This is the basic identifier of the quantity
 
-[cols="^20m,<80",option=header,frame=topbot]
-|====
-| Value | Description
+=== Methods
 
-2+^e| Special labels
-| Title   | Title of the job
-| NAtoms  | Number of atoms
-| NVib    | Number of vibrations
-| AtMas   | Atomic masses
-| AtNum   | Atomic numbers
-| AtLab   | Atomic labels
-| MolSym  | Symmetry
-| Charge  | Charge
-| Multip  | Multiplicity
-| AtCrd   | Coordinates
-| Atoms   | Atoms (can be numbers or labels)
-| HessVec | Hessian eigenvectors
-| HessDat | Hessian-related data: frequencies, red. mass...
-| SWOpt   | Software runtime options
-| SWVer   | Software version
-| VTrans  | Vibrational transitions
-| VLevel  | Vibrational energy levels
-| DipStr  | Dipole strength
-| RotStr  | Rotatory strength
-| RamAct  | Raman activity
-| ROAAct  | ROA activity
-| AnySpc  | Label for spectral data with limited information (ex: CSV)
-| Intens  | Intensity-related quantities
-| VPTDat  | VPT-related data
-| FCDat   | Franck-Condon data
-2+^e| Basic properties
-|     1 | Energy
-|     2 | Coordinates
-2+^e| Special electronic properties
-|    50 | Non-adiabatic couplings
-2+^e| Special quantities
-|    91 | Coriolis Couplings
-|    92 | Rotation Matrix
-|    93 | Transition vector
-2+^e| Static electric/mixed-field properties
-|   101 | Electric dipole
-|   102 | Magnetic dipole
-|   103 | Polarizability tensor
-|   104 | Optical rotations
-|   105 | Dipole-quadrupole polarizability
-|   106 | Hyperpolarizability
-|   107 | Quadrupole
-2+^e| Magnetic-field properties
-|   201 | Magnetic susceptibility
-|   202 | Fake rotational g-Tensor
-|   203 | NMR shielding tensors
-|   204 | Spin-rotation tensors
-|   205 | Anisotropic hyperfine tensors
-|   206 | Isotropic (Fermi) terms
-|   207 | ESR g-tensor
-|   208 | Nuclear quadrupole tensors
-|   209 | Isotropic Spin-Spin coupling
-2+^e| Dynamic (frequency-dependent) properties
-|   301 | Polarizability Alpha(-w,w)
-|   302 | Optical rotation
-|   303 | Polarizability Alpha(w,0)
-|   304 | Dipole-quadrupole polarizability
-|   305 | Hyperpolarizability Beta(-w,w,0)
-|   306 | Hyperpolarizability Beta(w,w,-2w)
-2+^e| Vibrational transition moments of properties
-|  1301 | Electric dipole-electric dipole tensor
-|  1302 | Electric dipole-magnetic dipole tensor (induced electric dipole)
-|  1303 | Electric dipole-magnetic dipole tensor (induced magnetic dipole)
-|  1304 | Electric dipole-electric quadrupole tensor (induced electric dipole)
-|  1305 | Electric dipole-electric quadrupole tensor (induced quadrupole)
+``[.codecls]##QLabel##.[.codefun]##build_qstring##()``::
+    Returns the _qlabel_ as a *_string_*, using the old format.
+    This is primarily used for backward-compatibility controls or to generate user-readable field names for arrays of _quantity data_ objects.
 
-|====
+``[.codecls]##QLabel##.[.codefun]##reset##()``::
+    Reset fields of _qlabel_.
 
-[NOTE]
+``[.codecls]##QLabel##.[.codefun]##set##(*, [.codepar]##quantity##=[.codelit]##None##, [.codepar]##descriptor##=[.codelit]##None##, [.codepar]##derorder##=[.codelit]##None##, [.codepar]##dercoord##=[.codelit]##None##, [.codepar]##refstate##=[.codelit]##None##, [.codepar]##level##=[.codelit]##None##)``::
+    Sets specific field(s).
++
+--
+[CAUTION]
 ====
-* `1xxx` stores vibrational transition moments of properties.  Ex: `13xx` stores the vibrational transition moments of frequency-dependent properties.
+The fields can only be set if they are unset ([.codelit]##None##).
+Otherwise, the _qlabel_ can be first reinitialized.
 ====
+--
 
 
-==== Quantity-related option specification
+== List of supported field values
 
-A label-specific option.
+The class is built to support in theory any quantity.
+Support for some types of quantity have already been planned and formalized.
 
-[cols="^10,^10,^10,<70",option=header,frame=topbot,grid=rows]
-|====
-| Label | Option | Aliases | Description
+They are listed below:
 
-.^4+| `AtCrd` | `last` | | Only last geometry if multiple present.
-| `first` <| | Only the first geometry if multiple present.
-| `all`   <| | All geometries should be extracted.
-| `scan`  <| | Geometries relative to a scan procedure
-
-.^2+| `101` | `len` | | Use length gauge if available (default).
-| `vel` <| | Use velocity gauge if available.
-
-.^2+| `DipStr` | `len` | | Use length gauge if available (default).
-| `vel` <| | Use velocity gauge if available.
-
-.^2+| `RotStr` | `len` | | Use length gauge if available.
-| `vel` <| | Use velocity gauge if available (default).
-
-.2+| `3xx` | `0` | | Data for all incident frequencies
-| _N_ <| | Data for _N_-th incident frequency
-
-.2+| `AnySpc` | `Spec` | | Spectrum/spectra
-| `SpcPar` <| | Spectrum parameters
-
-.1+| `Intens` | `IR` | | Infrared intensity (normally, integrated intensity)
-
-.19+| `FCDat` | `SimInf` | | Simulation information/parameters
-| `JMat`   <| | Duschinsky matrix
-| `JMatF`  <| | Duschinsky matrix (full dimension if red-dim requested)
-| `KVec`   <| | Shift vector
-| `SRAMat` <| | Sharp and Rosenstock A matrix
-| `SRBVec` <| | Sharp and Rosenstock B vector
-| `SRCMat` <| | Sharp and Rosenstock C matrix
-| `SRDVec` <| | Sharp and Rosenstock D vector
-| `SREMat` <| | Sharp and Rosenstock E matrix
-| `GeomIS` <| | Initial-state geometry
-| `GeomFS` <| | Final-state geometry
-| `GeomMS` <| | Intermediate geometry
-| `ExGeom` <| | Extrapolated geometry
-| `Spec`   <| | Spectrum/spectra
-| `SpcPar` <| | Spectrum parameters (legend and broadening)
-| `Conv`   <| | Convergence Data
-| `Assign` <| | Assignment data
-| `E(0-0)` <| | Energy difference between vibrational ground states
-| `RedDim` <| | Reduced-dimensionality equivalency tables
-
-.3+| `VPTDat` | `XMat` | | Anharmonic stem:[bb{chi}] matrix
-| `GMat` <| | Variational correction matrix (for _Generalized_...)
-| `CICoef` <| | CI coefficient from the variational correction in GVPT2.
-
-.3+| `VLevel` | None | | Read vibrational energies from standard vibrational structure
-| `SOS` <| | Read from a vibronic sum over states-like structure (e.g., vRR)
-| `RR` <| | Same as `SOS` but with frequency-dependency parameter
-
-.3+| `VTrans` | None | | Read vibrational transitions data from standard vibrational structure
-| `SOS` <| | Read from a vibronic sum over states-like structure (e.g., vRR)
-| `RR` <| | Same as `SOS` but with frequency-dependency parameter
-
-.2+| `HessDat` | `freq` | `frq`, `w`, `eval`, `eigval` | Read the frequencies deriving from the eigenvalues of the Hessian matrix
-| `redmas` <| `rmas`, `redmass`, `u` | Read the reduced masses associated to the vibrations
-|====
-
-
-==== Derivative orders specifications
-
-An integer, specifying the derivative order.
-
-[cols="^20m,<80",option=header,frame=topbot]
-|====
-
-| Value | Description
-
-|  None | Default (`0`)
-|   `0` | Reference value (e.g., equilibrium value)
-|   `1` | First derivative of the quantity
-|   `2` | Second derivative of the quantity
-|   `3` | Third derivative of the quantity
-|   `4` | Fourth derivative of the quantity
-
-|====
-
-
-==== Derivative coordinate specification
-
-The possible coordinates are:
-
-[cols="^20m,<80",option=header,frame=topbot]
-|====
-
-| Value | Description
-
-|  None | Default (`X`)
-|  `X`  | Derivatives with respect to Cartesian coordinates
-|  `Q`  | Derivatives with respect to normal coordinates
-|  `I`  | Derivatives with respect to internal coordinates
-|  `QX` | Derivatives in ixed normal-Cartesian coordinates
-
-|====
-
-==== Electronic state or transition specification
-
-Sets the electronic state(s).
-It can be either a single "`state`" value (integer or string) or 2 "`state`" values separated by `->` for an electronic transition moment
-
-[cols="^20m,<80",option=header,frame=topbot]
-|====
-
-| Value | Description
-
-|  None | Default (current state)
-|   `c` | Current state (i.e. the root for excited electronic state)
-|   `a` | All available electronic states
-|   `0` | Ground electronic state
-|   _N_ | __N__th excited electronic state
-
-|====
-
-
-==== Level of theory
-
-The level of theory, expected as an uppercase string
-
-[cols="^20m,<80",option=header,frame=topbot]
-|====
-
-| Value | Description
-
-|  None | Not applicable
-|  `E`  | Electronic level
-|  `H`  | Vibrational level, harmonic approximation
-|  `A`  | Vibrational level, anharmonic description
-|  `VE` | Vibrationally-resolved electronic level
-
-|====
+include::dfmt_qlabel_fields.adoc[leveloffset=+1]

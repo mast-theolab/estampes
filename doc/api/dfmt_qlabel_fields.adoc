@@ -1,0 +1,283 @@
+== Quantity specification
+
+This is the basic identifier of the quantity
+
+[.desctab,cols="<20s,<80"]
+.Basic quantity label
+|====
+| Value | Description
+
+2+^e| *Special labels*
+| Title   | Title of the job
+| NAtoms  | Number of atoms
+| NVib    | Number of vibrations
+| AtMas   | Atomic masses
+| AtNum   | Atomic numbers
+| AtLab   | Atomic labels
+| MolSym  | Symmetry
+| Charge  | Charge
+| Multip  | Multiplicity
+| AtCrd   | Coordinates
+| Atoms   | Atoms (can be numbers or labels)
+| HessVec | Hessian eigenvectors
+| HessDat | Hessian-related data: frequencies, red. mass...
+| SWOpt   | Software runtime options
+| SWVer   | Software version
+| VTrans  | Vibrational transitions
+| VLevel  | Vibrational energy levels
+| DipStr  | Dipole strength
+| RotStr  | Rotatory strength
+| RamAct  | Raman activity
+| ROAAct  | ROA activity
+| AnySpc  | Label for spectral data with limited information (ex: CSV)
+| Intens  | Intensity-related quantities
+| VPTDat  | VPT-related data
+| FCDat   | Franck-Condon data
+2+^e| *Basic properties*
+|     1 | Energy
+|     2 | Coordinates
+2+^e| *Special electronic properties*
+|    50 | Non-adiabatic couplings
+2+^e| *Special quantities*
+|    91 | Coriolis Couplings
+|    92 | Rotation Matrix
+|    93 | Transition vector
+2+^e| *Static electric/mixed-field properties*
+|   101 | Electric dipole
+|   102 | Magnetic dipole
+|   103 | Polarizability tensor
+|   104 | Optical rotations
+|   105 | Dipole-quadrupole polarizability
+|   106 | Hyperpolarizability
+|   107 | Quadrupole
+2+^e| *Magnetic-field properties*
+|   201 | Magnetic susceptibility
+|   202 | Fake rotational g-Tensor
+|   203 | NMR shielding tensors
+|   204 | Spin-rotation tensors
+|   205 | Anisotropic hyperfine tensors
+|   206 | Isotropic (Fermi) terms
+|   207 | ESR g-tensor
+|   208 | Nuclear quadrupole tensors
+|   209 | Isotropic Spin-Spin coupling
+2+^e| *Dynamic (frequency-dependent) properties*
+|   301 | Polarizability Alpha(-w,w)
+|   302 | Optical rotation
+|   303 | Polarizability Alpha(w,0)
+|   304 | Dipole-quadrupole polarizability
+|   305 | Hyperpolarizability Beta(-w,w,0)
+|   306 | Hyperpolarizability Beta(w,w,-2w)
+2+^e| *Vibrational transition moments of properties*
+|  1301 | Electric dipole-electric dipole tensor
+|  1302 | Electric dipole-magnetic dipole tensor (induced electric dipole)
+|  1303 | Electric dipole-magnetic dipole tensor (induced magnetic dipole)
+|  1304 | Electric dipole-electric quadrupole tensor (induced electric dipole)
+|  1305 | Electric dipole-electric quadrupole tensor (induced quadrupole)
+
+|====
+
+[NOTE]
+====
+* `1xxx` stores vibrational transition moments of properties.  Ex: `13xx` stores the vibrational transition moments of frequency-dependent properties.
+====
+
+
+== Quantity-related option specification: the descriptor
+
+A label-specific option.
+
+[.desctab,cols="<1s,^1,<7"]
+.Descriptor for *_AtCrd_*
+|===
+| Keyword |  Aliases | Description
+
+| last    |          | Only last geometry if multiple present.
+| first   |          | Only the first geometry if multiple present.
+| all     |          | All geometries should be extracted.
+| scan    |          | Geometries relative to a scan procedure
+|===
+
+[.desctab,cols="<1s,^1,<7"]
+.Descriptor for *_101_*
+|===
+| Keyword |  Aliases | Description
+
+| len | | Use length gauge if available (default).
+| vel | | Use velocity gauge if available.
+|===
+
+[.desctab,cols="<1s,^1,<7"]
+.Descriptors for *_DipStr_*
+|===
+| Keyword |  Aliases | Description
+
+| len | | Use length gauge if available (default).
+| vel | | Use velocity gauge if available.
+|===
+
+[.desctab,cols="<1s,^1,<7"]
+.Descriptors for *_RotStr_*
+|===
+| Keyword |  Aliases | Description
+
+| len | | Use length gauge if available.
+| vel | | Use velocity gauge if available (default).
+|===
+
+[.desctab,cols="<1s,^1,<7"]
+.Descriptors for *_3xx_*
+|===
+| Keyword |  Aliases | Description
+
+| 0   | | Data for all incident frequencies
+| _N_ | | Data for _N_-th incident frequency
+|===
+
+[.desctab,cols="<1s,^1,<7"]
+.Descriptors for *_AnySpc_*
+|===
+| Keyword |  Aliases | Description
+
+| Spec   | | Spectrum/spectra
+| SpcPar | | Spectrum parameters
+|===
+
+[.desctab,cols="<1s,^1,<7"]
+.Descriptors for *_Intens_*
+|===
+| Keyword |  Aliases | Description
+
+| IR | | Infrared intensity (normally, integrated intensity)
+|===
+
+[.desctab,cols="<1s,^1,<7"]
+.Descriptors for *_FCDat_*
+|===
+| Keyword |  Aliases | Description
+
+| SimInf  | | Simulation information/parameters
+| JMat    | | Duschinsky matrix
+| JMatF   | | Duschinsky matrix (full dimension if red-dim requested)
+| KVec    | | Shift vector
+| SRAMat  | | Sharp and Rosenstock A matrix
+| SRBVec  | | Sharp and Rosenstock B vector
+| SRCMat  | | Sharp and Rosenstock C matrix
+| SRDVec  | | Sharp and Rosenstock D vector
+| SREMat  | | Sharp and Rosenstock E matrix
+| GeomIS  | | Initial-state geometry
+| GeomFS  | | Final-state geometry
+| GeomMS  | | Intermediate geometry
+| ExGeom  | | Extrapolated geometry
+| Spec    | | Spectrum/spectra
+| SpcPar  | | Spectrum parameters (legend and broadening)
+| Conv    | | Convergence Data
+| Assign  | | Assignment data
+| E(0-0)  | | Energy difference between vibrational ground states
+| RedDim  | | Reduced-dimensionality equivalency tables
+|===
+
+[.desctab,cols="<1s,^1,<7"]
+.Descriptors for *_VPTDat_*
+|===
+| Keyword |  Aliases | Description
+
+| XMat    | | Anharmonic stem:[bb{chi}] matrix
+| GMat    | | Variational correction matrix (for _Generalized_...)
+| CICoef  | | CI coefficient from the variational correction in GVPT2.
+|===
+
+[.desctab,cols="<1s,^1,<7"]
+.Descriptors for *_VLevel_*
+|===
+| Keyword |  Aliases | Description
+
+| [.codelit]##None## | | Read vibrational energies from standard vibrational structure
+| SOS | | Read from a vibronic sum over states-like structure (e.g., vRR)
+| RR  | | Same as "`*SOS*`" but with frequency-dependency parameter
+|===
+
+[.desctab,cols="<1s,^1,<7"]
+.Descriptors for *_VTrans_*
+|===
+| Keyword |  Aliases | Description
+
+| [.codelit]##None## | | Read vibrational transitions data from standard vibrational structure
+| SOS | | Read from a vibronic sum over states-like structure (e.g., vRR)
+| RR  | | Same as "`*SOS*`" but with frequency-dependency parameter
+|===
+
+[.desctab,cols="<1s,^1,<7"]
+.Descriptors for *_HessDat_*
+|===
+| Keyword |  Aliases | Description
+
+| freq | *frq*, *w*, *eval*, *eigval* | Read the frequencies deriving from the eigenvalues of the Hessian matrix
+| redmas | *rmas*, *redmass*, *u* | Read the reduced masses associated to the vibrations
+|===
+
+
+== Derivative orders specifications
+
+An integer, specifying the derivative order.
+
+[.desctab,cols="<20s,<80"]
+|====
+| Value | Description
+
+|  [.codelit]##None## | Default ("`*0*`")
+|   0 | Reference value (e.g., equilibrium value)
+|   1 | First derivative of the quantity
+|   2 | Second derivative of the quantity
+|   3 | Third derivative of the quantity
+|   4 | Fourth derivative of the quantity
+
+|====
+
+
+== Derivative coordinate specification
+
+The possible coordinates are:
+
+[.desctab,cols="<20s,<80"]
+|====
+| Value | Description
+
+|  [.codelit]##None## | Default ("`*X*`")
+|  X  | Derivatives with respect to Cartesian coordinates
+|  Q  | Derivatives with respect to normal coordinates
+|  I  | Derivatives with respect to internal coordinates
+|  QX | Derivatives in ixed normal-Cartesian coordinates
+
+|====
+
+== Electronic state or transition specification
+
+Sets the electronic state(s).
+It can be either a single "`state`" value (integer or string) or 2 "`state`" values separated by `->` for an electronic transition moment
+
+[.desctab,cols="<20s,<80"]
+|====
+| Value | Description
+
+|  [.codelit]##None## | Default (current state)
+|   c | Current state (i.e. the root for excited electronic state)
+|   a | All available electronic states
+|   0 | Ground electronic state
+|  _N_ | __N__th excited electronic state
+|====
+
+
+=== Level of theory
+
+The level of theory, expected as an uppercase string
+
+[.desctab,cols="<20s,<80"]
+|====
+| Value | Description
+
+|  [.codelit]##None## | Not applicable
+|  E  | Electronic level
+|  H  | Vibrational level, harmonic approximation
+|  A  | Vibrational level, anharmonic description
+|  VE | Vibrationally-resolved electronic level
+|====

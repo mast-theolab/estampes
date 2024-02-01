@@ -1,6 +1,6 @@
-"""
-    MIRAGE: Molecular Image Rendition for Analysis and Graphical
-                            Experiment
+"""Program MIRAGE.
+
+MIRAGE: Molecular Image Rendition for Analysis and Graphical Experiment
 
 A simple program to extract molecular information from a file and
 generate alternative input commands for rendering software to build
@@ -14,14 +14,15 @@ import typing as tp
 
 import numpy as np
 
-from estampes.parser import build_qlabel, DataFile
+from estampes.base import QLabel
+from estampes.parser import DataFile
 from estampes.data.physics import PHYSFACT
 from estampes.tools.mol import list_bonds
 from estampes.visual.molview import build_box, set_cam_zpos, write_pov
 
 
 def build_opts(parser: argparse.ArgumentParser):
-    """Builds commandline options.
+    """Build commandline options.
 
     Builds commandline options inside input `parser`.
 
@@ -32,7 +33,8 @@ def build_opts(parser: argparse.ArgumentParser):
     """
     parser.add_argument('infiles', help="File with coordinates", nargs='+')
     # msg = 'Display (Qt) instead of generating the Pov file.'
-    # parser.add_argument('-D', '--display', action='store_true', default=False,
+    # parser.add_argument('-D', '--display', action='store_true',
+    #                     default=False,
     #                     help=msg)
     msg = 'Merge multiple file in 1 rendition.  ' \
         + 'Each mol. has a different color'
@@ -41,7 +43,7 @@ def build_opts(parser: argparse.ArgumentParser):
 
 
 def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
-    """Parses arguments.
+    """Parse arguments.
 
     Parameters
     ----------
@@ -60,11 +62,12 @@ def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
 
 
 def main():
+    """Run the main program."""
     opts = parse_args(sys.argv[1:])
 
     dkeys = {
-        'atcrd': build_qlabel('AtCrd'),
-        'atnum': build_qlabel('AtNum')
+        'atcrd': QLabel(quantity='AtCrd'),
+        'atnum': QLabel(quantity='AtNum')
     }
 
     # if opts.display:
@@ -97,8 +100,8 @@ def main():
         for fname in opts.infiles:
             dfile = DataFile(fname)
             moldat = dfile.get_data(**dkeys)
-            atnum = moldat['atnum']['data']
-            atcrd = np.array(moldat['atcrd']['data'])*PHYSFACT.bohr2ang
+            atnum = moldat['atnum'].data
+            atcrd = np.array(moldat['atcrd'].data)*PHYSFACT.bohr2ang
 
             bonds = list_bonds(atnum, atcrd, 1.2)
             box_mol = build_box(atnum, atcrd, True)

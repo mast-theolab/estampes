@@ -34,9 +34,9 @@ except ModuleNotFoundError:
 has_molview = QtYes
 
 from estampes.base import QuantityError, TypeAtCrdM, TypeAtLabM, \
-    TypeBondsM, TypeColor
+    TypeBondsM, TypeColor, QLabel
 from estampes.base.spectrum import VSPC2DATA, Spectrum
-from estampes.parser import DataFile, build_qlabel
+from estampes.parser import DataFile
 from estampes.data.physics import PHYSFACT
 from estampes.tools.atom import convert_labsymb
 from estampes.tools.mol import list_bonds
@@ -47,29 +47,29 @@ from estampes.visual.plotspec import format_label, plot_spec_2D
 
 FCHT_QTIES = {
    'jmat': {
-        'JMat': build_qlabel('fcdat', qopt='JMat')
+        'JMat': QLabel(quantity='fcdat', descriptor='JMat')
     },
     'fulljmat': {
-        'JFul': build_qlabel('fcdat', qopt='JMatF')
+        'JFul': QLabel(quantity='fcdat', descriptor='JMatF')
     },
     'cmat': {
-        'CMat': build_qlabel('fcdat', qopt='CMat')
+        'CMat': QLabel(quantity='fcdat', descriptor='CMat')
     },
     'kvec': {
-        'KVec': build_qlabel('fcdat', qopt='KVec')
+        'KVec': QLabel(quantity='fcdat', descriptor='KVec')
     },
     'spec': {
-        'Spec': build_qlabel('fcdat', qopt='Spec'),
-        'Pars': build_qlabel('fcdat', qopt='SpcPar'),
+        'Spec': QLabel(quantity='fcdat', descriptor='Spec'),
+        'Pars': QLabel(quantity='fcdat', descriptor='SpcPar'),
     }
 }
 if has_molview:
     FCHT_QTIES['mols'] = {
-        'atnum': build_qlabel('atnum'),
-        'IniS': build_qlabel('fcdat', qopt='GeomIS'),
-        'FinS': build_qlabel('fcdat', qopt='GeomFS'),
-        'MidS': build_qlabel('fcdat', qopt='GeomMS'),
-        'ExtG': build_qlabel('fcdat', qopt='ExGeom')
+        'atnum': QLabel(quantity='atnum'),
+        'IniS': QLabel(quantity='fcdat', descriptor='GeomIS'),
+        'FinS': QLabel(quantity='fcdat', descriptor='GeomFS'),
+        'MidS': QLabel(quantity='fcdat', descriptor='GeomMS'),
+        'ExtG': QLabel(quantity='fcdat', descriptor='ExGeom')
     }
 
 
@@ -293,12 +293,12 @@ def mode_molview(dfile: DataFile):
         print('Missing PySide.  Cannot display.')
         sys.exit(1)
     dkeys = {
-        'atcrd': build_qlabel('atcrd', qopt='last'),
-        'atnum': build_qlabel('atnum')
+        'atcrd': QLabel(quantity='atcrd', descriptor='last'),
+        'atnum': QLabel(quantity='atnum')
     }
-    data = dfile.get_data(*dkeys.values())
-    atlab = convert_labsymb(True, *data[dkeys['atnum']]['data'])
-    atcrd = np.array(data[dkeys['atcrd']]['data'])*PHYSFACT.bohr2ang
+    dobjs = dfile.get_data(**dkeys)
+    atlab = convert_labsymb(True, *dobjs['atnum'].data)
+    atcrd = np.array(dobjs['atcrd'].data)*PHYSFACT.bohr2ang
     bonds = list_bonds(atlab, atcrd, 1.2)
 
     app = QtGui.QGuiApplication(sys.argv)
@@ -327,7 +327,7 @@ def mode_vibronic(dfile: DataFile,
     error_noqty = qty != 'mols'
     dkeys = FCHT_QTIES[qty]
     try:
-        data = dfile.get_data(*dkeys.values(), error_noqty=error_noqty)
+        dobjs = dfile.get_data(**dkeys.values(), error_noqty=error_noqty)
     except IndexError:
         print('Data not available in file.')
         sys.exit()
@@ -335,20 +335,20 @@ def mode_vibronic(dfile: DataFile,
         print('Quantity not supported. Someone was lazy...')
         sys.exit(1)
     if qty == 'mols':
-        if data[dkeys['IniS']] is None:
+        if dobjs['IniS'] is None:
             print('Data not available in file.')
             sys.exit()
         # Check with geometry to use for the final state
         # If extrapolated geometry available (VH, VG), uses it
         # If intermediate state defined, RR, so use it
         # Otherwise, use standard final state definition.
-        if data[dkeys['ExtG']] is not None:
+        if dobjs['ExtG'] is not None:
             fs = 'ExtG'
-        elif data[dkeys['MidS']] is not None:
+        elif dobjs['MidS'] is not None:
             fs = 'MidS'
         else:
             fs = 'FinS'
-        if not data[dkeys[fs]].get('data', False):
+        if not dobjs[fs].data:
             print('ERROR: Something went wrong, final-state geom. missing.')
             sys.exit()
         atlabs = []
@@ -357,8 +357,8 @@ def mode_vibronic(dfile: DataFile,
         molcols = []
         i = 0
         for sta in ('IniS', fs):
-            atlabs.append(convert_labsymb(True, *data[dkeys['atnum']]['data']))
-            atcrds.append(np.array(data[dkeys[sta]]['data'])*PHYSFACT.bohr2ang)
+            atlabs.append(convert_labsymb(True, *dobjs['atnum'].data))
+            atcrds.append(np.array(dobjs[sta].data)*PHYSFACT.bohr2ang)
             bonds.append(list_bonds(atlabs[-1], atcrds[-1], 1.2))
             molcols.append(MOLCOLS[i])
             i += 1
@@ -367,12 +367,13 @@ def mode_vibronic(dfile: DataFile,
         view.show()
         sys.exit(app.exec_())
     else:
-        if qty == 'jmat' and not data[dkeys['JMat']]['data']:
+        if qty == 'jmat' and not dobjs['JMat'].data:
             # First check that it is not a reduced-dimensionality case
             #   with only the full matrix printed and not the reddim one.
-            key = FCHT_QTIES['fulljmat']['JFul']
-            data2 = dfile.get_data(key, error_noqty=error_noqty)
-            if data2[key]['data']:
+            qkey = FCHT_QTIES['fulljmat']
+            key = qkey.keys()[0]
+            dobj2 = dfile.get_data(**qkey, error_noqty=error_noqty)
+            if dobj2[key].data:
                 print('''J is missing. Only the full matrix is available.
 If you want to display that one, use "fulljmat" instead.''')
             else:
@@ -382,29 +383,29 @@ If you want to display that one, use "fulljmat" instead.''')
             fig, subp = plt.subplots(1, 1, tight_layout=True)
             fig.set_size_inches(figsize)
             if qty == 'jmat':
-                mat = np.array(data[dkeys['JMat']]['data'])
+                mat = np.array(dobjs['JMat'].data)
                 plot = plot_jmat(mat, subp)
                 fig.colorbar(plot)
             elif qty == 'fulljmat':
-                mat = np.array(data[dkeys['JFul']]['data'])
+                mat = np.array(dobjs['JFul'].data)
                 plot = plot_jmat(mat, subp)
                 fig.colorbar(plot)
             elif qty == 'cmat':
-                mat = np.array(data[dkeys['CMat']]['data'])
+                mat = np.array(dobjs['CMat'].data)
                 norm, plot = plot_cmat(mat, subp)
-                print('Normalization factor: {:15.6e}'.format(norm))
+                print(f'Normalization factor: {norm:15.6e}')
                 fig.colorbar(plot)
             elif qty == 'kvec':
-                mat = np.array(data[dkeys['KVec']]['data'])
+                mat = np.array(dobjs['KVec'].data)
                 plot = plot_kvec(mat, subp)
             elif qty == 'spec':
-                if 'y1' in data[dkeys['Pars']]:
-                    leg = data[dkeys['Pars']]
+                if 'y1' in dobjs['Pars'].extra_fields():
+                    leg = dobjs['Pars'].extra_fields()
                 else:
                     leg = None
-                stick = data[dkeys['Pars']]['func'].lower() == 'stick'
-                _ = plot_spec_2D(data[dkeys['Spec']], subp, legends=leg,
-                                 is_stick=stick)
+                stick = dobjs['Pars'].get('func').lower() == 'stick'
+                _ = plot_spec_2D(dobjs['Spec'].extra_fields(), subp,
+                                 legends=leg, is_stick=stick)
             if kwargs['title'] is not None:
                 subp.set_title(kwargs['title'])
             plt.show()
@@ -419,7 +420,7 @@ def mode_vibspec(dfile: DataFile,
     Parameters
     ----------
     dfile
-        `ep.DataFile` object.
+        DataFile object.
     kwargs
         Keyword-type arguments.
     """
@@ -436,9 +437,9 @@ def mode_vibspec(dfile: DataFile,
         if ext in ('csv', 'xy', 'txt'):
             save_img = False
             fmt = '{:12.5f}, {:15.6e}\n'
-            with open(outfile, 'w') as fobj:
-                for i in range(len(data.xaxis)):
-                    fobj.write(fmt.format(data.xaxis[i], data.yaxis[i]))
+            with open(outfile, 'w', encoding='utf-8') as fobj:
+                for x, y in zip(data.xaxis, data.yaxis):
+                    fobj.write(fmt.format(x, y))
         else:
             save_img = True
     figsize = (10, 8)

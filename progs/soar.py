@@ -1,5 +1,6 @@
-"""
-    SOAR: Structural Overlap Analysis and Representation.
+"""Program: SOAR.
+
+SOAR: Structural Overlap Analysis and Representation.
 
 Simple program to analyze differences in structures.
 """
@@ -10,7 +11,8 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from estampes.parser import DataFile, build_qlabel
+from estampes.base import QLabel
+from estampes.parser import DataFile
 from estampes.tools.vib import build_dusch_J, build_dusch_K
 from estampes.visual.plotmat import plot_jmat, plot_kvec
 
@@ -19,7 +21,7 @@ PROGNAME = 'soar.py'
 
 def parse_args(args: tp.Optional[tp.Sequence[str]] = None
                ) -> argparse.Namespace:
-    """Defines and checks options given in arguments.
+    """Define and check options given in arguments.
 
     Defines available options in the program, parses a list of arguments
     given in input, and returns the results as a populated namespace.
@@ -51,17 +53,16 @@ def parse_args(args: tp.Optional[tp.Sequence[str]] = None
 
 
 def main():
-    """Main program function"""
-
+    """Run the main program."""
     dopts = parse_args()
 
     dfile_ref = DataFile(dopts.reffile)
     dfile_new = DataFile(dopts.newfile)
 
     keys = {
-        # 'E': build_qlabel(1),
-        'mass': build_qlabel('AtMas'),
-        'crd': build_qlabel('AtCrd')
+        # 'E': QLabel(quantity=1),
+        'mass': QLabel(quantity='AtMas'),
+        'crd': QLabel(quantity='AtCrd')
     }
     Lmat_ref, freq_ref = dfile_ref.get_hess_data()
     Lmat_new, freq_new = dfile_new.get_hess_data()
@@ -70,9 +71,9 @@ def main():
     data_new = dfile_new.get_data(**keys)
 
     jmat = build_dusch_J(Lmat_new, Lmat_ref)
-    kvec = build_dusch_K(Lmat_ref, np.array(data_ref['mass']['data']),
-                         np.array(data_new['crd']['data'])
-                         - np.array(data_ref['crd']['data']))
+    kvec = build_dusch_K(Lmat_ref, np.array(data_ref['mass'].data),
+                         np.array(data_new['crd'].data)
+                         - np.array(data_ref['crd'].data))
 
     figsize = (10, 8)
     fig, subp = plt.subplots(2, 1, tight_layout=True)

@@ -1,7 +1,7 @@
 = ESTAMPES: A prototypical program for spectral analysis
 :email: julien.bloino@sns.it
-:revnumber: 0.4.5
-:revremark: Introduction
+:revnumber: 0.5.0
+:revremark: Update with API changes on 0.5.0
 :toc: left
 :toclevels: 1
 :icons: font
@@ -32,15 +32,15 @@
 == Requirements
 
 * *Python*:
-    version 3.5 or later
+    version 3.8 or later
 * *NumPy*:
-    tested on version 1.15.
+    tested on version 1.24.
     Not necessary for basic _data parsing_ features.
 * *Matplotlib*:
-    tested on version 3.02.
+    tested on version 3.6.
     Only necessary for some _user interfaces_.
 * *Qt*:
-    tested on version 5.11.
+    tested on version 6.6.1.
     Only necessary for some _user interface_.
 
 
@@ -62,8 +62,19 @@ NOTE: Due to the inherent modularity of {Gaussian}, the support of {Gaussian} lo
 
 === Interfaces
 
-The parsing facilities are available in the *parser* module.
-The module provides a high-level class, *`DataFile`*, and 2 basic functions, `build_qlabel` and `parse_qlabel`, which ensure that the quantity identifier (_qlabel_) is correctly formed.
+The parsing facilities are available in the ``parser`` module.
+The module provides a high-level class, [.codecls]##DataFile##, while `base` provides the classes to interact with the parsing facilities, [.codecls]##QLabel## to generate a valid _qlabel_ item to specify the quantity to extract and [.codecls]##QData## to define the storage structure of extracted data.
+
+[TIP]
+====
+For most usages, developers will only need the [.codecls]##DataFile## and [.codecls]##QLabel## classes to manage data extraction.
+
+[source, subs='macros,attributes,quotes']
+----
+[.codekey]##from## estampes.base.qlabel [.codekey]##import## [.codecls]##QLabel##
+[.codekey]##from## estampes.parser [.codekey]##import## [.codecls]##DataFile##
+----
+====
 
 `DataFile`::
     A basic class acting as a wrapper to lower-level format-specific parsing classes.
