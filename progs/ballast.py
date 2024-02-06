@@ -401,13 +401,14 @@ def parse_inifile(fname: str
     }
     if 'layout' in secs:
         optsec = opts[secs['layout']]
-        for key, alias in spckeys.items():
-            if alias in optsec:
-                if key == 'legpos' and optsec[alias] == 'auto':
-                    spcbase[key] = 'best'
-                else:
-                    spcbase[key] = optsec[alias]
-                break
+        for key, aliases in spckeys.items():
+            for alias in aliases:
+                if alias in optsec:
+                    if key == 'legpos' and optsec[alias] == 'auto':
+                        spcbase[key] = 'best'
+                    else:
+                        spcbase[key] = optsec[alias]
+                    break
 
     for sec in secs:
         if sec.startswith('layout'):

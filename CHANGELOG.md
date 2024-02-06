@@ -25,6 +25,7 @@ Other blocks are:
 ## Unreleased
 
 ### Fixed
+- **BLS**: The program incorrectly probed for aliases to keywords while analyzing the INI file.
 - **API**: *QLabel* now properly supports **tuples** as reference state specification.
 - **API**: The default reference state for a _qlabel_ is back to 'c' to avoid issues with some routines in parsers that required a state to be set.
 

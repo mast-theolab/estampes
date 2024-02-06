@@ -93,7 +93,7 @@ def reshape_dblock(dblock: tp.Sequence[tp.Any],
     dshape
         Shape of the returned data block.
 
-        `0`/`-1` can be used for automatic definition of a dimension,
+        `0`/`-1` can be used for automatic definition of a dimension.
 
     Returns
     -------
