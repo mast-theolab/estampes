@@ -22,6 +22,13 @@ Other blocks are:
 - **DEV**: Development conventions/cleanup
 
 
+## Unreleased
+
+### Fixed
+- **API**: *QLabel* now properly supports **tuples** as reference state specification.
+- **API**: The default reference state for a _qlabel_ is back to 'c' to avoid issues with some routines in parsers that required a state to be set.
+
+
 ## [0.5.0] - 2024-02-01
 
 ### Compatibility issues

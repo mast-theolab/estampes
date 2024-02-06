@@ -548,10 +548,13 @@ class QLabel():
         key = r'(?P<start>[aAcC]|\d+)?' \
             + r'(.*(?<=->)(?P<end>(?(start)([aAcC]?|\d*)|([aAcC]|\d+)))|)\s*$'
         if refstate is not None:
-            res = re.match(key, refstate)
-            if res is None:
-                raise ArgumentError('Incorrect state specification')
-            data = res.groupdict()
+            if isinstance(refstate, tuple):
+                data = {'start': str(refstate[0]), 'end': str(refstate[1])}
+            else:
+                res = re.match(key, refstate)
+                if res is None:
+                    raise ArgumentError('Incorrect state specification')
+                data = res.groupdict()
             if data['start'] == '':
                 val1 = 'c'  # type: tp.Union[str, int]
             elif data['start'].lower() in ('c', 'a'):
@@ -582,7 +585,8 @@ class QLabel():
             if isinstance(self.__qtype, int):
                 self.__rsta = 'c'
             else:
-                self.__rsta = None
+                # Necessary for some internal tests, kept this way for now.
+                self.__rsta = 'c'
 
     def __set_level_info(self, level: tp.Optional[str]) -> None:
         """Set the reference level of theory.
