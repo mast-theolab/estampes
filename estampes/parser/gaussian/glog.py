@@ -1670,9 +1670,9 @@ def parse_data(qdict: TypeQInfo,
                             data[i] = float('inf')
             elif qlabel.level == 'A':
                 if qlabel.kind == 'IR':
-                    data.set(unit='II:km.mol-1')
+                    dobjs[qkey].set(unit='II:km.mol-1')
                 else:
-                    data.set(unit='II:N/A')
+                    dobjs[qkey].set(unit='II:N/A')
                 i = 0
                 for line in datablocks[iref]:
                     i += 1
@@ -2496,8 +2496,6 @@ def parse_data(qdict: TypeQInfo,
             elif qlabel.label == 'vtrans' and qlabel.level == 'A':
                 args['vtrans'] = qkey
         if 'vtrans' in args and 'vlevel' in args:
-            print(dobjs[args['vlevel']].data)
-            print('--- cut here ---')
             dobjs[args['vtrans']], dobjs[args['vlevel']] = \
                 __del_nonactive_modes(dobjs[args['vtrans']],
                                       dobjs[args['vlevel']])
