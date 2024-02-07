@@ -26,6 +26,7 @@ Other blocks are:
 
 ### Fixed
 - **BLS**: The program incorrectly probed for aliases to keywords while analyzing the INI file.
+- **API**: Inverted logic caused the default derivative order for properties to be `None` instead of `0` in QLabel instances.
 - **API**: Fixed unit definition when parsing IR intensity from Gaussian log file.
 - **API**: *QLabel* now properly supports **tuples** as reference state specification.
 - **API**: The default reference state for a _qlabel_ is back to 'c' to avoid issues with some routines in parsers that required a state to be set.

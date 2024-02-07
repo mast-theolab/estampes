@@ -502,9 +502,9 @@ class QLabel():
         # Derivative order
         if derorder is None:
             if isinstance(self.__qtype, int):
-                self.__dord = None
-            else:
                 self.__dord = 0
+            else:
+                self.__dord = None
         elif isinstance(derorder, int):
             self.__dord = derorder
         else:
