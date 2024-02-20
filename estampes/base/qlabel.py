@@ -548,7 +548,9 @@ class QLabel():
         key = r'(?P<start>[aAcC]|\d+)?' \
             + r'(.*(?<=->)(?P<end>(?(start)([aAcC]?|\d*)|([aAcC]|\d+)))|)\s*$'
         if refstate is not None:
-            if isinstance(refstate, tuple):
+            if isinstance(refstate, int):
+                data = {'start': str(refstate), 'end': None}
+            elif isinstance(refstate, tuple):
                 data = {'start': str(refstate[0]), 'end': str(refstate[1])}
             else:
                 res = re.match(key, refstate)
