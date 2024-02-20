@@ -550,8 +550,9 @@ def qlab_to_kword(qlab: QLabel) -> TypeQKwrd:
     else:
         if isinstance(qlab.rstate, tuple):
             keyword = 'ETran state values'
+            keywords = ['ETran scalars']
             if qlab.label == 1 and qlab.derord == 0:
-                keywords = ['ETran scalars', 'SCF Energy']
+                keywords.append('SCF Energy')
         else:
             if qlab.label == 1:
                 if qlab.derord == 0:
@@ -727,8 +728,7 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
         # 4. Number of header words (irrelevant in fchk)
         # 5. State of interest
         # 6. Number of deriv. (3*natoms + 3: electric field derivatives)
-        (nstates, ndata, _, _, iroot,
-            _) = [item for item in dblocks[key][:6]]
+        (nstates, ndata, _, _, iroot, _) = [item for item in dblocks[key][:6]]
     else:
         raise ParseKeyError('Missing scalars definition')
     # States Information
