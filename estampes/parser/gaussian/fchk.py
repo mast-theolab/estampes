@@ -899,12 +899,13 @@ def parse_data(qdict: TypeQInfo,
         return qlabel.label == 'nvib'
     dobjs = {}
     for qkey, qlabel in qdict.items():
+        msg_noqty = f'Missing quantity "{qlabel}" in file'
         kword = qlab2kword[qkey]
         # Basic Check: main property present
         # -----------
         if kword not in datablocks and not empty_cases_ok(qlabel):
             if raise_error:
-                raise ParseKeyError('Missing quantity in file')
+                raise ParseKeyError(msg_noqty)
             else:
                 dobjs[qkey] = None
                 continue
@@ -1004,7 +1005,7 @@ def parse_data(qdict: TypeQInfo,
                             offset = 8*ndat
                         dobjs[qkey].set(
                             data=datablocks[kword][offset:offset+ndat])
-                    elif qlabel.kind == 1:
+                    elif qlabel.label == 1:
                         if qlabel.derord == 0:
                             dobjs[qkey].set(data=datablocks[kword][0])
                         elif qlabel.derord in (1, 2):
