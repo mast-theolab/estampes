@@ -26,6 +26,7 @@ Other blocks are:
 
 ### Fixed
 - **BLS**: The program incorrectly probed for aliases to keywords while analyzing the INI file.
+- **API**: Fixed reading of transition energies from Gaussian fchk file.
 - **API**: Fixed support of electronic transition moments of properties.
 - **API**: Support of energy from Gaussian fchk files.
 - **API**: `parser.gaussian.fchk` did not return the right data structure.

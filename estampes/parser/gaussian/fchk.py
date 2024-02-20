@@ -741,18 +741,18 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
             initial, final = final, initial
     # Quantity-specific Treatment
     # ---------------------------
-    if qlab.label == 2:
+    if qlab.label == 1:
         key = 'SCF Energy'
         if key not in dblocks:
             raise ParseKeyError('Missing ground-state energy')
-        energy0 = dblocks[key]
+        energy0 = dblocks[key][0]
         if final == 'a':
-            data = [dblocks[key][i*ndata]-energy0 for i in range(nstates)]
+            data = [dblocks[kword][i*ndata]-energy0 for i in range(nstates)]
         else:
             fstate = final == 'c' and iroot or final
             if fstate > nstates:
                 raise IndexError('Missing electronic state')
-            data = float(dblocks[key][(fstate-1)*ndata]) - energy0
+            data = float(dblocks[kword][(fstate-1)*ndata]) - energy0
     elif qlab.label in (101, 102, 103):
         lqty = edpr.property_data(qlab.label).dim
         if qlab.label == 101:
@@ -987,8 +987,8 @@ def parse_data(qdict: TypeQInfo,
                 curr_sta = qlabel.rstate == 'c' or qlabel.rstate == iroot
                 # Only energy is currently computed for all states:
                 if qlabel.rstate == 'a' and qlabel.kind == 2:
-                    data = [float(datablocks[kword][i*ndata])
-                            for i in range(nstates)]
+                    dobjs[qkey].set(data=[float(datablocks[kword][i*ndata])
+                                          for i in range(nstates)])
                 # Data for current electronic states
                 elif curr_sta:
                     if qlabel.kind in ('dipstr', 'rotstr'):
