@@ -1036,7 +1036,7 @@ def parse_data(qdict: TypeQInfo,
                     else:
                         raise NotImplementedError()
 
-    return data
+    return dobjs
 
 
 def get_data(dfobj: FChkIO,
