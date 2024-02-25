@@ -26,6 +26,7 @@ Other blocks are:
 
 ### Added
 - **API**: Support of first to third derivatives of frequency-dependent properties with respect to normal coordinates from Gaussian log files.
+- **LIB**: Axes labels can now be changed in `plot_jmat`.
 
 ### Fixed
 - **BLS**: The program incorrectly probed for aliases to keywords while analyzing the INI file.

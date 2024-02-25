@@ -26,7 +26,8 @@ def plot_jmat(mat: np.ndarray,
               show_grid: bool = True,
               *,
               top_down: bool = False,
-              invert_modes: bool = False
+              invert_modes: bool = False,
+              labels: tp.Optional[tp.Sequence[str]] = None
               ) -> mpl_img.AxesImage:
     """Plots a black-white heatmap of a J-like matrix.
 
@@ -58,6 +59,9 @@ def plot_jmat(mat: np.ndarray,
         Orders the modes so that the first one is at the top.
     invert_modes
         Invert ordering of normal modes (== decreasing order).
+    labels
+        Labels for the axes as (x axis, y axis).
+        Default: 'Initial-state'/'Final-state'.
 
     Returns
     -------
@@ -81,8 +85,8 @@ def plot_jmat(mat: np.ndarray,
             fmt = 'i={x:1.0f}, k={y:1.0f}'
         return fmt.format(x=x+1, y=y+1, z=z)
 
-    def vmode(x, pos):
-        return '{:d}'.format(int(x+1))
+    def vmode(x, _pos):
+        return f'{int(x+1):d}'
 
     _mat = mat**2
     if norm_mode.lower() == 'byrow':
@@ -105,8 +109,12 @@ def plot_jmat(mat: np.ndarray,
     if show_grid:
         canvas.grid(color='.9')
     canvas.tick_params(top=True, bottom=True, labeltop=False, labelbottom=True)
-    canvas.set_xlabel('Final-state modes')
-    canvas.set_ylabel('Initial-state modes')
+    if labels is None:
+        canvas.set_xlabel('Final-state modes')
+        canvas.set_ylabel('Initial-state modes')
+    else:
+        canvas.set_xlabel(f'{labels[0]} modes')
+        canvas.set_ylabel(f'{labels[1]} modes')
     # Change tick labels to correct numbering (Python starts at 0)
     canvas.xaxis.set_major_formatter(FuncFormatter(vmode))
     canvas.yaxis.set_major_formatter(FuncFormatter(vmode))
@@ -160,6 +168,10 @@ def plot_cmat(mat: np.ndarray,
             fmt = 'i={x:1.0f}, k={y:1.0f}'
         return fmt.format(x=x+1, y=y+1, z=z)
 
+    def vmode(x, _pos):
+        '''Change tick labels to correct numbering (Python starts at 0).'''
+        return f'{int(x+1):d}'
+
     _mat = mat.copy()
     norm = np.max(np.abs(_mat))
     _mat /= norm
@@ -173,8 +185,7 @@ def plot_cmat(mat: np.ndarray,
     canvas.tick_params(top=True, bottom=True, labeltop=False, labelbottom=True)
     canvas.set_xlabel('Final-state modes')
     canvas.set_ylabel('Final-state modes')
-    # Change tick labels to correct numbering (Python starts at 0)
-    def vmode(x, pos): return '{:d}'.format(int(x+1))
+
     canvas.xaxis.set_major_formatter(FuncFormatter(vmode))
     canvas.yaxis.set_major_formatter(FuncFormatter(vmode))
     canvas.format_coord = coords
@@ -211,7 +222,7 @@ def plot_kvec(vec: np.ndarray,
     mpl.container.BarContainer
         Image of the vector.
     """
-    def coords(x: float, y: float) -> str:
+    def coords(_x: float, y: float) -> str:
         num_rows = len(_vec)
         row = int(y+.5) + 1
         if row > 0 and row <= num_rows:
@@ -222,8 +233,8 @@ def plot_kvec(vec: np.ndarray,
             fmt = 'i={y:1.0f}'
         return fmt.format(y=y+1, z=z)
 
-    def vmode(x, pos):
-        return '{:d}'.format(int(x+1))
+    def vmode(x, _pos):
+        return f'{int(x+1):d}'
 
     llo0 = '\N{SUBSCRIPT ZERO}'
     lloe = '\N{LATIN SUBSCRIPT SMALL LETTER E}'
