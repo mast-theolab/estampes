@@ -24,8 +24,12 @@ Other blocks are:
 
 ## Unreleased
 
+### Added
+- **API**: Support of first to third derivatives of frequency-dependent properties with respect to normal coordinates from Gaussian log files.
+
 ### Fixed
 - **BLS**: The program incorrectly probed for aliases to keywords while analyzing the INI file.
+- **API**: GLog parser could fail to extract multiple quantities with overlapping information.
 - **API**: Fixed reading of transition energies from Gaussian fchk file.
 - **API**: Fixed support of electronic transition moments of properties.
 - **API**: Support of energy from Gaussian fchk files.
@@ -35,6 +39,9 @@ Other blocks are:
 - **API**: Fixed unit definition when parsing IR intensity from Gaussian log file.
 - **API**: *QLabel* now properly supports **tuples** as reference state specification.
 - **API**: The default reference state for a _qlabel_ is back to 'c' to avoid issues with some routines in parsers that required a state to be set.
+
+### Changed
+- **API**: The GLog parser has been split into several sub-modules to facilitate maintenance and development.
 
 
 ## [0.5.0] - 2024-02-01

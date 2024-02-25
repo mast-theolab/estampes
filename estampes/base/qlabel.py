@@ -313,7 +313,8 @@ class QLabel():
         # Label-specific keyword (sub-option)
         if self.__qtype in ('ramact', 'roaact'):
             if descriptor is None or not descriptor.strip():
-                self.__qdesc = 'static'
+                self.__qdesc = 'static' if self.__qtype == 'ramact' \
+                    else 'dynamic'
             elif descriptor.lower() in ('all', 'dynamic', 'static'):
                 self.__qdesc = descriptor.lower()
                 if self.__qdesc == 'all':
@@ -323,6 +324,9 @@ class QLabel():
             else:
                 try:
                     val = float(descriptor)
+                    if val <= 0.:
+                        raise ArgumentError(
+                            f'Incorrect sup-opt for {self.__qtype}')
                     self.__qdesc = descriptor
                 except ValueError as err:
                     msg = f'Incorrect sup-opt for {self.__qtype}'
@@ -456,16 +460,20 @@ class QLabel():
                         f'Incorrect sup-opt for {self.__qtype}')
         elif (self.__qtype in range(300, 310)
               or self.__qtype in range(1300, 1310)):
-            if descriptor is None:
-                self.__qdesc = 0
+            if descriptor is None or not descriptor.strip():
+                self.__qdesc = 'static' if self.__qtype in (301, 303) \
+                    else 'dynamic'
+            elif descriptor.lower() in ('all', 'dynamic', 'static'):
+                self.__qdesc = descriptor.lower()
+                if self.__qdesc == 'all':
+                    self.__qdesc = 'dynamic'
             else:
                 try:
-                    val = int(descriptor)
-                    if val >= 0:
-                        self.__qdesc = val
-                    else:
-                        fmt = 'Incorrect sup-opt for {}'
-                        raise ArgumentError(fmt.format(self.__qtype))
+                    val = float(descriptor)
+                    if val <= 0:
+                        raise ArgumentError(
+                            f'Incorrect sup-opt for {self.__qtype}')
+                    self.__qdesc = descriptor
                 except ValueError as err:
                     msg = f'Incorrect sup-opt for {self.__qtype}'
                     raise ArgumentError(msg) from err
