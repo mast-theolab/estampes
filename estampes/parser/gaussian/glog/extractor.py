@@ -255,6 +255,7 @@ def parse_data(qdict: TypeQInfo,
                 else:
                     dobjs[qkey].set(unit='II:N/A')
                 i = 0
+                data = {}
                 for line in datablocks[iref]:
                     i += 1
                     try:
