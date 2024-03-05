@@ -27,6 +27,7 @@ Other blocks are:
 ### Added
 - **API**: Support of first to third derivatives of frequency-dependent properties with respect to normal coordinates from Gaussian log files.
 - **LIB**: Axes labels can now be changed in `plot_jmat`.
+- **LIB**: Added functions in `tools.math` to compute bond lengths, angles and dihedral angles between atomic coordinates.
 
 ### Fixed
 - **BLS**: The program incorrectly probed for aliases to keywords while analyzing the INI file.

@@ -1,21 +1,124 @@
-"""Module providing mathematical functions
+"""Module providing mathematical functions.
 
 A basic module providing methods for some useful mathematical
 operations, for ESTAMPES tools.
 
 """
 
-from math import exp, log, pi, sqrt
+from math import acos, atan2, degrees, exp, log, pi, sqrt
 import typing as tp
 
 import numpy as np
+import numpy.typing as npt
 
 from estampes.base import TypeAtCrd, ArgumentError
+from estampes.data.physics import PHYSFACT
 
 
 # ==============
 # Module Methods
 # ==============
+
+
+def angle(r1: npt.ArrayLike, r2: npt.ArrayLike, r3: npt.ArrayLike,
+          radians: bool = False) -> float:
+    """Compute the angle formed by the points 1, 2, 3.
+
+    Computes the angle between points 1, 2, 3 at positions r_i.
+    It is assumed that the angle is formed by taking the points
+    sequentially.
+
+    Parameters
+    ----------
+    r1
+        Cartesian position of point 1.
+    r2
+        Cartesian position of point 2.
+    r3
+        Cartesian position of point 3.
+    radians
+        Returns angle in radians.
+
+    Returns
+    -------
+    float
+        angle.
+    """
+    v1 = np.array(r1) - np.array(r2)
+    v2 = np.array(r3) - np.array(r2)
+
+    ang = acos(v1@v2/(np.linalg.norm(v1)*np.linalg.norm(v2)))
+
+    if not radians:
+        return degrees(ang)
+    else:
+        return ang
+
+
+def bond(r1: npt.ArrayLike, r2: npt.ArrayLike, in_au: bool = False) -> float:
+    """Compute the bond length between points 1 and 2.
+
+    Computes the distance between points 1 and 2 at positions r_i.
+    The positions are assumed in atomic units and returned in Angstroms
+    by default for Z-matrix specification for instance.
+
+    Parameters
+    ----------
+    r1
+        Cartesian position of point 1.
+    r2
+        Cartesian position of point 2.
+    in_au
+        Keep in atomic units.
+
+    Returns
+    -------
+    float
+        bond length.
+    """
+    if in_au:
+        return np.linalg.norm(np.array(r2) - np.array(r1))
+    else:
+        return np.linalg.norm(np.array(r2) - np.array(r1))*PHYSFACT.bohr2ang
+
+
+def dihedral(r1: npt.ArrayLike, r2: npt.ArrayLike, r3: npt.ArrayLike,
+             r4: npt.ArrayLike, radians: bool = False) -> float:
+    """Compute the dihedral formed between points 1, 2, 3, 4.
+
+    Computes the dihedral angle between points 1, 2, 3, 4 at positions
+    ri.  It is assumed that the dihedral is formed by taking the points
+    sequentially, with 2, 3 shared between the two planes.
+
+    Parameters
+    ----------
+    r1
+        Cartesian position of point 1.
+    r2
+        Cartesian position of point 2.
+    r3
+        Cartesian position of point 3.
+    r4
+        Cartesian position of point 4.
+    radians
+        Returns angle in radians.
+
+    Returns
+    -------
+    float
+        Dihedral angle.
+    """
+    v1 = np.array(r2) - np.array(r1)
+    v2 = np.array(r3) - np.array(r2)
+    v3 = np.array(r4) - np.array(r3)
+
+    ang = atan2(np.linalg.norm(v2)*v1@np.cross(v2, v3),
+                np.cross(v1, v2)@np.cross(v2, v3))
+    if not radians:
+        return degrees(ang)
+    else:
+        return ang
+
 
 def f_gauss(x: float,
             hwhm: float = 2.0,
@@ -90,7 +193,7 @@ def f_lorentz(x: float,
 
 
 def levi_civita_tens() -> np.ndarray:
-    """Returns the Levi-Civita tensor
+    """Return the Levi-Civita tensor.
 
     Builds and returns the Levi-Civita tensor.
 
@@ -108,7 +211,7 @@ def levi_civita_tens() -> np.ndarray:
 
 def square_ltmat(ltmat: tp.Union[tp.Sequence[float], np.ndarray],
                  what: str = 'symm') -> np.ndarray:
-    """Squares a lower-triangular matrix.
+    """Square a lower-triangular matrix.
 
     Takes a lower-triangular matrix and returns the 2D symmetric or
     antisymmetric matrix.
@@ -165,7 +268,7 @@ def superpose(c_ref: TypeAtCrd,
               at_mask: tp.Optional[np.ndarray] = None
               ) -> tp.Union[tp.Tuple[np.ndarray, np.ndarray],
                             tp.Tuple[np.ndarray, np.ndarray, TypeAtCrd]]:
-    """Returns the transformation matrices to superpose c_new onto c_ref.
+    """Return the transformation matrices to superpose c_new onto c_ref.
 
     Returns the rotation matrix and transition vector to maximize the
     superposition of `c_new` onto `c_ref`.  The translated and rotated
