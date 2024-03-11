@@ -386,7 +386,7 @@ class Spectrum():
                     else:
                         self.__params['incfrq'] = incfrq
                 else:
-                    if incfrq not in dobjs['int'].dobjs:
+                    if incfrq not in dobjs['int'].data:
                         vals = [item for item in dobjs['int'].data
                                 if item.replace('.', '', 1).isdigit()]
                         fmt = '''No incident frequency matches the value {}
