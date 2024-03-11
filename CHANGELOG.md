@@ -31,6 +31,7 @@ Other blocks are:
 
 ### Fixed
 - **BLS**: The program incorrectly probed for aliases to keywords while analyzing the INI file.
+- **API**: FChk failed to extract Hessian data, erroneously signaling missing data.
 - **API**: GLog parser could fail to extract multiple quantities with overlapping information.
 - **API**: Fixed reading of transition energies from Gaussian fchk file.
 - **API**: Fixed support of electronic transition moments of properties.

@@ -538,7 +538,7 @@ def qlab_to_kword(qlab: QLabel) -> TypeQKwrd:
         raise NotImplementedError()
     elif qlab.label in ('dipstr', 'rotstr'):
         if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
-            if qlab.kind == 'H':
+            if qlab.level == 'H':
                 keyword = 'Vib-E2'
                 keywords = ['Number of Normal Modes']
             else:
@@ -945,7 +945,7 @@ def parse_data(qdict: TypeQInfo,
                 dobjs[qkey].set(dtype='L.M^{-1/2}')
                 dobjs[qkey].set(data=datablocks[kword])
         elif qlabel.label == 'hessdat':
-            if qlabel.kind == 'H':
+            if qlabel.level == 'H':
                 key = 'Number of Normal Modes'
             else:
                 key = 'Anharmonic Number of Normal Modes'
