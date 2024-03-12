@@ -327,7 +327,7 @@ def mode_vibronic(dfile: DataFile,
     error_noqty = qty != 'mols'
     dkeys = FCHT_QTIES[qty]
     try:
-        dobjs = dfile.get_data(**dkeys.values(), error_noqty=error_noqty)
+        dobjs = dfile.get_data(error_noqty=error_noqty, **dkeys)
     except IndexError:
         print('Data not available in file.')
         sys.exit()
@@ -372,7 +372,7 @@ def mode_vibronic(dfile: DataFile,
             #   with only the full matrix printed and not the reddim one.
             qkey = FCHT_QTIES['fulljmat']
             key = qkey.keys()[0]
-            dobj2 = dfile.get_data(**qkey, error_noqty=error_noqty)
+            dobj2 = dfile.get_data(error_noqty=error_noqty, **qkey)
             if dobj2[key].data:
                 print('''J is missing. Only the full matrix is available.
 If you want to display that one, use "fulljmat" instead.''')
