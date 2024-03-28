@@ -33,6 +33,7 @@ Other blocks are:
 - **BLS**: The program incorrectly probed for aliases to keywords while analyzing the INI file.
 - **ESP**: ESParser was not properly updated to match the new behavior of `DataFile.get_data`.
 - **LIB**: A typo led the Spectrum class to incorrectly check for the incident frequency in compatible spectroscopies.
+- **LIB**: Superposition failed when a subset of modes was chosen, with a shift between the two structures.
 - **API**: FChk failed to extract Hessian data, erroneously signaling missing data.
 - **API**: GLog parser could fail to extract multiple quantities with overlapping information.
 - **API**: Fixed reading of transition energies from Gaussian fchk file.

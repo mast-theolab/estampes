@@ -341,13 +341,13 @@ def superpose(c_ref: TypeAtCrd,
 
     # Calculate the center of mass and move the structure
     if use_m:
-        totwt = np.sum(at_mass[mask])
-        com_ref = np.einsum('ij,i->j', c_ref[mask, :], at_mass[mask])
-        com_new = np.einsum('ij,i->j', c_new[mask, :], at_mass[mask])
+        totwt = np.sum(at_mass)
+        com_ref = np.einsum('ij,i->j', c_ref, at_mass)
+        com_new = np.einsum('ij,i->j', c_new, at_mass)
     else:
-        totwt = np.sum(at_mass[mask])
-        com_ref = np.einsum('ij->j', c_ref[mask, :])
-        com_new = np.einsum('ij->j', c_new[mask, :])
+        totwt = np.sum(at_mass)
+        com_ref = np.einsum('ij->j', c_ref)
+        com_new = np.einsum('ij->j', c_new)
     c_new_ = c_new - com_new/totwt
     c_ref_ = c_ref - com_ref/totwt
 
