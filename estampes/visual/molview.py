@@ -601,7 +601,9 @@ def write_pov(fname: str,
               bonds: TypeBondsM,
               zcam: float = -8.0,
               col_bond_as_atom: bool = False,
-              rad_atom_as_bond: bool = False):
+              representation: str = 'balls',
+              scale_atoms: float = 1.0,
+              scale_bonds: float = 1.0):
     """Write a Pov-Ray file.
 
     Builds and writes a Pov-Ray file.
@@ -622,24 +624,31 @@ def write_pov(fname: str,
         Position of the camera along -Z.
     col_bond_as_atom
         If true, bonds are colored based on the connected atoms
-    rad_atom_as_bond
-        If true, atomic radii are set equal to the bonds (tubes).
+    representation
+        Molecular representation: balls, spheres, stick...
+    scale_atoms
+        Scaling factor of the atoms.
+    scale_bonds
+        Scaling factor of the bonds.
     """
+    if representation not in ('balls', 'sticks', 'spheres'):
+        raise ArgumentError('Unsupported molecular representation.')
+
+    show_bonds = representation != 'spheres'
+
     bo_rad = BONDDATA['rvis']*RAD_VIS_SCL
-    if rad_atom_as_bond:
-        rad_at = 1.
-        rad_bo = 1.
-    else:
-        rad_at = 1.
-        rad_bo = 1.
+    rad_at = scale_atoms
+    rad_bo = scale_bonds
+
     if nmols == 1:
         list_atoms = sorted(set(at_lab))
     else:
         list_atoms = sorted(set([item for mol in at_lab for item in mol]))
     atdat = atomic_data(*list_atoms)
-    header = '''\
-#declare dist = 1.;
-#declare scl_bond = {scl_bo:.2f};
+    header = '#declare dist = 1.;\n'
+    if show_bonds:
+        header += '#declare scl_bond = {scl_bo:.2f};\n'
+    header += '''\
 #declare scl_rat = {scl_at:.2f};
 #declare Trans = 0.0;
 
@@ -767,20 +776,22 @@ light_source {{
             for atom in list_atoms:
                 fobj.write(fmt_tex_at.format(at=atdat[atom]['symb']))
             # Set bonds colors/textures
-            fobj.write('\n// BONDS COLORS AND TEXTURES\n')
-            if not col_bond_as_atom:
-                fmt = '''\
+            if show_bonds:
+                fobj.write('\n// BONDS COLORS AND TEXTURES\n')
+                if not col_bond_as_atom:
+                    fmt = '''\
 #declare col_bond = pigment {{
     rgbt < {c[0]:3d}, {c[1]:3d}, {c[2]:3d}, Trans >/255.
 }}
 '''
-                fobj.write(fmt.format(c=BONDDATA['rgb']))
-                fmt = 'bond'
-            else:
-                fmt = 'at_{at}'
-            for atom in list_atoms:
-                at = atdat[atom]['symb']
-                fobj.write(fmt_tex_bo.format(at=at, ref=fmt.format(at=at)))
+                    fobj.write(fmt.format(c=BONDDATA['rgb']))
+                    fmt = 'bond'
+                else:
+                    fmt = 'at_{at}'
+                for atom in list_atoms:
+                    at = atdat[atom]['symb']
+                    fobj.write(fmt_tex_bo.format(at=at,
+                                                 ref=fmt.format(at=at)))
         else:
             fobj.write('\n// MOLECULES COLORS AND TEXTURES\n')
             # Set Molecule colors
@@ -790,12 +801,17 @@ light_source {{
             for i in range(nmols):
                 fobj.write(fmt_tex_mol.format(id=i+1))
         # Defines bonds/atoms radi
-        fobj.write('\n// ATOMS AND BONDS RADII\n')
-        fmt = '#declare r_bond  = {:.6f}*scl_bond;\n'
-        fobj.write(fmt.format(bo_rad))
+        if show_bonds:
+            fobj.write('\n// ATOMIC AND BOND RADII\n')
+            fmt = '#declare r_bond  = {:.6f}*scl_bond;\n'
+            fobj.write(fmt.format(bo_rad))
+        else:
+            fobj.write('\n// ATOMIC RADII\n')
         for atom in list_atoms:
-            if rad_atom_as_bond:
+            if representation == 'sticks':
                 rval = bo_rad
+            elif representation == 'spheres':
+                rval = atdat[atom]['rvdw']
             else:
                 rval = atdat[atom]['rvis']*RAD_VIS_SCL
             fobj.write(fmt_rad_at.format(at=atdat[atom]['symb'], r=rval))
@@ -803,16 +819,18 @@ light_source {{
         if nmols == 1:
             fobj.write('\n// MOLECULE DEFINITION\n\n')
             fobj.write('#declare molecule = union {\n')
-            # -- First build bonds
-            for bond in bonds:
-                iat1, iat2 = bond
-                xyz1 = at_crd[iat1]
-                xyz2 = at_crd[iat2]
-                xyzmid = (xyz1 + xyz2)/2.
-                fobj.write(fmt_obj_bo.format(
-                    xyz=xyzmid,
-                    at1=atdat[at_lab[iat1]]['symb'], id1=iat1+1, xyz1=xyz1,
-                    at2=atdat[at_lab[iat2]]['symb'], id2=iat2+1, xyz2=xyz2))
+            if show_bonds:
+                # -- First build bonds
+                for bond in bonds:
+                    iat1, iat2 = bond
+                    xyz1 = at_crd[iat1]
+                    xyz2 = at_crd[iat2]
+                    xyzmid = (xyz1 + xyz2)/2.
+                    fobj.write(fmt_obj_bo.format(
+                        xyz=xyzmid,
+                        at1=atdat[at_lab[iat1]]['symb'], id1=iat1+1, xyz1=xyz1,
+                        at2=atdat[at_lab[iat2]]['symb'], id2=iat2+1,
+                        xyz2=xyz2))
             # -- Next build atoms
             for iat, lab in enumerate(at_lab):
                 fobj.write(fmt_obj_at.format(
@@ -830,18 +848,19 @@ object {
             for imol in range(nmols):
                 fobj.write(f'\n#declare mol{imol+1:02d} = union {{\n')
                 # -- First build bonds
-                for bond in bonds[imol]:
-                    iat1, iat2 = bond
-                    xyz1 = at_crd[imol][iat1]
-                    xyz2 = at_crd[imol][iat2]
-                    xyzmid = (xyz1 + xyz2)/2.
-                    fobj.write(fmt_obj_bo.format(
-                        xyz=xyzmid,
-                        at1=atdat[at_lab[imol][iat1]]['symb'],
-                        id1=iat1+1, xyz1=xyz1,
-                        at2=atdat[at_lab[imol][iat2]]['symb'],
-                        id2=iat2+1, xyz2=xyz2,
-                        idmol=imol+1))
+                if show_bonds:
+                    for bond in bonds[imol]:
+                        iat1, iat2 = bond
+                        xyz1 = at_crd[imol][iat1]
+                        xyz2 = at_crd[imol][iat2]
+                        xyzmid = (xyz1 + xyz2)/2.
+                        fobj.write(fmt_obj_bo.format(
+                            xyz=xyzmid,
+                            at1=atdat[at_lab[imol][iat1]]['symb'],
+                            id1=iat1+1, xyz1=xyz1,
+                            at2=atdat[at_lab[imol][iat2]]['symb'],
+                            id2=iat2+1, xyz2=xyz2,
+                            idmol=imol+1))
                 # -- Next build atoms
                 for iat in range(len(at_lab[imol])):
                     fobj.write(fmt_obj_at.format(
