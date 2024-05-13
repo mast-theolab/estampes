@@ -592,26 +592,25 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                     fmt1.append(
                         r'^\s+Incident light \(\S+\):\s+(?P<val>-?\d.*)\s*$')
                 # -- Anharmonic level
+                lnk1.append(-717)
+                if qlab.kind == 'dynamic':
+                    key1.append('          ' +
+                                'Anharmonic Raman Spectroscopy (Dynamic)')
+                    end1.append(
+                        lambda s: s.startswith('     =====')
+                        or s.startswith(' GradGrad'))
+                    sub1.append(2)
                 else:
-                    lnk1.append(-717)
-                    if qlab.kind == 'dynamic':
-                        key1.append('          ' +
-                                    'Anharmonic Raman Spectroscopy (Dynamic)')
-                        end1.append(
-                            lambda s: s.startswith('     =====')
-                            or s.startswith(' GradGrad'))
-                        sub1.append(2)
-                    else:
-                        fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
-                        key1.append(fmt.format(qlab.kind))
-                        end1.append(
-                            lambda s: s.startswith('     =====')
-                            or s.startswith(' GradGrad')
-                            or s.startswith(' ## INCIDENT WAVENUMBER:'))
-                        sub1.append(0)
-                    fmt1.append(r'^ ##+ (?:INCIDENT WAVENUMBER|MEASUREMENT '
-                                + r'INFORMATION):\s+(?P<val>\S+).*\s+##+\s*$')
-                    num1.append(0)
+                    fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
+                    key1.append(fmt.format(qlab.kind))
+                    end1.append(
+                        lambda s: s.startswith('     =====')
+                        or s.startswith(' GradGrad')
+                        or s.startswith(' ## INCIDENT WAVENUMBER:'))
+                    sub1.append(0)
+                fmt1.append(r'^ ##+ (?:INCIDENT WAVENUMBER|MEASUREMENT '
+                            + r'INFORMATION):\s+(?P<val>\S+).*\s+##+\s*$')
+                num1.append(0)
             if qlab.label == 1:
                 if qlab.derord == 0:
                     if qlab.rstate == 'c':
