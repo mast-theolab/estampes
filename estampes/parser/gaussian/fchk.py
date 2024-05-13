@@ -1292,7 +1292,7 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
         if get_evec and hessvec is not None:
             # Check if eigenvectors need to be corrected
             #  Default is assumed to be Gaussian fchk
-            evec_form = pre_data[key_evec].get('form', 'L.M^{-1/2}')
+            evec_form = pre_data[key_evec].dtype == 'L.M^{-1/2}'
             eigvec = convert_evec(hessvec, atmas, natoms, evec_form)
         if get_eval and hessval is not None:
             eigval = hessval
@@ -1322,7 +1322,7 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
                     hessvec = tmp_data['hessvec'].data
                     atmas = np.repeat(np.array(tmp_data['atmas'].data), 3)
                     natoms = tmp_data['natoms'].data
-                    evec_form = tmp_data['hessvec'].get('form', 'L.M^{-1/2}')
+                    evec_form = tmp_data['hessvec'].dtype == 'L.M^{-1/2}'
                     eigvec = convert_evec(hessvec, atmas, natoms, evec_form)
                 else:
                     do_calc = True

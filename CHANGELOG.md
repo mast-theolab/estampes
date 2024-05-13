@@ -29,6 +29,7 @@ Other blocks are:
 - **MRG**: Added possibility to tune the threshold factor to identify bonds.
 - **MRG**: Added possibility to scale atom/bond radii directly from command-line.
 - **API**: Support of first to third derivatives of frequency-dependent properties with respect to normal coordinates from Gaussian log files.
+- **API**: Fixed function `get_hess_data` function for formatted checkpoint files.
 - **LIB**: Axes labels can now be changed in `plot_jmat`.
 - **LIB**: Added functions in `tools.math` to compute bond lengths, angles and dihedral angles between atomic coordinates.
 
