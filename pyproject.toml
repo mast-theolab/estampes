@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools >= 50.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["estampes", "progs"]
+
+# [tool.setuptools.package-data]
+# "visual.objs" = ["*.obj", "*.mtl"]
+
+[project]
+name = "estampes"
+version = "0.5.0"
+requires-python = ">= 3.8"
+authors = [
+    {name = "Julien Bloino", email = "julien.bloino@gmail.com"}
+]
+description = "A simple API to parse and process data for computational spectroscopy"
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["Spectroscopy", "Computational Chemistry", "Visualization"]
+classifiers = [
+    'Development Status :: 3 - Alpha',
+    'Programming Language :: Python :: 3',
+    'License :: OSI Approved :: MIT License',
+    'Operating System :: OS Independent',
+    'Topic :: Scientific/Engineering :: Chemistry',
+    'Topic :: Scientific/Engineering :: Visualization'
+]
+
+[project.scripts]
+esparser = "progs.esparser:main"
+esballast = "progs.ballast:main"
+esbars = "progs.bars:main"
+esmirage = "progs.mirage:main"
+essoar = "progs.soar:main"
