@@ -10,6 +10,13 @@ tests/in_progress/*
 # Bug-testing director
 bugs/*
 
+# Blender source files
+*.blend
+*.blend1
+
+# Ignore OS X files
+.DS_Store
+
 # TeX files
 *.toc
 *.vrb

@@ -24,15 +24,23 @@ Other blocks are:
 
 ## Unreleased
 
+### Notice
+The `visual` module has been heavily refactored, which may break scripts using the molecular visualization primitives.
+
 ### Added
 - **MRG**: Added representation models: balls-and-sticks, sticks, spheres.
 - **MRG**: Added possibility to tune the threshold factor to identify bonds.
 - **MRG**: Added possibility to scale atom/bond radii directly from command-line.
+- **MRG**: Added direct visualization, which becomes the default.
+- **MRG**: Added possibility to visualize normal modes (for direct visualization) if available in input file.
+- **MRG**: Added keyword to request the production of a POVRay input file.
 - **API**: Support of first to third derivatives of frequency-dependent properties with respect to normal coordinates from Gaussian log files.
 - **API**: Fixed function `get_hess_data` function for formatted checkpoint files.
 - **API**: Harmonic ROA/Raman setup data were not properly set if anharmonic data were present in Gaussian log files.
 - **LIB**: Axes labels can now be changed in `plot_jmat`.
 - **LIB**: Added functions in `tools.math` to compute bond lengths, angles and dihedral angles between atomic coordinates.
+- **LIB**: New module `data.visual` contains the constants previously stored in `visual.molview`.
+- **LIB**: New module `visual.vibview` handling the interactive representation of vibrations.
 
 ### Fixed
 - **BLS**: The program incorrectly probed for aliases to keywords while analyzing the INI file.
@@ -53,6 +61,8 @@ Other blocks are:
 
 ### Changed
 - **API**: The GLog parser has been split into several sub-modules to facilitate maintenance and development.
+- **LIB**: `MolWin` has been moved from `visual.molview` to `visual.molui`.
+- **LIB**: All primitives to construct an input for POV-Ray have been moved from `visual.molview` to `visual.povrender`.
 
 
 ## [0.5.0] - 2024-02-01

@@ -41,7 +41,8 @@ from estampes.data.physics import PHYSFACT
 from estampes.tools.atom import convert_labsymb
 from estampes.tools.mol import list_bonds
 if has_molview:
-    from estampes.visual.molview import Molecule, MOLCOLS
+    from estampes.visual.molview import Molecule
+    from estampes.data.visual import MOLCOLS
 from estampes.visual.plotmat import plot_jmat, plot_cmat, plot_kvec
 from estampes.visual.plotspec import format_label, plot_spec_2D
 

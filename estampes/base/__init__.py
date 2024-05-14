@@ -2,6 +2,8 @@
 
 Attributes
 ----------
+Type1Vib : list, np.ndarray
+    Static type for 1 vibrational mode, expected in form (NAt, 3).
 TypeAtCrd : list, np.ndarray
     Static type for atomic coordinates.
 TypeAtCrdM
@@ -42,6 +44,8 @@ TypeQTag : str, int
     Static type for quantity tag.
 TypeRSta : str, int, tuple, optional
     Static type for reference state/transition.
+TypeVibs : list, np.ndarray
+    Static type for vibrational modes, expected in form (Nib, NAt3).
 
 Classes
 -------
@@ -59,10 +63,10 @@ QuantityError
 
 # flake8: noqa: F401
 
-from estampes.base.types import TypeAtCrd, TypeAtCrdM, TypeAtData, TypeAtLab, \
-    TypeAtLabM, TypeAtMas, TypeBonds, TypeBondsM, TypeColor, \
-    TypeDCrd, TypeDFChk, TypeDGLog, TypeDOrd, TypeQLab, TypeQLvl, \
-    TypeQOpt, TypeQTag, TypeRSta, ConstDict
+from estampes.base.types import Type1Vib, TypeAtCrd, TypeAtCrdM, TypeAtData, \
+    TypeAtLab, TypeAtLabM, TypeAtMas, TypeBonds, TypeBondsM, TypeColor, \
+    TypeDCrd, TypeDFChk, TypeDGLog, TypeDOrd, TypeQLab, TypeQLvl, TypeQOpt, \
+    TypeQTag, TypeRSta, TypeVibs, ConstDict
 
 from estampes.base.errors import ArgumentError, ParseDataError, \
     ParseKeyError, ParsingError, QuantityError
