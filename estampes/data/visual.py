@@ -43,3 +43,37 @@ PATH_OBJ3D = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), '3d_models')
 
 RAD_VIS_SCL = .6
+
+MATERIALS = {
+    'glass': {
+        'povray': 'Mater_Glass'
+    },
+    'metal': {
+        'povray': 'Mater_Metal'
+    },
+    'plastic': {
+        'povray': 'Mater_Metal'
+    },
+}
+
+MODELS = {
+    'mol': {
+        'balls': {
+            'alias': ('ball', 'balls', 'ballsandsticks')
+        },
+        'spheres': {
+            'alias': ('sphere', 'spheres', 'vdW')
+        },
+        'sticks': {
+            'alias': ('stick', 'sticks')
+        },
+    },
+    'vib': {
+        'arrows': {
+            'alias': ('arrow', 'arrows')
+        },
+        'spheres': {
+            'alias': ('sphere', 'spheres')
+        }
+    }
+}

@@ -50,6 +50,8 @@ TypeRSta : str, int, tuple, optional
     Static type for reference state/transition.
 TypeVibs : list, np.ndarray
     Static type for vibrational modes, expected in form (Nib, NAt3).
+TypeVibsM : list, np.ndarray
+    Static type for vibrational modes (multiple molecules).
 """
 import typing as tp
 
@@ -136,3 +138,4 @@ TypeBonds = tp.List[tp.Tuple[int, int]]
 TypeAtLabM = tp.Union[TypeAtLab, tp.Sequence[TypeAtLab]]
 TypeAtCrdM = tp.Union[TypeAtCrd, tp.Sequence[TypeAtCrd]]
 TypeBondsM = tp.Union[TypeBonds, tp.Sequence[TypeBonds]]
+TypeVibsM = tp.Union[TypeVibs, tp.Sequence[TypeVibs]]

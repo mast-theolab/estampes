@@ -17,8 +17,9 @@ import numpy as np
 from estampes.base import QLabel
 from estampes.parser import DataFile
 from estampes.data.physics import PHYSFACT
+from estampes.data.visual import MODELS, MATERIALS
 from estampes.tools.mol import list_bonds
-from estampes.visual.povrender import build_box, set_cam_zpos, write_pov
+from estampes.visual.povrender import POVBuilder
 
 try:
     from PySide6 import QtGui
@@ -27,23 +28,13 @@ try:
 except ModuleNotFoundError:
     Qt_avail = False
 
-VIEW_MODELS = {
-    'sticks': ('stick', 'sticks'),
-    'balls': ('ball', 'balls', 'ballsandsticks'),
-    'spheres': ('sphere', 'spheres', 'vdW'),
-}
-VIB_MODELS = {
-    'arrows': ('arrow', 'arrows'),
-    'spheres': ('sphere', 'spheres')
-}
-
-VIEW_ALIAS = sorted([item.lower()
-                     for items in VIEW_MODELS.values()
-                     for item in items])
+MOL_ALIAS = sorted([item.lower()
+                    for items in MODELS['mol'].values()
+                    for item in items['alias']])
 
 VIB_ALIAS = sorted([item.lower()
-                    for items in VIB_MODELS.values()
-                    for item in items])
+                    for items in MODELS['vib'].values()
+                    for item in items['alias']])
 
 
 def build_opts(parser: argparse.ArgumentParser):
@@ -62,19 +53,28 @@ def build_opts(parser: argparse.ArgumentParser):
                         '--bond-tol * covalence_radii')
     msg = 'Display (Qt) instead of generating the Pov file.'
     parser.add_argument('-D', '--display', action='store_true',
-                        default=Qt_avail, help=msg)
+                        help=msg)
+    msg = '''Material to be used (for now, only for rendering):
+- glass: glassy aspect
+- metal: metallic aspect
+- plastic: plastic-like effect (default)
+'''
+    parser.add_argument('--material', choices=MATERIALS.keys(),
+                        default='plastic', help=msg)
     msg = 'Merge multiple file in 1 rendition.  ' \
         + 'Each mol. has a different color'
     parser.add_argument('--merge', action='store_true', default=False,
                         help=msg)
     msg = f'''Representation model:
-- balls and stick: {', '.join(VIEW_MODELS['balls'])}
-- sticks: {', '.join(VIEW_MODELS['sticks'])}
-- spheres: {', '.join(VIEW_MODELS['spheres'])}
+- balls and stick: {', '.join(MODELS['mol']['balls']['alias'])}
+- sticks: {', '.join(MODELS['mol']['sticks']['alias'])}
+- spheres: {', '.join(MODELS['mol']['spheres']['alias'])}
 '''
     parser.add_argument('-m', '--model', type=str.lower,
-                        default='sticks', choices=VIEW_ALIAS, help=msg)
-    parser.add_argument('--pov', action='store_true', default=not Qt_avail,
+                        default='sticks', choices=MOL_ALIAS, help=msg)
+    parser.add_argument('--mol-mat', choices=MATERIALS.keys(),
+                        help='Material for the molecule.')
+    parser.add_argument('-r', '--render', action='store_true',
                         help='Scaling factor for all objects')
     parser.add_argument('-s', '--scale', type=float,
                         help='Scaling factor for all objects')
@@ -85,11 +85,13 @@ def build_opts(parser: argparse.ArgumentParser):
     msg = '''Vibrational mode to display.
 NOTE: only available if input file contains eigenvectors.'''
     parser.add_argument('--vib', type=int, help=msg)
+    parser.add_argument('--vib-mat', choices=MATERIALS.keys(),
+                        help='Material for the vibration.')
     msg = f'''Model to represent vibrations:
-- spheres: {', '.join(VIB_MODELS['spheres'])}
-- arrows: {', '.join(VIB_MODELS['arrows'])}
+- spheres: {', '.join(MODELS['vib']['spheres']['alias'])}
+- arrows: {', '.join(MODELS['vib']['arrows']['alias'])}
 '''
-    parser.add_argument('--vibmodel', type=str.lower, default='arrows',
+    parser.add_argument('--vib-model', type=str.lower, default='arrows',
                         choices=VIB_ALIAS, help=msg)
     # material?
     # scale
@@ -158,18 +160,43 @@ def extract_data(infile: tp.Sequence[str],
 def main():
     """Run the main program."""
     opts = parse_args(sys.argv[1:])
+    # Set mode
+    if not (opts.display or opts.render):
+        opmode = 'display' if Qt_avail else 'povray'
+    elif opts.display and opts.render:
+        print('ERROR: Visualization and rendering not yet available together.')
+        sys.exit(1)
+    elif opts.display:
+        if not Qt_avail:
+            print('ERROR: Qt not available. Switching to POV mode.')
+            opmode = 'povray'
+        else:
+            opmode = 'display'
+    else:
+        opmode = 'povray'
+
     read_vib = opts.vib is not None
 
     # Set representation models
-    for key, aliases in VIEW_MODELS.items():
-        if opts.model in aliases:
+    for key, pars in MODELS['mol'].items():
+        if opts.model in pars['alias']:
             mol_model = key
             break
     if read_vib:
-        for key, aliases in VIB_MODELS.items():
-            if opts.vibmodel in aliases:
+        for key, pars in MODELS['vib'].items():
+            if opts.vib_model in pars['alias']:
                 vib_model = key
                 break
+
+    # Set material
+    if opts.mol_mat is not None:
+        mol_mat = opts.mol_mat
+    else:
+        mol_mat = opts.material
+    if opts.vib_mat is not None:
+        vib_mat = opts.vib_mat
+    else:
+        vib_mat = opts.material
 
     # Set the scaling factor for the modeling objects
     scale_at = opts.scale_atoms if opts.scale_atoms is not None \
@@ -177,14 +204,6 @@ def main():
     scale_bo = opts.scale_bonds if opts.scale_bonds is not None \
         else opts.scale if opts.scale is not None else 1.0
 
-    if opts.display:
-        if not Qt_avail:
-            print('ERROR: Qt not available. Switching to POV mode.')
-            do_pov = True
-        else:
-            do_pov = False
-    else:
-        do_pov = True
     num_mols = len(opts.infiles)
     merge = opts.merge and num_mols > 1
     if num_mols:
@@ -193,41 +212,36 @@ def main():
         mols_bonds = []
         mols_evec = []
 
-    if do_pov:
-        if read_vib:
+    if opmode == 'povray':
+        if read_vib and num_mols > 1:
             print('Vibrational modes not yet available for rendering.')
             sys.exit(1)
-        mols_zcams = 0
-        for fname in opts.infiles:
-            moldat = extract_data(fname, opts.bond_tol, read_vib)
-
-            box_mol = build_box(moldat['atnum'], moldat['coord'], True)
-            zcam = set_cam_zpos(box_mol)
-            if not merge:
-                new_file = os.path.splitext(fname)[0] + '.pov'
-                write_pov(new_file, 1, moldat['atnum'], moldat['coord'],
-                          moldat['bonds'], zcam, True, mol_model, scale_at,
-                          scale_bo)
-            else:
-                mols_atcrd.append(moldat['coord'])
-                mols_atnum.append(moldat['atnum'])
-                mols_bonds.append(moldat['bonds'])
-                if abs(zcam) > abs(mols_zcams):
-                    mols_zcams = zcam
         if merge:
             fmt_fname = 'mols_merge_{:03d}.pov'
             i = 1
             while True:
-                fpov = fmt_fname.format(i)
-                if not os.path.exists(fpov):
+                povfile = fmt_fname.format(i)
+                if not os.path.exists(povfile):
                     break
                 i = i + 1
                 if i > 999:
                     print('Too many files generated. Time to clean up.')
                     sys.exit()
-
-            write_pov(fpov, num_mols, mols_atnum, mols_atcrd, mols_bonds,
-                      mols_zcams, True, mol_model, scale_at, scale_bo)
+            builder = POVBuilder(opts.infiles, load_vibs=read_vib,
+                                 tol_bonds=opts.bond_tol)
+            builder.write_pov(povname=povfile, merge_mols=True,
+                              mol_repr=mol_model, vib_repr=vib_model,
+                              mol_mater=mol_mat, vib_mater=vib_mat,
+                              scale_atoms=scale_at, scale_bonds=scale_bo)
+        else:
+            for fname in opts.infiles:
+                builder = POVBuilder(fname, load_vibs=read_vib,
+                                     tol_bonds=opts.bond_tol)
+                povfile = os.path.splitext(fname)[0] + '.pov'
+                builder.write_pov(povname=povfile, id_vib=opts.vib-1,
+                                  mol_repr=mol_model, vib_repr=vib_model,
+                                  mol_mater=mol_mat, vib_mater=vib_mat,
+                                  scale_atoms=scale_at, scale_bonds=scale_bo)
     else:
         if num_mols > 1 and read_vib:
             txt = 'ERROR: Cannot visualize normal modes with multiple '\
@@ -235,7 +249,7 @@ def main():
             print(txt)
             sys.exit(1)
         for fname in opts.infiles:
-            moldat = extract_data(fname, opts.bond_tol, read_vib)
+            moldat = extract_data(fname, read_vib)
 
             if num_mols > 1:
                 mols_atcrd.append(moldat['coord'])
@@ -258,7 +272,7 @@ def main():
             if opts.vib <= 0 or opts.vib > mols_evec.shape[0]:
                 print('ERROR: Incorrect normal mode.')
                 sys.exit(2)
-            molwin.add_vibmode(mols_evec[opts.vib].reshape(-1, 3),
+            molwin.add_vibmode(mols_evec[opts.vib-1].reshape(-1, 3),
                                repr=vib_model)
         molwin.show()
         sys.exit(app.exec())

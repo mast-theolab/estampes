@@ -32,8 +32,9 @@ The `visual` module has been heavily refactored, which may break scripts using t
 - **MRG**: Added possibility to tune the threshold factor to identify bonds.
 - **MRG**: Added possibility to scale atom/bond radii directly from command-line.
 - **MRG**: Added direct visualization, which becomes the default.
-- **MRG**: Added possibility to visualize normal modes (for direct visualization) if available in input file.
+- **MRG**: Added possibility to visualize normal modes if available in input file.
 - **MRG**: Added keyword to request the production of a POVRay input file.
+- **MRG**: Added possibility to choose the material (only for rendering).
 - **API**: Support of first to third derivatives of frequency-dependent properties with respect to normal coordinates from Gaussian log files.
 - **API**: Fixed function `get_hess_data` function for formatted checkpoint files.
 - **API**: Harmonic ROA/Raman setup data were not properly set if anharmonic data were present in Gaussian log files.
@@ -41,6 +42,8 @@ The `visual` module has been heavily refactored, which may break scripts using t
 - **LIB**: Added functions in `tools.math` to compute bond lengths, angles and dihedral angles between atomic coordinates.
 - **LIB**: New module `data.visual` contains the constants previously stored in `visual.molview`.
 - **LIB**: New module `visual.vibview` handling the interactive representation of vibrations.
+- **LIB**: New class `POVBuilder` in `visual.povrender` to facilitate the creation of POV-Ray files.
+- **LIB**: New function `visual.povrender.write_pov_vib` to build the representation of vibrations.
 
 ### Fixed
 - **BLS**: The program incorrectly probed for aliases to keywords while analyzing the INI file.
@@ -63,6 +66,7 @@ The `visual` module has been heavily refactored, which may break scripts using t
 - **API**: The GLog parser has been split into several sub-modules to facilitate maintenance and development.
 - **LIB**: `MolWin` has been moved from `visual.molview` to `visual.molui`.
 - **LIB**: All primitives to construct an input for POV-Ray have been moved from `visual.molview` to `visual.povrender`.
+- **LIB**: Refactoring of the code in `visual.povrender` to make it more manual.
 
 
 ## [0.5.0] - 2024-02-01

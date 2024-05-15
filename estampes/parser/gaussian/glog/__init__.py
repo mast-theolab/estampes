@@ -495,7 +495,7 @@ def get_hess_data(dfobj: tp.Optional[GLogIO] = None,
         Inconsitent values given in input.
     IOError
         Error if file object not set but needed.
-    IndexError
+    QuantityError
         Quantity not found.
 
     Notes
