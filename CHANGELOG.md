@@ -24,6 +24,9 @@ Other blocks are:
 
 ## Unreleased
 
+
+## [0.5.1] - 2024-05-15
+
 ### Notice
 The `visual` module has been heavily refactored, which may break scripts using the molecular visualization primitives.
 

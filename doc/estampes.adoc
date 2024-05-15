@@ -1,7 +1,7 @@
 = ESTAMPES
 :email: julien.bloino@sns.it
-:revnumber: 0.5.0
-:revremark: Updated documentation
+:revnumber: 0.5.1
+:revremark: Bump to new version
 :toc: left
 :toclevels: 3
 :icons: font

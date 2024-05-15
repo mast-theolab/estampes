@@ -1,7 +1,7 @@
 = Bars: A simple tool for anharmonic benchmark analysis.
 :email: julien.bloino@sns.it
-:revnumber: 0.5.0
-:revremark: First version.
+:revnumber: 0.5.1
+:revremark: Bump to new version
 :toc: left
 :toclevels: 1
 :icons: font

@@ -1,8 +1,7 @@
 = ESTAMPES: Library
 :email: julien.bloino@sns.it
-:revnumber: 0.5.0
-:revremark: Creation placeholder for Makefile
-:toc: left
+:revnumber: 0.5.1
+:revremark: Bump to new version
 :toclevels: 3
 :icons: font
 :stem:
