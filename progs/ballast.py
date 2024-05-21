@@ -20,8 +20,7 @@ from estampes.tools.char import convert_expr
 from estampes.visual.plotspec import SpecLayout
 
 
-TMPL_INI_BASIC = r"""\
-[DEFAULT]
+TMPL_INI_BASIC = r"""[DEFAULT]
 Spectroscopy = IR
 Level = H
 Broaden = yes
@@ -48,8 +47,7 @@ Label = Curve 1
 Show = Yes
 """
 
-TMPL_INI_EXPL = r"""\
-[DEFAULT]
+TMPL_INI_EXPL = r"""[DEFAULT]
 # Set here default parameters for all curves
 Spectroscopy = IR  # type of spectroscopy: IR, OPA, ECD, RS...
 Level = H          # Level of theory: E[lectronic], H[armonic], [A]nharmonic

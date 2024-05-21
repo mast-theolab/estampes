@@ -27,6 +27,7 @@ Other blocks are:
 
 ### Fixed
 - **BLS**: Ballast failed to parse the `Layout` block if present.
+- **BLS**: `--gen-ini` and `--gen-longini` do not print anymore an extra `\` at the start of the file.
 
 
 ## [0.5.1] - 2024-05-15
