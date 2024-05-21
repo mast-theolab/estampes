@@ -425,9 +425,14 @@ def parse_inifile(fname: str
                 col -= 1
                 optsec = opts[secs[sec]]
                 val = {}
-                for key, alias in spckeys.items():
-                    if alias in optsec:
-                        val[key] = optsec[alias]
+                found = False
+                for key, aliases in spckeys.items():
+                    for alias in aliases:
+                        if alias in optsec:
+                            val[key] = optsec[alias]
+                            found = True
+                            break
+                    if found:
                         break
                 else:
                     val[key] = spcbase[key]

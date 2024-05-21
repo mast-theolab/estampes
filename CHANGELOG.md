@@ -25,6 +25,10 @@ Other blocks are:
 ## Unreleased
 
 
+### Fixed
+- **BLS**: Ballast failed to parse the `Layout` block if present.
+
+
 ## [0.5.1] - 2024-05-15
 
 ### Notice
