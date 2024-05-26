@@ -382,8 +382,7 @@ class SpecLayout(object):
         if self.__plottag:
             canvas.text(**self.__plottag, transform=canvas.transAxes)
 
-    def def_panel(self, desc: tp.Optional[str] = None,
-                  **kwargs):
+    def def_panel(self, desc: tp.Optional[str] = None, **kwargs):
         """Defines the parameters for a panel label on a canvas.
 
         Sets the parameters necessary to include a Places a label `text`
@@ -434,8 +433,8 @@ class SpecLayout(object):
             if pos.strip():
                 raise ArgumentError('position in "desc"')
             if kwargs:
-                for key in kwargs:
-                    self.__plottag[key] = kwargs[key]
+                for key, arg in kwargs.items():
+                    self.__plottag[key] = arg
 
 
 # ==============

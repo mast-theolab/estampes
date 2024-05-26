@@ -284,7 +284,7 @@ def parse_inifile(fname: str
     dict
         Figure data.
     list
-        List of lists of spectrum layout parameters (grif format).
+        List of lists of spectrum layout parameters (grid format).
     dict
         Curves data.
 
@@ -295,6 +295,14 @@ def parse_inifile(fname: str
     ValueError
         Incorrect parameter.
     """
+    def alias_option(key, value):
+        """Return a suitable value for key based on user-given value."""
+        if key == 'legpos' and value == 'auto':
+            res = 'best'
+        else:
+            res = value
+        return res
+
     if not os.path.exists(fname):
         raise FileNotFoundError('Missing INI file')
     opts = cfg.ConfigParser()
@@ -402,10 +410,7 @@ def parse_inifile(fname: str
         for key, aliases in spckeys.items():
             for alias in aliases:
                 if alias in optsec:
-                    if key == 'legpos' and optsec[alias] == 'auto':
-                        spcbase[key] = 'best'
-                    else:
-                        spcbase[key] = optsec[alias]
+                    spcbase[key] = alias_option(key,  optsec[alias])
                     break
 
     for sec in secs:
@@ -423,17 +428,13 @@ def parse_inifile(fname: str
                 col -= 1
                 optsec = opts[secs[sec]]
                 val = {}
-                found = False
                 for key, aliases in spckeys.items():
                     for alias in aliases:
                         if alias in optsec:
-                            val[key] = optsec[alias]
-                            found = True
+                            val[key] = alias_option(key,  optsec[alias])
                             break
-                    if found:
-                        break
-                else:
-                    val[key] = spcbase[key]
+                    else:
+                        val[key] = spcbase[key]
                 spcdat[row][col] = SpecLayout(**val)
     for row in range(nrows):
         for col in range(ncols):

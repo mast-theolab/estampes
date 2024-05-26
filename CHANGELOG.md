@@ -24,9 +24,9 @@ Other blocks are:
 
 ## Unreleased
 
-
 ### Fixed
 - **BLS**: Ballast failed to parse the `Layout` block if present.
+- **BLS**: Ballast failed to read all parameters in `Layout` block, which could result in the curves not being displayed.
 - **BLS**: `--gen-ini` and `--gen-longini` do not print anymore an extra `\` at the start of the file.
 
 
