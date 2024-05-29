@@ -170,9 +170,14 @@ class QData():
             self.__extrafields[field] = desc
             setattr(self, field_, value)
 
-    def get(self, field: str) -> tp.Any:
+    def get(self,
+            field: str, *,
+            default: tp.Optional[tp.Any] = None) -> tp.Any:
         """Return the content of any non-standard field."""
-        return getattr(self, f'__{field}')
+        if default is None:
+            return getattr(self, f'__{field}', None)
+        else:
+            return getattr(self, f'__{field}', default)
 
     def list_fields(self) -> tp.List[str]:
         """Return the list of all fields."""

@@ -29,6 +29,10 @@ Other blocks are:
 - **BLS**: Ballast failed to read all parameters in `Layout` block, which could result in the curves not being displayed.
 - **BLS**: `--gen-ini` and `--gen-longini` do not print anymore an extra `\` at the start of the file.
 
+### Changed
+- **API**: `QData.get()` does not raise an AttributeError if the the quantity is the field is not found, but simply `None`.
+- **API**: It is possible to specify a default value to `QData.get()` in a way similar to the dictionary method.  The `default` keyword must be specified to set it.
+
 
 ## [0.5.1] - 2024-05-15
 
