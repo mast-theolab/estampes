@@ -284,9 +284,9 @@ class Spectrum():
         def dobj_to_ydat(dobj: QData, ykey: str,
                          yidx: tp.Optional[int] = None) -> tp.Any:
             if yidx is not None:
-                return dobj.get(ykey)[yidx]
+                return dobj.data.get(ykey)[yidx]
             else:
-                return dobj.get(ykey)
+                return dobj.data.get(ykey)
 
         if self.__spec not in SPEC2DATA:
             raise KeyError('Unsupported spectroscopy: '+self.__spec)
@@ -307,21 +307,21 @@ class Spectrum():
                 raise NotImplementedError('Keywords not available')
         dobjs = self.__dfile.get_data(**qkeys)
         if 'spc' in qkeys:
-            if isinstance(dobjs['par'].get('x'), list):
+            if isinstance(dobjs['par'].data['x'], list):
                 # Processing if multiple blocks:
                 # TODO: Add check that parameters and spectra are consistent
                 #       on Y as well
-                nblocks = len(dobjs['par'].get('x'))
-                if len(dobjs['spc'].get('x')) != nblocks:
+                nblocks = len(dobjs['par'].data['x'])
+                if len(dobjs['spc'].data['x']) != nblocks:
                     msg = 'Inconsistency between spectral ranges and ' \
                         + 'parameters.'
                     raise KeyError(msg)
                 # X axis should always be the same
                 # TODO: Add proper check that X data are consistent.
-                self.__xaxis[0] = dobjs['spc'].get('x')[0]
-                self.__xlabel[0] = dobjs['par'].get('x')[0]
+                self.__xaxis[0] = dobjs['spc'].data['x'][0]
+                self.__xlabel[0] = dobjs['par'].data['x'][0]
                 # For Y, generate key information to retrieve data
-                ykeys = (key for key in dobjs['spc'].extra_fields()
+                ykeys = (key for key in dobjs['spc'].data
                          if key.startswith('y'))
                 nidx = len(ykeys[0]) - 1
                 yfmt = f'y{{:0{nidx:d}d}}'
@@ -330,23 +330,23 @@ class Spectrum():
                 for bloc in range(nblocks):
                     ylabels = [item for item in ykeys
                                if (item[0] == 'y' and
-                                   len(dobjs['par'].get(item)) > bloc)]
+                                   len(dobjs['par'].data[item]) > bloc)]
                     for yax in ylabels:
                         i = int(yax[1:])
                         y = yfmt.format(i+offset)
                         __yindexes[y] = {'ykey': yax, 'yidx': bloc}
                     offset += len(ylabels)
             else:
-                self.__xaxis[0] = dobjs['spc'].get('x')
-                self.__xlabel[0] = dobjs['par'].get('x')
+                self.__xaxis[0] = dobjs['spc'].data['x']
+                self.__xlabel[0] = dobjs['par'].data['x']
                 __yindexes = {key: {'ykey': key}
-                              for key in dobjs['spc'].extra_fields()
+                              for key in dobjs['spc'].data
                               if key.startswith('y')}
-            self.__xunit[0] = dobjs['par']['unitx']
+            self.__xunit[0] = dobjs['par'].get('unitx')
             self.__ytags = {key: dobj_to_ydat(dobjs['par'], **val)
                             for key, val in __yindexes.items()}
             if ylabel is None:
-                _ydat = __yindexes[__yindexes.keys()[0]]
+                _ydat = __yindexes[list(__yindexes.keys())[0]]
             else:
                 try:
                     _ydat = __yindexes[ylabel.lower()]
