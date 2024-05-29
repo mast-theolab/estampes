@@ -325,7 +325,7 @@ class SpecLayout(object):
                 elif pos.lower() in LEGPOS:
                     self.__legpos = pos.lower()
                 else:
-                    raise IndexError('Unrecognized position')
+                    raise IndexError(f'Unrecognized position: {pos}')
             elif not pos:
                 self.__legpos = False
             else:
@@ -442,7 +442,7 @@ class SpecLayout(object):
 # ==============
 
 def format_label(label: str, full: bool = False) -> str:
-    """Formats label.
+    """Format label.
 
     Parameters
     ----------
@@ -458,7 +458,7 @@ def format_label(label: str, full: bool = False) -> str:
     unit = re.sub(r'\^?([-+]?\d+)', r'$^{\1}$', unit)
     unit = re.sub(r'/(\w+)', r'\1$^{-1}$', unit)
     if text:
-        res = '{} / {}'.format(text, unit)
+        res = f'{text} / {unit}'
     else:
         res = unit
     return res
