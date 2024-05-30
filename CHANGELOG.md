@@ -28,9 +28,12 @@ Other blocks are:
 - **BLS**: Ballast failed to parse the `Layout` block if present.
 - **BLS**: Ballast failed to read all parameters in `Layout` block, which could result in the curves not being displayed.
 - **BLS**: `--gen-ini` and `--gen-longini` do not print anymore an extra `\` at the start of the file.
+- **MRG**: Failure to run if no vibrational mode was provided.
+- **MRG**: No bond was displayed in the 3D window.
 - **LIB**: Fixed parsing of CSV files in `Spectrum` class.
 
 ### Changed
+- **MRG**: Options to choose the graphical output (rendering) are gather in a single argument, `--render`.  `--render=display` is equivalent to the old `-D/--display` and `--render=povray` to the old `--render`.
 - **API**: `QData.get()` does not raise an AttributeError if the the quantity is the field is not found, but simply `None`.
 - **API**: It is possible to specify a default value to `QData.get()` in a way similar to the dictionary method.  The `default` keyword must be specified to set it.
 

@@ -36,6 +36,8 @@ VIB_ALIAS = sorted([item.lower()
                     for items in MODELS['vib'].values()
                     for item in items['alias']])
 
+RENDERING = ('display', 'povray', 'interactive', 'D', 'pov', 'I')
+
 
 def build_opts(parser: argparse.ArgumentParser):
     """Build commandline options.
@@ -51,9 +53,9 @@ def build_opts(parser: argparse.ArgumentParser):
     parser.add_argument('--bond-tol', type=float, default=1.2,
                         help='Tolerance for the identification of bond as' +
                         '--bond-tol * covalence_radii')
-    msg = 'Display (Qt) instead of generating the Pov file.'
-    parser.add_argument('-D', '--display', action='store_true',
-                        help=msg)
+    # msg = 'Display (Qt) instead of generating the Pov file.'
+    # parser.add_argument('-D', '--display', action='store_true',
+    #                     help=msg)
     msg = '''Material to be used (for now, only for rendering):
 - glass: glassy aspect
 - metal: metallic aspect
@@ -74,12 +76,15 @@ def build_opts(parser: argparse.ArgumentParser):
                         default='sticks', choices=MOL_ALIAS, help=msg)
     parser.add_argument('--mol-mat', choices=MATERIALS.keys(),
                         help='Material for the molecule.')
-    parser.add_argument('-r', '--render', action='store_true',
-                        help='Scaling factor for all objects')
+    msg = '''Rendering model:
+- display: 3D interactive display (synonym: interactive, I, D).
+- povray: build a PovRay description file (synonym: pov).'''
+    parser.add_argument('-r', '--render', choices=RENDERING,
+                        default=None, help=msg)
     parser.add_argument('-s', '--scale', type=float,
                         help='Scaling factor for all objects')
     parser.add_argument('--scale-atoms', '--scale-at', type=float,
-                        help='Scaling factor for all objects')
+                        help='Scaling factor for all atoms')
     parser.add_argument('--scale-bonds', '--scale-bo', type=float,
                         help='Scaling factor for all bonds')
     msg = '''Vibrational mode to display.
@@ -161,12 +166,9 @@ def main():
     """Run the main program."""
     opts = parse_args(sys.argv[1:])
     # Set mode
-    if not (opts.display or opts.render):
+    if opts.render is None:
         opmode = 'display' if Qt_avail else 'povray'
-    elif opts.display and opts.render:
-        print('ERROR: Visualization and rendering not yet available together.')
-        sys.exit(1)
-    elif opts.display:
+    elif opts.render in ('display', 'interactive', 'D', 'I'):
         if not Qt_avail:
             print('ERROR: Qt not available. Switching to POV mode.')
             opmode = 'povray'
@@ -187,6 +189,8 @@ def main():
             if opts.vib_model in pars['alias']:
                 vib_model = key
                 break
+    else:
+        vib_model = None
 
     # Set material
     if opts.mol_mat is not None:
@@ -234,11 +238,15 @@ def main():
                               mol_mater=mol_mat, vib_mater=vib_mat,
                               scale_atoms=scale_at, scale_bonds=scale_bo)
         else:
+            if read_vib:
+                vib = opts.vib - 1
+            else:
+                vib = None
             for fname in opts.infiles:
                 builder = POVBuilder(fname, load_vibs=read_vib,
                                      tol_bonds=opts.bond_tol)
                 povfile = os.path.splitext(fname)[0] + '.pov'
-                builder.write_pov(povname=povfile, id_vib=opts.vib-1,
+                builder.write_pov(povname=povfile, id_vib=vib,
                                   mol_repr=mol_model, vib_repr=vib_model,
                                   mol_mater=mol_mat, vib_mater=vib_mat,
                                   scale_atoms=scale_at, scale_bonds=scale_bo)
@@ -249,7 +257,7 @@ def main():
             print(txt)
             sys.exit(1)
         for fname in opts.infiles:
-            moldat = extract_data(fname, read_vib)
+            moldat = extract_data(fname, opts.bond_tol, read_vib)
 
             if num_mols > 1:
                 mols_atcrd.append(moldat['coord'])
