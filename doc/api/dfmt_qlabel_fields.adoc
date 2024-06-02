@@ -207,6 +207,17 @@ A label-specific option.
 |===
 
 [.desctab,cols="<1s,^1,<7"]
+.Descriptors for *_RamAct_*, *_ROAAct_*
+|===
+| Keyword |  Aliases | Description
+
+| static  |   | Static far-from-resonance Raman/ROA activity
+| dynamic | *all* | Dynamic (frequency-dependent) far-from-resonance Raman/ROA activity
+| RR      |   | "`vibronic`" resonance Raman/ROA activity
+| _value_ |   | Extract the Raman (Optical) Activity for a given incident frequency. `_value_` is expected as a string, 
+|===
+
+[.desctab,cols="<1s,^1,<7"]
 .Descriptors for *_HessDat_*
 |===
 | Keyword |  Aliases | Description

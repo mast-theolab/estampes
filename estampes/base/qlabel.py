@@ -296,8 +296,15 @@ class QLabel():
 
                    Vel        Velocity-gauge dipole strength
          HessDat   freq       Frequency of each vibration
-
                    redmas     Reduced mass of each vibration
+        
+         vtrans     RR        Transition information for resonance Raman
+
+         vlevel     RR        Vibrational energies for resonance Raman
+
+         ramact     static    Static Raman (far-from-resonance)
+                    dynamic   Dynamic (frequency-dependent, FFR) Raman
+                    RR        Resonance Raman activity
         =========  ========  ===========================================
 
         Parameters
@@ -315,10 +322,12 @@ class QLabel():
             if descriptor is None or not descriptor.strip():
                 self.__qdesc = 'static' if self.__qtype == 'ramact' \
                     else 'dynamic'
-            elif descriptor.lower() in ('all', 'dynamic', 'static'):
+            elif descriptor.lower() in ('all', 'dynamic', 'static', 'rr'):
                 self.__qdesc = descriptor.lower()
                 if self.__qdesc == 'all':
                     self.__qdesc = 'dynamic'
+                elif self.__qdesc == 'rr':
+                    self.__qdesc = 'RR'
                 if self.__qtype == 'roaact' and self.__qdesc == 'static':
                     raise ArgumentError('Static ROA not supported')
             else:

@@ -24,6 +24,9 @@ Other blocks are:
 
 ## Unreleased
 
+### Added
+- **API**: Added support of resonance Raman activity as `QLabel(quantity="ramact", descriptor="RR")`.
+
 ### Fixed
 - **BLS**: Ballast failed to parse the `Layout` block if present.
 - **BLS**: Ballast failed to read all parameters in `Layout` block, which could result in the curves not being displayed.
@@ -31,6 +34,7 @@ Other blocks are:
 - **MRG**: Failure to run if no vibrational mode was provided.
 - **MRG**: No bond was displayed in the 3D window.
 - **LIB**: Fixed parsing of CSV files in `Spectrum` class.
+- **API**: Fixed parsing of energy levels (`vlevel`) and transition information (`vtrans`) for resonance Raman calculations.
 
 ### Changed
 - **MRG**: Options to choose the graphical output (rendering) are gather in a single argument, `--render`.  `--render=display` is equivalent to the old `-D/--display` and `--render=povray` to the old `--render`.

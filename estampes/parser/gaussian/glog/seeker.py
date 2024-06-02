@@ -416,7 +416,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                    lambda s: s.startswith('     ====='))
             fmt = (r'^\s+Energy = \s*-?\d+\.\d+ cm.-1:\s+'
                    + r'(?P<val>\|.+ ->\s+\|.+)\s*$',
-                   r'^\s+-> Omega =\s*(?P<val>\d+\.\d+) cm.-1$')
+                   r'^\s+-> (?P<val>Omega =\s*\d+\.\d+ cm.-1.*?)\s*$')
             num = (0, 0)
         elif qlab.kind == 'SOS':
             raise NotImplementedError()
@@ -456,7 +456,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
             end = (lambda s: s.startswith('     ====='),
                    lambda s: s.startswith('     ====='))
             fmt = (r'^\s+Energy = \s*(?P<val>-?\d+\.\d+) cm.-1:\s+\|.+$',
-                   r'^\s+-> Omega = \s*(?P<val>\d+\.\d+) cm.-1$')
+                   r'^\s+-> (?P<val>Omega =\s*\d+\.\d+ cm.-1.*?)\s*$')
             num = (0, 0)
         elif qlab.kind == 'SOS':
             raise NotImplementedError()
@@ -582,35 +582,46 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
             # Add quantity specific subgroups
             if qlab.label in ('ramact', 'roaact') and qlab.kind != 'static':
                 # Information on setup and incident frequency
-                # -- Harmonic level
-                if qlab.level == 'H':
-                    lnk1.append(716)
-                    key1.append(' and normal coordinates:')
-                    sub1.append(1)
-                    end1.append(lambda s: not s.startswith(' Incident light:'))
+                if qlab.kind == 'RR':
+                    lnk1.append(718)
+                    key1.append('                 Information on Transitions')
+                    sub1.append(2)
+                    end1.append(lambda s: s.startswith('     ====='))
                     num1.append(0)
                     fmt1.append(
-                        r'^\s+Incident light \(\S+\):\s+(?P<val>-?\d.*)\s*$')
-                # -- Anharmonic level
-                lnk1.append(-717)
-                if qlab.kind == 'dynamic':
-                    key1.append('          ' +
-                                'Anharmonic Raman Spectroscopy (Dynamic)')
-                    end1.append(
-                        lambda s: s.startswith('     =====')
-                        or s.startswith(' GradGrad'))
-                    sub1.append(2)
+                        r'^\s+-> (?P<val>Omega =\s*\d+\.\d+ cm.-1.*?)\s*$')
                 else:
-                    fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
-                    key1.append(fmt.format(qlab.kind))
-                    end1.append(
-                        lambda s: s.startswith('     =====')
-                        or s.startswith(' GradGrad')
-                        or s.startswith(' ## INCIDENT WAVENUMBER:'))
-                    sub1.append(0)
-                fmt1.append(r'^ ##+ (?:INCIDENT WAVENUMBER|MEASUREMENT '
-                            + r'INFORMATION):\s+(?P<val>\S+).*\s+##+\s*$')
-                num1.append(0)
+                    # -- Harmonic level
+                    if qlab.level == 'H':
+                        lnk1.append(716)
+                        key1.append(' and normal coordinates:')
+                        sub1.append(1)
+                        end1.append(
+                            lambda s: not s.startswith(' Incident light:'))
+                        num1.append(0)
+                        fmt1.append(
+                            r'^\s+Incident light \(\S+\):'
+                            + r'\s+(?P<val>-?\d.*)\s*$')
+                    # -- Anharmonic level
+                    lnk1.append(-717)
+                    if qlab.kind == 'dynamic':
+                        key1.append('          ' +
+                                    'Anharmonic Raman Spectroscopy (Dynamic)')
+                        end1.append(
+                            lambda s: s.startswith('     =====')
+                            or s.startswith(' GradGrad'))
+                        sub1.append(2)
+                    else:
+                        fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
+                        key1.append(fmt.format(qlab.kind))
+                        end1.append(
+                            lambda s: s.startswith('     =====')
+                            or s.startswith(' GradGrad')
+                            or s.startswith(' ## INCIDENT WAVENUMBER:'))
+                        sub1.append(0)
+                    fmt1.append(r'^ ##+ (?:INCIDENT WAVENUMBER|MEASUREMENT '
+                                + r'INFORMATION):\s+(?P<val>\S+).*\s+##+\s*$')
+                    num1.append(0)
             if qlab.label == 1:
                 if qlab.derord == 0:
                     if qlab.rstate == 'c':
@@ -880,76 +891,88 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                 else:
                     raise NotImplementedError()
             elif qlab.label == 'ramact':
-                if qlab.level == 'H':
-                    lnk1.extend([-716, 716])
-                    key1.extend([' and normal coordinates:',
-                                 ' and normal coordinates:'])
-                    end1.extend([
-                        lambda s: s.startswith(' Harmonic frequencies'),
-                        lambda s: s.startswith(' - Thermochemistry')])
-                    sub1.extend([1, 1])
-                    num1.extend([0, -1])
-                    if qlab.kind == 'static':
-                        fmt1.extend(
-                            [r'^\s+Raman Activities ---\s+(?P<val>-?\d.*)\s*$',
-                             r'^\s+Raman Activ -- \s*(?P<val>-?\d.*)\s*$'])
-                    else:
-                        lnk1.append(716)
-                        key1.append(' and normal coordinates:')
-                        end1.append(
-                            lambda s: s.startswith(' - Thermochemistry'))
-                        sub1.append(1)
-                        num1.append(-1)
-                        fmt1.extend(
-                            [r'^\s+Raman Activ Fr=\s?\d --- \s*'
-                             + r'(?P<val>-?\d.*)\s*$',
-                             r'^\s+RamAct Fr=\s?\d+--\s+(?P<val>\d.*)\s*$',
-                             r'^\s+Raman\d Fr=\s?\d+--\s+(?P<val>\d.*)\s*$'])
-                    lnk1.append(-717)
-                    if qlab.kind in ('static', 'dynamic'):
-                        fmt = 'Anharmonic Raman Spectroscopy ({})'
-                        txt = fmt.format(qlab.kind.capitalize())
-                        key1.append('{:>49s}'.format(txt))
-                        end1.append(
-                            lambda s: s.startswith('     =====')
-                            or s.startswith(' GradGrad'))
-                        sub1.append(2)
-                    else:
-                        fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
-                        key1.append(fmt.format(qlab.kind))
-                        end1.append(
-                            lambda s: s.startswith('     =====')
-                            or s.startswith(' GradGrad')
-                            or s.startswith(' ## INCIDENT WAVENUMBER:'))
-                        sub1.append(1)
-                    fmt1.append(r'^\s+\d+\(1\)\s+'
-                                + r'(?:-?\d+\.\d+\s+|\*+\s+){2}'
-                                + r'(?P<val>-?\d+\.\d+|\*+)\s+'
-                                + r'(?:-?\d+\.\d+|\*+)\s*$')
+                if qlab.kind == 'RR':
+                    lnk1.append(718)
+                    key1.append('                 Information on Transitions')
+                    sub1.append(2)
+                    end1.append(lambda s: s.startswith('     ====='))
                     num1.append(0)
-                elif qlab.level == 'A':
-                    lnk1.append(717)
-                    if qlab.kind in ('static', 'dynamic'):
-                        fmt = 'Anharmonic Raman Spectroscopy ({})'
-                        txt = fmt.format(qlab.kind.capitalize())
-                        key1.append(f'{txt:>49s}')
-                        end1.append(
-                            lambda s: s.startswith('     =====')
-                            or s.startswith(' GradGrad'))
-                        sub1.append(2)
-                    else:
-                        fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
-                        key1.append(fmt.format(qlab.kind))
-                        end1.append(
-                            lambda s: s.startswith('     =====')
-                            or s.startswith(' GradGrad')
-                            or s.startswith(' ## INCIDENT WAVENUMBER:'))
-                        sub1.append(1)
-                    fmt1.append(r'^\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'
-                                + r' .*\s+(?P<val>-?\d+\.\d+|\*+)\s*$')
-                    num1.append(0)
+                    fmt1.append(
+                        r'^\s+-> (?P<val>Omega =\s*\d+\.\d+ cm.-1.* '
+                        + r'Sigma =\s*-?\d+\.\d+E?[+-]\d{2,3})\s*$')
                 else:
-                    raise NotImplementedError()
+                    if qlab.level == 'H':
+                        lnk1.extend([-716, 716])
+                        key1.extend([' and normal coordinates:',
+                                    ' and normal coordinates:'])
+                        end1.extend([
+                            lambda s: s.startswith(' Harmonic frequencies'),
+                            lambda s: s.startswith(' - Thermochemistry')])
+                        sub1.extend([1, 1])
+                        num1.extend([0, -1])
+                        if qlab.kind == 'static':
+                            fmt1.extend(
+                                [r'^\s+Raman Activities ---\s+(?P<val>-?\d.*)'
+                                 + r'\s*$',
+                                 r'^\s+Raman Activ -- \s*(?P<val>-?\d.*)\s*$'])
+                        else:
+                            lnk1.append(716)
+                            key1.append(' and normal coordinates:')
+                            end1.append(
+                                lambda s: s.startswith(' - Thermochemistry'))
+                            sub1.append(1)
+                            num1.append(-1)
+                            fmt1.extend(
+                                [r'^\s+Raman Activ Fr=\s?\d --- \s*'
+                                 + r'(?P<val>-?\d.*)\s*$',
+                                 r'^\s+RamAct Fr=\s?\d+--\s+(?P<val>\d.*)\s*$',
+                                 r'^\s+Raman\d Fr=\s?\d+--\s+(?P<val>\d.*)'
+                                 + r'\s*$'])
+                        lnk1.append(-717)
+                        if qlab.kind in ('static', 'dynamic'):
+                            fmt = 'Anharmonic Raman Spectroscopy ({})'
+                            txt = fmt.format(qlab.kind.capitalize())
+                            key1.append('{:>49s}'.format(txt))
+                            end1.append(
+                                lambda s: s.startswith('     =====')
+                                or s.startswith(' GradGrad'))
+                            sub1.append(2)
+                        else:
+                            fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
+                            key1.append(fmt.format(qlab.kind))
+                            end1.append(
+                                lambda s: s.startswith('     =====')
+                                or s.startswith(' GradGrad')
+                                or s.startswith(' ## INCIDENT WAVENUMBER:'))
+                            sub1.append(1)
+                        fmt1.append(r'^\s+\d+\(1\)\s+'
+                                    + r'(?:-?\d+\.\d+\s+|\*+\s+){2}'
+                                    + r'(?P<val>-?\d+\.\d+|\*+)\s+'
+                                    + r'(?:-?\d+\.\d+|\*+)\s*$')
+                        num1.append(0)
+                    elif qlab.level == 'A':
+                        lnk1.append(717)
+                        if qlab.kind in ('static', 'dynamic'):
+                            fmt = 'Anharmonic Raman Spectroscopy ({})'
+                            txt = fmt.format(qlab.kind.capitalize())
+                            key1.append(f'{txt:>49s}')
+                            end1.append(
+                                lambda s: s.startswith('     =====')
+                                or s.startswith(' GradGrad'))
+                            sub1.append(2)
+                        else:
+                            fmt = ' ## INCIDENT WAVENUMBER:{:>15s} CM^-1 ##'
+                            key1.append(fmt.format(qlab.kind))
+                            end1.append(
+                                lambda s: s.startswith('     =====')
+                                or s.startswith(' GradGrad')
+                                or s.startswith(' ## INCIDENT WAVENUMBER:'))
+                            sub1.append(1)
+                        fmt1.append(r'^\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'
+                                    + r' .*\s+(?P<val>-?\d+\.\d+|\*+)\s*$')
+                        num1.append(0)
+                    else:
+                        raise NotImplementedError()
             elif qlab.label == 'roaact':
                 if qlab.level == 'H':
                     lnk1.extend([716, -717])

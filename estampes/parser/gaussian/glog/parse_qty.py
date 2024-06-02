@@ -471,17 +471,22 @@ def parse_vtrans_data(qlab: QLabel, dblock: tp.List[str],
                     + ' do not match.'
                 raise ParseKeyError(msg)
             dobj.set(unit='cm-1')
-            counts = {}
             data = {}
-            for incfrq, trans in zip(dblock[-1], dblock[-2]):
-                if incfrq not in data:
-                    data[incfrq] = {}
-                    counts[incfrq] = 1
-                else:
-                    counts[incfrq] += 1
-                data[incfrq][counts[incfrq]] = float(trans)
-            for key, val in data.items():
-                dobj.add_field(key, value=val)
+            # Let us check the structure of the incident frequency line.
+            # Depending on the version of Gaussian, it can be of two forms:
+            # Omega = value cm^-1, Sigma = value // old version
+            # Omega = value cm^-1, Gamma = value cm^-1, Sigma = value // new
+            # Since the states are the same for any value of Omega and Gamma
+            #   we take the first block, so we just need to parse the relevant
+            #   part.
+            # We take the first element
+            key = dblock[-1][0].split(', Sigma')[0]
+            count = 0
+            for setup_line, trans in zip(dblock[-1], dblock[-2]):
+                if setup_line.startswith(key):
+                    count += 1
+                    data[count] = float(trans)
+            dobj.set(data=data)
         else:
             if qlab.level == 'H':
                 for i, item in enumerate(reversed(dblock)):
@@ -524,27 +529,33 @@ def parse_vtrans_data(qlab: QLabel, dblock: tp.List[str],
                 msg = 'Incident frequencies data and transition data ' \
                     + 'do not match.'
                 raise ParseKeyError(msg)
-            counts = {}
             data = {}
-            for incfrq, trans in zip(dblock[-1], dblock[-2]):
-                if incfrq not in data:
-                    data[incfrq] = {}
-                    counts[incfrq] = 1
-                else:
-                    counts[incfrq] += 1
-                svals = []
-                for i, sdat in enumerate(trans.split('->')):
-                    sdesc = sdat.strip(' |>')
-                    if sdesc == '0':
-                        svals.append((0, 0))
-                    else:
-                        state = []
-                        for osc in sdesc.split(','):
-                            state.append(tuple([
-                                int(i) for i in osc.split('^')
-                            ]))
-                        svals.append(tuple(state))
-                data[incfrq][counts[incfrq]] = tuple(svals)
+            # Let us check the structure of the incident frequency line.
+            # Depending on the version of Gaussian, it can be of two forms:
+            # Omega = value cm^-1, Sigma = value // old version
+            # Omega = value cm^-1, Gamma = value cm^-1, Sigma = value // new
+            # Since the states are the same for any value of Omega and Gamma
+            #   we take the first block, so we just need to parse the relevant
+            #   part.
+            # We take the first element
+            key = dblock[-1][0].split(', Sigma')[0]
+            count = 0
+            for setup_line, trans in zip(dblock[-1], dblock[-2]):
+                if setup_line.startswith(key):
+                    count += 1
+                    svals = []
+                    for i, sdat in enumerate(trans.split('->')):
+                        sdesc = sdat.strip(' |>')
+                        if sdesc == '0':
+                            svals.append((0, 0))
+                        else:
+                            state = []
+                            for osc in sdesc.split(','):
+                                state.append(tuple([
+                                    int(i) for i in osc.split('^')
+                                ]))
+                            svals.append(tuple(state))
+                    data[count] = tuple(svals)
             dobj.set(data=data)
         else:
             if qlab.level == 'H':
@@ -717,38 +728,178 @@ def parse_ramact_data(qlab: QLabel, dblock: tp.List[str],
     """
     if isinstance(qlab.rstate, tuple):
         raise QuantityError('Electronic Raman/ROA not available.')
-    dobj = QData(qlab)
-    data = {}
-    for i, item in enumerate(reversed(dblock)):
-        if item:
-            iref = -1 - i
-            break
-    else:
-        raise ParseKeyError('Missing data for Raman/ROA activity in file')
-    # Data in Gaussian log are multiplied by 10^4 for ROA, so we need to take
-    #   this into account
-    yfactor = 1.0e-4 if ROA else 1.0
-    if qlab.level == 'H':
-        if iref == -1:
-            dobj.set(unit='ROA:Ang^6' if ROA else 'RA:Ang^6')
-            an_blk = True
+    elif qlab.kind == 'RR':
+        dobj = QData(qlab)
+        dobj.set(unit='RS:cm^2.sr^-1.mol^-1')
+        data = {}
+        counts = {}
+        line = dblock[-1][0]
+        txt = r'Omega =\s*(?P<incfrq>\d+\.\d+) cm.-1\s*,\s+'
+        if 'Gamma' in line:
+            txt += r'Gamma =\s*(?P<gamma>\d+\.\d+) cm.-1\s*,\s+'
+        txt += r'Sigma =\s*(?P<sigma>[-+]?\d\.\d+E?[+-]\d{2,3})'
+        pattern = re.compile(txt)
+        for line in dblock[-1]:
+            res = pattern.match(line).groupdict()
+            incfrq = res['incfrq']
+            gamma = res.get('gamma')
+            sigma = res['sigma']
+            if incfrq not in data:
+                if gamma is None:
+                    data[incfrq] = {}
+                    counts[incfrq] = 1
+                    d_ptr = data[incfrq]
+                    count = counts[incfrq]
+                else:
+                    data[incfrq] = {gamma: {}}
+                    counts[incfrq] = {gamma: 1}
+                    d_ptr = data[incfrq][gamma]
+                    count = counts[incfrq][gamma]
+            else:
+                if gamma is not None:
+                    if gamma not in data[incfrq]:
+                        data[incfrq][gamma] = {}
+                        counts[incfrq][gamma] = 1
+                    else:
+                        counts[incfrq][gamma] += 1
+                    d_ptr = data[incfrq][gamma]
+                    count = counts[incfrq][gamma]
+                else:
+                    d_ptr = data[incfrq]
+                    counts[incfrq] += 1
+                    count = counts[incfrq]
+            d_ptr[count] = float(sigma)
+        omegas = list(data)
+        if gamma is not None:
+            # We assume that same gammas used for each omega.
+            gammas = list(data[omegas[0]])
         else:
-            dobj.set(unit='ROA:amu.Ang^4' if ROA else 'RA:amu.Ang^4')
-            an_blk = False
-        # We create the database based on the quantity
-        if qlab.kind == 'static':
-            i = 0
-            for line in dblock[iref]:
-                for col in line.strip().split():
-                    i += 1
+            gammas = None
+    else:
+        gammas = None
+        dobj = QData(qlab)
+        data = {}
+        for i, item in enumerate(reversed(dblock)):
+            if item:
+                iref = -1 - i
+                break
+        else:
+            raise ParseKeyError('Missing data for Raman/ROA activity in file')
+        # Data in Gaussian log are multiplied by 10^4 for ROA, so we need to
+        #   take this into account
+        yfactor = 1.0e-4 if ROA else 1.0
+        if qlab.level == 'H':
+            if iref == -1:
+                dobj.set(unit='ROA:Ang^6' if ROA else 'RA:Ang^6')
+                an_blk = True
+            else:
+                dobj.set(unit='ROA:amu.Ang^4' if ROA else 'RA:amu.Ang^4')
+                an_blk = False
+            # We create the database based on the quantity
+            if qlab.kind == 'static':
+                i = 0
+                for line in dblock[iref]:
+                    for col in line.strip().split():
+                        i += 1
+                        try:
+                            data[i] = float(col)*yfactor
+                        except ValueError:
+                            data[i] = float('inf')
+                omegas = None
+            elif an_blk:
+                incfrq = None
+                omegas = []
+                setups = []
+                for item in dblock[2]:
                     try:
-                        data[i] = float(col)*yfactor
-                    except ValueError:
-                        data[i] = float('inf')
-        elif an_blk:
+                        _ = float(item)
+                        incfrq = item
+                        data[incfrq] = {}
+                    except ValueError as err:
+                        if incfrq is None:
+                            msg = 'Wrong block structure for Raman/ROA ' \
+                                + 'spectroscopy (incident freq/setup)'
+                            raise ParseKeyError(msg) from err
+                        data[incfrq][item] = {}
+                        setups.append((incfrq, item))
+                    if incfrq not in omegas:
+                        omegas.append(incfrq)
+                nlines = len(dblock[iref])/len(setups)
+                block = 0
+                iline = 0
+                for line in dblock[iref]:
+                    iline += 1
+                    if iline % nlines == 1:
+                        d = data[setups[block][0]][setups[block][1]]
+                        block += 1
+                        i = 0
+                    for col in line.strip().split():
+                        i += 1
+                        try:
+                            d[i] = float(col)*yfactor
+                        except ValueError:
+                            d[i] = float('inf')
+            else:
+                incfreqs = [item for line in dblock[1]
+                            for item in line.split()]
+                if qlab.kind == 'dynamic':
+                    omegas = incfreqs[:]
+                    for freq in incfreqs:
+                        data[freq] = {
+                            'SCP(180)u': {}, 'SCP(90)z': {}, 'DCPI(180)': {}}
+                    iline = 0
+                    ifreq = 0
+                    ioff = 0
+                    i = 0
+                    for line in dblock[iref]:
+                        iline += 1
+                        block = iline % 3
+                        if block == 1:
+                            dfreq = data[incfreqs[ifreq % len(incfreqs)]]
+                            ifreq += 1
+                            ioff += i+1
+                        d = dfreq[
+                            ('SCP(180)u', 'SCP(90)z', 'DCPI(180)')[block-1]]
+                        for i, col in enumerate(line.strip().split()):
+                            try:
+                                d[ioff+i] = float(col)*yfactor
+                            except ValueError:
+                                d[ioff+i] = float('inf')
+                else:
+                    if qlab.kind in incfreqs:
+                        ref_freq = incfreqs.index(qlab.kind)
+                        omegas = [ref_freq]
+                        data[incfreqs[ref_freq]] = {
+                            'SCP(180)u': {}, 'SCP(90)z': {}, 'DCPI(180)': {}}
+                        iline = 0
+                        ifreq = 0
+                        iref = 0
+                        i = 0
+                        for line in dblock[iref]:
+                            iline += 1
+                            block = iline % 3
+                            if block == 1:
+                                if ifreq % len(incfreqs) != ref_freq:
+                                    ifreq += 1
+                                    continue
+                                dfreq = data[incfreqs[ref_freq]]
+                                ifreq += 1
+                                iref += i+1
+                            d = dfreq[('SCP(180)u', 'SCP(90)z',
+                                       'DCPI(180)')[block-1]]
+                            for i, col in enumerate(line.strip().split()):
+                                try:
+                                    d[iref+i+1] = float(col)*yfactor
+                                except ValueError:
+                                    d[iref+i+1] = float('inf')
+                    else:
+                        raise ParseKeyError('Missing incident frequency')
+        elif qlab.level == 'A':
+            dobj.set(unit='ROA:Ang^6' if ROA else 'RA:Ang^6')
             incfrq = None
             setups = []
-            for item in dblock[2]:
+            omegas = []
+            for item in dblock[1]:
                 try:
                     _ = float(item)
                     incfrq = item
@@ -760,6 +911,8 @@ def parse_ramact_data(qlab: QLabel, dblock: tp.List[str],
                         raise ParseKeyError(msg) from err
                     data[incfrq][item] = {}
                     setups.append((incfrq, item))
+                if incfrq not in omegas:
+                    omegas.append(incfrq)
             nlines = len(dblock[iref])/len(setups)
             block = 0
             iline = 0
@@ -776,89 +929,10 @@ def parse_ramact_data(qlab: QLabel, dblock: tp.List[str],
                     except ValueError:
                         d[i] = float('inf')
         else:
-            incfreqs = [item for line in dblock[1]
-                        for item in line.split()]
-            if qlab.kind == 'dynamic':
-                for freq in incfreqs:
-                    data[freq] = {
-                        'SCP(180)u': {}, 'SCP(90)z': {}, 'DCPI(180)': {}}
-                iline = 0
-                ifreq = 0
-                ioff = 0
-                i = 0
-                for line in dblock[iref]:
-                    iline += 1
-                    block = iline % 3
-                    if block == 1:
-                        dfreq = data[incfreqs[ifreq % len(incfreqs)]]
-                        ifreq += 1
-                        ioff += i+1
-                    d = dfreq[('SCP(180)u', 'SCP(90)z', 'DCPI(180)')[block-1]]
-                    for i, col in enumerate(line.strip().split()):
-                        try:
-                            d[ioff+i] = float(col)*yfactor
-                        except ValueError:
-                            d[ioff+i] = float('inf')
-            else:
-                if qlab.kind in incfreqs:
-                    ref_freq = incfreqs.index(qlab.kind)
-                    data[incfreqs[ref_freq]] = {
-                        'SCP(180)u': {}, 'SCP(90)z': {}, 'DCPI(180)': {}}
-                    iline = 0
-                    ifreq = 0
-                    iref = 0
-                    i = 0
-                    for line in dblock[iref]:
-                        iline += 1
-                        block = iline % 3
-                        if block == 1:
-                            if ifreq % len(incfreqs) != ref_freq:
-                                ifreq += 1
-                                continue
-                            dfreq = data[incfreqs[ref_freq]]
-                            ifreq += 1
-                            iref += i+1
-                        d = dfreq[('SCP(180)u', 'SCP(90)z',
-                                   'DCPI(180)')[block-1]]
-                        for i, col in enumerate(line.strip().split()):
-                            try:
-                                d[iref+i+1] = float(col)*yfactor
-                            except ValueError:
-                                d[iref+i+1] = float('inf')
-                else:
-                    raise ParseKeyError('Missing incident frequency')
-    elif qlab.level == 'A':
-        dobj.set(unit='ROA:Ang^6' if ROA else 'RA:Ang^6')
-        incfrq = None
-        setups = []
-        for item in dblock[1]:
-            try:
-                _ = float(item)
-                incfrq = item
-                data[incfrq] = {}
-            except ValueError as err:
-                if incfrq is None:
-                    msg = 'Wrong block structure for Raman/ROA spectroscopy ' \
-                        + '(incident freq/setup)'
-                    raise ParseKeyError(msg) from err
-                data[incfrq][item] = {}
-                setups.append((incfrq, item))
-        nlines = len(dblock[iref])/len(setups)
-        block = 0
-        iline = 0
-        for line in dblock[iref]:
-            iline += 1
-            if iline % nlines == 1:
-                d = data[setups[block][0]][setups[block][1]]
-                block += 1
-                i = 0
-            for col in line.strip().split():
-                i += 1
-                try:
-                    d[i] = float(col)*yfactor
-                except ValueError:
-                    d[i] = float('inf')
-    else:
-        raise NotImplementedError()
+            raise NotImplementedError()
     dobj.set(data=data)
+    if omegas is not None:
+        dobj.add_field('omegas', value=omegas)
+    if gammas is not None:
+        dobj.add_field('gammas', value=gammas)
     return dobj
