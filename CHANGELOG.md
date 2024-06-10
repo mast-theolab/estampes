@@ -11,6 +11,7 @@ Tools have each one their own trigram
 - **APP**: Estampes Suite Program (new program)
 - **BLS**: _Ballast_
 - **BRS**: _Bars_
+- **CRS**: _Corsairs_
 - **ESP**: _ESParser_
 - **MRG**: _Mirage_
 - **OAR**: _Soar_
@@ -25,6 +26,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **CRS**: Added `Corsairs` program to build Raman tensors and invariants from multiple resonance simulations.
 - **API**: Added support of resonance Raman activity as `QLabel(quantity="ramact", descriptor="RR")`.
 
 ### Fixed
@@ -35,6 +37,7 @@ Other blocks are:
 - **MRG**: No bond was displayed in the 3D window.
 - **LIB**: Fixed parsing of CSV files in `Spectrum` class.
 - **API**: Fixed parsing of energy levels (`vlevel`) and transition information (`vtrans`) for resonance Raman calculations.
+- **API**: Updated parsing of resonance-Raman properties (13xx) with new Gaussian output that reports Gamma together with Omega.
 
 ### Changed
 - **MRG**: Options to choose the graphical output (rendering) are gather in a single argument, `--render`.  `--render=display` is equivalent to the old `-D/--display` and `--render=povray` to the old `--render`.

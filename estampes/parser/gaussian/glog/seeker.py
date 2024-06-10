@@ -11,6 +11,8 @@ from estampes.base import QLabel, \
     ParseKeyError
 from estampes.parser.gaussian.glog.search_keys import keys_prp_3xx
 from estampes.parser.gaussian.glog.types import TypeQKwrd
+from estampes.parser.gaussian.glog.logkeys import RR_OMEGA_LINE, \
+    RR_OMEGA_UNIT, RR_OMEGA_VAL
 
 
 def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
@@ -416,7 +418,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                    lambda s: s.startswith('     ====='))
             fmt = (r'^\s+Energy = \s*-?\d+\.\d+ cm.-1:\s+'
                    + r'(?P<val>\|.+ ->\s+\|.+)\s*$',
-                   r'^\s+-> (?P<val>Omega =\s*\d+\.\d+ cm.-1.*?)\s*$')
+                   RR_OMEGA_LINE)
             num = (0, 0)
         elif qlab.kind == 'SOS':
             raise NotImplementedError()
@@ -456,7 +458,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
             end = (lambda s: s.startswith('     ====='),
                    lambda s: s.startswith('     ====='))
             fmt = (r'^\s+Energy = \s*(?P<val>-?\d+\.\d+) cm.-1:\s+\|.+$',
-                   r'^\s+-> (?P<val>Omega =\s*\d+\.\d+ cm.-1.*?)\s*$')
+                   RR_OMEGA_LINE)
             num = (0, 0)
         elif qlab.kind == 'SOS':
             raise NotImplementedError()
@@ -588,8 +590,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                     sub1.append(2)
                     end1.append(lambda s: s.startswith('     ====='))
                     num1.append(0)
-                    fmt1.append(
-                        r'^\s+-> (?P<val>Omega =\s*\d+\.\d+ cm.-1.*?)\s*$')
+                    fmt1.append(RR_OMEGA_LINE)
                 else:
                     # -- Harmonic level
                     if qlab.level == 'H':
@@ -689,8 +690,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                         )
                         sub1.append(2)
                         end1.append(lambda s: s.startswith('     ====='))
-                        fmt1.append(
-                            r'^\s+-> Omega = \s*(?P<val>\d+\.\d+ cm.-1)$')
+                        fmt1.append(RR_OMEGA_UNIT)
                         num1.append(0)
                     else:
                         raise NotImplementedError()
@@ -713,7 +713,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                             fmt1.extend((
                                 r'^\s+(?P<val>[XYZ]-[XYZ]'
                                 + r'(?:\s+-?\d+\.\d+E?[-+]\d+){2}\s*$)',
-                                r'^\s+-> Omega = \s*(?P<val>\d+\.\d+) cm.-1$'
+                                RR_OMEGA_VAL
                             ))
                             num1.extend((1, 0))
                         else:
@@ -740,7 +740,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                             fmt1.extend((
                                 r'^\s+(?P<val>[XYZ]-[XYZ]'
                                 + r'(?:\s+-?\d+\.\d+E?[-+]\d+){2}\s*$)',
-                                r'^\s+-> Omega = \s*(?P<val>\d+\.\d+) cm.-1$'
+                                RR_OMEGA_VAL
                             ))
                             num1.extend((1, 0))
                         else:
@@ -767,7 +767,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                             fmt1.extend((
                                 r'^\s+(?P<val>[XYZ]-[XYZ]'
                                 + r'(?:\s+-?\d+\.\d+E?[-+]\d+){2}\s*$)',
-                                r'^\s+-> Omega = \s*(?P<val>\d+\.\d+) cm.-1$'
+                                RR_OMEGA_VAL
                             ))
                             num1.extend((1, 0))
                         else:
@@ -794,7 +794,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                             fmt1.extend((
                                 r'^\s+(?P<val>[XYZ]-[XYZ]{2}'
                                 + r'(?:\s+-?\d+\.\d+E?[-+]\d+){2}\s*$)',
-                                r'^\s+-> Omega = \s*(?P<val>\d+\.\d+) cm.-1$'
+                                RR_OMEGA_VAL
                             ))
                             num1.extend((1, 0))
                         else:
@@ -821,7 +821,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                             fmt1.extend((
                                 r'^\s+(?P<val>[XYZ]{2}-[XYZ]'
                                 + r'(?:\s+-?\d+\.\d+E?[-+]\d+){2}\s*$)',
-                                r'^\s+-> Omega = \s*(?P<val>\d+\.\d+) cm.-1$'
+                                RR_OMEGA_VAL
                             ))
                             num1.extend((1, 0))
                         else:
