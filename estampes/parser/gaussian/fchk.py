@@ -1,4 +1,4 @@
-"""Low-level operations on Gaussian formatted checkpoint files.
+"""Manage low-level operations on Gaussian formatted checkpoint files.
 
 Provides low-level interfaces to manipulate/extract data in Gaussian
 formatted checkpoint files.
@@ -291,11 +291,11 @@ class FChkIO(object):
                         else:
                             fdest.write(fmt_scal[dtype].format(key, data[key]))
                     else:
-                        fdest.write(fmt_head.format(key, ndat_new))
+                        fdest.write(fmt_head.format(key, dtype, ndat_new))
                         for i in range(0, ndat_new, ncols):
                             N = min(ncols, ndat_new-i)
                             fmt = N*DFMT_FCHK[dtype] + '\n'
-                            fdest.write(fmt.format(data[key][i:i+N]))
+                            fdest.write(fmt.format(*data[key][i:i+N]))
                         for _ in range(nlin_ref):
                             line = next(fsrc)
                             fpos += len(line)
@@ -304,7 +304,7 @@ class FChkIO(object):
                     fpos += len(line)
 
             # Copy back file if requested
-            if new_file is not None:
+            if new_file is None:
                 fdest.seek(0)
                 fsrc.seek(0)
                 copyfileobj(fdest, fsrc)

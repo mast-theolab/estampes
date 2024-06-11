@@ -36,6 +36,7 @@ Other blocks are:
 - **MRG**: Failure to run if no vibrational mode was provided.
 - **MRG**: No bond was displayed in the 3D window.
 - **LIB**: Fixed parsing of CSV files in `Spectrum` class.
+- **API**: Fixed `FChkIO.write_data`.
 - **API**: Fixed parsing of energy levels (`vlevel`) and transition information (`vtrans`) for resonance Raman calculations.
 - **API**: Updated parsing of resonance-Raman properties (13xx) with new Gaussian output that reports Gamma together with Omega.
 
