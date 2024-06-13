@@ -30,6 +30,7 @@ Other blocks are:
 - **API**: Added support of resonance Raman activity as `QLabel(quantity="ramact", descriptor="RR")`.
 
 ### Fixed
+- **ESP**: Failure to plot J matrix on recent versions of Python.
 - **BLS**: Ballast failed to parse the `Layout` block if present.
 - **BLS**: Ballast failed to read all parameters in `Layout` block, which could result in the curves not being displayed.
 - **BLS**: `--gen-ini` and `--gen-longini` do not print anymore an extra `\` at the start of the file.

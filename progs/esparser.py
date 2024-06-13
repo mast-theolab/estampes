@@ -372,7 +372,7 @@ def mode_vibronic(dfile: DataFile,
             # First check that it is not a reduced-dimensionality case
             #   with only the full matrix printed and not the reddim one.
             qkey = FCHT_QTIES['fulljmat']
-            key = qkey.keys()[0]
+            key = list(qkey.keys())[0]
             dobj2 = dfile.get_data(error_noqty=error_noqty, **qkey)
             if dobj2[key].data:
                 print('''J is missing. Only the full matrix is available.
