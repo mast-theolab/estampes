@@ -368,9 +368,7 @@ def parse_inifile(fname: str
                 val2 = float(res[1])
             val = (val1, val2)
             figdat['geom'] = val
-    spcdat = []
-    for _ in range(nrows):
-        spcdat.append([None for j in range(ncols)])
+    spcdat = nrows*[ncols*[None]]
 
     # The layout system works in a slightly different way than curves
     # Besides using defaults, users can use the generic [layout] to define
@@ -648,6 +646,8 @@ def main() -> tp.NoReturn:
         fig.set_size_inches(figdata['geom'])
     # Build the curves, one at a time and then include in all relevant
     #   plot to avoid multiple iterations of heavy operations like broaden.
+    xlabels = [nrows*[ncols*[]]]
+    ylabels = [nrows*[ncols*[]]]
     for idcurve, key in enumerate(curves):
         xaxis = np.array(curves[key]['data'].xaxis)
         if curves[key]['xscale'] is not None:
@@ -715,6 +715,17 @@ def main() -> tp.NoReturn:
         for row in range(irow[0], min(irow[1]+1, nrows)):
             for col in range(icol[0], min(icol[1]+1, ncols)):
                 y0lines[row, col] = y0lines[row, col] or add_y0
+                if ((item := curves[key]['data'].get_xunit())
+                        not in xlabels[row][col]):
+                    xlabels[row][col].append(item)
+                if curves[key]['ynorm']:
+                    unit = 'Intensity / normalized'
+                elif curves[key]['yscale']:
+                    unit = 'Intensity / arb. unit'
+                else:
+                    unit = curves[key]['data'].get_yunit()
+                if unit not in ylabels[row][col]:
+                    ylabels[row][col].append(unit)
                 if nrows > 1 and ncols > 1:
                     sub = subp[row, col]
                 elif nrows > 1:
@@ -731,6 +742,38 @@ def main() -> tp.NoReturn:
     # Now set the plot grid.
     for row in range(nrows):
         for col in range(ncols):
+            if not spcdata[row][col].is_label_set('y'):
+                # Let us check if the labels are consistent:
+                if len(ylabels[row][col]) == 1:
+                    if (item := ylabels[row][col][0]) is not None:
+                        spcdata[row][col].ylabel = item
+                elif len(ylabels[row][col]) > 1:
+                    y = None
+                    for item in ylabels[row][col]:
+                        if item is not None:
+                            if y is not None:
+                                y = 'Intensity / arb. unit'
+                            else:
+                                y = item
+                    spcdata[row][col].ylabel = y
+                else:
+                    spcdata[row][col].ylabel = 'Intensity / arb. unit'
+            if not spcdata[row][col].is_label_set('x'):
+                # Let us check if the labels are consistent:
+                if len(xlabels[row][col]) == 1:
+                    if (item := xlabels[row][col][0]) is not None:
+                        spcdata[row][col].xlabel = item
+                elif len(xlabels[row][col]) > 1:
+                    y = None
+                    for item in xlabels[row][col]:
+                        if item is not None:
+                            if y is not None:
+                                y = 'Energy / arb. unit'
+                            else:
+                                y = item
+                    spcdata[row][col].xlabel = y
+                else:
+                    spcdata[row][col].xlabel = 'Energy / arb. unit'
             if nrows > 1 and ncols > 1:
                 sub = subp[row, col]
             elif nrows > 1:
@@ -743,6 +786,7 @@ def main() -> tp.NoReturn:
             if y0lines[row, col]:
                 sub.axhline(0, c='.5', zorder=-10.0)
             spcdata[row][col].set_plot(sub)
+    print(spcdata[row][col].xlabel)
     if figdata['title'] is not None:
         fig.suptitle(figdata['title'], fontweight='bold')
     if figdata['fname'] is not None:
