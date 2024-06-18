@@ -49,6 +49,12 @@ class SpecLayout(object):
         Number of columns in the legend.
     plottag
         Tag (panel label) for the plot.
+
+    Notes
+    -----
+    * `xlabel` and `ylabel` are assumed unset if a `None` value is given
+      to the constructor (default).  To force the value to be considered
+      `None`, the labels should be set through the setters instead.
     """
     def __init__(self,
                  xleft: tp.Optional[tp.Union[int, float, str]] = None,
@@ -66,6 +72,7 @@ class SpecLayout(object):
         self.__legpos = False
         self.__legcol = False
         self.__plottag = False
+        self.__ylabel_set = False
         self.xleft = xleft
         self.xright = xright
         self.ytop = ytop
@@ -73,7 +80,11 @@ class SpecLayout(object):
         self.xscale = xscale
         self.yscale = yscale
         self.xlabel = xlabel
+        if xlabel is None:
+            self.__xlabel_set = False
         self.ylabel = ylabel
+        if ylabel is None:
+            self.__ylabel_set = False
         self.title = title
         self.legend(pos=legpos, ncols=legcol)
         self.def_panel(plottag)
@@ -170,6 +181,7 @@ class SpecLayout(object):
     @xlabel.setter
     def xlabel(self, val: tp.Optional[str]):
         self.__xlabel = val
+        self.__xlabel_set = True
 
     @property
     def ylabel(self) -> tp.Optional[str]:
@@ -179,6 +191,7 @@ class SpecLayout(object):
     @ylabel.setter
     def ylabel(self, val: tp.Optional[str]):
         self.__ylabel = val
+        self.__ylabel_set = True
 
     @property
     def xscale(self) -> tp.Dict[str, tp.Union[str, int]]:
@@ -198,7 +211,7 @@ class SpecLayout(object):
             elif key in ('ln', 'log2'):
                 self.__xscale = {'value': 'log', 'base': 2}
             else:
-                raise IndexError('Unrecognized scale: {}'.format(val))
+                raise IndexError(f'Unrecognized scale: {val}')
 
     @property
     def yscale(self) -> tp.Dict[str, tp.Union[str, int]]:
@@ -218,7 +231,7 @@ class SpecLayout(object):
             elif key in ('ln', 'log2'):
                 self.__yscale = {'value': 'log', 'base': 2}
             else:
-                raise IndexError('Unrecognized scale: {}'.format(val))
+                raise IndexError(f'Unrecognized scale: {val}')
 
     @property
     def title(self) -> str:
@@ -228,6 +241,23 @@ class SpecLayout(object):
     @title.setter
     def title(self, val: tp.Optional[str]):
         self.__title = val
+
+    def is_label_set(self,
+                     what: str = 'y'
+                     ) -> tp.Union[bool, tp.Tuple[bool, bool]]:
+        """Return if an axis label is set or not.
+
+        Returns if an axis label is set or not.
+        Accepted values are: 'y', 'x', 'b'/'both'.
+        """
+        if what.lower() == 'y':
+            return self.__ylabel_set
+        elif what.lower() == 'x':
+            return self.__xlabel_set
+        elif what.lower() in ('b', 'both'):
+            return self.__xlabel_set, self.__ylabel_set
+        else:
+            raise ArgumentError('Unknown label specification to set.')
 
     def set_xbounds(self, *xaxes: tp.List[float], desc: bool = False):
         """Sets X bounds from a list of X axes.
