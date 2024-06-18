@@ -8,6 +8,7 @@ import typing as tp
 
 from estampes.parser import DataFile
 from estampes.base import QLabel, QData, TypeColor
+from estampes.tools.char import unit_to_tex
 from estampes.tools.spec import broaden, convert_y
 
 
@@ -530,30 +531,62 @@ Available: {}'''
             return self.__yaxis[0]
     yaxis = property(get_yaxis)
 
-    def get_xunit(self, origin: bool = False) -> str:
+    def get_xunit(self,
+                  tex_format: bool = True,
+                  only_dot: bool = True,
+                  use_cdot: bool = True,
+                  origin: bool = False) -> str:
         """Get the X unit.
 
         Parameter
         ---------
+        tex_format
+            Use LaTeX/TeX formatting.
+        only_dot
+            If True, slashes are converted to dot and the exponent corrected.
+            NOTE: only used for `tex_format = True`.
+        use_cdot
+            If True, cdot is used as "multiplier", otherwise the simple dot.
+            NOTE: only used for `tex_format = True`.
         origin
             Use unit for original X axis instead of current one.
         """
         i = self.__idref if not origin else 0
-        return '{} / {}'.format(self.__xlabel[i],
-                                self.__xunit[i].split(':')[-1])
+        if tex_format:
+            unit = unit_to_tex(self.__xunit[i].split(':')[-1], only_dot,
+                               use_cdot)
+        else:
+            unit = self.__xunit[i].split(':')[-1]
+        return f'{self.__xlabel[i]} / {unit}'
     xunit = property(get_xunit)
 
-    def get_yunit(self, origin: bool = False) -> str:
+    def get_yunit(self,
+                  tex_format: bool = True,
+                  only_dot: bool = True,
+                  use_cdot: bool = True,
+                  origin: bool = False) -> str:
         """Get the Y unit.
 
         Parameter
         ---------
+        tex_format
+            Use LaTeX/TeX formatting.
+        only_dot
+            If True, slashes are converted to dot and the exponent corrected.
+            NOTE: only used for `tex_format = True`.
+        use_cdot
+            If True, cdot is used as "multiplier", otherwise the simple dot.
+            NOTE: only used for `tex_format = True`.
         origin
             Use unit for original Y axis instead of current one.
         """
         i = self.__idref if not origin else 0
-        return '{} / {}'.format(self.__ylabel[i],
-                                self.__yunit[i].split(':')[-1])
+        if tex_format:
+            unit = unit_to_tex(self.__yunit[i].split(':')[-1], only_dot,
+                               use_cdot)
+        else:
+            unit = self.__yunit[i].split(':')[-1]
+        return f'{self.__ylabel[i]} / {unit}'
     yunit = property(get_yunit)
 
     @property
