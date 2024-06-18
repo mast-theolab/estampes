@@ -27,6 +27,7 @@ Other blocks are:
 
 ### Added
 - **CRS**: Added `Corsairs` program to build Raman tensors and invariants from multiple resonance simulations.
+- **LIB**: Added function `tools.char.unit_to_tex` to convert internal compact unit notation to the TeX format.  The function is quite basic and only supports properly built strings.
 - **API**: Added support of resonance Raman activity as `QLabel(quantity="ramact", descriptor="RR")`.
 
 ### Fixed

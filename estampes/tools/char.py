@@ -8,6 +8,8 @@ for ESTAMPES tools.
 import re
 import typing as tp
 
+from estampes.base.errors import ArgumentError
+
 
 # ==============
 # Module Methods
@@ -70,3 +72,82 @@ def convert_expr(expr: str,
         _expr = _expr.replace('^', '**')
 
     return _expr
+
+
+def unit_to_tex(unit: str,
+                only_dot: bool = False,
+                use_cdot: bool = True) -> str:
+    """Convert a unit to TeX format.
+
+    Converts a unit written in compact format to a proper LaTeX format.
+
+    Parameters
+    ----------
+    unit
+        Unit label.
+    only_dot
+        If True, slashes are converted to dot and the exponent corrected.
+        Example: /cm -> .cm^{-1}, /cm2 -> .cm^{-2}
+    use_cdot
+        If True, cdot is used as "multiplier", otherwise the simple dot.
+
+    Notes
+    -----
+    The function is not very robust and assume the string is correctly
+    built following the conventions used inside ESTAMPES.
+    """
+    if use_cdot:
+        dot = r'$\cdot$'
+    else:
+        dot = '.'
+
+    new_unit = ''
+    # Check first if there is a factor.
+    # The factor is assumed separated from the rest by one or more blanks.
+    items = unit.split(' ', maxsplit=1)
+    if len(items) == 2:
+        num = re.fullmatch(
+            r'(?P<int>\d+)\b\^?(?P<exp>(?:[-+]?\d+|\([-+]?\d+\)))?',
+            items[0])
+        if num:
+            res = num.groupdict()
+            if res['exp'] is None:
+                new_unit += f'{res["int"]}'
+            else:
+                new_unit += f'{res["int"]}^{{{res["exp"]}}}'
+            unit_ = items[1]
+        else:
+            unit_ = unit
+    else:
+        unit_ = unit
+
+    for item in re.split(r'(?=[./])', unit_):
+        res = re.fullmatch(
+            r'(?P<op>[./]?)(?P<unit>[^0-9+-]+)(?P<sign>[-+]?)(?P<exp>\d*)',
+            item.replace(' ', ''))
+        if not res:
+            raise ArgumentError(f'Wrong format of unit, item: {item}')
+        oper, unit, sign, exp = res.groups()
+
+        if sign and not exp:
+            raise ArgumentError(f'Wrong format of unit, item: {item}')
+
+        if oper == '/':
+            if only_dot:
+                if not exp:
+                    sign = '-'
+                    exp = '1'
+                else:
+                    if not sign:
+                        sign = '-'
+                    elif sign == '+':
+                        sign = '-'
+                oper = dot
+        elif oper == '.':
+            oper = dot
+        if sign+exp:
+            new_unit += f'{oper}{unit}$^{{{sign+exp}}}$'
+        else:
+            new_unit += f'{oper}{unit}'
+
+    return new_unit
