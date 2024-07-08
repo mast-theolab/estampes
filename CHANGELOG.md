@@ -12,6 +12,7 @@ Tools have each one their own trigram
 - **BLS**: _Ballast_
 - **BRS**: _Bars_
 - **CRS**: _Corsairs_
+- **DRV**: _Deriveur_
 - **ESP**: _ESParser_
 - **MRG**: _Mirage_
 - **OAR**: _Soar_
@@ -26,6 +27,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **DRV**: New `Deriveur` program to build displaced geometries for numerical differentiations and construct derivatives from results.
 - **CRS**: Added `Corsairs` program to build Raman tensors and invariants from multiple resonance simulations.
 - **BLS**: Ballast can now display automatically X and Y labels if not provided by the user.
 - **LIB**: The `get_xunit` and `get_yunit` methods of `base.spectrum.Spectrum` now support additional arguments to request a LaTeX-compatible format for the unit.
@@ -40,6 +42,7 @@ Other blocks are:
 - **BLS**: `--gen-ini` and `--gen-longini` do not print anymore an extra `\` at the start of the file.
 - **MRG**: Failure to run if no vibrational mode was provided.
 - **MRG**: No bond was displayed in the 3D window.
+- **LIB**: Fixed routine to compute the inertia moment.
 - **LIB**: Fixed parsing of CSV files in `Spectrum` class.
 - **API**: Fixed `FChkIO.write_data`.
 - **API**: Fixed parsing of energy levels (`vlevel`) and transition information (`vtrans`) for resonance Raman calculations.

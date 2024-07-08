@@ -116,8 +116,7 @@ def inertia_mom(at_crd: TypeAtCrd,
         raise IndexError('Size inconsistency between masses and coordinates.')
 
     Imom = np.zeros((3, 3))
-    for i in range(at_mass):
-        mi = at_mass[i]
+    for i, mi in enumerate(at_mass):
         Imom[0, 0] += mi*(at_crd[i, 1]**2 + at_crd[i, 2]**2)
         Imom[1, 1] += mi*(at_crd[i, 0]**2 + at_crd[i, 2]**2)
         Imom[2, 2] += mi*(at_crd[i, 0]**2 + at_crd[i, 1]**2)
