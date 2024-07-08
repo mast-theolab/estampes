@@ -338,14 +338,14 @@ class Molecule(Qt3DCore.QEntity):
         clickEvent
             Qt QPickEvent.
         """
-        if clickEvent.button() == QtCore.Qt.RightButton:
+        if clickEvent.button() == Qt3DRender.QPickEvent.RightButton:
             # abs_pos: absolute position of the clicked point
             abs_pos = clickEvent.worldIntersection()
             # loc_pos: local position of the clicked point in the object
             loc_pos = clickEvent.localIntersection()
             # Subtracting them give us the origin of the sphere
             self.__cam().setViewCenter(abs_pos-loc_pos)
-        elif clickEvent.button() == QtCore.Qt.LeftButton:
+        elif clickEvent.button() == Qt3DRender.QPickEvent.LeftButton:
             self.click_molatom.emit(
                 [self.__mol_id,
                  self.__at_obj.index(clickEvent.entity())+1])

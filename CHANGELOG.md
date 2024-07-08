@@ -42,6 +42,7 @@ Other blocks are:
 - **BLS**: `--gen-ini` and `--gen-longini` do not print anymore an extra `\` at the start of the file.
 - **MRG**: Failure to run if no vibrational mode was provided.
 - **MRG**: No bond was displayed in the 3D window.
+- **LIB**: Fixed test to check if an atom has been clicked in `visual.molview`.
 - **LIB**: Fixed routine to compute the inertia moment.
 - **LIB**: Fixed parsing of CSV files in `Spectrum` class.
 - **API**: Fixed `FChkIO.write_data`.
