@@ -18,7 +18,7 @@ from estampes.base.errors import ArgumentError
 def convert_expr(expr: str,
                  variable: tp.Optional[str] = None,
                  natural: bool = True) -> str:
-    """Converts mathematical expression to correct Python form.
+    """Convert mathematical expression to correct Python form.
 
     A very basic function to convert a mathematical expression given in
     a more natural language to Python-compatible expressions.
@@ -121,7 +121,11 @@ def unit_to_tex(unit: str,
     else:
         unit_ = unit
 
-    for item in re.split(r'(?=[./])', unit_):
+    items = re.split(r'(?=[./])', unit_)
+    # Since unit may start with '/', the first block may be empty, bypass
+    if unit_.startswith('/') and not items[0]:
+        items = items[1:]
+    for item in items:
         res = re.fullmatch(
             r'(?P<op>[./]?)(?P<unit>[^0-9+-]+)(?P<sign>[-+]?)(?P<exp>\d*)',
             item.replace(' ', ''))
@@ -145,6 +149,9 @@ def unit_to_tex(unit: str,
                 oper = dot
         elif oper == '.':
             oper = dot
+        # We remove multiplication symbol if nothing before.
+        if not new_unit and oper == dot:
+            oper = ''
         if sign+exp:
             new_unit += f'{oper}{unit}$^{{{sign+exp}}}$'
         else:
