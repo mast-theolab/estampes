@@ -614,12 +614,11 @@ def main() -> tp.NoReturn:
         print('ERROR: Missing files or option file.')
         sys.exit(2)
     elif args.inpfile and args.optfile:
-        msg = 'ERROR: Option file and single files cannot be treated' \
-            + ' together'
-        print(msg)
+        print('ERROR: Option file and single files cannot be treated together')
         sys.exit(2)
     elif args.inpfile:
         print('ERROR: Files in input not yet supported')
+        sys.exit(2)
     else:
         try:
             figdata, spcdata, curves = parse_inifile(args.optfile)
@@ -786,7 +785,6 @@ def main() -> tp.NoReturn:
             if y0lines[row, col]:
                 sub.axhline(0, c='.5', zorder=-10.0)
             spcdata[row][col].set_plot(sub)
-    print(spcdata[row][col].xlabel)
     if figdata['title'] is not None:
         fig.suptitle(figdata['title'], fontweight='bold')
     if figdata['fname'] is not None:
