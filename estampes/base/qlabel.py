@@ -537,7 +537,10 @@ class QLabel():
                     raise ArgumentError('Incorrect derivative order') from err
         # Derivative coordinate
         if dercoord is None or not dercoord.strip():
-            self.__dcrd = None
+            if self.__dord == 1:
+                self.__dcrd = 'X'
+            else:
+                self.__dcrd = None
         else:
             self.__dcrd = dercoord.upper()
             if self.__dcrd not in ['X', 'Q', 'QX', 'I']:
