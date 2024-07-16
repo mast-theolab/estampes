@@ -553,6 +553,8 @@ def qlab_to_kword(qlab: QLabel) -> TypeQKwrd:
             keywords = ['ETran scalars']
             if qlab.label == 1 and qlab.derord == 0:
                 keywords.append('SCF Energy')
+            if qlab.derord > 0:
+                keywords.append('Number of atoms')
         else:
             if qlab.label == 1:
                 if qlab.derord == 0:
@@ -728,9 +730,16 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
         # 4. Number of header words (irrelevant in fchk)
         # 5. State of interest
         # 6. Number of deriv. (3*natoms + 3: electric field derivatives)
-        (nstates, ndata, _, _, iroot, _) = [item for item in dblocks[key][:6]]
+        (nstates, ndata, nlr, _, iroot, _) = dblocks[key][:6]
     else:
         raise ParseKeyError('Missing scalars definition')
+    key = 'Number of atoms'
+    natoms = None
+    if qlab.derord > 0:
+        if key in dblocks:
+            natoms = dblocks[key][0]
+        else:
+            raise ParseKeyError('Missing number of atoms') 
     # States Information
     # ------------------
     initial, final = qlab.rstate
@@ -747,12 +756,13 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
             raise ParseKeyError('Missing ground-state energy')
         energy0 = dblocks[key][0]
         if final == 'a':
-            data = [dblocks[kword][i*ndata]-energy0 for i in range(nstates)]
+            data = [dblocks[kword][i*ndata*nlr]-energy0
+                    for i in range(nstates)]
         else:
             fstate = final == 'c' and iroot or final
             if fstate > nstates:
                 raise IndexError('Missing electronic state')
-            data = float(dblocks[kword][(fstate-1)*ndata]) - energy0
+            data = float(dblocks[kword][(fstate-1)*ndata*nlr]) - energy0
     elif qlab.label in (101, 102, 103):
         lqty = edpr.property_data(qlab.label).dim
         if qlab.label == 101:
@@ -766,7 +776,8 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
             offset = 10
         if qlab.derord == 0:
             if final == 'a':
-                data = [dblocks[kword][i*ndata+offset:i*ndata+offset+lqty]
+                data = [dblocks[kword][i*ndata*nlr+offset:
+                                       i*ndata*nlr+offset+lqty]
                         for i in range(nstates)]
             else:
                 fstate = final == 'c' and iroot or final
@@ -774,6 +785,25 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
                     raise IndexError('Missing electronic state')
                 i0 = (fstate-1)*ndata + offset
                 data = dblocks[kword][i0:i0+lqty]
+        elif qlab.derord == 1:
+            # We accept 'a' as alias for 'c' in this case
+            # but add a nesting level to represent the list
+            fstate = final in ('a', 'c') and iroot or final
+            if fstate != iroot:
+                raise IndexError('Only root available for derivative')
+            if qlab.dercrd != 'X':
+                raise KeyError('Only Cartesian derivatives available.')
+            # 3*ndata below is for field derivatives.
+            offset0 = ndata*nstates*nlr + 3*ndata + offset
+            data = []
+            for i in range(3*natoms):
+                data.extend(dblocks[kword][offset0+i*ndata:
+                                           offset0+i*ndata+lqty])
+            if final == 'a':
+                data = [data]
+        else:
+            raise NotImplementedError(
+                'Higher-order transition moment derivatives not yet available')
     else:
         raise QuantityError('Unsupported quantity')
     return data
