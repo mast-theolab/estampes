@@ -45,6 +45,7 @@ Other blocks are:
 - **LIB**: Fixed test to check if an atom has been clicked in `visual.molview`.
 - **LIB**: Fixed routine to compute the inertia moment.
 - **LIB**: Fixed parsing of CSV files in `Spectrum` class.
+- **API**: Fixed parsing of anharmonic static Raman from Gaussian log files.
 - **API**: Fixed `FChkIO.write_data`.
 - **API**: Fixed parsing of energy levels (`vlevel`) and transition information (`vtrans`) for resonance Raman calculations.
 - **API**: Updated parsing of resonance-Raman properties (13xx) with new Gaussian output that reports Gamma together with Omega.

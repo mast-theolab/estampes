@@ -896,38 +896,49 @@ def parse_ramact_data(qlab: QLabel, dblock: tp.List[str],
                         raise ParseKeyError('Missing incident frequency')
         elif qlab.level == 'A':
             dobj.set(unit='ROA:Ang^6' if ROA else 'RA:Ang^6')
-            incfrq = None
-            setups = []
-            omegas = []
-            for item in dblock[1]:
-                try:
-                    _ = float(item)
-                    incfrq = item
-                    data[incfrq] = {}
-                except ValueError as err:
-                    if incfrq is None:
-                        msg = 'Wrong block structure for Raman/ROA ' \
-                            + 'spectroscopy (incident freq/setup)'
-                        raise ParseKeyError(msg) from err
-                    data[incfrq][item] = {}
-                    setups.append((incfrq, item))
-                if incfrq not in omegas:
-                    omegas.append(incfrq)
-            nlines = len(dblock[iref])/len(setups)
-            block = 0
-            iline = 0
-            for line in dblock[iref]:
-                iline += 1
-                if iline % nlines == 1:
-                    d = data[setups[block][0]][setups[block][1]]
-                    block += 1
-                    i = 0
-                for col in line.strip().split():
-                    i += 1
+            if qlab.kind == 'static':
+                i = 0
+                for line in dblock[iref]:
+                    for col in line.strip().split():
+                        i += 1
+                        try:
+                            data[i] = float(col)*yfactor
+                        except ValueError:
+                            data[i] = float('inf')
+                omegas = None
+            else:
+                incfrq = None
+                setups = []
+                omegas = []
+                for item in dblock[1]:
                     try:
-                        d[i] = float(col)*yfactor
-                    except ValueError:
-                        d[i] = float('inf')
+                        _ = float(item)
+                        incfrq = item
+                        data[incfrq] = {}
+                    except ValueError as err:
+                        if incfrq is None:
+                            msg = 'Wrong block structure for Raman/ROA ' \
+                                + 'spectroscopy (incident freq/setup)'
+                            raise ParseKeyError(msg) from err
+                        data[incfrq][item] = {}
+                        setups.append((incfrq, item))
+                    if incfrq not in omegas:
+                        omegas.append(incfrq)
+                nlines = len(dblock[iref])/len(setups)
+                block = 0
+                iline = 0
+                for line in dblock[iref]:
+                    iline += 1
+                    if iline % nlines == 1:
+                        d = data[setups[block][0]][setups[block][1]]
+                        block += 1
+                        i = 0
+                    for col in line.strip().split():
+                        i += 1
+                        try:
+                            d[i] = float(col)*yfactor
+                        except ValueError:
+                            d[i] = float('inf')
         else:
             raise NotImplementedError()
     dobj.set(data=data)
