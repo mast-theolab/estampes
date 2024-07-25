@@ -180,8 +180,8 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
         end = (lambda s: s.startswith(' - Thermochemistry'),
                lambda s: s.startswith(' - Thermochemistry'))
         if qlab.kind == 'freq':
-            fmt = (r'^\s+Frequencies --- \s*(?P<val>\d.*)\s*$',
-                   r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$')
+            fmt = (r'^\s+Frequencies --- \s*(?P<val>-?\d.*)\s*$',
+                   r'^\s+Frequencies -- \s*(?P<val>-?\d.*)\s*$')
         elif qlab.kind == 'redmas':
             fmt = (r'^\s+Reduced masses --- \s*(?P<val>\d.*)\s*$',
                    r'^\s+Red. masses -- \s*(?P<val>\d.*)\s*$')
@@ -472,8 +472,8 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                 end = (lambda s: s.startswith(' - Thermochemistry'),
                        lambda s: s.startswith(' - Thermochemistry'),
                        lambda s: s.startswith('     ====='))
-                fmt = (r'^\s+Frequencies --- \s*(?P<val>\d.*)\s*$',
-                       r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$',
+                fmt = (r'^\s+Frequencies --- \s*(?P<val>-?\d.*)\s*$',
+                       r'^\s+Frequencies -- \s*(?P<val>-?\d.*)\s*$',
                        r'^\s+\w?\s+(?:\s*\d+\(\d+\))\s+\w+\s+'
                        + r'(?P<val>-?\d+\.\d+|\*+)(?:\s+-?\d+\.\d+|\*+){4}'
                        + r'.*\s*$')
