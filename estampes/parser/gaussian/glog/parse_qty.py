@@ -45,6 +45,17 @@ def parse_fcdat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
             elif 'electronic transition moment' in line:
                 dobj.add_field('tmom',
                                value=line.split(':', maxsplit=1)[-1].strip())
+    elif qlab.kind == 'ExcState':
+        line = dblock[iref][0].strip(' .')
+        if line.startswith('No'):
+            dobj.set(data=0)
+        else:
+            try:
+                dobj.set(data=int(line.split()[-1]))
+            except ValueError as err:
+                raise QuantityError(
+                    'excstate', 'Could not parse index of excited state') \
+                    from err
     elif qlab.kind == 'JMat':
         if dblock[-1]:
             i = -1

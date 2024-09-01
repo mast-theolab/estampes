@@ -155,25 +155,26 @@ A label-specific option.
 |===
 | Keyword |  Aliases | Description
 
-| SimInf  | | Simulation information/parameters
-| JMat    | | Duschinsky matrix
-| JMatF   | | Duschinsky matrix (full dimension if red-dim requested)
-| KVec    | | Shift vector
-| SRAMat  | | Sharp and Rosenstock A matrix
-| SRBVec  | | Sharp and Rosenstock B vector
-| SRCMat  | | Sharp and Rosenstock C matrix
-| SRDVec  | | Sharp and Rosenstock D vector
-| SREMat  | | Sharp and Rosenstock E matrix
-| GeomIS  | | Initial-state geometry
-| GeomFS  | | Final-state geometry
-| GeomMS  | | Intermediate geometry
-| ExGeom  | | Extrapolated geometry
-| Spec    | | Spectrum/spectra
-| SpcPar  | | Spectrum parameters (legend and broadening)
-| Conv    | | Convergence Data
-| Assign  | | Assignment data
-| E(0-0)  | | Energy difference between vibrational ground states
-| RedDim  | | Reduced-dimensionality equivalency tables
+| SimInf   | | Simulation information/parameters
+| ExcState | | Index of the excited state
+| JMat     | | Duschinsky matrix
+| JMatF    | | Duschinsky matrix (full dimension if red-dim requested)
+| KVec     | | Shift vector
+| SRAMat   | | Sharp and Rosenstock A matrix
+| SRBVec   | | Sharp and Rosenstock B vector
+| SRCMat   | | Sharp and Rosenstock C matrix
+| SRDVec   | | Sharp and Rosenstock D vector
+| SREMat   | | Sharp and Rosenstock E matrix
+| GeomIS   | | Initial-state geometry
+| GeomFS   | | Final-state geometry
+| GeomMS   | | Intermediate geometry
+| ExGeom   | | Extrapolated geometry
+| Spec     | | Spectrum/spectra
+| SpcPar   | | Spectrum parameters (legend and broadening)
+| Conv     | | Convergence Data
+| Assign   | | Assignment data
+| E(0-0)   | | Energy difference between vibrational ground states
+| RedDim   | | Reduced-dimensionality equivalency tables
 |===
 
 [.desctab,cols="<1s,^1,<7"]

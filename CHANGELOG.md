@@ -34,6 +34,7 @@ Other blocks are:
 - **LIB**: Added function `tools.char.unit_to_tex` to convert internal compact unit notation to the TeX format.  The function is quite basic and only supports properly built strings.
 - **API**: Added support of resonance Raman activity as `QLabel(quantity="ramact", descriptor="RR")`.
 - **API**: Support of electronic transition property derivatives from the formatted checkpoint file.
+- **API**: The index of the excited electronic state for vibronic calculations can be extracted from Gaussian log files.
 
 ### Fixed
 - **ESP**: Failure to plot J matrix on recent versions of Python.

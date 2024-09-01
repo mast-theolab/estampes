@@ -239,6 +239,14 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
             def end(s): return s.startswith('     ====')
             fmt = r'^\s+(?P<val>.*\w.*)\s*$'
             num = 0
+        elif qlab.kind == 'ExcState':
+            lnk = -718
+            key = '                  Treatment of Input Data'
+            sub = 2
+            def end(s): return s.startswith('     ====')
+            fmt = r'^\s+(?P<val>No electronic transition.*$|' \
+                + r'NOTE: Using excited electronic state number.*)$'
+            num = 0
         elif qlab.kind == 'JMat':
             lnk = (-718, -718)
             key = (' Duschinsky matrix', ' Final Duschinsky matrix')

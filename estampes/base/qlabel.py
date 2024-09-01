@@ -297,7 +297,7 @@ class QLabel():
                    Vel        Velocity-gauge dipole strength
          HessDat   freq       Frequency of each vibration
                    redmas     Reduced mass of each vibration
-        
+
          vtrans     RR        Transition information for resonance Raman
 
          vlevel     RR        Vibrational energies for resonance Raman
@@ -428,6 +428,8 @@ class QLabel():
                 elif key in ('E(0-0)', 'E0-0', 'DE(0-0)', 'DE0-0', 'E00',
                              'DE00'):
                     self.__qdesc = 'E(0-0)'
+                elif key in ('EXCSTATE', 'ELSTATE', 'ESTATE'):
+                    self.__qdesc = 'ExcState'
                 else:
                     raise ArgumentError(
                         f'Incorrect sup-opt for {self.__qtype}')
