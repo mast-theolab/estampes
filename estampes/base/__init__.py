@@ -68,7 +68,7 @@ from estampes.base.types import Type1Vib, TypeAtCrd, TypeAtCrdM, TypeAtData, \
     TypeDCrd, TypeDFChk, TypeDGLog, TypeDOrd, TypeQLab, TypeQLvl, TypeQOpt, \
     TypeQTag, TypeRSta, TypeVibs, ConstDict
 
-from estampes.base.errors import ArgumentError, ParseDataError, \
+from estampes.base.errors import ArgumentError, DataError, ParseDataError, \
     ParseKeyError, ParsingError, QuantityError
 
 from estampes.base.qlabel import QLabel, TypeQInfo

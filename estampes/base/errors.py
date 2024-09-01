@@ -6,6 +6,8 @@ Classes
 -------
 ArgumentError
     Generates an error for inconsistency/errors in arguments.
+DataError
+    Generic error related to data
 ParsingError
     Basic container for parsing-specific errors.
 ParseDataError
@@ -40,6 +42,29 @@ class ArgumentError(Exception):
         if msg is None:
             msg = f'Error in argument: {name}'
         super(ArgumentError, self).__init__(msg)
+
+
+class DataError(Exception):
+    """Generates an error for inconsistency/errors in data.
+
+    Generates an error if inconsistency/errors are found in processed
+    data.
+
+    Parameters
+    ----------
+    name : str
+        Name of the quantity.
+    msg : str, optional
+        Message to be printed instead of default one.
+    """
+    def __init__(self, name: tp.Optional[str] = None,
+                 msg: tp.Optional[str] = None) -> None:
+        if msg is None:
+            if name is None:
+                msg = 'Error while processing data.'
+            else:
+                msg = f'Error while processing data related to {name}'
+        super(DataError, self).__init__(msg)
 
 
 class ParsingError(Exception):
