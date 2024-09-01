@@ -23,6 +23,7 @@ from math import ceil, sqrt
 from estampes.base import ArgumentError, ParseDataError, ParseKeyError, \
     QuantityError, TypeDFChk, TypeQData, TypeQInfo, QData, QLabel
 from estampes.data import property as edpr
+from estampes.data.physics import phys_fact
 from estampes.parser.functions import parse_qlabels, reshape_dblock
 
 # ================
@@ -47,6 +48,28 @@ DFMT_FCHK = {  # Data format for each type
     'I': '{:12d}',
     'R': '{:16.8E}'
 }
+
+
+def __elquad_LT_to_2D(vec: tp.Sequence[float]) -> tp.List[tp.List[float]]:
+    """Convert electric quadrupole from LT form to 2D tensor.
+
+    Gaussian has a particular way to store internally the electric
+    quadrupole, with the following sequence:
+    XX, YY, ZZ, XY, XZ, YZ.
+    The function builds a list of lists with the correct order.
+
+    Parameters
+    ----------
+    vec
+        Vector of data corresponding to the sequence stored in memory.
+        Note that the list can have a longer size, only the first
+        elements are used.
+    """
+    return [
+        [vec[0], vec[3], vec[4]],
+        [vec[3], vec[1], vec[5]],
+        [vec[4], vec[5], vec[2]]
+    ]
 
 # ==============
 # Module Classes
@@ -325,7 +348,7 @@ class FChkIO(object):
             3. position in files
         """
         to_search = re.compile(r'''
-            (?P<title>[\w\s/\-]+?)\s*  # Key
+            (?P<title>[\w\s/\-(),]+?)\s*  # Key
             \b(?P<type>[IRC])\b\s*  # Data type
             (?P<block>N=)?\s+  # N= only set for non-scalar data
             (?P<value>[\d\-\+\.E]+)  # Block size (N=) or scalar value
@@ -641,49 +664,75 @@ def qlab_to_kword(qlab: QLabel) -> TypeQKwrd:
                         msg = 'Incident frequencies not available'
                         raise ParseDataError(msg)
             elif qlab.label == 301:
-                if qlab.derord == 0:
-                    if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
-                        keyword = 'Alpha(-w,w)'
-                elif qlab.derord == 1:
-                    keywords = ['Number of atoms']
-                    if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
-                        keyword = 'Derivative Alpha(-w,w)'
+                if qlab.kind != 'static':
+                    if qlab.derord == 0:
+                        keywords = ['Frequencies for FD properties']
+                        if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
+                            keyword = 'Alpha(-w,w)'
+                    elif qlab.derord == 1:
+                        keywords = ['Number of atoms',
+                                    'Frequencies for DFD properties']
+                        if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
+                            keyword = 'Derivative Alpha(-w,w)'
+                else:
+                    raise NotImplementedError('Static alpha NYI')
             elif qlab.label == 302:
-                if qlab.derord == 0:
-                    if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
-                        keyword = 'FD Optical Rotation Tensor'
-                elif qlab.derord == 1:
-                    keywords = ['Number of atoms']
-                    if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
-                        keyword = 'Derivative FD Optical Rotation Tensor'
+                if qlab.kind != 'static':
+                    if qlab.derord == 0:
+                        keywords = ['Frequencies for FD properties']
+                        if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
+                            keyword = 'FD Optical Rotation Tensor'
+                    elif qlab.derord == 1:
+                        keywords = ['Number of atoms',
+                                    'Frequencies for DFD properties']
+                        if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
+                            keyword = 'Derivative FD Optical Rotation Tensor'
+                else:
+                    raise NotImplementedError('Static optical rotation NYI')
             elif qlab.label == 303:
                 if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
                     raise ParseDataError('Alpha(w,0) not available')
             elif qlab.label == 304:
-                if qlab.derord == 0:
-                    if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
-                        keyword = 'D-Q polarizability'
-                elif qlab.derord == 1:
-                    if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
-                        keyword = 'Derivative D-Q polarizability'
+                if qlab.kind != 'static':
+                    if qlab.derord == 0:
+                        keywords = ['Frequencies for FD properties']
+                        if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
+                            keyword = 'D-Q polarizability'
+                    elif qlab.derord == 1:
+                        keywords = ['Number of atoms',
+                                    'Frequencies for DFD properties']
+                        if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
+                            keyword = 'Derivative D-Q polarizability'
+                else:
+                    raise NotImplementedError('Static D-Q NYI.')
             elif qlab.label == 305:
-                if qlab.derord == 0:
-                    if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
-                        raise NotImplementedError()
-                elif qlab.derord == 1:
-                    keywords = ['Number of atoms']
-                    if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
-                        raise NotImplementedError()
+                if qlab.kind != 'static':
+                    if qlab.derord == 0:
+                        keywords = ['Frequencies for FD properties']
+                        if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
+                            raise NotImplementedError()
+                    elif qlab.derord == 1:
+                        keywords = ['Number of atoms',
+                                    'Frequencies for DFD properties']
+                        if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
+                            raise NotImplementedError()
+                else:
+                    raise NotImplementedError('Static hyperpolarizability NYI')
             elif qlab.label == 306:
-                if qlab.derord == 0:
-                    if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
-                        raise NotImplementedError()
-                elif qlab.derord == 1:
-                    keywords = ['Number of atoms']
-                    if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
-                        raise NotImplementedError()
+                if qlab.kind != 'static':
+                    keywords = ['Frequencies for FD properties']
+                    if qlab.derord == 0:
+                        if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
+                            raise NotImplementedError()
+                    elif qlab.derord == 1:
+                        keywords = ['Number of atoms',
+                                    'Frequencies for DFD properties']
+                        if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
+                            raise NotImplementedError()
+                else:
+                    raise NotImplementedError('Static hyperpolarizability NYI')
             else:
-                raise QuantityError('Unknown quantity')
+                raise QuantityError(f'Unknown quantity: {qlab.label}')
     keywords.insert(0, keyword)
     return keyword, keywords
 
@@ -811,7 +860,7 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
 
 def _parse_freqdep_data(qlab: QLabel, dblocks: TypeDFChk,
                         kword: str) -> TypeQData:
-    """Sub-function to parse data on frequency-dependent properties.
+    """Parse data on frequency-dependent properties.
 
     Parses and returns data on a specific property for one or more
     incident frequencies.
@@ -839,16 +888,42 @@ def _parse_freqdep_data(qlab: QLabel, dblocks: TypeDFChk,
     QuantityError
         Unsupported quantity.
     """
+    dobj = QData(qlab)
     # Check Incident Frequency
     # ------------------------
-    if qlab.kind is None:
-        qopt_ = 0
-    elif not isinstance(qlab.kind, int):
-        raise IndexError()
+    if qlab.kind != 'static':
+        if qlab.derord == 0:
+            key = 'Frequencies for FD properties'
+        else:
+            key = 'Frequencies for DFD properties'
+        if key not in dblocks:
+            raise ParseKeyError('Missing incident freqs.')
+        incfrqs = [str(int(item*phys_fact('au2cm1'))) for item in dblocks[key]]
+    if qlab.kind == 'dynamic':
+        qopt = 0
+    elif qlab.kind == 'static':
+        qopt = -1
+    elif isinstance(qlab.kind, int):
+        qopt = qlab.kind
     else:
-        qopt_ = qlab.kind
+        for i, item in enumerate(incfrqs):
+            if int(qlab.kind) == item:
+                qopt = i + 1
+                break
+        else:
+            raise ParseKeyError('Omega not found in list of incident freqs.')
     # Quantity-specific Treatment
     # ---------------------------
+    dobj.set(unit='au')
+    if qlab.label == 300:
+        data = {'data': [], 'keys': []}
+        for freq, key in zip(dblocks[kword], incfrqs):
+            data['data'].append(freq)
+            data['keys'].append(key)
+        dobj.set(data=data['data'])
+        dobj.add_field('keys', value=data['keys'])
+        return dobj
+
     # Check size of derivatives is requested
     if qlab.derord == 0:
         nder = 1
@@ -856,35 +931,55 @@ def _parse_freqdep_data(qlab: QLabel, dblocks: TypeDFChk,
         key = 'Number of atoms'
         if key not in dblocks:
             raise ParseKeyError('Missing number of atoms')
-        natoms = dblocks[key]
+        natoms = dblocks[key][0]
         nder = 3*natoms
     else:
         raise IndexError('Unsupported derivative order')
 
-    if qlab.label == 301:
-        lqty = 9*nder
-    elif qlab.label == 302:
-        lqty = 9*nder
-    elif qlab.label == 303:
-        lqty = 9*nder
+    # Create alias to datablocks[kword] for simplicity
+    d = dblocks[kword]
+    if qlab.label in (301, 302, 303):
+        if qopt == 0:
+            data = {}
+            for ifrq, incfrq in enumerate(incfrqs):
+                ioffF = ifrq*9*nder
+                fdat = []
+                for ider in range(nder):
+                    ioff = ioffF + ider*9
+                    fdat.append([
+                        [d[ioff], d[ioff+3], d[ioff+6]],
+                        [d[ioff+1], d[ioff+4], d[ioff+7]],
+                        [d[ioff+2], d[ioff+5], d[ioff+8]]
+                    ])
+                if nder == 1:
+                    data[incfrq] = fdat[0]
+                else:
+                    data[incfrq] = fdat
     elif qlab.label == 304:
-        lqty = 18*nder
-    elif qlab.label == 305:
-        lqty = 18*nder
-    elif qlab.label == 306:
-        lqty = 18*nder
-    else:
-        raise QuantityError('Unsupported quantity')
-    lblock = len(dblocks[kword])
-    ndata = lblock // lqty  # Assumed block is correctly built
-    if qopt_ == 0:
-        data = [dblocks[kword][i*lqty:(i+1)*lqty] for i in range(ndata)]
-    else:
-        if qopt_ > ndata:
-            raise IndexError('Incident frequency index out of range')
-        data = dblocks[kword][(qopt_-1)*lqty:qopt_*lqty]
+        if qopt == 0:
+            data = {}
+            # the data are saved in Fortran order
+            # first quad, then dip.
+            # Moreover, quad stored as XX, YY, ZZ, XY, XZ, YZ
+            for ifrq, incfrq in enumerate(incfrqs):
+                ioffF = ifrq*9*nder
+                fdat = []
+                for ider in range(nder):
+                    ioff = ioffF + ider*18
+                    fdat.append([
+                        __elquad_LT_to_2D(d[ioff:ioff+6]),
+                        __elquad_LT_to_2D(d[ioff+6:ioff+12]),
+                        __elquad_LT_to_2D(d[ioff+12:ioff+18])
+                    ])
+                if nder == 1:
+                    data[incfrq] = fdat[0]
+                else:
+                    data[incfrq] = fdat
+        else:
+            raise NotImplementedError('Parsing of hyperpolar. NYI')
+    dobj.set(data=data)
 
-    return data
+    return dobj
 
 
 def parse_data(qdict: TypeQInfo,
@@ -925,34 +1020,34 @@ def parse_data(qdict: TypeQInfo,
     QuantityError
         Unsupported quantity.
     """
-    def empty_cases_ok(qlabel: QLabel) -> bool:
-        return qlabel.label == 'nvib'
+    def empty_cases_ok(qlab: QLabel) -> bool:
+        return qlab.label == 'nvib'
     dobjs = {}
-    for qkey, qlabel in qdict.items():
-        msg_noqty = f'Missing quantity "{qlabel}" in file'
+    for qkey, qlab in qdict.items():
+        msg_noqty = f'Missing quantity "{qlab}" in file'
         kword = qlab2kword[qkey]
         # Basic Check: main property present
         # -----------
-        if kword not in datablocks and not empty_cases_ok(qlabel):
+        if kword not in datablocks and not empty_cases_ok(qlab):
             if raise_error:
-                raise ParseKeyError(msg_noqty)
+                raise ParseKeyError(key='generic', msg=msg_noqty)
             else:
                 dobjs[qkey] = None
                 continue
-        dobjs[qkey] = QData(qlabel)
+        dobjs[qkey] = QData(qlab)
         # Basic Properties/Quantities
         # ---------------------------
-        if qlabel.label == 'natoms':
+        if qlab.label == 'natoms':
             dobjs[qkey].set(data=int(datablocks[kword][0]))
-        elif qlabel.label in ('atcrd', 2):
+        elif qlab.label in ('atcrd', 2):
             dobjs[qkey].set(data=reshape_dblock(datablocks[kword], (3, )))
-        elif qlabel.label in ('atmas', 'atnum'):
+        elif qlab.label in ('atmas', 'atnum'):
             dobjs[qkey].set(data=datablocks[kword])
-        elif qlabel.label == 'swopt':
+        elif qlab.label == 'swopt':
             dobjs[qkey].set(data=' '.join(datablocks[kword]))
-        elif qlabel.label == 'molsym':
+        elif qlab.label == 'molsym':
             raise NotImplementedError()
-        elif qlabel.label == 'swver':
+        elif qlab.label == 'swver':
             pattern = re.compile(r'(?:(\w+)-)?(\w{3})Rev-?([\w.+]+)')
             res = re.match(pattern, ''.join(datablocks[kword])).groups()
             data = {'major': res[-2], 'minor': res[-1]}
@@ -963,46 +1058,46 @@ def parse_data(qdict: TypeQInfo,
         # Vibrational Information
         # -----------------------
         # Technically state should be checked but considered irrelevant.
-        elif qlabel.label == 'nvib':
+        elif qlab.label == 'nvib':
             if kword in datablocks:
                 dobjs[qkey].set(data=int(datablocks[kword][0]))
             else:
                 # For a robust def of nvib, we need the symmetry and
                 #   the number of frozen atoms. For now, difficult to do.
                 raise NotImplementedError()
-        elif qlabel.label == 'hessvec':
+        elif qlab.label == 'hessvec':
             if kword in datablocks:
                 dobjs[qkey].set(dtype='L.M^{-1/2}')
                 dobjs[qkey].set(data=datablocks[kword])
-        elif qlabel.label == 'hessdat':
-            if qlabel.level == 'H':
+        elif qlab.label == 'hessdat':
+            if qlab.level == 'H':
                 key = 'Number of Normal Modes'
             else:
                 key = 'Anharmonic Number of Normal Modes'
             if key not in datablocks:
                 raise ParseKeyError('Missing necessary dimension')
             ndat = int(datablocks[key][0])
-            if qlabel.kind == 'freq':
+            if qlab.kind == 'freq':
                 offset = 0
-            elif qlabel.kind == 'redmas':
+            elif qlab.kind == 'redmas':
                 offset = ndat
             dobjs[qkey].set(data=datablocks[kword][offset:offset+ndat])
         # Vibronic Information
         # --------------------
-        elif qlabel.label == 'fcdat':
+        elif qlab.label == 'fcdat':
             raise NotImplementedError()
         # Anharmonic Information
         # ----------------------
-        elif qlabel.label == 'vptdat':
+        elif qlab.label == 'vptdat':
             raise NotImplementedError()
         # State(s)-dependent quantities
         # -----------------------------
         else:
             # Transition moments
             # ^^^^^^^^^^^^^^^^^^
-            if isinstance(qlabel.rstate, tuple):
+            if isinstance(qlab.rstate, tuple):
                 dobjs[qkey].set(
-                    data=_parse_electrans_data(qlabel, datablocks, kword))
+                    data=_parse_electrans_data(qlab, datablocks, kword))
             # States-specific Quantities
             # ^^^^^^^^^^^^^^^^^^^^^^^^^^
             else:
@@ -1014,56 +1109,53 @@ def parse_data(qdict: TypeQInfo,
                     nstates = 1
                     ndata = 16  # TODO: This may not work in the future.
                     iroot = 0
-                curr_sta = qlabel.rstate == 'c' or qlabel.rstate == iroot
+                curr_sta = qlab.rstate == 'c' or qlab.rstate == iroot
                 # Only energy is currently computed for all states:
-                if qlabel.rstate == 'a' and qlabel.kind == 2:
+                if qlab.rstate == 'a' and qlab.kind == 2:
                     dobjs[qkey].set(data=[float(datablocks[kword][i*ndata])
                                           for i in range(nstates)])
                 # Data for current electronic states
                 elif curr_sta:
-                    if qlabel.kind in ('dipstr', 'rotstr'):
-                        if qlabel.level == 'H':
+                    if qlab.label in ('dipstr', 'rotstr'):
+                        if qlab.level == 'H':
                             key = 'Number of Normal Modes'
                         else:
                             key = 'Anharmonic Number of Normal Modes'
                         if key not in datablocks:
                             raise ParseKeyError('Missing necessary dimension')
                         ndat = int(datablocks[key][0])
-                        if qlabel.kind == 'dipstr':
+                        if qlab.label == 'dipstr':
                             offset = 7*ndat
                         else:
                             offset = 8*ndat
                         dobjs[qkey].set(
                             data=datablocks[kword][offset:offset+ndat])
-                    elif qlabel.label == 1:
-                        if qlabel.derord == 0:
+                    elif qlab.label == 1:
+                        if qlab.derord == 0:
                             dobjs[qkey].set(data=datablocks[kword][0])
-                        elif qlabel.derord in (1, 2):
+                        elif qlab.derord in (1, 2):
                             dobjs[qkey].set(data=datablocks[kword])
                         else:
                             raise NotImplementedError()
-                    elif qlabel.label == 92:
+                    elif qlab.label == 92:
                         dobjs[qkey].set(data=datablocks[kword][:9])
-                    elif qlabel.label == 93:
+                    elif qlab.label == 93:
                         dobjs[qkey].set(data=datablocks[kword][9:])
-                    elif qlabel.label in (50, 91):
+                    elif qlab.label in (50, 91):
                         dobjs[qkey].set(data=datablocks[kword])
-                    elif qlabel.label == 101:
-                        if qlabel.derord in (0, 1):
+                    elif qlab.label == 101:
+                        if qlab.derord in (0, 1):
                             dobjs[qkey].set(data=datablocks[kword])
                         else:
                             raise NotImplementedError()
-                    elif qlabel.label == 102:
-                        if qlabel.derord == 1:
+                    elif qlab.label == 102:
+                        if qlab.derord == 1:
                             dobjs[qkey].set(data=datablocks[kword])
                         else:
                             raise NotImplementedError()
-                    elif qlabel.label == 300:
-                        if qlabel.derord in (0, 1):
-                            if qlabel.kind == 0:
-                                dobjs[qkey].set(data=datablocks[kword])
-                        else:
-                            raise NotImplementedError()
+                    elif qlab.label in range(300, 400):
+                        dobjs[qkey] = _parse_freqdep_data(qlab, datablocks,
+                                                          kword)
                     else:
                         raise NotImplementedError()
 
@@ -1209,7 +1301,6 @@ def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
     import sys
     import numpy as np
     from estampes.tools.math import square_ltmat
-    from estampes.data.physics import phys_fact
 
     def build_evec(fccart, atmas, get_evec, get_eval, nvib=None):
         """Build evec and eval from force constants matrix."""

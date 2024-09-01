@@ -53,6 +53,8 @@ Other blocks are:
 - **API**: Fixed parsing of energy levels (`vlevel`) and transition information (`vtrans`) for resonance Raman calculations.
 - **API**: Updated parsing of resonance-Raman properties (13xx) with new Gaussian output that reports Gamma together with Omega.
 - **API**: Fixed support of incident frequencies for frequency-dependent properties in Gaussian output file.
+- **API**: Improved support of frequency-dependent properties in Gaussian formatted checkpoint file.
+- **API**: Fixed parsing of dipole and rotatory strengths from the Gaussian formatted checkpoint file.
 
 ### Changed
 - **MRG**: Options to choose the graphical output (rendering) are gather in a single argument, `--render`.  `--render=display` is equivalent to the old `-D/--display` and `--render=povray` to the old `--render`.
