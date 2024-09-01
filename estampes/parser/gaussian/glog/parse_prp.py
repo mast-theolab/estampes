@@ -151,7 +151,21 @@ def parse_3xx_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
         return [float(item.replace('D', 'e')) for item in block.split()]
 
     dobj = QData(qlab)
-    if qlab.label in (301, 302, 303):
+    if qlab.label == 300:
+        if qlab.level == 'H':
+            unit = 'cm^-1'
+        else:
+            unit = dblock[iref][0].split()[-1]
+        dobj.set(unit=unit.lower())
+        data = {'data': [], 'keys': []}
+        for line in dblock[iref]:
+            key, unit = line.split()
+            if key not in data['keys']:
+                data['keys'].append(key)
+                data['data'].append(float(key))
+        dobj.set(data=data['data'])
+        dobj.add_field('keys', value=data['keys'])
+    elif qlab.label in (301, 302, 303):
         if isinstance(qlab.rstate, tuple):
             raise NotImplementedError('Electronic transition dip. moment NYI.')
         else:

@@ -303,7 +303,7 @@ def parse_data(qdict: TypeQInfo,
             dobjs[qkey] = parse_1xx_dat(qlabel, datablocks[first:last+1])
         # Dynamic (frequency-dependent) properties
         # ----------------------------------------
-        elif qlabel.label in range(301, 400):
+        elif qlabel.label in range(300, 400):
             dobjs[qkey] = parse_3xx_dat(qlabel, datablocks[first:last+1],
                                         iref-first)
         # Properties 13xx
