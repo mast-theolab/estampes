@@ -366,6 +366,7 @@ class POVBuilder():
                   mol_mater: str = 'plastic',
                   vib_repr: str = 'arrows',
                   vib_mater: str = 'plastic',
+                  verbose: bool = True,
                   **params):
         """Write POV-Ray file.
 
@@ -391,6 +392,8 @@ class POVBuilder():
             Representation model for vibrations.
         vib_mater
             Material to be used for the vibration.
+        verbose
+            Prints details on operations and helps.
         params
             Additional parameters, transmitted to:
 
@@ -399,6 +402,22 @@ class POVBuilder():
             - write_pov_mol
             - write_pov_vib
         """
+        fmt_write_file = 'Writing POV-Ray description scene in file: {file}'
+        msg_cmds = '''
+To run POVRay, you can use the following input (on Unix systems):
+povray +W1600 +H1200 +A +UA -D {file}
+
++W: Set the width of the image, in pixels
++H: Set the height of the image, in pixels
++A: Enable anti-aliasing for smoother images
++UA: Activate background transparency
+-D: deactivate the display of the image while it is generated.
+    Remove the option to see the image being generated in real-time.
+'''
+        msg_cmds_win = '''
+For Windows, if you run POVRay for Windows, the easiest way would be to use
+the graphical interface if provided.
+'''
         # Initial check on arguments validity/consistency
         if id_mol is not None:
             mol = id_mol
@@ -453,7 +472,7 @@ class POVBuilder():
                 lmax = len(str(self.__vmodes[id_mol].shape[0]+1))
                 _povfile += f'_vib{{vib:0{lmax}d}}'
             _povfile += '.pov'
-        # First, consider all possible cases where only 1 molecules needs to be
+        # First, consider all possible cases where only 1 molecule needs to be
         # printed
         if self.__nmols == 1 or id_mol is not None:
             box = build_box(self.__atlab[mol], self.__atcrd[mol], mol_repr)
@@ -461,9 +480,11 @@ class POVBuilder():
                 ivib = id_vib+1
             else:
                 ivib = 0
-                _povfile = re.sub(r'\{vib:?[^}]*\}', 'N/A', _povfile)
-            with open(_povfile.format(mol=mol+1, vib=ivib), 'w',
-                      encoding='utf-8') as fobj:
+                _povfile = re.sub(r'\{vib:?[^}]*\}', 'NA', _povfile)
+            _file = _povfile.format(mol=mol+1, vib=ivib)
+            with open(_file, 'w', encoding='utf-8') as fobj:
+                if verbose:
+                    print(fmt_write_file.format(file=_file))
                 zcam = set_cam_zpos(box)
                 write_pov_head(fobj, zcam, **params)
                 write_pov_mol(fobj, 1, self.__atlab[mol], self.__atcrd[mol],
@@ -498,8 +519,11 @@ class POVBuilder():
                 if '{mol}' in _povfile:
                     _povfile = re.sub(r'\{mol:?[^}]*\}', 'all', _povfile)
                 if '{vib}' in _povfile:
-                    _povfile = re.sub(r'\{vib:?[^}]*\}', 'N/A', _povfile)
-                with open(_povfile, 'w', encoding='utf-8') as fobj:
+                    _povfile = re.sub(r'\{vib:?[^}]*\}', 'NA', _povfile)
+                _file = _povfile
+                with open(_file, 'w', encoding='utf-8') as fobj:
+                    if verbose:
+                        print(fmt_write_file.format(file=_file))
                     zcam = set_cam_zpos(box)
                     write_pov_head(fobj, zcam, **params)
                     write_pov_mol(fobj, self.__nmols, self.__atlab,
@@ -515,14 +539,20 @@ class POVBuilder():
                     _povfile = re.sub(r'\{vib:?[^}]*\}', 'N/A', _povfile)
                 for i in range(self.__nmols):
                     box = build_box(self.__atlab[i], self.__atcrd[i], mol_repr)
-                    with open(_povfile.format(mol=i+1), 'w',
-                              encoding='utf-8') as fobj:
+                    _file = _povfile.format(mol=i+1)
+                    with open(_file, 'w', encoding='utf-8') as fobj:
+                        if verbose:
+                            print(fmt_write_file.format(file=_file))
                         zcam = set_cam_zpos(box)
                         write_pov_head(fobj, zcam, **params)
                         write_pov_mol(fobj, 1, self.__atlab[i],
                                       self.__atcrd[i], self.__bonds[i],
                                       representation=mol_repr,
                                       material=mol_mater, **params)
+        if verbose:
+            print(msg_cmds.format(file=_file))
+            if os.sys.platform == 'win32':
+                print(msg_cmds_win)
 
 
 def build_box(at_lab: TypeAtLab,
