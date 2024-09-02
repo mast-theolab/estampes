@@ -825,7 +825,7 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
             if fstate > nstates:
                 raise IndexError('Missing electronic state')
             data = float(dblocks[kword][(fstate-1)*ndata*nlr]) - energy0
-    elif qlab.label in (101, 102, 103):
+    elif qlab.label in (101, 102, 107):
         lqty = edpr.property_data(qlab.label).dim
         if qlab.label == 101:
             if qlab.kind == 'len':
@@ -838,15 +838,24 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
             offset = 10
         if qlab.derord == 0:
             if final == 'a':
-                data = [dblocks[kword][i*ndata*nlr+offset:
-                                       i*ndata*nlr+offset+lqty]
-                        for i in range(nstates)]
+                if qlab.label == 107:
+                    data = [__elquad_LT_to_2D(
+                            dblocks[kword][i*ndata*nlr+offset:
+                                           i*ndata*nlr+offset+lqty])
+                            for i in range(nstates)]
+                else:
+                    data = [dblocks[kword][i*ndata*nlr+offset:
+                                           i*ndata*nlr+offset+lqty]
+                            for i in range(nstates)]
             else:
                 fstate = final == 'c' and iroot or final
                 if fstate > nstates:
                     raise IndexError('Missing electronic state')
                 i0 = (fstate-1)*ndata + offset
-                data = dblocks[kword][i0:i0+lqty]
+                if qlab.label == 107:
+                    data = __elquad_LT_to_2D(dblocks[kword][i0:i0+lqty])
+                else:
+                    data = dblocks[kword][i0:i0+lqty]
         elif qlab.derord == 1:
             # We accept 'a' as alias for 'c' in this case
             # but add a nesting level to represent the list
@@ -859,15 +868,21 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
             offset0 = ndata*nstates*nlr + 3*ndata + offset
             data = []
             for i in range(3*natoms):
-                data.extend(dblocks[kword][offset0+i*ndata:
-                                           offset0+i*ndata+lqty])
+                if qlab.label == 107:
+                    data.append(
+                        __elquad_LT_to_2D(dblocks[kword][offset0+i*ndata:
+                                                         offset0+i*ndata+lqty])
+                    )
+                else:
+                    data.append(dblocks[kword][offset0+i*ndata:
+                                               offset0+i*ndata+lqty])
             if final == 'a':
                 data = [data]
         else:
             raise NotImplementedError(
                 'Higher-order transition moment derivatives not yet available')
     else:
-        raise QuantityError('Unsupported quantity')
+        raise QuantityError(qlab.label)
     return data
 
 

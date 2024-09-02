@@ -56,6 +56,7 @@ Other blocks are:
 - **API**: Fixed support of incident frequencies for frequency-dependent properties in Gaussian output file.
 - **API**: Improved support of frequency-dependent properties in Gaussian formatted checkpoint file.
 - **API**: Fixed parsing of dipole and rotatory strengths from the Gaussian formatted checkpoint file.
+- **API**: Electronic transition moments of electric quadrupole from Gaussian formatted checkpoint files are now correctly supported.
 
 ### Changed
 - **MRG**: Options to choose the graphical output (rendering) are gather in a single argument, `--render`.  `--render=display` is equivalent to the old `-D/--display` and `--render=povray` to the old `--render`.
