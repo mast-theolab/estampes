@@ -89,6 +89,8 @@ def build_opts(parser: argparse.ArgumentParser):
                         help='Scaling factor for all atoms')
     parser.add_argument('--scale-bonds', '--scale-bo', type=float,
                         help='Scaling factor for all bonds')
+    parser.add_argument('--silent', action='store_true', default=False,
+                        help='Silent mode, also deactivate help messages.')
     msg = '''Vibrational mode to display.
 NOTE: only available if input file contains eigenvectors.'''
     parser.add_argument('--vib', type=int, help=msg)
@@ -241,7 +243,8 @@ def main():
             builder.write_pov(povname=povfile, merge_mols=True,
                               mol_repr=mol_model, vib_repr=vib_model,
                               mol_mater=mol_mat, vib_mater=vib_mat,
-                              scale_atoms=scale_at, scale_bonds=scale_bo)
+                              scale_atoms=scale_at, scale_bonds=scale_bo,
+                              verbose=not opts.silent)
         else:
             if read_vib:
                 vib = opts.vib - 1
@@ -257,7 +260,8 @@ def main():
                 builder.write_pov(povname=povfile, id_vib=vib,
                                   mol_repr=mol_model, vib_repr=vib_model,
                                   mol_mater=mol_mat, vib_mater=vib_mat,
-                                  scale_atoms=scale_at, scale_bonds=scale_bo)
+                                  scale_atoms=scale_at, scale_bonds=scale_bo,
+                                  verbose=not opts.silent)
     else:
         if num_mols > 1 and read_vib:
             txt = 'ERROR: Cannot visualize normal modes with multiple '\
