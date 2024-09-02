@@ -470,6 +470,7 @@ class POVBuilder():
                               self.__bonds[mol],
                               col_bond_as_atom=True,
                               representation=mol_repr, material=mol_mater,
+                              show_mol=False,
                               **params)
                 if vib is not None:
                     write_pov_vib(fobj, self.__atcrd[mol], vib,
@@ -710,6 +711,7 @@ def write_pov_mol(fobj: tp.TextIO,
                   scale_atoms: float = 1.0,
                   scale_bonds: float = 1.0,
                   material: str = 'plastic',
+                  show_mol: bool = True,
                   **kwargs):
     """Write molecular specifications in a POV-Ray file.
 
@@ -738,6 +740,8 @@ def write_pov_mol(fobj: tp.TextIO,
         Scaling factor of the bonds.
     material
         Material to use for the molecular representation.
+    show_mol
+        Add block to display the molecule.
     """
     try:
         if not fobj.writable():
@@ -889,8 +893,9 @@ def write_pov_mol(fobj: tp.TextIO,
             fobj.write(fmt_obj_at.format(
                 at=atdat[lab]['symb'], id=iat+1, xyz=at_crd[iat]))
         # -- Close and add molecules
-        fobj.write('''}
-
+        fobj.write('}\n')
+        if show_mol:
+            fobj.write('''
 object {
     molecule
 }
@@ -934,6 +939,7 @@ def write_pov_vib(fobj: tp.TextIO,
                   representation: str = 'arrow',
                   scale_mode: float = 1.0,
                   material: str = 'glass',
+                  show_obj: str = 'both',
                   **kwargs):
     """Write normal mode description in a POV-Ray file.
 
@@ -952,6 +958,12 @@ def write_pov_vib(fobj: tp.TextIO,
         Scaling factor to be applied to the displacements.
     material
         Material to use for the vibrational representation.
+    show_obj
+        Add commands to show object(s). Possible values:
+
+        * both: show combined molecule and vibration
+        * vib: show only vibration
+        * no: do not show
     """
     try:
         if not fobj.writable():
@@ -992,10 +1004,25 @@ def write_pov_vib(fobj: tp.TextIO,
     else:
         raise ArgumentError('Unsupported representation of vibrations.')
 
-    fobj.write('\nunion{\n')
+    fobj.write('\n#declare vib = union{\n')
     for xyz, dxyz in zip(at_crd, evec):
         ldxyz = np.linalg.norm(dxyz)
         rot = np.transpose(vrotate_3D(np.array([0, 1, 0]), dxyz/ldxyz))
         fobj.write(fmt_vib.format(rot=rot.tolist(), trans=xyz.tolist(),
                                   lvib=ldxyz))
     fobj.write('}\n')
+
+    # Conclude with options for showing
+    if show_obj.lower() == 'both':
+        fobj.write('''
+union {
+    object { molecule }
+    object { vib }
+}
+''')
+    elif show_obj.lower() == 'vib':
+        fobj.write('''
+object {
+    vib
+}
+''')

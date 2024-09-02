@@ -61,6 +61,8 @@ Other blocks are:
 ### Changed
 - **MRG**: Options to choose the graphical output (rendering) are gather in a single argument, `--render`.  `--render=display` is equivalent to the old `-D/--display` and `--render=povray` to the old `--render`.
 - **LIB**: The default coordinates systems for the derivatives is Cartesian (`X`) in `QLabel`.
+- **LIB**: `visual.povrender` now build a POVRay object containing the whole description of a vibration.
+- **LIB**: `visual.povrender` can display together the vibration representation and the molecule to facilitate the transformation operations and make them consistent.
 - **API**: `QData.get()` does not raise an AttributeError if the the quantity is the field is not found, but simply `None`.
 - **API**: It is possible to specify a default value to `QData.get()` in a way similar to the dictionary method.  The `default` keyword must be specified to set it.
 - **API**: Improved error messages for missing/unsupported quantities.
