@@ -801,7 +801,7 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
         if key in dblocks:
             natoms = dblocks[key][0]
         else:
-            raise ParseKeyError('Missing number of atoms') 
+            raise ParseKeyError('Missing number of atoms')
     # States Information
     # ------------------
     initial, final = qlab.rstate
@@ -1321,9 +1321,11 @@ def get_data(dfobj: FChkIO,
         data = parse_data(qty_dict, main_kwlist, datablocks, gver,
                           error_noqty)
     except (QuantityError, NotImplementedError) as err:
-        raise QuantityError('Unsupported quantities') from err
+        msg = f'Unsupported quantities.\n=> {err}'
+        raise QuantityError(msg) from err
     except (ParseKeyError, IndexError) as err:
-        raise IndexError('Missing data in FChk') from err
+        msg = f'Missing data in FChk.\n=> {err}'
+        raise IndexError(msg) from err
 
     # Fill redundant keys
     if dupl_keys:

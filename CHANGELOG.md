@@ -63,6 +63,7 @@ Other blocks are:
 - **LIB**: The default coordinates systems for the derivatives is Cartesian (`X`) in `QLabel`.
 - **API**: `QData.get()` does not raise an AttributeError if the the quantity is the field is not found, but simply `None`.
 - **API**: It is possible to specify a default value to `QData.get()` in a way similar to the dictionary method.  The `default` keyword must be specified to set it.
+- **API**: Improved error messages for missing/unsupported quantities.
 
 
 ## [0.5.1] - 2024-05-15

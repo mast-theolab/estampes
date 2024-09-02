@@ -724,7 +724,8 @@ def parse_trans_str(qlab: QLabel, dblock: tp.List[str],
                 raise NotImplementedError()
 
     else:
-        raise QuantityError('Unsupported type of transition strength')
+        raise QuantityError('strength',
+                            'Unsupported type of transition strength')
 
     return dobj
 
