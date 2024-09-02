@@ -570,6 +570,19 @@ def qlab_to_kword(qlab: QLabel) -> TypeQKwrd:
         else:
             keywords = ['ETran scalars']
             keyword = 'ETran state values'
+    elif qlab.label == 'vtrans':
+        if qlab.level == 'H':
+            keyword = 'Vib-IFlags'
+            keywords = ['Vib-LFlags']
+        else:
+            raise NotImplementedError('Anharmonic vtrans NYI')
+    elif qlab.label == 'vlevel':
+        if qlab.level == 'H':
+            keyword = 'Vib-E2'
+            keywords = ['Number of Normal Modes']
+        else:
+            keyword = 'Anharmonic Vib-E2'
+            keywords = ['Anharmonic Number of Normal Modes']
     else:
         if isinstance(qlab.rstate, tuple):
             keyword = 'ETran state values'
@@ -1130,6 +1143,66 @@ def parse_data(qdict: TypeQInfo,
                             offset = 8*ndat
                         dobjs[qkey].set(
                             data=datablocks[kword][offset:offset+ndat])
+                    elif qlab.label == 'vlevel':
+                        if qlab.level == 'H':
+                            key = 'Number of Normal Modes'
+                        else:
+                            key = 'Anharmonic Number of Normal Modes'
+                        if key not in datablocks:
+                            raise ParseKeyError('Missing necessary dimension')
+                        ndat = int(datablocks[key][0])
+                        data = {}
+                        for i, val in enumerate(datablocks[kword][0:ndat]):
+                            data[i+1] = val
+                        dobjs[qkey].set(data=data)
+                    elif qlab.label == 'vtrans':
+                        if qlab.level == 'H':
+                            key = 'Vib-LFlags'
+                        else:
+                            key = 'Anharmonic Vib-LFlags'
+                        if key not in datablocks:
+                            raise ParseKeyError('Missing necessary dimension')
+                        ndat = int(datablocks[key][0])
+                        if len(datablocks[kword]) % ndat != 0:
+                            raise ParseDataError(
+                                'Size inconsistency in vtrans.')
+                        data = {}
+                        num = 0
+                        for i in range(0, len(datablocks[kword]), ndat):
+                            num += 1
+                            itype = datablocks[kword][i]
+                            if itype in (0, 1):
+                                data[num] = (
+                                    ((0, 0), ),
+                                    ((int(datablocks[kword][i+2]), 1), ))
+                            elif itype == 2:
+                                data[num] = (
+                                    ((0, 0), ),
+                                    ((int(datablocks[kword][i+2]), 2), ))
+                            elif itype == 3:
+                                data[num] = (
+                                    ((0, 0), ),
+                                    ((int(datablocks[kword][i+2]), 1),
+                                     (int(datablocks[kword][i+3]), 1)))
+                            elif itype == 4:
+                                data[num] = (
+                                    ((0, 0), ),
+                                    ((int(datablocks[kword][i+2]), 3), ))
+                            elif itype == 5:
+                                data[num] = (
+                                    ((0, 0), ),
+                                    ((int(datablocks[kword][i+2]), 2),
+                                     (int(datablocks[kword][i+3]), 1)))
+                            elif itype == 6:
+                                data[num] = (
+                                    ((0, 0), ),
+                                    ((int(datablocks[kword][i+2]), 1),
+                                     (int(datablocks[kword][i+3]), 1),
+                                     (int(datablocks[kword][i+4]), 1)))
+                            else:
+                                raise ParseDataError(
+                                    'Unsupported type of transition')
+                        dobjs[qkey].set(data=data)
                     elif qlab.label == 1:
                         if qlab.derord == 0:
                             dobjs[qkey].set(data=datablocks[kword][0])

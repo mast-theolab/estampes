@@ -36,6 +36,7 @@ Other blocks are:
 - **API**: Support of electronic transition property derivatives from the formatted checkpoint file.
 - **API**: The index of the excited electronic state for vibronic calculations can be extracted from Gaussian log files.
 - **API**: `DataError` class for general errors related to operations on extracted data.
+- **API**: Extraction of vibrational energy levels and states from Gaussian formatted checkpoint files.
 
 ### Fixed
 - **ESP**: Failure to plot J matrix on recent versions of Python.
