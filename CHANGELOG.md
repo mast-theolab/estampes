@@ -29,6 +29,7 @@ Other blocks are:
 ### Added
 - **CRS**: Added `Corsairs` program to build Raman tensors and invariants from multiple resonance simulations.
 - **BLS**: Ballast can now display automatically X and Y labels if not provided by the user.
+- **MRG**: Added possibility to choose the output file to store the POVRay description content.
 - **LIB**: The `get_xunit` and `get_yunit` methods of `base.spectrum.Spectrum` now support additional arguments to request a LaTeX-compatible format for the unit.
 - **LIB**: Added method to check if the x and y labels have been set in a `visual.plotspec.SpecLayout` instance.  To force "set" empty labels, it is necessary to use the dedicated setters.
 - **LIB**: Added function `tools.char.unit_to_tex` to convert internal compact unit notation to the TeX format.  The function is quite basic and only supports properly built strings.

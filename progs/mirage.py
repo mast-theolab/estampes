@@ -79,6 +79,8 @@ def build_opts(parser: argparse.ArgumentParser):
     msg = '''Rendering model:
 - display: 3D interactive display (synonym: interactive, I, D).
 - povray: build a PovRay description file (synonym: pov).'''
+    parser.add_argument('-o', '--output',
+                        help='Output file.')
     parser.add_argument('-r', '--render', choices=RENDERING,
                         default=None, help=msg)
     parser.add_argument('-s', '--scale', type=float,
@@ -221,16 +223,19 @@ def main():
             print('Vibrational modes not yet available for rendering.')
             sys.exit(1)
         if merge:
-            fmt_fname = 'mols_merge_{:03d}.pov'
-            i = 1
-            while True:
-                povfile = fmt_fname.format(i)
-                if not os.path.exists(povfile):
-                    break
-                i = i + 1
-                if i > 999:
-                    print('Too many files generated. Time to clean up.')
-                    sys.exit()
+            if opts.output is None:
+                fmt_fname = 'mols_merge_{:03d}.pov'
+                i = 1
+                while True:
+                    povfile = fmt_fname.format(i)
+                    if not os.path.exists(povfile):
+                        break
+                    i = i + 1
+                    if i > 999:
+                        print('Too many files generated. Time to clean up.')
+                        sys.exit()
+            else:
+                povfile = opts.output
             builder = POVBuilder(opts.infiles, load_vibs=read_vib,
                                  tol_bonds=opts.bond_tol)
             builder.write_pov(povname=povfile, merge_mols=True,
@@ -245,7 +250,10 @@ def main():
             for fname in opts.infiles:
                 builder = POVBuilder(fname, load_vibs=read_vib,
                                      tol_bonds=opts.bond_tol)
-                povfile = os.path.splitext(fname)[0] + '.pov'
+                if opts.output is None:
+                    povfile = os.path.splitext(fname)[0] + '.pov'
+                else:
+                    povfile = opts.output
                 builder.write_pov(povname=povfile, id_vib=vib,
                                   mol_repr=mol_model, vib_repr=vib_model,
                                   mol_mater=mol_mat, vib_mater=vib_mat,
