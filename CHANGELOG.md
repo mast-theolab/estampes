@@ -35,6 +35,7 @@ Other blocks are:
 - **LIB**: Added method to check if the x and y labels have been set in a `visual.plotspec.SpecLayout` instance.  To force "set" empty labels, it is necessary to use the dedicated setters.
 - **LIB**: Added function `tools.char.unit_to_tex` to convert internal compact unit notation to the TeX format.  The function is quite basic and only supports properly built strings.
 - **LIB**: The `write_pov` method of `visual.povrender.POVBuilder` now prints the file(s) currently written and help messages for users unfamiliar with POVRay.  The messages can be deactivated by setting the parameter `verbose` to `False`.
+- **LIB**: `plot_kvec` can display two shift vectors as images with respect to the origin for comparison.  The secondary vector is printed with negative values.
 - **API**: Added support of resonance Raman activity as `QLabel(quantity="ramact", descriptor="RR")`.
 - **API**: Support of electronic transition property derivatives from the formatted checkpoint file.
 - **API**: The index of the excited electronic state for vibronic calculations can be extracted from Gaussian log files.

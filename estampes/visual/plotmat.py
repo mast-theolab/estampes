@@ -198,8 +198,11 @@ def plot_kvec(vec: np.ndarray,
               show_grid: bool = True,
               *,
               top_down: bool = False,
-              invert_modes: bool = False
-              ) -> mpl_cont.BarContainer:
+              invert_modes: bool = False,
+              vec2: tp.Optional[np.ndarray] = None
+              ) -> tp.Union[
+                  mpl_cont.BarContainer,
+                  tp.Tuple[mpl_cont.BarContainer, mpl_cont.BarContainer]]:
     """Plots a horizontal bar chart to represent a K-like vector.
 
     Plots a shift vector as a horizontal bars.
@@ -216,6 +219,8 @@ def plot_kvec(vec: np.ndarray,
         Orders the modes so that the first one is at the top.
     invert_modes
         Invert ordering of normal modes (== decreasing order).
+    vec2
+        Secondary vector to display
 
     Returns
     -------
@@ -226,7 +231,10 @@ def plot_kvec(vec: np.ndarray,
         num_rows = len(_vec)
         row = int(y+.5) + 1
         if row > 0 and row <= num_rows:
-            z = _vec[row-1]
+            if _x < 0.0 and do_vec2:
+                z = _vec2[row-1]
+            else:
+                z = _vec[row-1]
             fmt = 'i={y:1.0f}, K(i)={z:.4f}'
         else:
             z = 0.0
@@ -240,6 +248,9 @@ def plot_kvec(vec: np.ndarray,
     lloe = '\N{LATIN SUBSCRIPT SMALL LETTER E}'
     ldot = '\N{MIDDLE DOT}'
     xlab_kvec = f'Displacement / m{lloe}{ldot}a{llo0}'
+    if do_vec2 := vec2 is not None:
+        if len(vec2) != len(vec):
+            raise IndexError('Size inconsistency between vec1 and vec2')
     if invert_modes:
         _vec = vec[::-1]
     else:
@@ -253,6 +264,20 @@ def plot_kvec(vec: np.ndarray,
             plot[i].set_color('red')
         else:
             plot[i].set_color('#73BFFF')
+    if do_vec2:
+        if invert_modes:
+            _vec2 = vec2[::-1]
+        else:
+            _vec2 = vec2
+        avec2 = np.abs(_vec2)
+        plot2 = canvas.barh(pos, -avec2, align='center')
+        for i in range(num):
+            if _vec2[i] < 0:
+                plot2[i].set_color('red')
+            else:
+                plot2[i].set_color('#73BFFF')
+        # Add delimiter vertical line at 0 for readability
+        canvas.axvline(x=0, color='black')
     if show_grid:
         canvas.grid(color='.9')
     canvas.set_xlabel(xlab_kvec)
@@ -264,4 +289,6 @@ def plot_kvec(vec: np.ndarray,
     canvas.yaxis.set_major_formatter(FuncFormatter(vmode))
     canvas.format_coord = coords
 
+    if do_vec2:
+        return plot, plot2
     return plot
