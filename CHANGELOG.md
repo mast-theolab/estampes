@@ -52,6 +52,7 @@ Other blocks are:
 - **LIB**: Fixed test to check if an atom has been clicked in `visual.molview`.
 - **LIB**: Fixed routine to compute the inertia moment.
 - **LIB**: Fixed parsing of CSV files in `Spectrum` class.
+- **LIB**: Fixed missing square root to the mass when display the shift vector K.
 - **API**: Added support of imaginary frequencies in Gaussian log file when reading energy levels or Hessian frequencies.
 - **API**: Fixed parsing of anharmonic static Raman from Gaussian log files.
 - **API**: Fixed `FChkIO.write_data`.

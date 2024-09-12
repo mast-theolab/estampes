@@ -233,13 +233,15 @@ def plot_kvec(vec: np.ndarray,
         if row > 0 and row <= num_rows:
             if _x < 0.0 and do_vec2:
                 z = _vec2[row-1]
+                label = '2'
             else:
                 z = _vec[row-1]
-            fmt = 'i={y:1.0f}, K(i)={z:.4f}'
+                label = '1' if do_vec2 else ''
+            fmt = 'i={y:1.0f}, K{lab}(i)={z:.4f}'
         else:
             z = 0.0
             fmt = 'i={y:1.0f}'
-        return fmt.format(y=y+1, z=z)
+        return fmt.format(y=y+1, z=z, lab=label)
 
     def vmode(x, _pos):
         return f'{int(x+1):d}'
@@ -247,7 +249,7 @@ def plot_kvec(vec: np.ndarray,
     llo0 = '\N{SUBSCRIPT ZERO}'
     lloe = '\N{LATIN SUBSCRIPT SMALL LETTER E}'
     ldot = '\N{MIDDLE DOT}'
-    xlab_kvec = f'Displacement / m{lloe}{ldot}a{llo0}'
+    xlab_kvec = f'Displacement / m{lloe}$^{{1/2}}${ldot}a{llo0}'
     if do_vec2 := vec2 is not None:
         if len(vec2) != len(vec):
             raise IndexError('Size inconsistency between vec1 and vec2')
