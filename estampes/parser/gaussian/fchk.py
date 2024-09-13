@@ -1226,7 +1226,8 @@ def parse_data(qdict: TypeQInfo,
                         else:
                             raise NotImplementedError()
                     elif qlab.label == 92:
-                        dobjs[qkey].set(data=datablocks[kword][:9])
+                        dobjs[qkey].set(data=reshape_dblock(
+                            datablocks[kword][:9], (3, 3)))
                     elif qlab.label == 93:
                         dobjs[qkey].set(data=datablocks[kword][9:])
                     elif qlab.label in (50, 91):
