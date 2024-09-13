@@ -126,18 +126,35 @@ def orient_modes(Lmat: np.ndarray) -> np.ndarray:
     """
     if not isinstance(Lmat, np.ndarray):
         raise IndexError('Wrong parameter, Lmat should be an array')
-    if Lmat.ndim != 2:
-        raise IndexError('Lmat is expected to have dimension 2')
     shift = 1.0e-6
-    nvib, nat3 = Lmat.shape
-    for i in range(nvib):
-        xmax = abs(Lmat[i, 0]) + shift
-        imax = 0
-        for j in range(1, nat3):
-            if abs(Lmat[i, j]) > xmax:
-                xmax = abs(Lmat[i, j]) + shift
-                imax = j
-        if Lmat[i, imax] < 0.:
-            Lmat[i, :] *= -1.
+    if Lmat.ndim == 2:
+        nvib, nat3 = Lmat.shape
+        for i in range(nvib):
+            xmax = abs(Lmat[i, 0]) + shift
+            jmax = 0
+            for j in range(1, nat3):
+                if abs(Lmat[i, j]) > xmax:
+                    xmax = abs(Lmat[i, j]) + shift
+                    jmax = j
+            if Lmat[i, jmax] < 0.:
+                Lmat[i, :] *= -1.
+    elif Lmat.ndim == 3:
+        nvib, nat, xyz = Lmat.shape
+        if xyz != 3:
+            raise IndexError('Expected 3rd dimension to have 3 elements.')
+        for i in range(nvib):
+            xmax = abs(Lmat[i, 0, 0]) + shift
+            jmax = 0
+            kmax = 0
+            for j in range(nat):
+                for k in range(3):
+                    if abs(Lmat[i, j, k]) > xmax:
+                        xmax = abs(Lmat[i, j, k]) + shift
+                        jmax = j
+                        kmax = k
+            if Lmat[i, jmax, kmax] < 0.:
+                Lmat[i, ...] *= -1.
+    else:
+        raise IndexError('Lmat is expected to have dimension 2 or 3')
 
     return Lmat
