@@ -26,6 +26,9 @@ Other blocks are:
 
 ## Unreleased
 
+
+## [0.5.2] - 2024-09-17
+
 ### Added
 - **CRS**: Added `Corsairs` program to build Raman tensors and invariants from multiple resonance simulations.
 - **BLS**: Ballast can now display automatically X and Y labels if not provided by the user.
