@@ -37,6 +37,7 @@ Other blocks are:
 - **LIB**: The `write_pov` method of `visual.povrender.POVBuilder` now prints the file(s) currently written and help messages for users unfamiliar with POVRay.  The messages can be deactivated by setting the parameter `verbose` to `False`.
 - **LIB**: `plot_kvec` can display two shift vectors as images with respect to the origin for comparison.  The secondary vector is printed with negative values.
 - **LIB**: `orient_modes()` now support eigenvectors arrays given in 2  or 3 dimensions, in the latter case as [NVib, NAtoms, 3].
+- **LIB**: The `POVBuilder` class can now support data provided directly to the constructor without having to extract them from input files.
 - **API**: Added support of resonance Raman activity as `QLabel(quantity="ramact", descriptor="RR")`.
 - **API**: Support of electronic transition property derivatives from the formatted checkpoint file.
 - **API**: The index of the excited electronic state for vibronic calculations can be extracted from Gaussian log files.

@@ -4,10 +4,10 @@ This module provides functions and instruments to build input files for
 POV-Ray (http://www.povray.org/).
 """
 
-from math import inf, tan, radians
-import typing as tp
 import os
 import re
+import typing as tp
+from math import inf, tan, radians
 
 import numpy as np
 
@@ -143,6 +143,7 @@ class POVBuilder():
                  at_labs: tp.Optional[TypeAtLabM] = None,
                  v_modes: tp.Optional[TypeVibsM] = None,
                  nmols: int = 0,
+                 in_au: bool = True,
                  **params):
         """Initialize instance with core informations.
 
@@ -185,6 +186,8 @@ class POVBuilder():
         nmols
             Number of molecules (only for mode 3).
             `nmols` must be set for mode 3.
+        in_au
+            Atomic coordinates are in atomic units.
         params
             Additional parameters, transmitted to:
 
@@ -223,9 +226,70 @@ class POVBuilder():
                     self.__atlab = [None]
                     self.__vmodes = [None]
                     self.__loaded = [False]
-
-        elif nmols > 0:
-            raise NotImplementedError('Data loading NYI.')
+        else:
+            if at_crds is None or at_labs is None:
+                raise ArgumentError(
+                    'Input files and molecule specifications both missing.\n'
+                    + 'Nothing to do.')
+            if nmols > 1:
+                self.__nmols = nmols
+                self.__atcrd = np.array(at_crds)
+                if self.__atcrd.ndim != 3:
+                    raise ArgumentError('Expected array of coordinates')
+                if self.__atcrd.shape[0] < nmols:
+                    raise ArgumentError(f'Expected {nmols} structures.')
+                self.__atlab = np.array(at_labs)
+                if self.__atlab.ndim == 1:
+                    # We expand atlab to be the same for each quantity
+                    self.__atlab = np.tile(self.__atlab, (nmols, 1))
+                elif self.__atlab.ndim == 2:
+                    if self.__atlab.shape[0] < nmols:
+                        raise ArgumentError(f'Expected {nmols} atomic labels.')
+                if v_modes is not None:
+                    self.__vmodes = np.array(v_modes)
+                    if self.__vmodes.ndim < 3:
+                        raise ArgumentError('Expected array of vib. modes')
+                    if self.__vmodes.ndim == 4:
+                        raise ArgumentError(
+                            'Mode specifications should be a 1D vector')
+                    if self.__vmodes.ndim > 4:
+                        raise ArgumentError(
+                            'Too many dimensions for vib. mode specifications')
+                    if self.__vmodes.shape[0] < nmols:
+                        raise ArgumentError(
+                            f'Expected {nmols} definitions of modes')
+                else:
+                    self.__vmodes = [None for _ in range(nmols)]
+                self.__loaded = [True for _ in range(nmols)]
+                if in_au:
+                    self.__atcrd *= PHYSFACT.bohr2ang
+            elif nmols in (0, 1):
+                self.__nmols = 1
+                self.__atcrd = [np.array(at_crds)]
+                if self.__atcrd[0].ndim != 2:
+                    raise ArgumentError('Expected coordinates as 2D array')
+                self.__atlab = [np.array(at_labs)]
+                if self.__atlab[0].ndim != 1:
+                    raise ArgumentError('Expected atomic numbers as 1D array')
+                if v_modes is not None:
+                    self.__vmodes = [np.array(v_modes)]
+                    if self.__vmodes[0].ndim != 2:
+                        raise ArgumentError(
+                            'Expected vibrational modes as 2D array')
+                else:
+                    self.__vmodes = [None]
+                self.__loaded = [True]
+                if in_au:
+                    self.__atcrd[0] *= PHYSFACT.bohr2ang
+            else:
+                raise ArgumentError(
+                    'Negative number of arguments not allowed.')
+            _tol_bonds = params.get('tol_bonds', 1.2)
+            self.__bonds = []
+            for imol in range(nmols):
+                self.__bonds.append(
+                    list_bonds(self.__atlab[imol],
+                               self.__atcrd[imol], _tol_bonds))
 
         if povfile is not None:
             self.__povfile = povfile
@@ -454,7 +518,7 @@ the graphical interface if provided.
         if povname:
             _povfile = povname
         elif self.__povfile:
-            _povfile = povname
+            _povfile = self.__povfile
         else:
             if id_mol is None:
                 if self.__nmols == 1:
