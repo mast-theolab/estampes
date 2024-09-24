@@ -414,6 +414,16 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                    + r'\|[0-9();]+>)\s*$',
                    r'^\s*(?P<val>\d+\s+\|\s+\d+)\s*$')
             num = (0, 0)
+        elif qlab.kind == 'XMat':
+            # The second group is to correct the numbering if passive modes
+            #     present.
+            lnk = 717
+            key = ' Total Anharmonic X Matrix (in cm^-1)'
+            sub = 1
+            def end(s): return not s.strip()
+            fmt = r'^\s+(?P<val>\d+(?:\s+\d+|' \
+                + r'\s+-?\d+\.\d+D?[-+]\d+){1,5})\s*$'
+            num = 0
         else:
             raise NotImplementedError()
     elif qlab.label == 'vtrans':

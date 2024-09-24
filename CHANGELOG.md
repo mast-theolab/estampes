@@ -26,14 +26,16 @@ Other blocks are:
 
 ## Unreleased
 
-## Fixed
+### Added
+- **API**: Added support of anharmonic X matrix from Gaussian log files.
+
+### Fixed
 - **API**: Fixed parsing of energy second derivatives from Gaussian log files.
 
 
 ## [0.5.2] - 2024-09-17
 
 ### Added
-- **DRV**: New `Deriveur` program to build displaced geometries for numerical differentiations and construct derivatives from results.
 - **CRS**: Added `Corsairs` program to build Raman tensors and invariants from multiple resonance simulations.
 - **BLS**: Ballast can now display automatically X and Y labels if not provided by the user.
 - **MRG**: Added possibility to choose the output file to store the POVRay description content.

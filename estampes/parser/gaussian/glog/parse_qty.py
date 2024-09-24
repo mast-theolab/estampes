@@ -458,6 +458,30 @@ def parse_vptdat(qlab: QLabel, dblock: tp.List[str]) -> QData:
                     dat.append((int(res[i0]), int(res[i1])))
                 data[i].append((float(coef), tuple(dat)))
         dobj.set(data=data)
+    elif qlab.kind == 'XMat':
+        maxcols = 5
+        nbloc = 0
+        dobj.set(unit='cm^{-1}')
+        dobj.set(shape='LT')
+        data = []
+        # store in linear form
+        for line in dblock[-1]:
+            if '.' not in line:
+                nbloc += 1
+            else:
+                cols = line.split()
+                i = int(cols[0])
+                if nbloc == 1:
+                    data.extend([float(item.replace('D', 'e'))
+                                 for item in cols[1:]])
+                    if i > 5:
+                        data.extend(0.0 for _ in range(maxcols, i))
+                else:
+                    ioff = i*(i-1)//2 + (nbloc-1)*maxcols
+                    ncols = len(cols) - 1
+                    data[ioff:ioff+ncols] = [float(item.replace('D', 'e'))
+                                             for item in cols[1:]]
+        dobj.set(data=data)
     else:
         raise NotImplementedError()
 
