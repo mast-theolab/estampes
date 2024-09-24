@@ -79,7 +79,7 @@ def parse_en_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                 nbloc = 0
                 dobj.set(unit='Eh.a0^{-2}')
                 dobj.set(shape='LT')
-                data = {}
+                data = []
                 # store in linear form
                 for line in dblock[iref]:
                     if '.' not in line:
