@@ -656,7 +656,7 @@ def build_box(at_lab: TypeAtLab,
         _rad = max([x[rkey] for x in atdat.values()])
     else:
         _rad = BONDDATA['rvis']*RAD_VIS_SCL
-    for x, y, z in at_crd:
+    for x, z, y in at_crd:
         if x < xmin:
             xmin = x
         if x > xmax:
@@ -863,57 +863,53 @@ def write_pov_mol(fobj: tp.TextIO,
 
     fmt_mat_at = f'''
 #declare mat_at_{{at:2s}} = \
-{CHOICES_MATER[material]}({{c[0]:3d}}, {{c[1]:3d}}, {{c[2]:3d}})
-'''
+{CHOICES_MATER[material]}({{c[0]:3d}}, {{c[1]:3d}}, {{c[2]:3d}})'''
     fmt_mat_bo = '''
-#declare mat_bo_{at:2s} = material {{ mat_{ref} }}
-'''
+#declare mat_bo_{at:2s} = material {{ mat_{ref} }}'''
     fmt_mat_mol = f'''
 #declare mat_mol{{id:02d}} = \
-{CHOICES_MATER[material]}({{c[0]:3d}}, {{c[1]:3d}}, {{c[2]:3d}})
-'''
+{CHOICES_MATER[material]}({{c[0]:3d}}, {{c[1]:3d}}, {{c[2]:3d}})'''
     fmt_rad_at = '''
-#declare r_at_{at:2s} = {r:.6f}*scl_rat;
-'''
+#declare r_at_{at:2s} = {r:.6f}*scl_rat;'''
     if nmols == 1:
         fmt_obj_bo = '''\
     cylinder {{ // Bond {at1}({id1})- {at2}({id2})
-        <{xyz1[0]:14.6f},{xyz1[1]:14.6f},{xyz1[2]:14.6f}>,
-        <{xyz[0]:14.6f},{xyz[1]:14.6f},{xyz[2]:14.6f}>,
+        <{xyz1[0]:14.6f},{xyz1[2]:14.6f},{xyz1[1]:14.6f}>,
+        <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>,
         r_bond
         material {{ mat_bo_{at1} }}
     }}
     cylinder {{ // Bond {at1}({id1}) -{at2}({id2})
-        <{xyz[0]:14.6f},{xyz[1]:14.6f},{xyz[2]:14.6f}>,
-        <{xyz2[0]:14.6f},{xyz2[1]:14.6f},{xyz2[2]:14.6f}>,
+        <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>,
+        <{xyz2[0]:14.6f},{xyz2[2]:14.6f},{xyz2[1]:14.6f}>,
         r_bond
         material {{ mat_bo_{at2} }}
     }}
 '''
         fmt_obj_at = '''\
     sphere {{ // Atom {at}({id})
-        <{xyz[0]:14.6f},{xyz[1]:14.6f},{xyz[2]:14.6f}>, r_at_{at}
+        <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>, r_at_{at}
         material {{ mat_at_{at} }}
     }}
 '''
     else:
         fmt_obj_bo = '''\
     cylinder {{ // Bond {at1}({id1})- {at2}({id2})
-        <{xyz1[0]:14.6f},{xyz1[1]:14.6f},{xyz1[2]:14.6f}>,
-        <{xyz[0]:14.6f},{xyz[1]:14.6f},{xyz[2]:14.6f}>,
+        <{xyz1[0]:14.6f},{xyz1[2]:14.6f},{xyz1[1]:14.6f}>,
+        <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>,
         r_bond
         material {{ mat_mol{idmol:02d} }}
     }}
     cylinder {{ // Bond {at1}({id1}) -{at2}({id2})
-        <{xyz[0]:14.6f},{xyz[1]:14.6f},{xyz[2]:14.6f}>,
-        <{xyz2[0]:14.6f},{xyz2[1]:14.6f},{xyz2[2]:14.6f}>,
+        <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>,
+        <{xyz2[0]:14.6f},{xyz2[2]:14.6f},{xyz2[1]:14.6f}>,
         r_bond
         material {{ mat_mol{idmol:02d} }}
     }}
 '''
         fmt_obj_at = '''\
     sphere {{ // Atom {at}({id})
-        <{xyz[0]:14.6f},{xyz[1]:14.6f},{xyz[2]:14.6f}>, r_at_{at}
+        <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>, r_at_{at}
         material {{ mat_mol{idmol:02d} }}
     }}
 '''
@@ -1076,10 +1072,10 @@ def write_pov_vib(fobj: tp.TextIO,
     object {{
         Build_Arrow({lvib})
         scale scl_vib
-        matrix < {rot[0][0]:9.6f}, {rot[0][1]:9.6f}, {rot[0][2]:9.6f},
-                 {rot[1][0]:9.6f}, {rot[1][1]:9.6f}, {rot[1][2]:9.6f},
-                 {rot[2][0]:9.6f}, {rot[2][1]:9.6f}, {rot[2][2]:9.6f},
-                 {trans[0]:9.6f}, {trans[1]:9.6f}, {trans[2]:9.6f} >
+        matrix < {rot[0][0]:9.6f}, {rot[0][2]:9.6f}, {rot[0][1]:9.6f},
+                 {rot[1][0]:9.6f}, {rot[1][2]:9.6f}, {rot[1][1]:9.6f},
+                 {rot[2][0]:9.6f}, {rot[2][2]:9.6f}, {rot[2][1]:9.6f},
+                 {trans[0]:9.6f}, {trans[2]:9.6f}, {trans[1]:9.6f} >
     }}
 '''
 
@@ -1089,10 +1085,10 @@ def write_pov_vib(fobj: tp.TextIO,
     object {{
         vib_sphere
         scale {lvib}*scl_vib
-        matrix < {rot[0][0]:9.6f}, {rot[0][1]:9.6f}, {rot[0][2]:9.6f},
-                 {rot[1][0]:9.6f}, {rot[1][1]:9.6f}, {rot[1][2]:9.6f},
-                 {rot[2][0]:9.6f}, {rot[2][1]:9.6f}, {rot[2][2]:9.6f},
-                 {trans[0]:9.6f}, {trans[1]:9.6f}, {trans[2]:9.6f} >
+        matrix < {rot[0][0]:9.6f}, {rot[0][2]:9.6f}, {rot[0][1]:9.6f},
+                 {rot[1][0]:9.6f}, {rot[1][2]:9.6f}, {rot[1][1]:9.6f},
+                 {rot[2][0]:9.6f}, {rot[2][2]:9.6f}, {rot[2][1]:9.6f},
+                 {trans[0]:9.6f}, {trans[2]:9.6f}, {trans[1]:9.6f} >
     }}
 '''
     else:

@@ -30,6 +30,7 @@ Other blocks are:
 - **API**: Added support of anharmonic X matrix from Gaussian log files.
 
 ### Fixed
+- **LIB**: Fixed handedness for chiral molecules in generated POV-Ray file.
 - **API**: Fixed parsing of energy second derivatives from Gaussian log files.
 
 
