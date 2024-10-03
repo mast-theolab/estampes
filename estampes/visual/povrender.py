@@ -555,7 +555,7 @@ the graphical interface if provided.
                               self.__bonds[mol],
                               col_bond_as_atom=True,
                               representation=mol_repr, material=mol_mater,
-                              show_mol=False,
+                              show_mol=vib is None,
                               **params)
                 if vib is not None:
                     write_pov_vib(fobj, self.__atcrd[mol], vib,
