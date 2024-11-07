@@ -552,12 +552,15 @@ Available: {}'''
             Use unit for original X axis instead of current one.
         """
         i = self.__idref if not origin else 0
-        if tex_format:
-            unit = unit_to_tex(self.__xunit[i].split(':')[-1], only_dot,
-                               use_cdot)
+        if self.__xunit[i] is not None:
+            if tex_format:
+                unit = unit_to_tex(self.__xunit[i].split(':')[-1], only_dot,
+                                   use_cdot)
+            else:
+                unit = self.__xunit[i].split(':')[-1]
+            return f'{self.__xlabel[i]} / {unit}'
         else:
-            unit = self.__xunit[i].split(':')[-1]
-        return f'{self.__xlabel[i]} / {unit}'
+            return None
     xunit = property(get_xunit)
 
     def get_yunit(self,
@@ -581,12 +584,15 @@ Available: {}'''
             Use unit for original Y axis instead of current one.
         """
         i = self.__idref if not origin else 0
-        if tex_format:
-            unit = unit_to_tex(self.__yunit[i].split(':')[-1], only_dot,
-                               use_cdot)
+        if self.__yunit[i] is not None:
+            if tex_format:
+                unit = unit_to_tex(self.__yunit[i].split(':')[-1], only_dot,
+                                   use_cdot)
+            else:
+                unit = self.__yunit[i].split(':')[-1]
+            return f'{self.__ylabel[i]} / {unit}'
         else:
-            unit = self.__yunit[i].split(':')[-1]
-        return f'{self.__ylabel[i]} / {unit}'
+            return None
     yunit = property(get_yunit)
 
     @property

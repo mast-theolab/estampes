@@ -714,16 +714,16 @@ def main() -> tp.NoReturn:
         for row in range(irow[0], min(irow[1]+1, nrows)):
             for col in range(icol[0], min(icol[1]+1, ncols)):
                 y0lines[row, col] = y0lines[row, col] or add_y0
-                if ((item := curves[key]['data'].get_xunit())
-                        not in xlabels[row][col]):
-                    xlabels[row][col].append(item)
+                unit = curves[key]['data'].get_xunit()
+                if (unit is not None and unit not in xlabels[row][col]):
+                    xlabels[row][col].append(unit)
                 if curves[key]['ynorm']:
                     unit = 'Intensity / normalized'
                 elif curves[key]['yscale']:
                     unit = 'Intensity / arb. unit'
                 else:
                     unit = curves[key]['data'].get_yunit()
-                if unit not in ylabels[row][col]:
+                if unit is not None and unit not in ylabels[row][col]:
                     ylabels[row][col].append(unit)
                 if nrows > 1 and ncols > 1:
                     sub = subp[row, col]
