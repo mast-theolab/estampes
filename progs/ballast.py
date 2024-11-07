@@ -645,8 +645,8 @@ def main() -> tp.NoReturn:
         fig.set_size_inches(figdata['geom'])
     # Build the curves, one at a time and then include in all relevant
     #   plot to avoid multiple iterations of heavy operations like broaden.
-    xlabels = [nrows*[ncols*[]]]
-    ylabels = [nrows*[ncols*[]]]
+    xlabels = nrows*[ncols*[[]]]
+    ylabels = nrows*[ncols*[[]]]
     for idcurve, key in enumerate(curves):
         xaxis = np.array(curves[key]['data'].xaxis)
         if curves[key]['xscale'] is not None:

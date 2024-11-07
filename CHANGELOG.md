@@ -30,6 +30,7 @@ Other blocks are:
 - **API**: Added support of anharmonic X matrix from Gaussian log files.
 
 ### Fixed
+- **BLS**: Fixed the construction of the grid of labels with multiple plots, which led to an IndexError.
 - **LIB**: Fixed handedness for chiral molecules in generated POV-Ray file.
 - **LIB**: The `molecule` object was not displayed in the generated POV-Ray scene if no vibration was requested.
 - **API**: Fixed parsing of energy second derivatives from Gaussian log files.
