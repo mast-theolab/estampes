@@ -368,7 +368,7 @@ def parse_inifile(fname: str
                 val2 = float(res[1])
             val = (val1, val2)
             figdat['geom'] = val
-    spcdat = nrows*[ncols*[None]]
+    spcdat = [[None for _ in range(ncols)] for _ in range(nrows)]
 
     # The layout system works in a slightly different way than curves
     # Besides using defaults, users can use the generic [layout] to define
@@ -645,8 +645,8 @@ def main() -> tp.NoReturn:
         fig.set_size_inches(figdata['geom'])
     # Build the curves, one at a time and then include in all relevant
     #   plot to avoid multiple iterations of heavy operations like broaden.
-    xlabels = nrows*[ncols*[[]]]
-    ylabels = nrows*[ncols*[[]]]
+    xlabels = [[[] for _ in range(ncols)] for _ in range(nrows)]
+    ylabels = [[[] for _ in range(ncols)] for _ in range(nrows)]
     for idcurve, key in enumerate(curves):
         xaxis = np.array(curves[key]['data'].xaxis)
         if curves[key]['xscale'] is not None:
