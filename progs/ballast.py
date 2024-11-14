@@ -16,6 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from estampes.base.spectrum import Spectrum
+from estampes.parser import DataFile
 from estampes.tools.char import convert_expr
 from estampes.visual.plotspec import SpecLayout
 
@@ -101,6 +102,7 @@ Show = Yes             # Show the curve; no to hide it
 YScale = (10-log(x))   # Yscale can be a constant or a function of x
 XScale = rel, 1        # With rel, offsets are first removed, then scaled
 LineStyle = --         # Matplotlib-compatible line style specification
+LineWidth = 1.2        # Matplotlib-compatible line width specification
 
 [Curve:spec2]
 Subplot = 2,1
@@ -264,6 +266,52 @@ def parse_subid(ident: str, ncols: int = 1
         raise ValueError('Incorrect subplot specification.')
 
     return row, col
+
+
+def parse_files(file_spec: str
+                ) -> tp.List[tp.Tuple[DataFile, tp.Union[float, str]]]:
+    """Parse the File/Files specification in input ini file.
+
+    Parses a file specification as provided by the option File/Files
+    and return a table with the associated DataFile and relative weight.
+
+    Parameters
+    ----------
+    file_spec
+        File(s) specification.
+    """
+    data = []
+    files = (file.strip() for file in file_spec.split(';'))
+    for file in files:
+        if ':' in file:
+            fname, weight = (
+                item.strip() for item in file.rsplit(':', maxsplit=1))
+            if not os.path.exists(fname):
+                raise FileNotFoundError(
+                    f'File {fname} not found in {file_spec}')
+            fdata = DataFile(fname)
+            if weight.lower() in ('boltz', 'bz'):
+                fweight = 'bz'
+            elif weight.lower() in ('boltzh', 'bzh'):
+                fweight = 'bz_h'
+            elif weight.lower() in ('boltza', 'bza'):
+                fweight = 'bz_a'
+            else:
+                try:
+                    fweight = float(weight)
+                except ValueError as err:
+                    raise TypeError(
+                        'Unexpected weight specification in block '
+                        + f'{file} from {file}') from err
+            data.append((fdata, fweight))
+        else:
+            if not os.path.exists(file):
+                raise FileNotFoundError(
+                    f'File {file} not found in {file_spec}')
+            fdata = DataFile(file)
+            data.append((fdata, 1.0))
+
+    return data
 
 
 def parse_inifile(fname: str
@@ -459,6 +507,7 @@ def parse_inifile(fname: str
                 key = ' '
             else:
                 key = secs[sec].split(':', maxsplit=1)[1].strip()
+            print(f'Parsing information on curve: {key}')
             optsec = opts[secs[sec]]
             # Check if curve to be shown
             if not optsec.getboolean('show', fallback=True):
@@ -486,12 +535,23 @@ def parse_inifile(fname: str
                 curves[key] = {'subplot': (row, col)}
             else:
                 curves[key] = {'subplot': ((0, nrows-1), (0, ncols-1))}
-            if 'file' not in optsec:
-                print(f'WARNING: Missing file for "{sec}". Ignoring.')
+            if 'file' not in optsec and 'files' not in optsec:
+                print(f'WARNING: Missing file information for "{sec}".',
+                      'Ignoring.')
                 continue
-            elif not os.path.exists(optsec['file']):
-                fmt = 'ERROR: File "{}" not found in "{}".'
-                print(fmt.format(optsec['file'], sec))
+            else:
+                if 'files' in optsec:  # files take precedence over file
+                    res = optsec['files']
+                else:
+                    res = optsec['file']
+                try:
+                    file_specs = parse_files(res)
+                except FileNotFoundError as err:
+                    print(f'ERROR: {err}')
+                    sys.exit(1)
+                except TypeError as err:
+                    print(f'ERROR: {err}')
+                    sys.exit(1)
             spc = optsec.get('spectroscopy', fallback=None)
             lvl = optsec.get('level', fallback=None)
             if spc is None or lvl is None:
@@ -500,22 +560,25 @@ def parse_inifile(fname: str
             if yid is not None:
                 yid = 'y' + yid
             try:
-                curves[key]['data'] = Spectrum(optsec['file'], spc, lvl, yid)
-            except FileNotFoundError:
-                fmt = 'File {} not found'
-                print(fmt.format(optsec['file']))
+                files = [item[0] for item in file_specs]
+                weights = [item[1] for item in file_specs]
+                curves[key]['data'] = Spectrum(files, spc, lvl, yid,
+                                               weights=weights)
+            except FileNotFoundError as err:
+                print(f'File(s) not found for the definition of curve {key}.')
+                print(err)
                 sys.exit(1)
-            except KeyError as e:
+            except KeyError as err:
                 fmt = 'Something went wrong in the definition of ' \
                     + 'spectroscopy for curve {}'
                 print(fmt.format(key))
-                print(str(e)[1:-1])  # slice to remove enclosing quotes of key
+                print(str(err)[1:-1])  # slice to remove quotes around key
                 sys.exit(1)
-            except IndexError as e:
+            except IndexError as err:
                 fmt = 'Something went wrong when building spectroscopic data '\
                     + 'from file "{}".'
                 print(fmt.format(optsec['file']))
-                print(e)
+                print(err)
                 sys.exit(1)
             if optsec.getboolean('broaden', fallback=False):
                 func = optsec.get('function', None)
