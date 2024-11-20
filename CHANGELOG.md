@@ -27,6 +27,8 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **BLS**: Added option `RamanSetup` in the curve specifications to choose the Raman/ROA setup.
+- **BLS**: Added option `RamanLaser` in the curve specifications to choose the Raman/ROA incident frequencies.  Alternatively, `RamanWInc` can be used.  The incident frequencies is expected in cm-1.
 - **BLS**: A filetype can now be provided to the file parser if the file extensions is ambiguous.
 - **BLS**: Ballast can now support multiple files in a single curve, for instance to produce the spectrum of mixtures.  The format is "file1 @ weight1 & file2 @ weight2" (spaces are irrelevant between symbols).
 - **API**: Added support of anharmonic X matrix from Gaussian log files.
