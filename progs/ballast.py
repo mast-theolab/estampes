@@ -16,6 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from estampes.base.spectrum import Spectrum
+from estampes.base.errors import ArgumentError
 from estampes.parser import DataFile
 from estampes.tools.char import convert_expr
 from estampes.visual.plotspec import SpecLayout
@@ -143,6 +144,8 @@ LineWidth = 1.2
 [Curve:spec2]
 Subplot = 2,1
 File = outputfile.log
+FileType = GLog
+# Type of files, case insensitive.  Recognized: FChk, GLog, CSV
 Label = Curve 2
 Spectroscopy = VCD
 Show = No
@@ -307,7 +310,8 @@ def parse_subid(ident: str, ncols: int = 1
     return row, col
 
 
-def parse_files(file_spec: str
+def parse_files(file_spec: str,
+                file_type: tp.Optional[str] = None
                 ) -> tp.List[tp.Tuple[DataFile, tp.Union[float, str]]]:
     """Parse the File/Files specification in input ini file.
 
@@ -318,17 +322,32 @@ def parse_files(file_spec: str
     ----------
     file_spec
         File(s) specification.
+    file_type
+        File(s) type.  If `None`, identified automatically.
     """
     data = []
-    files = (file.strip() for file in file_spec.split('&'))
-    for file in files:
+    files = [file.strip() for file in file_spec.split('&')]
+    if file_type is None:
+        filetypes = [None for _ in range(len(files))]
+    elif not file_type.strip():
+        filetypes = [None for _ in range(len(files))]
+    else:
+        filetypes = [item.strip() for item in file_type.split('&')]
+        if len(filetypes) == 1:
+            filetypes = [filetypes[0] for _ in range(len(files))]
+        elif len(filetypes) != len(files):
+            raise ArgumentError(
+                'length',
+                'Inconsistency between files and filetypes specifications.')
+
+    for file, ftype in zip(files, filetypes):
         if '@' in file:
             fname, weight = (
                 item.strip() for item in file.rsplit('@', maxsplit=1))
             if not os.path.exists(fname):
                 raise FileNotFoundError(
                     f'File {fname} not found in {file_spec}')
-            fdata = DataFile(fname)
+            fdata = DataFile(fname, ftype)
             if weight.lower() in ('boltz', 'bz'):
                 fweight = 'bz'
             elif weight.lower() in ('boltzh', 'bzh'):
@@ -347,7 +366,7 @@ def parse_files(file_spec: str
             if not os.path.exists(file):
                 raise FileNotFoundError(
                     f'File {file} not found in {file_spec}')
-            fdata = DataFile(file)
+            fdata = DataFile(file, ftype)
             data.append((fdata, 1.0))
 
     return data
@@ -580,17 +599,24 @@ def parse_inifile(fname: str
                 continue
             else:
                 if 'files' in optsec:  # files take precedence over file
-                    res = optsec['files']
+                    infiles = optsec['files']
                 else:
-                    res = optsec['file']
-                try:
-                    file_specs = parse_files(res)
-                except FileNotFoundError as err:
-                    print(f'ERROR: {err}')
-                    sys.exit(1)
-                except TypeError as err:
-                    print(f'ERROR: {err}')
-                    sys.exit(1)
+                    infiles = optsec['file']
+            if 'filetype' in optsec or 'filetypes' in optsec:
+                if 'filetypes' in optsec:  # files take precedence over file
+                    filetypes = optsec['filetypes']
+                else:
+                    filetypes = optsec['filetype']
+            else:
+                filetypes = None
+            try:
+                file_specs = parse_files(infiles, filetypes)
+            except FileNotFoundError as err:
+                print(f'ERROR: {err}')
+                sys.exit(1)
+            except TypeError as err:
+                print(f'ERROR: {err}')
+                sys.exit(1)
             spc = optsec.get('spectroscopy', fallback=None)
             lvl = optsec.get('level', fallback=None)
             if spc is None or lvl is None:
