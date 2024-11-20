@@ -27,7 +27,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
-- **BLS**: Ballast can now support multiple files in a single curve, for instance to produce the spectrum of mixtures.  The format is "file1: weight1 ; file2: weight2".
+- **BLS**: Ballast can now support multiple files in a single curve, for instance to produce the spectrum of mixtures.  The format is "file1 @ weight1 & file2 @ weight2" (spaces are irrelevant between symbols).
 - **API**: Added support of anharmonic X matrix from Gaussian log files.
 - **LIB**: The `Spectrum` class can now support multiple datasets and relative weights (for now purely numerical).
 

@@ -320,11 +320,11 @@ def parse_files(file_spec: str
         File(s) specification.
     """
     data = []
-    files = (file.strip() for file in file_spec.split(';'))
+    files = (file.strip() for file in file_spec.split('&'))
     for file in files:
-        if ':' in file:
+        if '@' in file:
             fname, weight = (
-                item.strip() for item in file.rsplit(':', maxsplit=1))
+                item.strip() for item in file.rsplit('@', maxsplit=1))
             if not os.path.exists(fname):
                 raise FileNotFoundError(
                     f'File {fname} not found in {file_spec}')
