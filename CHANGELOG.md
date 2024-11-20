@@ -12,7 +12,6 @@ Tools have each one their own trigram
 - **BLS**: _Ballast_
 - **BRS**: _Bars_
 - **CRS**: _Corsairs_
-- **DRV**: _Deriveur_
 - **ESP**: _ESParser_
 - **MRG**: _Mirage_
 - **OAR**: _Soar_
@@ -49,7 +48,6 @@ Other blocks are:
 ## [0.5.2] - 2024-09-17
 
 ### Added
-- **DRV**: New `Deriveur` program to build displaced geometries for numerical differentiations and construct derivatives from results.
 - **CRS**: Added `Corsairs` program to build Raman tensors and invariants from multiple resonance simulations.
 - **BLS**: Ballast can now display automatically X and Y labels if not provided by the user.
 - **MRG**: Added possibility to choose the output file to store the POVRay description content.
