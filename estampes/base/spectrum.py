@@ -240,8 +240,15 @@ class Spectrum():
 
             Raman/ROA
 
-                :"incfrq": incident frequency
+                :"incfrq": incident frequency.
                 :"setup": experimental setup (e.g., SCP(180))
+
+        Notes
+        -----
+        If `incfrq` is given as integer (no decimal point), the
+        incident frequencies are searched in data files truncated to
+        the decimal point.  If `incfrq` is provided as float, the
+        number are truncated to the lower integer.
         """
         self.__num_dfiles = 1
         # Initialization internal parameters
@@ -280,7 +287,10 @@ class Spectrum():
         if params:
             for key, val in params.items():
                 if key.lower() in ('incfrq', 'incfreq'):
-                    self.__params['incfrq'] = val
+                    if isinstance(val, (int, float)):
+                        self.__params['incfrq'] = str(int(val))
+                    else:
+                        self.__params['incfrq'] = val
                 elif key.lower() == 'setup':
                     self.__params['setup'] = val
         # Initialize main data array
@@ -1122,12 +1132,23 @@ def _get_data_v_trans(dobj: QData,
             else:
                 params['incfrq'] = incfrq
         else:
-            if incfrq not in dobj['int'].data:
+            if '.' not in incfrq:
+                # truncate the incident frequencies stored in data.
+                incfrqs = {item.split('.')[0]: item
+                           for item in dobj['int'].data
+                           if item.replace('.', '', 1).isdigit()}
+            else:
+                incfrqs = {item: item
+                           for item in dobj['int'].data
+                           if item.replace('.', '', 1).isdigit()}
+            if incfrq not in incfrqs:
                 vals = [item for item in dobj['int'].data
                         if item.replace('.', '', 1).isdigit()]
                 raise KeyError(
                     f'''No incident frequency matches the value {incfrq}
 Available: {', '.join(vals)}''')
+            incfrq = incfrqs[incfrq]
+            params['incfrq'] = incfrq
         setup = params.get('setup')
         if setup is None:
             for key in dobj['int'].data[incfrq].keys():

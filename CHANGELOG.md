@@ -40,6 +40,9 @@ Other blocks are:
 - **LIB**: The `molecule` object was not displayed in the generated POV-Ray scene if no vibration was requested.
 - **API**: Fixed parsing of energy second derivatives from Gaussian log files.
 
+## Changed
+- **LIB**: `Spectrum` now does an approximate search on the incident frequencies if the value in input is truncated to the integer part.
+
 
 ## [0.5.2] - 2024-09-17
 
