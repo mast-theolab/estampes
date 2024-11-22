@@ -373,7 +373,8 @@ class Spectrum():
                 (self.__xaxes[-1][0], self.__xlabels[-1][0],
                  self.__xunits[-1][0], self.__yaxes[-1][0],
                  self.__ylabels[-1][0], self.__yunits[-1][0],
-                 self.__broad_infos[-1][0], self.__ytags, self.__spec_infos[-1]
+                 self.__broad_infos[-1][0], self.__ytags[-1],
+                 self.__spec_infos[-1]
                  ) = _get_data_spectrum(dobjs, ylabel)
             elif 'freq' in qkeys:
                 (self.__xaxes[-1][0], self.__xlabels[-1][0],
