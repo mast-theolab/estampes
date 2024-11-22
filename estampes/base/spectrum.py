@@ -1172,7 +1172,7 @@ Available: {dobj['int'].data[incfrq].keys()}''')
                 xaxis.append(dobj['freq'].data[mode])
                 yaxis.append(ydata[mode])
         except KeyError as err:
-            raise IndexError('''\
+            raise IndexError(f'''\
 Inconsistency in the list of states between energies and intensities.
 State {mode} was not found in one of the lists.''') from err
     xlabel = 'Wavenumbers'
