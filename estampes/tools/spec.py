@@ -31,6 +31,7 @@ def broaden(xval: tp.Sequence[float],
             hwhm: float,
             yfactor: float = 1.0,
             xfunc: tp.Optional[tp.Callable[[float], float]] = None,
+            ycorr: tp.Optional[tp.Callable[[float], float]] = None,
             ynorm: bool = False,
             truncate: bool = False) -> tp.List[float]:
     """Broadens a stick spectra with a given broadening function.
@@ -41,7 +42,7 @@ def broaden(xval: tp.Sequence[float],
 
     `yaxis` is computed as:
 
-    .. math:: y_a(i) = sum_j y_f*y_v(j)*f(x_a(i))*g(x_a(i)-x_v(j))
+    .. math:: y_a(i) = sum_j y_f*y_v(j)*f(x_a(i))*c(x_v(j)*g(x_a(i)-x_v(j))
 
     * :math:`y_a`: `yaxis`
     * :math:`y_f`: `yfactor`
@@ -49,6 +50,7 @@ def broaden(xval: tp.Sequence[float],
     * :math:`x_a`: `xaxis`
     * :math:`x_v`: `xval`
     * :math:`f`: xfunc
+    * :math:`c`: ycorr
     * :math:`g`: broadening function, related to `funcname`
 
     Parameters
@@ -67,6 +69,8 @@ def broaden(xval: tp.Sequence[float],
         Scaling factor for the Y axis.
     xfunc
         Transformation of X to be included into the final Y value.
+    ycorr
+        Correction of Y values with respect to X values.
     ynorm
         Normalize Y (in this case, `yfactor` is ignored).
     truncate
@@ -91,9 +95,14 @@ def broaden(xval: tp.Sequence[float],
         raise IndexError('New X axis is empty')
     yaxis = [0.0 for _ in range(npoints)]
     if not truncate:
-        for i in range(npoints):
-            for x0, y0 in zip(xval, yval):
-                yaxis[i] += func(xaxis[i], hwhm, x0, y0*yfactor)
+        if ycorr is None:
+            for i in range(npoints):
+                for x0, y0 in zip(xval, yval):
+                    yaxis[i] += func(xaxis[i], hwhm, x0, y0*yfactor)
+        else:
+            for i in range(npoints):
+                for x0, y0 in zip(xval, yval):
+                    yaxis[i] += func(xaxis[i], hwhm, x0, y0*yfactor)*ycorr(x0)
     else:
         # hwtimes: Function is computer over an interval of 2*hwhm*hwtimes
         # 3.5*hwhm represents 99.7% of the Gaussian area
@@ -109,15 +118,25 @@ def broaden(xval: tp.Sequence[float],
                 i0 = -int((x0 - xmin)/dx) - 1
                 imin = max(i0 - nhwpoints, -npoints)
                 imax = min(i0 + nhwpoints, -1)
-                for i in range(imin, imax+1):
-                    yaxis[i] += func(xaxis[i], hwhm, x0, y0*yfactor)
+                if ycorr is None:
+                    for i in range(imin, imax+1):
+                        yaxis[i] += func(xaxis[i], hwhm, x0, y0*yfactor)
+                else:
+                    for i in range(imin, imax+1):
+                        yaxis[i] += func(xaxis[i], hwhm, x0, y0*yfactor) \
+                            * ycorr(x0)
         else:
             for x0, y0 in zip(xval, yval):
                 i0 = int((x0 - xmin)/dx)
                 imin = max(i0 - nhwpoints, 0)
                 imax = min(i0 + nhwpoints, npoints-1)
-                for i in range(imin, imax+1):
-                    yaxis[i] += func(xaxis[i], hwhm, x0, y0*yfactor)
+                if ycorr is None:
+                    for i in range(imin, imax+1):
+                        yaxis[i] += func(xaxis[i], hwhm, x0, y0*yfactor)
+                else:
+                    for i in range(imin, imax+1):
+                        yaxis[i] += func(xaxis[i], hwhm, x0, y0*yfactor)\
+                            * ycorr(x0)
     if xfunc is not None:
         for i in range(npoints):
             yaxis[i] *= xfunc(xaxis[i])
@@ -164,7 +183,9 @@ def convert_y(specabbr: str,
               unit_to: str,
               unit_from: str,
               **subopts: tp.Dict[str, tp.Any]
-              ) -> tp.Tuple[float, tp.Optional[tp.Callable[[float], float]]]:
+              ) -> tp.Tuple[float,
+                            tp.Optional[tp.Callable[[float], float]],
+                            tp.Optional[tp.Callable[[float], float]]]:
     """Returns parameters for the conversion of Y units.
 
     Returns the scaling factor and the power of X needed to convert the
@@ -197,7 +218,10 @@ def convert_y(specabbr: str,
     float
         Scaling factor on the Y unit.
     xfunc
-        Function to transform X in calculation of Y value.
+        Function accounting for the contribution of X to final Y value.
+    ycorr
+        Function to correct/convert X values before broadening.
+        For instance, to convert hybrid units used in Raman.
 
     Raises
     ------
@@ -303,6 +327,7 @@ def convert_y(specabbr: str,
                             (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
 
                         def xfunc(x): return x
+                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 elif _src_type == 'II':
@@ -310,6 +335,7 @@ def convert_y(specabbr: str,
                         yfactor = 100/log(10)
 
                         xfunc = None
+                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -327,6 +353,7 @@ def convert_y(specabbr: str,
                             (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
 
                         def xfunc(x): return x
+                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -345,50 +372,42 @@ def convert_y(specabbr: str,
         if _dest_type == 'I':
             if _dest_unit in UNIT_RDSG['cm3/mol/sr']:
                 if _src_type == 'RA':
+                    # (AA->cm)^6 * Na * (2 pi * Wscat)^4
+                    yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4 / 45
+
+                    def xfunc(x):
+                        return (incfrq-x)**4
                     if _src_unit in UNIT_RA['amu.Ang4']:
-                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4 * (Q->q)^2
-                        yfactor = (
-                            1.0e-48*PHYSCNST.avogadro*(2*pi)**4
-                            * (phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2/2.0)
-                            / 45)
-
-                        def xfunc(x): return (incfrq-x)**4/x
+                        def ycorr(x):  # (Q->q)^2
+                            return phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2 \
+                                / (2.0*x)
                     elif _src_unit in UNIT_RA['Ang6']:
-                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4 / 45
-                        yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4/45
-
-                        def xfunc(x): return (incfrq-x)**4
+                        ycorr = None
                     elif _src_unit in UNIT_RA['bohr6']:
-                        # (bohr->AA->cm)^6 * Na * (2 pi * Wscat)^4
-                        yfactor = 1.0e-48*PHYSFACT.bohr2ang**6\
-                            * PHYSCNST.avogadro*(2*pi)**4/45
-
-                        def xfunc(x): return (incfrq-x)**4
+                        # (bohr->AA)^6 * yfactor
+                        yfactor *= PHYSFACT.bohr2ang**6
+                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
                     raise NotImplementedError(msgNYI)
             elif _dest_unit in UNIT_RDSG['m2.cm/mol/sr']:
                 if _src_type == 'RA':
+                    # 10^-4 * (AA->cm)^6 * Na * (2 pi * Wscat)^4
+                    yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4 / 45
+
+                    def xfunc(x):
+                        return (incfrq-x)**4
                     if _src_unit in UNIT_RA['amu.Ang4']:
-                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4 * (Q->q)^2
-                        yfactor = (
-                            1.0e-52*PHYSCNST.avogadro*(2*pi)**4
-                            * (phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2/2.0)
-                            / 45)
-
-                        def xfunc(x): return (incfrq-x)**4/x
+                        def ycorr(x):  # (Q->q)^2
+                            return phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2 \
+                                / (2.0*x)
                     elif _src_unit in UNIT_RA['Ang6']:
-                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4 / 45
-                        yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4/45
-
-                        def xfunc(x): return (incfrq-x)**4
+                        ycorr = None
                     elif _src_unit in UNIT_RA['bohr6']:
-                        # (bohr->AA->cm/m)^6 * Na * (2 pi * Wscat)^4
-                        yfactor = 1.0e-52*PHYSFACT.bohr2ang**6\
-                            * PHYSCNST.avogadro*(2*pi)**4/45
-
-                        def xfunc(x): return (incfrq-x)**4
+                        # (bohr->AA)^6 * yfactor
+                        yfactor *= PHYSFACT.bohr2ang**6
+                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -407,48 +426,42 @@ def convert_y(specabbr: str,
         if _dest_type == 'I':
             if _dest_unit in UNIT_RDSG['cm3/mol/sr']:
                 if _src_type == 'ROA':
+                    # (AA->cm)^6 * Na * (2 pi * Wscat)^4
+                    yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4 / 45
+
+                    def xfunc(x):
+                        return (incfrq-x)**4
                     if _src_unit in UNIT_ROA['amu.Ang4']:
-                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4 * (Q->q)^2
-                        yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4 \
-                            * (phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2/2.0)\
-                            / 45
-
-                        def xfunc(x): return (incfrq-x)**4/x
+                        def ycorr(x):  # (Q->q)^2
+                            return phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2 \
+                                / (2.0*x)
                     elif _src_unit in UNIT_ROA['Ang6']:
-                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4
-                        yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4/45
-
-                        def xfunc(x): return (incfrq-x)**4
+                        ycorr = None
                     elif _src_unit in UNIT_ROA['bohr6']:
-                        # (bohr->AA->cm)^6 * Na * (2 pi * Wscat)^4
-                        yfactor = 1.0e-48*PHYSFACT.bohr2ang**6\
-                            * PHYSCNST.avogadro*(2*pi)**4/45
-
-                        def xfunc(x): return (incfrq-x)**4
+                        # (bohr->AA)^6 * yfactor
+                        yfactor *= PHYSFACT.bohr2ang**6
+                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
                     raise NotImplementedError(msgNYI)
             elif _dest_unit in UNIT_RDSG['m2.cm/mol/sr']:
                 if _src_type == 'ROA':
+                    # 10^-4 * (AA->cm)^6 * Na * (2 pi * Wscat)^4
+                    yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4 / 45
+
+                    def xfunc(x):
+                        return (incfrq-x)**4
                     if _src_unit in UNIT_ROA['amu.Ang4']:
-                        # (AA->cm)^6 * Na * (2 pi * Wscat)^4 * (Q->q)^2
-                        yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4 \
-                            * (phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2/2.0)\
-                            / 45
-
-                        def xfunc(x): return (incfrq-x)**4/x
+                        def ycorr(x):  # (Q->q)^2
+                            return phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2 \
+                                / (2.0*x)
                     elif _src_unit in UNIT_ROA['Ang6']:
-                        # (AA->cm/m)^6 * Na * (2 pi * Wscat)^4
-                        yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4/45
-
-                        def xfunc(x): return (incfrq-x)**4
+                        ycorr = None
                     elif _src_unit in UNIT_ROA['bohr6']:
-                        # (bohr->AA->cm/m)^6 * Na * (2 pi * Wscat)^4
-                        yfactor = 1.0e-52*PHYSFACT.bohr2ang**6 \
-                            * PHYSCNST.avogadro*(2*pi)**4/45
-
-                        def xfunc(x): return (incfrq-x)**4
+                        # (bohr->AA)^6 * yfactor
+                        yfactor *= PHYSFACT.bohr2ang**6
+                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -466,6 +479,7 @@ def convert_y(specabbr: str,
                             / (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
 
                         def xfunc(x): return x
+                        ycorr = None
                     elif _src_unit in UNIT_DS['au']:
                         yfactor = 8*pi**3*PHYSCNST.avogadro * 1.0e-7 \
                             * (phys_fact('au2esu')*PHYSFACT.bohr2ang
@@ -473,12 +487,14 @@ def convert_y(specabbr: str,
                             / (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
 
                         def xfunc(x): return x
+                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 elif _src_type == 'II':
                     if _src_unit in UNIT_II['/M/cm2']:
                         yfactor = 1.0
                         xfunc = None
+                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -496,6 +512,7 @@ def convert_y(specabbr: str,
                             (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
 
                         def xfunc(x): return x
+                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -507,4 +524,4 @@ def convert_y(specabbr: str,
     else:
         raise NotImplementedError(msgNYI)
 
-    return yfactor*sfact/dfact, xfunc
+    return yfactor*sfact/dfact, xfunc, ycorr

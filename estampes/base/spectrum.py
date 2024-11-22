@@ -890,13 +890,13 @@ class Spectrum():
         # Now build the axes
         for ifile in range(self.__num_dfiles):
             self.__xaxes[ifile][iaxis] = x_axis[:]
-            y_fac, x_fun = convert_y(self.__spec, y_unit_dest,
-                                     self.__yunits[ifile][0],
-                                     **y_params)
+            y_fac, x_fun, y_corr = convert_y(self.__spec, y_unit_dest,
+                                             self.__yunits[ifile][0],
+                                             **y_params)
             self.__yaxes[ifile][iaxis] = broaden(
                 self.__xaxes[ifile][0], self.__yaxes[ifile][0],
                 self.__xaxes[ifile][iaxis], bfun, bhw, y_fac, x_fun,
-                y_has_unit, False)
+                y_corr, y_has_unit, False)
             self.__xunits[ifile][self.__idref] = self.__xunits[ifile][0]
             self.__xlabels[ifile][self.__idref] = self.__xlabels[ifile][0]
             self.__yunits[ifile][self.__idref] = y_unit_dest

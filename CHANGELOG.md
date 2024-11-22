@@ -36,6 +36,7 @@ Other blocks are:
 ### Fixed
 - **BLS**: Fixed the construction of the grid of labels with multiple plots, which led to an IndexError.
 - **BLS**: `gen-longini` now displays the comments below and not anymore inline so they can be properly parsed by the INI parser.
+- **LIB**: Fixed conversion of "hybrid" Raman/ROA activities in `convert_y`.
 - **LIB**: `Spectrum.get_xunit()` and `Spectrum.get_yunit()` could fail if no unit was defined for a given spectrum (for instance with experimental CSV files) and a conversion to LaTeX format was requested.
 - **LIB**: Fixed handedness for chiral molecules in generated POV-Ray file.
 - **LIB**: The `molecule` object was not displayed in the generated POV-Ray scene if no vibration was requested.
@@ -43,6 +44,8 @@ Other blocks are:
 - **API**: Fixed parsing of energy second derivatives from Gaussian log files.
 
 ## Changed
+- **LIB**: `spec.convert_y` now returns 3 objects, distinguishing conversions to be applied on values from the X axis and instead on values from the original X values (e.g., Raman/ROA hybrid units).
+- **LIB**: `spec.broaden` now supports an additional argument, `xconv`, for conversions specific to X values, that cannot be done using the X axis.
 - **LIB**: `Spectrum` now does an approximate search on the incident frequencies if the value in input is truncated to the integer part.
 
 
