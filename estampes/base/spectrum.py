@@ -1385,8 +1385,32 @@ def _combine_axes(xaxes: tp.Sequence[tp.Sequence[float]],
     num_already_broad = len(tuple(filter(lambda x: x[axis]['func'] != 'stick',
                                          broad_infos)))
     if axis == 0:
-        if 0 < num_already_broad:
+        if 0 < num_already_broad < n_b_info:
             raise NotImplementedError('Interpolation not yet implemented')
+        elif num_already_broad == n_b_info:
+            # 1st check: X axes have same length
+            l_xaxis = len(xaxes[0][axis])
+            if not all((len(xaxis[axis]) == l_xaxis for xaxis in xaxes)):
+                raise IndexError('Inconsistency in the X axes')
+            # 2nd check, we control that all X have the same boundaries
+            # and the same dx
+            xmin = [xaxis[axis][0] for xaxis in xaxes]
+            xmax = [xaxis[axis][-1] for xaxis in xaxes]
+            step = [xaxis[axis][1]-xaxis[axis][0] for xaxis in xaxes]
+            tol = 1.0e-4
+            if not (abs(max(xmin) - min(xmin)) < tol
+                    and abs(max(xmax) - min(xmax)) < tol
+                    and abs(max(step) - min(step)) < tol):
+                raise NotImplementedError('Interpolation not yet implemented')
+            # Now let us combine spectra
+            axes[0] = xaxes[0][axis][:]
+            axes[1] = [0.0 for _ in range(l_xaxis)]
+            for i, yaxis in enumerate(yaxes):
+                if len(yaxis[axis]) != l_xaxis:
+                    raise IndexError(
+                        f'Y axis from dataset n. {i+1} inconsistent in size.')
+                for iy, y in enumerate(yaxis[axis]):
+                    axes[1][iy] += weights[i]*y
         else:
             axes[0] = [val for xaxis in xaxes for val in xaxis[axis]]
             axes[1] = [weight*val
