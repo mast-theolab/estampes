@@ -885,15 +885,17 @@ def parse_ramact_data(qlab: QLabel, dblock: tp.List[str],
                             'SCP(180)u': {}, 'SCP(90)z': {}, 'DCPI(180)': {}}
                     iline = 0
                     ifreq = 0
-                    ioff = 0
+                    ioff = 1
                     i = 0
                     for line in dblock[iref]:
                         iline += 1
-                        block = iline % 3
+                        block = iline % 3  # 3: number of setups
                         if block == 1:
-                            dfreq = data[incfreqs[ifreq % len(incfreqs)]]
+                            if ifreq == len(incfreqs):
+                                ifreq = 0
+                                ioff += i + 1
+                            dfreq = data[incfreqs[ifreq]]
                             ifreq += 1
-                            ioff += i+1
                         d = dfreq[
                             ('SCP(180)u', 'SCP(90)z', 'DCPI(180)')[block-1]]
                         for i, col in enumerate(line.strip().split()):
