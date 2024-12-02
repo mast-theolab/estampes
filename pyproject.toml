@@ -3,7 +3,7 @@ requires = ["setuptools >= 50.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["estampes", "progs"]
+packages = ["estampes", "progs", "scripts"]
 
 # [tool.setuptools.package-data]
 # "visual.objs" = ["*.obj", "*.mtl"]
@@ -35,3 +35,4 @@ esbars = "progs.bars:main"
 esmirage = "progs.mirage:main"
 essoar = "progs.soar:main"
 escorsairs = "progs.corsairs:main"
+estoxy = "scripts.toxy:main"

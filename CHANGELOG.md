@@ -8,7 +8,8 @@ ESTAMPES API is divided in 3 components:
 - **VIZ**: visualization API.  It depends on visualization library, like `Qt` or `Matplotlib`
 
 Tools have each one their own trigram
-- **APP**: Estampes Suite Program (new program)
+- **APP**: Estampes Suite Program (new program)\
+- **2XY**: _ToXY_
 - **BLS**: _Ballast_
 - **BRS**: _Bars_
 - **CRS**: _Corsairs_
@@ -26,6 +27,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **2XY**: New simple script to generate convoluted band-shapes or extract spectral data from files supported by ESTAMPES.
 - **BLS**: Added option `RamanSetup` in the curve specifications to choose the Raman/ROA setup.
 - **BLS**: Added option `RamanLaser` in the curve specifications to choose the Raman/ROA incident frequencies.  Alternatively, `RamanWInc` can be used.  The incident frequencies is expected in cm-1.
 - **BLS**: A filetype can now be provided to the file parser if the file extensions is ambiguous.
