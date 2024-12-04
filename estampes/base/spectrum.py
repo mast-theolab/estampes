@@ -289,10 +289,11 @@ class Spectrum():
                 if key.lower() in ('incfrq', 'incfreq'):
                     if isinstance(val, (int, float)):
                         self.__params['incfrq'] = str(int(val))
-                    else:
+                    elif val is not None:
                         self.__params['incfrq'] = val
                 elif key.lower() == 'setup':
-                    self.__params['setup'] = val
+                    if val is not None:
+                        self.__params['setup'] = val
         # Initialize main data array
         self.__xaxes = []
         self.__yaxes = []
