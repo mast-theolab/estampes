@@ -96,12 +96,17 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
     fmt = None
     num = None
     if qlab.label == 'route':  # Log specific extraction, not provided in base
-        lnk = 1
-        key = ' Cite this work as:'
-        sub = ' -'
-        def end(s): return s.startswith(' Charge =')
-        fmt = r'^ (?P<val>\d+\/(?:,?\d+=-?\d+)*\/(?:,?\d+)+(?:\(-\d\))?);\s*$'
-        num = 0
+        lnk = (1, 1)
+        # key = (' Cite this work as:', ' Link1:  Proceeding to internal job')
+        key = (' Cite this work as:', ' Normal termination of Gaussian')
+        sub = (' -', ' ---')
+        end = (
+            lambda s: s.startswith(' Charge ='),
+            lambda s: s.startswith(' Charge ='))
+        fmt = (
+            r'^ (?P<val>\d+\/(?:,?\d+=-?\d+)*\/(?:,?\d+)+(?:\(-\d\))?);\s*$',
+            r'^ (?P<val>\d+\/(?:,?\d+=-?\d+)*\/(?:,?\d+)+(?:\(-\d\))?);\s*$')
+        num = (0, 1)
     elif qlab.label == 'natoms':
         lnk = 101
         key = ' NAtoms='

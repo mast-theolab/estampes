@@ -32,9 +32,10 @@ Other blocks are:
 - **BLS**: Added option `RamanLaser` in the curve specifications to choose the Raman/ROA incident frequencies.  Alternatively, `RamanWInc` can be used.  The incident frequencies is expected in cm-1.
 - **BLS**: A filetype can now be provided to the file parser if the file extensions is ambiguous.
 - **BLS**: Ballast can now support multiple files in a single curve, for instance to produce the spectrum of mixtures.  The format is "file1 @ weight1 & file2 @ weight2" (spaces are irrelevant between symbols).
-- **API**: Added support of anharmonic X matrix from Gaussian log files.
 - **LIB**: New module `base.aliases` to provide common aliases for keywords (e.g., spectroscopy, level of theory) regularly used within ESTAMPES.
 - **LIB**: The `Spectrum` class can now support multiple datasets and relative weights (for now purely numerical).
+- **API**: Multi-jobs (explicit or internal linked jobs) in Gaussian log files are now supported.  ESTAMPES assumes that the jobs are all related to the same task (for instance opt+freq) and does not support selective extractions from a specific job (e.g., linked freq jobs with different levels of theory) for now.
+- **API**: Added support of anharmonic X matrix from Gaussian log files.
 
 ### Fixed
 - **BLS**: Fixed the construction of the grid of labels with multiple plots, which led to an IndexError.

@@ -104,15 +104,29 @@ class GLogIO(object):
         i = 0
         for item in ('route', 'swopt', 'swver'):
             qlab = QLabel(quantity=item)
-            key2blk[item] = (i, i)
-            i += 1
-            link, key, skips, fmt, end, num = qlab_to_linkdata(qlab)
-            keydata.append((key, link, skips, re.compile(fmt), num, end))
+            links, keys, skips, fmts, ends, nums = qlab_to_linkdata(qlab)
+            if isinstance(links, tuple):
+                nblocks = len(links)
+                key2blk[item] = (i, i+nblocks-1)
+                for link, key, skip, fmt, end, num in zip(links, keys, skips,
+                                                          fmts, ends, nums):
+                    keydata.append((key, link, skip, re.compile(fmt), num,
+                                    end))
+                i += nblocks
+            else:
+                keydata.append((keys, links, skips, re.compile(fmts), nums,
+                                ends))
+                key2blk[item] = (i, i)
+                i += 1
             qtydata[item] = qlab
         ndata, data = self.read_data(*keydata)
         dobjs = parse_data(qtydata, key2blk, ndata, data)
         self.__route = dobjs['route'].data
-        self.__links = sorted(set([int(item[0]) for item in self.__route]))
+        # We merge all routes as one, assuming the blocks are coherent (user
+        # did not run the same type of job linked)
+        self.__links = sorted(set([int(line[0])
+                                   for route in self.__route
+                                   for line in route]))
         self.__gversion = dobjs['swver'].data
         self.__rte_opt = dobjs['swopt'].data
         # Look at verbosity level of output

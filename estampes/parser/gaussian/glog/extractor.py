@@ -80,9 +80,12 @@ def parse_data(qdict: TypeQInfo,
         else:
             iref = -1
             # Check if transition information may be present:
-            if (qlabel.rstate == 'c'
-                    and 'Excited State' in ''.join(datablocks[first])):
-                realfirst = first + 1
+            if not isinstance(datablocks[first], (list, tuple)):
+                if (qlabel.rstate == 'c'
+                        and 'Excited State' in ''.join(datablocks[first])):
+                    realfirst = first + 1
+                else:
+                    realfirst = first
             else:
                 realfirst = first
             for i in range(realfirst, last+1):
@@ -99,8 +102,9 @@ def parse_data(qdict: TypeQInfo,
         # ---------------------------
         if qlabel.label == 'route':
             fmt = '{:d}{:02d}'
-            data = []
-            for num, line in enumerate(datablocks[iref]):
+            # We extract the first block, stored in first
+            data = [[]]
+            for num, line in enumerate(datablocks[first]):
                 ov, iops, links = line.split('/')
                 if '(' in links:
                     links, jump = links[:-1].split('(')
@@ -110,7 +114,26 @@ def parse_data(qdict: TypeQInfo,
                 iops = tuple(iops.split(','))
                 for link in links.split(','):
                     fulllink = fmt.format(int(ov), int(link))
-                    data.append((fulllink, num+1, iops, toline))
+                    data[-1].append((fulllink, num+1, iops, toline))
+            # Now let us check if more than one job
+            # Since we look for Normal termination, we may have an extra blank
+            # block last.  We check this:
+            if len(datablocks[last]) > 0:
+                if not datablocks[last][-1]:
+                    del datablocks[last][-1]
+            for block in datablocks[last]:
+                data.append([])
+                for num, line in enumerate(block):
+                    ov, iops, links = line.split('/')
+                    if '(' in links:
+                        links, jump = links[:-1].split('(')
+                        toline = num + 1 + int(jump)
+                    else:
+                        toline = 0
+                    iops = tuple(iops.split(','))
+                    for link in links.split(','):
+                        fulllink = fmt.format(int(ov), int(link))
+                        data[-1].append((fulllink, num+1, iops, toline))
             dobjs[qkey].set(data=data)
         elif qlabel.label == 'natoms':
             dobjs[qkey].set(data=int(datablocks[iref][0]))
