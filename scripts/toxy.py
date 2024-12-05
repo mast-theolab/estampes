@@ -143,7 +143,7 @@ Alternatively, the broadening and axis parameters can be inverted:
 
     # Third argument: level of theory
     try:
-        key, subopts = arg = sys.argv[3]
+        key, subopts = parse_opt(sys.argv[3])
     except ArgumentError as err:
         print(f'Error found while parsing level of theory\n{err}')
         sys.exit(1)
@@ -160,7 +160,7 @@ Alternatively, the broadening and axis parameters can be inverted:
     # Check layout after 3rd argument.
     # We can check by testing if the argument is a number of not
     try:
-        arg = int(sys.argv[4])
+        int(sys.argv[4])
         layout = 2
     except ValueError:
         layout = 1
