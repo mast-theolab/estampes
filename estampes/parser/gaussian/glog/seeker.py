@@ -678,10 +678,10 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                         sub1.append(1)
                         end1.append(
                             lambda s:
-                                not re.match(r'^\s+\d+\s+-?\d', s))
+                                not re.match(r'^\s+\d+(\s+-?\d|\s*$)', s))
                         fmt1.append(
-                            r'^\s+(?P<val>\d+(?:\s+\d+|'
-                            + r'\s+-?\d+\.\d+D?[-+]\d+){1,5})\s*$')
+                            r'^\s+(?P<val>(?:\s*\d+|'
+                            + r'\s*\d+\s+-?\d+\.\d+D?[-+]\d+){1,5})\s*$')
                         num1.append(0)
                     elif isinstance(qlab.rstate, int):
                         raise NotImplementedError()

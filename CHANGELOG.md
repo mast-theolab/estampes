@@ -46,6 +46,7 @@ Other blocks are:
 - **LIB**: The `molecule` object was not displayed in the generated POV-Ray scene if no vibration was requested.
 - **API**: Fixed parsing of harmonic Raman and ROA activities with multiple incident frequencies.
 - **API**: Fixed parsing of energy second derivatives from Gaussian log files.
+- **API**: ESTAMPES could fail to read the last diagonal element of the Cartesian force constants from a Gaussian log file if the last element was in a separate block in the output (case where 3*natoms-1 is a muliple of 5).
 
 ## Changed
 - **LIB**: `spec.convert_y` now returns 3 objects, distinguishing conversions to be applied on values from the X axis and instead on values from the original X values (e.g., Raman/ROA hybrid units).
