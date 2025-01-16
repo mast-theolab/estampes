@@ -34,6 +34,9 @@ Other blocks are:
 - **BLS**: Ballast can now support multiple files in a single curve, for instance to produce the spectrum of mixtures.  The format is "file1 @ weight1 & file2 @ weight2" (spaces are irrelevant between symbols).
 - **LIB**: New module `base.aliases` to provide common aliases for keywords (e.g., spectroscopy, level of theory) regularly used within ESTAMPES.
 - **LIB**: The `Spectrum` class can now support multiple datasets and relative weights (for now purely numerical).
+- **LIB**: New function `tools.vib.build_vibrations` constructs the normal coordinates vector and frequencies Cartesian force constants.  The function is inspired by the white paper of Gaussian (https://gaussian.com/vib/), transcribed in Python by M. Fusè.
+- **LIB**: New function `tools.vib.convert_hess_evec` can convert mass-weighted eigenvectors to dimensionless eigenvectors and fix the shape of the matrix.
+- **LIB**: New function `tools.vib.norm_evec` normalizes each eigenvector.
 - **API**: Multi-jobs (explicit or internal linked jobs) in Gaussian log files are now supported.  ESTAMPES assumes that the jobs are all related to the same task (for instance opt+freq) and does not support selective extractions from a specific job (e.g., linked freq jobs with different levels of theory) for now.
 - **API**: Added support of anharmonic X matrix from Gaussian log files.
 
@@ -52,6 +55,10 @@ Other blocks are:
 - **LIB**: `spec.convert_y` now returns 3 objects, distinguishing conversions to be applied on values from the X axis and instead on values from the original X values (e.g., Raman/ROA hybrid units).
 - **LIB**: `spec.broaden` now supports an additional argument, `xconv`, for conversions specific to X values, that cannot be done using the X axis.
 - **LIB**: `Spectrum` now does an approximate search on the incident frequencies if the value in input is truncated to the integer part.
+- **API**: Method `dfile.get_hess_data` has been completely rewritten to provide more accurate results by properly projecting out rotations and translations, and avoid code duplication.
+
+## Removed
+- **API**: Functions `get_hess_data` in parsers' modules are now deprecated and have been removed.  The `dfile.get_hess_data` method should be used instead or `tools.vib.build_vibrations` for a more general form.
 
 
 ## [0.5.2] - 2024-09-17

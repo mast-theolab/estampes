@@ -18,7 +18,7 @@ import re  # Used to find keys in fchk file
 from tempfile import TemporaryFile
 from shutil import copyfileobj
 import typing as tp
-from math import ceil, sqrt
+from math import ceil
 
 from estampes.base import ArgumentError, ParseDataError, ParseKeyError, \
     QuantityError, TypeDFChk, TypeQData, TypeQInfo, QData, QLabel
@@ -927,6 +927,8 @@ def _parse_freqdep_data(qlab: QLabel, dblocks: TypeDFChk,
         if key not in dblocks:
             raise ParseKeyError('Missing incident freqs.')
         incfrqs = [str(int(item*phys_fact('au2cm1'))) for item in dblocks[key]]
+    else:
+        incfrqs = None
     if qlab.kind == 'dynamic':
         qopt = 0
     elif qlab.kind == 'static':
@@ -1069,6 +1071,7 @@ def parse_data(qdict: TypeQInfo,
             dobjs[qkey].set(data=int(datablocks[kword][0]))
         elif qlab.label in ('atcrd', 2):
             dobjs[qkey].set(data=reshape_dblock(datablocks[kword], (3, )))
+            dobjs[qkey].add_field('orient', value='input')
         elif qlab.label in ('atmas', 'atnum'):
             dobjs[qkey].set(data=datablocks[kword])
         elif qlab.label == 'swopt':
@@ -1096,6 +1099,7 @@ def parse_data(qdict: TypeQInfo,
         elif qlab.label == 'hessvec':
             if kword in datablocks:
                 dobjs[qkey].set(dtype='L.M^{-1/2}')
+                dobjs[qkey].set(shape='3*Na,Nv')
                 dobjs[qkey].set(data=datablocks[kword])
         elif qlab.label == 'hessdat':
             if qlab.level == 'H':
@@ -1109,6 +1113,8 @@ def parse_data(qdict: TypeQInfo,
                 offset = 0
             elif qlab.kind == 'redmas':
                 offset = ndat
+            else:
+                raise NotImplementedError('Unsupported quantity')
             dobjs[qkey].set(data=datablocks[kword][offset:offset+ndat])
         # Vibronic Information
         # --------------------
@@ -1334,232 +1340,3 @@ def get_data(dfobj: FChkIO,
             data[item] = data[key]
 
     return data
-
-
-def get_hess_data(dfobj: tp.Optional[FChkIO] = None,
-                  get_evec: bool = True,
-                  get_eval: bool = True,
-                  pre_data: tp.Optional[TypeQData] = None,
-                  force_calc: bool = False
-                  ) -> tp.Tuple[tp.Any]:
-    """Get or build Hessian data (eigenvectors and values).
-
-    This function retrieves or builds the eigenvectors and eigenvalues.
-    Contrary to ``get_data`` which only looks for available data, this
-    functions looks for alternative forms to build necessary data.
-    It also returns a Numpy array instead of Python lists.
-    Preloaded data can be provided to avoid duplicating extraction
-    queries.  They are expected in the same format as given by
-    FChkIO methods.
-    By default, it uses data read from formatted checkpoint file, as
-    they are sufficiently accurate and contains multiple corrections:
-    projection of gradients, rotation/translation...
-
-    Parameters
-    ----------
-    dfobj
-        Formatted checkpoint file as `FChkIO` object.
-    get_evec
-        Return the eigenvectors.
-    get_eval
-        Return the eigenvalues.
-    pre_data
-        Database with quantities already loaded from previous queries.
-    force_calc
-        Force the computation of the eigenvectors and eigenvalues.
-
-    Returns
-    -------
-    :obj:numpy.ndarray
-        Eigenvectors (None if not requested).
-    :obj:numpy.ndarray
-        Eigenvalues (None if not requested).
-
-    Raises
-    ------
-    ValueError
-        Inconsitent values given in input.
-    IOError
-        Error if file object not set but needed.
-    IndexError
-        Quantity not found.
-
-    Notes
-    -----
-    * Numpy is needed to run this function
-    * Data can be given in argument or will be extracted from `dfobj`
-    """
-    import sys
-    import numpy as np
-    from estampes.tools.math import square_ltmat
-
-    def build_evec(fccart, atmas, get_evec, get_eval, nvib=None):
-        """Build evec and eval from force constants matrix."""
-        inv_sqmas = 1./np.sqrt(atmas)
-        nat3 = fccart.shape[0]
-        ffx = np.einsum('i,ij,j->ij', inv_sqmas, fccart, inv_sqmas)
-        hessval, hessvec = np.linalg.eigh(ffx)
-        vibs = np.full(nat3, True)
-        freqs = []
-        for i, val in enumerate(hessval):
-            freq = sqrt(abs(val)*phys_fact('fac2au'))
-            if freq < 10.0:
-                vibs[i] = False
-            else:
-                if val < 0:
-                    freqs.append(-freq)
-                else:
-                    freqs.append(freq)
-        if nvib is not None:
-            if np.count_nonzero(vibs) != nvib:
-                msg = 'Unable to identify vibrations from rot/trans'
-                raise QuantityError(msg)
-        eigvec = norm_evec(hessvec[:, vibs].T) if get_evec else None
-        eigval = freqs if get_eval else None
-
-        return eigvec, eigval
-
-    def convert_evec(hessvec, atmas=None, natoms=None, form='L.M^{-1/2}'):
-        """Convert eigenvector based on form and available data."""
-        eigvec = None
-        if form in ('L.M^-1/2', 'L/M^1/2', 'L.M^{-1/2}', 'L/M^{1/2}'):
-            if atmas is not None:
-                nat3 = atmas.size
-                eigvec = norm_evec(np.einsum(
-                    'ij,j->ij',
-                    np.reshape(hessvec, (-1, nat3)),
-                    np.sqrt(atmas)
-                ))
-            else:
-                raise QuantityError('Missing atomic masses to correct evec')
-        else:
-            if natoms is not None:
-                eigvec = np.reshape(hessvec, (-1, 3*natoms))
-            else:
-                # Compute nat3 based on: 3*nat*(3nat-ntrro) = size(hessvec)
-                # ntrro = 6 for non-linear, 5 otherwise
-                # The positive root should be last one (ascending order)
-                # assume first most common case: non-linear
-                N = hessvec.size
-                val = np.polynomial.polynomial.polyroots((-N, -6, 1))[-1]
-                if val.is_integer():
-                    nat3 = int(val)
-                else:
-                    nat3 = int(np.polynomial.polynomial.polyroots(
-                        (-N, -5, 1))[-1])
-                eigvec = np.reshape(hessvec, (-1, nat3))
-        return eigvec
-
-    def norm_evec(eigvec):
-        """Normalize eigenvector (assumed to have shape (nvib, nat3))."""
-        res = np.empty(eigvec.shape)
-        norms = np.sum(eigvec**2, axis=1)
-        for i in range(eigvec.shape[0]):
-            if norms[i] > sys.float_info.epsilon:
-                res[i, :] = eigvec[i, :] / sqrt(norms[i])
-            else:
-                res[i, :] = 0.0
-        return res
-
-    if not (get_evec or get_eval):
-        raise ValueError('Nothing to do')
-
-    natoms = None
-    nvib = None
-    atmas = None
-    hessvec = None
-    hessval = None
-    fccart = None
-    key_ffx = None
-    key_evec = None
-    eigvec = None
-    eigval = None
-    do_calc = force_calc
-    if pre_data is not None:
-        for key in pre_data:
-            qlabel = pre_data[key].qlabel
-            if qlabel.label == 'natoms':
-                natoms = pre_data['natoms'].data
-            elif qlabel.label == 'nvib':
-                natoms = pre_data['nvib'].data
-            elif qlabel.label == 'atmas':
-                # np.repeat used to duplicate atmas for each Cart. coord.
-                atmas = np.repeat(np.array(pre_data[key].data), 3)
-            elif qlabel.label == 'hessvec':
-                key_evec = key
-                hessvec = np.array(pre_data[key].data)
-            elif qlabel.label == 'hessdat' and qlabel.kind == 'freq':
-                hessval = np.array(pre_data[key].data)
-            elif (qlabel.label == 1 and qlabel.derord == 2
-                  and qlabel.dercrd == 'X'):
-                key_ffx = key
-                fccart = np.array(pre_data[key].data)
-
-    if force_calc and fccart is not None and atmas is not None:
-        if (len(fccart.shape) == 1
-                or pre_data[key_ffx]['shape'].lower() == 'lt'):
-            fccart = square_ltmat(pre_data[key_ffx].data)
-        eigvec, eigval = build_evec(fccart, atmas, get_evec, get_eval, nvib)
-    elif not force_calc:
-        if get_evec and hessvec is not None:
-            # Check if eigenvectors need to be corrected
-            #  Default is assumed to be Gaussian fchk
-            evec_form = pre_data[key_evec].dtype == 'L.M^{-1/2}'
-            eigvec = convert_evec(hessvec, atmas, natoms, evec_form)
-        if get_eval and hessval is not None:
-            eigval = hessval
-
-    calc_evec = get_evec and eigvec is None
-    calc_eval = get_eval and eigval is None
-    if calc_evec or calc_eval:
-        # We are missing data, now extracting data and recomputing.
-        read_data = {}
-        if calc_evec or calc_eval:
-            read_data['natoms'] = QLabel(quantity='natoms')
-            read_data['d2EdX2'] = QLabel(quantity=1, derorder=2, dercoord='X')
-            read_data['atmas'] = QLabel(quantity='atmas')
-            read_data['nvib'] = QLabel(quantity='nvib')
-        if calc_evec:
-            read_data['hessvec'] = QLabel(quantity='hessvec', level='H')
-        if calc_eval:
-            read_data['hessval'] = QLabel(quantity='hessdat',
-                                          descriptor='freq', level='H')
-        tmp_data = get_data(dfobj, error_noqty=False, **read_data)
-
-        do_calc = force_calc
-        if not force_calc:
-            if calc_evec:
-                if (tmp_data['hessvec'] is not None
-                        and tmp_data['atmas'] is not None):
-                    hessvec = tmp_data['hessvec'].data
-                    atmas = np.repeat(np.array(tmp_data['atmas'].data), 3)
-                    natoms = tmp_data['natoms'].data
-                    evec_form = tmp_data['hessvec'].dtype == 'L.M^{-1/2}'
-                    eigvec = convert_evec(hessvec, atmas, natoms, evec_form)
-                else:
-                    do_calc = True
-            if calc_eval:
-                if tmp_data['hessval'] is not None:
-                    eigval = np.array(tmp_data['hessval'].data)
-                else:
-                    do_calc = True
-
-        if do_calc:
-            if (tmp_data['d2EdX2'] is not None
-                    and tmp_data['atmas'] is not None):
-                # Rediagonlizing is more accurate, but require being
-                atmas = np.repeat(np.array(tmp_data['atmas'].data), 3)
-                ffx = square_ltmat(tmp_data['d2EdX2'].data)
-                nvib = None if tmp_data['nvib'] is None \
-                    else tmp_data['nvib'].data
-                eigvec, eigval = build_evec(ffx, atmas, get_evec, get_eval,
-                                            nvib)
-            else:
-                if calc_evec:
-                    msg = 'Unable to retrieve force constants eigenvectors'
-                    raise QuantityError(msg)
-                if calc_eval:
-                    msg = 'Unable to retrieve normal mode wavenumbers'
-                    raise QuantityError(msg)
-
-    return eigvec, eigval

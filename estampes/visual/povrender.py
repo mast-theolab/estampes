@@ -361,8 +361,7 @@ class POVBuilder():
                     list_bonds(self.__atlab[-1], self.__atcrd[-1], _tol_bonds))
                 if self.__load_vibs:
                     try:
-                        self.__vmodes.append(
-                            dfile.get_hess_data(True, False)[0])
+                        self.__vmodes.append(dfile.get_hess_data(True, False))
                     except QuantityError:
                         self.__vmodes.append(None)
             else:
@@ -376,8 +375,7 @@ class POVBuilder():
                                self.__atcrd[ifile], _tol_bonds)
                 if self.__load_vibs:
                     try:
-                        self.__vmodes[ifile] = \
-                            dfile.get_hess_data(True, False)[0]
+                        self.__vmodes[ifile] = dfile.get_hess_data(True, False)
                     except QuantityError:
                         self.__vmodes[ifile] = None
         elif isinstance(infile, int):
@@ -396,8 +394,7 @@ class POVBuilder():
                            self.__atcrd[infile], _tol_bonds)
             if self.__load_vibs:
                 try:
-                    self.__vmodes[infile] = \
-                        dfile.get_hess_data(True, False)[0]
+                    self.__vmodes[infile] = dfile.get_hess_data(True, False)
                 except QuantityError:
                     self.__vmodes[infile] = None
         else:
@@ -417,8 +414,7 @@ class POVBuilder():
                                self.__atcrd[ifile], _tol_bonds)
                 if self.__load_vibs:
                     try:
-                        self.__vmodes[ifile] = \
-                            dfile.get_hess_data(True, False)[0]
+                        self.__vmodes[ifile] = dfile.get_hess_data(True, False)
                     except QuantityError:
                         self.__vmodes[ifile] = None
 
@@ -483,6 +479,7 @@ For Windows, if you run POVRay for Windows, the easiest way would be to use
 the graphical interface if provided.
 '''
         # Initial check on arguments validity/consistency
+        mol = None
         if id_mol is not None:
             mol = id_mol
             try:
