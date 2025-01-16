@@ -334,7 +334,6 @@ class DataFile(object):
                 raise QuantityError('Missing mass-weighted eigenvectors')
             result.append(lmweig)
 
-        print(result)
         if len(result) == 1:
             return result[0]
         else:
