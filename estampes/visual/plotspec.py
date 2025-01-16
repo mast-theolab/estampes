@@ -413,7 +413,7 @@ class SpecLayout(object):
             canvas.text(**self.__plottag, transform=canvas.transAxes)
 
     def def_panel(self, desc: tp.Optional[str] = None, **kwargs):
-        """Defines the parameters for a panel label on a canvas.
+        """Define the parameters for a panel label on a canvas.
 
         Sets the parameters necessary to include a Places a label `text`
         in one of the corner of a canvas.
