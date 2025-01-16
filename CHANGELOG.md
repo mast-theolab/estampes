@@ -32,6 +32,8 @@ Other blocks are:
 - **BLS**: Added option `RamanLaser` in the curve specifications to choose the Raman/ROA incident frequencies.  Alternatively, `RamanWInc` can be used.  The incident frequencies is expected in cm-1.
 - **BLS**: A filetype can now be provided to the file parser if the file extensions is ambiguous.
 - **BLS**: Ballast can now support multiple files in a single curve, for instance to produce the spectrum of mixtures.  The format is "file1 @ weight1 & file2 @ weight2" (spaces are irrelevant between symbols).
+- **MRG**: Mirage was updated to support the new representations of normal modes.
+- **VIZ**: Added two new representations of normal modes: as arrows are centered on the atoms (midarrows), as dual arrows showing the "positive" and "negative" displacements (dualarrows).
 - **LIB**: New module `base.aliases` to provide common aliases for keywords (e.g., spectroscopy, level of theory) regularly used within ESTAMPES.
 - **LIB**: The `Spectrum` class can now support multiple datasets and relative weights (for now purely numerical).
 - **LIB**: New function `tools.vib.build_vibrations` constructs the normal coordinates vector and frequencies Cartesian force constants.  The function is inspired by the white paper of Gaussian (https://gaussian.com/vib/), transcribed in Python by M. Fusè.

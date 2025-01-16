@@ -1,4 +1,4 @@
-"""Persistence of Vision Raytracing: Rendering tools
+"""Persistence of Vision Raytracing: Rendering tools.
 
 This module provides functions and instruments to build input files for
 POV-Ray (http://www.povray.org/).
@@ -18,7 +18,7 @@ from estampes.base.errors import ArgumentError, QuantityError
 from estampes.parser import DataFile
 from estampes.data.atom import atomic_data
 from estampes.data.physics import PHYSFACT
-from estampes.data.visual import BONDDATA, MOLCOLS, RAD_VIS_SCL
+from estampes.data.visual import BONDDATA, MOLCOLS, RAD_VIS_SCL, MODELS
 from estampes.tools.atom import convert_labsymb
 from estampes.tools.math import vrotate_3D
 from estampes.tools.mol import list_bonds
@@ -48,6 +48,42 @@ OBJ_ARROW = '''
             <0, l_shaft+.08, 0>, 0
         }}
         {mat}(0, 125, 255)
+    }}
+#end
+'''
+
+OBJ_MID_ARROW = '''
+#macro Build_MidArrow(l_shaft)
+    union {{
+        cylinder {{<0, -l_shaft/2, 0>, <0, l_shaft/2, 0>, .025}}
+        cone {{
+            <0, l_shaft/2, 0>, 0.06
+            <0, l_shaft/2+.08, 0>, 0
+        }}
+        {mat}(0, 125, 255)
+    }}
+#end
+'''
+
+OBJ_DUAL_ARROW = '''
+#macro Build_DualArrow(l_shaft)
+    union {{
+        union {{
+            cylinder {{<0, 0, 0>, <0, l_shaft/2, 0>, .025}}
+            cone {{
+                <0, l_shaft/2, 0>, 0.06
+                <0, l_shaft/2+.08, 0>, 0
+            }}
+            {mat}(9, 189, 27)
+        }}
+        union {{
+            cylinder {{<0, 0, 0>, <0, -l_shaft/2, 0>, .025}}
+            cone {{
+                <0, -l_shaft/2, 0>, 0.06
+                <0, -l_shaft/2-.08, 0>, 0
+            }}
+            {mat}(245 47, 47)
+        }}
     }}
 #end
 '''
@@ -133,6 +169,7 @@ class POVBuilder():
 
     Builds and manages a POV-ray input file.
     """
+
     def __init__(self,
                  infiles: tp.Optional[tp.Union[tp.List[str], str]] = None,
                  *,
@@ -1063,7 +1100,7 @@ def write_pov_vib(fobj: tp.TextIO,
 
     fobj.write(f'\n#declare scl_vib = {scale_mode:.3f};\n')
 
-    if representation in ('arrow', 'arrows'):
+    if representation in MODELS['vib']['arrows']['alias']:
         fobj.write(OBJ_ARROW.format(mat=CHOICES_MATER[material]))
         fmt_vib = '''\
     object {{
@@ -1075,8 +1112,32 @@ def write_pov_vib(fobj: tp.TextIO,
                  {trans[0]:9.6f}, {trans[2]:9.6f}, {trans[1]:9.6f} >
     }}
 '''
+    elif representation in MODELS['vib']['midarrows']['alias']:
+        fobj.write(OBJ_MID_ARROW.format(mat=CHOICES_MATER[material]))
+        fmt_vib = '''\
+    object {{
+        Build_MidArrow({lvib})
+        scale scl_vib
+        matrix < {rot[0][0]:9.6f}, {rot[0][2]:9.6f}, {rot[0][1]:9.6f},
+                 {rot[1][0]:9.6f}, {rot[1][2]:9.6f}, {rot[1][1]:9.6f},
+                 {rot[2][0]:9.6f}, {rot[2][2]:9.6f}, {rot[2][1]:9.6f},
+                 {trans[0]:9.6f}, {trans[2]:9.6f}, {trans[1]:9.6f} >
+    }}
+'''
+    elif representation in MODELS['vib']['dualarrows']['alias']:
+        fobj.write(OBJ_DUAL_ARROW.format(mat=CHOICES_MATER[material]))
+        fmt_vib = '''\
+    object {{
+        Build_DualArrow({lvib})
+        scale scl_vib
+        matrix < {rot[0][0]:9.6f}, {rot[0][2]:9.6f}, {rot[0][1]:9.6f},
+                 {rot[1][0]:9.6f}, {rot[1][2]:9.6f}, {rot[1][1]:9.6f},
+                 {rot[2][0]:9.6f}, {rot[2][2]:9.6f}, {rot[2][1]:9.6f},
+                 {trans[0]:9.6f}, {trans[2]:9.6f}, {trans[1]:9.6f} >
+    }}
+'''
 
-    elif representation in ('sphere', 'spheres'):
+    elif representation in MODELS['vib']['spheres']['alias']:
         fobj.write(OBJ_2COL_SPHERE.format(mat=CHOICES_MATER[material]))
         fmt_vib = '''\
     object {{

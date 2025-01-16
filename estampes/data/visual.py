@@ -13,6 +13,10 @@ PATH_OBJ3D
     Path to files describing 3D objects and materials.
 RAD_VIS_SCL
     Default scaling factors of radius for visualization.
+MATERIALS
+    Supported materials for visualization and software-specific names.
+MODELS
+    Representation models.
 """
 
 import os
@@ -74,6 +78,12 @@ MODELS = {
         },
         'spheres': {
             'alias': ('sphere', 'spheres')
+        },
+        'midarrows': {
+            'alias': ('carrows', 'carrow', 'midarrows', 'midarrow')
+        },
+        'dualarrows': {
+            'alias': ('2arrows', '2arrow', 'dualarrows', 'dualarrow')
         }
     }
 }
