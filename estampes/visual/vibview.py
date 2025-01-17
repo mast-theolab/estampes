@@ -129,9 +129,10 @@ class VibMode(Qt3DCore.QEntity):
         else:
             raise ArgumentError('Unrecognized visualization mode')
         self.__optview['mode'] = _mode
+        _vibcol = None
         _vibcol1 = None
         if vibcol is None:
-            if _mode in ('arrows', 'midarows'):
+            if _mode in ('arrows', 'midarrows'):
                 _vibcol = (54, 117, 188)
             elif _mode == 'dualarrows':
                 _vibcol = (28, 214, 46)
