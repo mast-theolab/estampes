@@ -39,7 +39,8 @@ Other blocks are:
 - **LIB**: New function `tools.vib.build_vibrations` constructs the normal coordinates vector and frequencies Cartesian force constants.  The function is inspired by the white paper of Gaussian (https://gaussian.com/vib/), transcribed in Python by M. Fusè.
 - **LIB**: New function `tools.vib.convert_hess_evec` can convert mass-weighted eigenvectors to dimensionless eigenvectors and fix the shape of the matrix.
 - **LIB**: New function `tools.vib.norm_evec` normalizes each eigenvector.
-- **LIB**: New dictionary with X11 RGB colors names available in `data.rgb`.
+- **LIB**: New dictionary with X11 RGB colors names available in `data.colors`.
+- **LIB**: New module to store color names: `data.colors`.  It currently supports X11, XKCD and the default color palette of Matplotlib.
 - **API**: Multi-jobs (explicit or internal linked jobs) in Gaussian log files are now supported.  ESTAMPES assumes that the jobs are all related to the same task (for instance opt+freq) and does not support selective extractions from a specific job (e.g., linked freq jobs with different levels of theory) for now.
 - **API**: Added support of anharmonic X matrix from Gaussian log files.
 
