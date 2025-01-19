@@ -21,6 +21,8 @@ MODELS
 
 import os
 
+from estampes.data.colors import MPL_COLORS
+
 # ================
 # Module Constants
 # ================
@@ -30,18 +32,8 @@ BONDDATA = {
     'rgb': (200, 200, 200)
 }
 
-MOLCOLS = [
-    (0x1F, 0x77, 0xB4),
-    (0xFF, 0x7F, 0x0C),
-    (0x2C, 0xA0, 0x2C),
-    (0xD6, 0x27, 0x28),
-    (0x94, 0x67, 0xBD),
-    (0x8C, 0x56, 0x4B),
-    (0xE3, 0x77, 0xC2),
-    (0x7F, 0x7F, 0x7F),
-    (0xBC, 0xBD, 0x22),
-    (0x17, 0xBE, 0xCF),
-]
+MOLCOLS = list(MPL_COLORS.values())
+
 
 PATH_OBJ3D = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), '3d_models')
