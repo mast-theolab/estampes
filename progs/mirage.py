@@ -100,6 +100,8 @@ NOTE: only available if input file contains eigenvectors.'''
     msg = f'''Model to represent vibrations:
 - spheres: {', '.join(MODELS['vib']['spheres']['alias'])}
 - arrows: {', '.join(MODELS['vib']['arrows']['alias'])}
+- midarrows: {', '.join(MODELS['vib']['midarrows']['alias'])}
+- dualarrows: {', '.join(MODELS['vib']['dualarrows']['alias'])}
 '''
     parser.add_argument('--vib-model', help=msg)
     # parser.add_argument('--vib-model', type=str.lower, default='arrows',
