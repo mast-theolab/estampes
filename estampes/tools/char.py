@@ -1,4 +1,4 @@
-"""Module providing basic character strings-related functions
+"""Module providing basic character strings-related functions.
 
 A basic module providing methods related to character string operations,
 for ESTAMPES tools.
@@ -72,6 +72,85 @@ def convert_expr(expr: str,
         _expr = _expr.replace('^', '**')
 
     return _expr
+
+
+def parse_argval_options(argval: str,
+                         delim: str = '(',
+                         choices: tp.Optional[tp.Sequence[str]] = None,
+                         convert: tp.Optional[tp.Callable[[str], str]] = None,
+                         ) -> tp.Tuple[str, tp.Sequence[list],
+                                       tp.Dict[str, str]]:
+    """Parse options stored in an argument value.
+
+    Parses a commandline or option value, extracting sub-options if
+    present.
+    The structure of sub-options is expected as:
+
+    `argval`[<delim><option<end_delim>]
+
+    Options are separated by commas.
+
+    Parameters
+    ----------
+    argval
+        Argument value to parse.
+    delim
+        Delimiter type, as opening character.
+
+        Supported characters are: (, { and [.
+
+    choices
+        Accepted values for the true argument value.
+    convert
+        Conversion function to be applied to the true argument value.
+
+    Returns
+    -------
+    str
+        Actual argument value.
+
+    Raises
+    ------
+    ArgumentError
+        Inconsistency or errors in function arguments.
+    KeyError
+        Actual argument is not present in choices.
+    ValueError
+        Argument value not property constructed.
+    """
+    sep = ','
+    value, args, kwargs = None, [], {}
+    if not argval.strip():
+        raise ArgumentError('argval', 'Empty argument value.')
+    if delim[0] == '(':
+        delims = ('(', ')')
+    elif delim[0] == '[':
+        delims = ('[', ']')
+    elif delim[0] == '{':
+        delims = ('{', '}')
+    else:
+        raise ArgumentError('delim', 'Unsupported delimiter type')
+    if delims[0] in argval:
+
+        value, options = argval.rstrip().split(delims[0], maxsplit=1)
+        if options[-1] != delims[1]:
+            raise ValueError('Sub-options not closed properly')
+        options = options[:-1]
+        for item in options.split(sep):
+            if '=' in item:
+                key, val = item.split('=')
+                kwargs[key.strip()] = val.strip()
+            else:
+                args.append(item.strip())
+    else:
+        value = argval
+    if convert is not None:
+        value = convert(value)
+    if choices is not None:
+        if value not in choices:
+            raise KeyError('Incorrect value')
+
+    return value, args, kwargs
 
 
 def unit_to_tex(unit: str,
