@@ -4,17 +4,21 @@ The module provides several types of information like:
 * dictionaries of RGB color names.
 """
 
+import typing as tp
+
+from estampes.base.errors import ArgumentError
+
 MPL_COLORS = {
-    'C0': (0x1F, 0x77, 0xB4),
-    'C1': (0xFF, 0x7F, 0x0C),
-    'C2': (0x2C, 0xA0, 0x2C),
-    'C3': (0xD6, 0x27, 0x28),
-    'C4': (0x94, 0x67, 0xBD),
-    'C5': (0x8C, 0x56, 0x4B),
-    'C6': (0xE3, 0x77, 0xC2),
-    'C7': (0x7F, 0x7F, 0x7F),
-    'C8': (0xBC, 0xBD, 0x22),
-    'C9': (0x17, 0xBE, 0xCF)
+    'C0'.casefold(): (0x1F, 0x77, 0xB4),
+    'C1'.casefold(): (0xFF, 0x7F, 0x0C),
+    'C2'.casefold(): (0x2C, 0xA0, 0x2C),
+    'C3'.casefold(): (0xD6, 0x27, 0x28),
+    'C4'.casefold(): (0x94, 0x67, 0xBD),
+    'C5'.casefold(): (0x8C, 0x56, 0x4B),
+    'C6'.casefold(): (0xE3, 0x77, 0xC2),
+    'C7'.casefold(): (0x7F, 0x7F, 0x7F),
+    'C8'.casefold(): (0xBC, 0xBD, 0x22),
+    'C9'.casefold(): (0x17, 0xBE, 0xCF)
 }
 
 X11_COLORS = {  # X11 color names
@@ -1727,3 +1731,100 @@ XKCD_COLORS = {
 
 COLOR_NAMES = {**MPL_COLORS, **XKCD_COLORS, **X11_COLORS}
 
+
+def to_rgb_list(color: tp.Any) -> tp.Tuple[int, int, int]:
+    """Convert a color specification to a RGB tuple.
+
+    Converts a color specification to a RGB tuple.
+    Different formats are supported.
+
+    Parameters
+    ----------
+    color
+        Color specification.
+
+    Returns
+    -------
+    tuple
+        RGB tuple of integers 0-255.
+
+    Raises
+    ------
+    ArgumentError
+        Unrecognized/unsupported color specification.
+    """
+    err_len = 'Incorrect number of RGB(A) components'
+    err_float = 'Cannot convert float-type components'
+    err_int = 'Cannot convert integer-type components'
+    rgb = None
+    if isinstance(color, float):
+        # Grayscale from 0 to 1.0
+        if not 0.0 <= color <= 1.0:
+            raise ArgumentError('color', 'Grayscale expected from 0 to 1')
+        rgb = [255*color for _ in range(3)]
+    elif isinstance(color, str):
+        # String specification.  Several possible formats
+        # Check first color
+        if color.startswith('#'):  # standard color specification as #RGB
+            if len(color) in (7, 9):
+                # 7: format #RGB, 9: format #RGBA, alpha ignored
+                rgb = (int(color[1:3], base=16),
+                       int(color[3:5], base=16),
+                       int(color[5:7], base=16))
+            elif len(color) == 4:
+                # Assume a shortened case: #rrggbb
+                rgb = (int(2*color[1], base=16),
+                       int(2*color[2], base=16),
+                       int(2*color[3], base=16))
+            else:
+                raise ArgumentError('color', 'Unrecognized "#RGB(A)" format')
+        elif ',' in color:
+            colors = color.strip('()').split(',')
+            if len(colors) == 3:
+                if any('.' in item for item in colors):
+                    try:
+                        rgb = tuple(int(float(item)*255) for item in colors)
+                    except ValueError as err:
+                        raise ArgumentError('color', err_float) from err
+                else:
+                    try:
+                        rgb = tuple(int(item) for item in colors)
+                    except ValueError as err:
+                        raise ArgumentError('color', err_int) from err
+            else:
+                raise ArgumentError('color', err_len)
+        elif color in COLOR_NAMES:
+            rgb = COLOR_NAMES[color]
+        else:
+            raise ArgumentError('color', 'Unknown color name/code.')
+    elif isinstance(color, (tuple, list)):
+        if len(color) in (3, 4):
+            if all(isinstance(item, (float, int)) for item in color):
+                if any(isinstance(item, float) for item in color):
+                    rgb = tuple(int(item*255) for item in color[:3])
+                else:
+                    rgb = tuple(color[:3])
+            elif all(isinstance(item, str) for item in color):
+                if any('.' in item for item in color):
+                    try:
+                        rgb = [int(float(item)*255) for item in color[:3]]
+                    except ValueError as err:
+                        raise ArgumentError('color', err_float) from err
+                else:
+                    try:
+                        rgb = [int(item) for item in color[:3]]
+                    except ValueError as err:
+                        raise ArgumentError('color', err_int) from err
+            else:
+                raise ArgumentError('color', 'Unsupported types in RGB list.')
+        else:
+            raise ArgumentError('color', err_len)
+    else:
+        raise ArgumentError('color', 'Unsupported type of color specification')
+
+    if rgb is None:
+        raise ValueError('Unable to parse the RGB specifications.')
+    elif min(rgb) < 0 or max(rgb) > 255:
+        raise ValueError('RGB parameters outside valid range.')
+
+    return rgb
