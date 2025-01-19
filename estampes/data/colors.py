@@ -1724,3 +1724,6 @@ XKCD_COLORS = {
     "yellowy brown".casefold(): (0xae, 0x8b, 0x0c),
     "yellowy green".casefold(): (0xbf, 0xf1, 0x28)
 }
+
+COLOR_NAMES = {**MPL_COLORS, **XKCD_COLORS, **X11_COLORS}
+

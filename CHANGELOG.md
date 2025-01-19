@@ -42,6 +42,7 @@ Other blocks are:
 - **LIB**: New dictionary with X11 RGB colors names available in `data.colors`.
 - **LIB**: New module to store color names: `data.colors`.  It currently supports X11, XKCD and the default color palette of Matplotlib.
 - **LIB**: New function to parse an option value (for instance in `--arg=value`) of the form "value(option,key=option)".
+- **LIB**: New alias `COLOR_NAMES` containing all RGB color dictionaries dictionaries in `data.colors`.
 - **API**: Multi-jobs (explicit or internal linked jobs) in Gaussian log files are now supported.  ESTAMPES assumes that the jobs are all related to the same task (for instance opt+freq) and does not support selective extractions from a specific job (e.g., linked freq jobs with different levels of theory) for now.
 - **API**: Added support of anharmonic X matrix from Gaussian log files.
 
