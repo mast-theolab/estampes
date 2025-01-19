@@ -15,8 +15,10 @@ from PySide6.Qt3DExtras import Qt3DExtras
 
 from estampes.base import Type1Vib, TypeAtCrd, TypeColor
 from estampes.base.errors import ArgumentError
+from estampes.data.colors import to_rgb_list
+from estampes.data.visual import PATH_OBJ3D, MODELS, VIBCOLS
 from estampes.tools.math import vrotate_3D
-from estampes.data.visual import PATH_OBJ3D, MODELS
+
 
 class VibMode(Qt3DCore.QEntity):
     """The VibMode class for  visualization.
@@ -39,7 +41,8 @@ class VibMode(Qt3DCore.QEntity):
                  at_crd: TypeAtCrd,
                  vib_mode: Type1Vib,
                  vizmode: tp.Optional[str] = None,
-                 vibcol: tp.Optional[TypeColor] = None,
+                 color: tp.Optional[tp.Any] = None,
+                 color2: tp.Optional[tp.Any] = None,
                  rootEntity: tp.Optional[Qt3DCore.QEntity] = None):
         """Initialize a VibMode instance.
 
@@ -54,8 +57,10 @@ class VibMode(Qt3DCore.QEntity):
         vizmode
             Visualization mode.
             arrow: displacements are represented as arrow.
-        vibcol
-            If not None, color of the object representing the displacement.
+        color
+            Color of the object representing the displacement.
+        color2
+            Secondary color of the object representing the displacement.
         rootEntity
             Qt root entity to connect the new `VibMode` QEntity.
         """
@@ -67,7 +72,7 @@ class VibMode(Qt3DCore.QEntity):
         # functions.  Just making sure everything declared.
         self.__vib_objs = self.__vib_mesh = self.__vib_trro = None
 
-        self.set_display_settings(vizmode=vizmode, vibcol=vibcol)
+        self.set_display_settings(vizmode=vizmode, color=color, color2=color2)
         self.update_vib(vib_mode, at_crd)
 
     def update_vib(self,
@@ -97,7 +102,9 @@ class VibMode(Qt3DCore.QEntity):
 
     def set_display_settings(self, *,
                              vizmode: tp.Optional[str] = None,
-                             vibcol: tp.Optional[TypeColor] = None):
+                             color: tp.Optional[tp.Any] = None,
+                             scale_mode: float = 1.0,
+                             color2: tp.Optional[tp.Any] = None):
         """Set display settings for the vibration.
 
         Sets color information and rendering.
@@ -107,8 +114,12 @@ class VibMode(Qt3DCore.QEntity):
         vizmode
             Visualization mode.
             See [[update_renderer]] for details.
-        vibcol
-            If not None, color of the molecule.
+        color
+            Primary color of the vibration.
+        scale_mode
+            Scaling factor to be applied to the displacements.
+        color2
+            Secondary color of the vibration (typically: negative sign).
 
         The internal databases are updated.
 
@@ -132,24 +143,40 @@ class VibMode(Qt3DCore.QEntity):
         _vibcol = None
         _vibcol1 = None
         if vibcol is None:
+        _rgb0 = None
+        _rgb1 = None
+        if color is None:
             if _mode in ('arrows', 'midarrows'):
-                _vibcol = (54, 117, 188)
+                # _rgb0 = (54, 117, 188)
+                _rgb0 = VIBCOLS['arrow']
             elif _mode == 'dualarrows':
-                _vibcol = (28, 214, 46)
-                _vibcol1 = (242, 46, 46)
-        elif isinstance(vibcol, str):
-            if not vibcol.startswith('#'):
-                raise ArgumentError('Wrong color for vibration.')
-            _vibcol = [int(vibcol[i:i+2], 16) for i in range(1, 6, 2)]
+                # _rgb0 = (28, 214, 46)
+                _rgb0 = VIBCOLS['arrow+']
         else:
-            _vibcol = list(vibcol)
-        self.__optview['col'] = _vibcol
+            try:
+                _rgb0 = to_rgb_list(color)
+            except (ValueError, ArgumentError) as err:
+                raise ArgumentError('vibcol', 'Incorrect color specification'
+                                    ) from err
+        if _mode in ('dualarrows', ):
+            if color2 is None:
+                # _rgb1 = (242, 46, 46)
+                _rgb1 = VIBCOLS['arrow-']
+            else:
+                try:
+                    _rgb1 = to_rgb_list(color2)
+                except (ValueError, ArgumentError) as err:
+                    raise ArgumentError('vibcol',
+                                        'Incorrect color specification'
+                                        ) from err
+
+        self.__optview['col'] = _rgb0
         self.__vibmat = self.__material(self)
-        self.__vibmat.setAmbient(QtGui.QColor(*_vibcol))
-        if _vibcol1 is not None:
-            self.__optview['col1'] = _vibcol1
+        self.__vibmat.setAmbient(QtGui.QColor(*_rgb0))
+        if _rgb1 is not None:
+            self.__optview['col1'] = _rgb1
             self.__vibmat1 = self.__material(self)
-            self.__vibmat1.setAmbient(QtGui.QColor(*_vibcol1))
+            self.__vibmat1.setAmbient(QtGui.QColor(*_rgb1))
 
     def update_render(self):
         """Update rendering of the vibration.

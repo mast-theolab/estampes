@@ -18,6 +18,7 @@ from estampes.base import QLabel
 from estampes.parser import DataFile
 from estampes.data.physics import PHYSFACT
 from estampes.data.visual import MODELS, MATERIALS
+from estampes.tools.char import parse_argval_options
 from estampes.tools.mol import list_bonds
 from estampes.visual.povrender import POVBuilder
 
@@ -100,8 +101,9 @@ NOTE: only available if input file contains eigenvectors.'''
 - spheres: {', '.join(MODELS['vib']['spheres']['alias'])}
 - arrows: {', '.join(MODELS['vib']['arrows']['alias'])}
 '''
-    parser.add_argument('--vib-model', type=str.lower, default='arrows',
-                        choices=VIB_ALIAS, help=msg)
+    parser.add_argument('--vib-model', help=msg)
+    # parser.add_argument('--vib-model', type=str.lower, default='arrows',
+    #                     choices=VIB_ALIAS, help=msg)
     # material?
     # scale
 
@@ -188,14 +190,35 @@ def main():
         if opts.model in pars['alias']:
             mol_model = key
             break
+    vib_opts = {'col0': None, 'col1': None}
     if read_vib:
+        if opts.vib_model is None:
+            vib_model = 'arrows'
+            args = ()
+            kwargs = {}
+        else:
+            vib_model, args, kwargs = parse_argval_options(
+                opts.vib_model, '(', VIB_ALIAS, str.lower)
         for key, pars in MODELS['vib'].items():
-            if opts.vib_model in pars['alias']:
+            if vib_model in pars['alias']:
                 vib_model = key
                 break
+        if kwargs:
+            for key in ('color0', 'color1', 'color+', 'color', 'col1', 'col0',
+                        'col+', 'col'):
+                if key in kwargs:
+                    vib_opts['col0'] = kwargs[key]
+                    break
+            for key in ('color2', 'color-', 'col2', 'col-'):
+                if key in kwargs:
+                    vib_opts['col1'] = kwargs[key]
+                    break
+        if vib_opts['col0'] is None and args:
+            vib_opts['col0'] = args[0]
+            if vib_opts['col1'] is None and len(args) >= 2:
+                vib_opts['col1'] = args[1]
     else:
         vib_model = None
-
     # Set material
     if opts.mol_mat is not None:
         mol_mat = opts.mol_mat
@@ -244,7 +267,7 @@ def main():
                               mol_repr=mol_model, vib_repr=vib_model,
                               mol_mater=mol_mat, vib_mater=vib_mat,
                               scale_atoms=scale_at, scale_bonds=scale_bo,
-                              verbose=not opts.silent)
+                              verbose=not opts.silent, vib_opts=vib_opts)
         else:
             if read_vib:
                 vib = opts.vib - 1
@@ -261,7 +284,7 @@ def main():
                                   mol_repr=mol_model, vib_repr=vib_model,
                                   mol_mater=mol_mat, vib_mater=vib_mat,
                                   scale_atoms=scale_at, scale_bonds=scale_bo,
-                                  verbose=not opts.silent)
+                                  verbose=not opts.silent, vib_opts=vib_opts)
     else:
         if num_mols > 1 and read_vib:
             txt = 'ERROR: Cannot visualize normal modes with multiple '\
@@ -293,7 +316,8 @@ def main():
                 print('ERROR: Incorrect normal mode.')
                 sys.exit(2)
             molwin.add_vibmode(mols_evec[opts.vib-1].reshape(-1, 3),
-                               repr=vib_model)
+                               repr=vib_model, color=vib_opts['col0'],
+                               color2=vib_opts['col1'])
         molwin.show()
         sys.exit(app.exec())
 

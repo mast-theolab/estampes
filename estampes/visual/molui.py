@@ -104,6 +104,8 @@ class MolWin(Qt3DExtras.Qt3DWindow):
 
     def add_vibmode(self, vib_mode: Type1Vib,
                     repr: tp.Optional[str] = None,
+                    color: tp.Optional[tp.Any] = None,
+                    color2: tp.Optional[tp.Any] = None,
                     mol: int = -1):
         """Add vibrational mode.
 
@@ -115,6 +117,10 @@ class MolWin(Qt3DExtras.Qt3DWindow):
             List of atomic displacements for a given mode.
         repr
             Representation of the vibration.
+        color
+            Color of the object representing the displacement.
+        color2
+            Secondary color of the object representing the displacement.
         mol
             Set target molecule if several of interest.
             Default: last included molecule.
@@ -129,6 +135,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         else:
             atcrd = self.__mol.at_crd
         self.__vib = VibMode(atcrd, vib_mode, vizmode=repr,
+                             color=color, color2=color2,
                              rootEntity=self.rootEntity)
 
     def upd_vibmode(self, vib_mode: Type1Vib):

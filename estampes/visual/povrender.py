@@ -17,8 +17,10 @@ from estampes.base.types import Type1Vib, TypeAtCrd, TypeAtCrdM, TypeAtLab, \
 from estampes.base.errors import ArgumentError, QuantityError
 from estampes.parser import DataFile
 from estampes.data.atom import atomic_data
+from estampes.data.colors import to_rgb_list
 from estampes.data.physics import PHYSFACT
-from estampes.data.visual import BONDDATA, MOLCOLS, RAD_VIS_SCL, MODELS
+from estampes.data.visual import BONDDATA, MODELS, MOLCOLS, RAD_VIS_SCL, \
+    VIBCOLS
 from estampes.tools.atom import convert_labsymb
 from estampes.tools.math import vrotate_3D
 from estampes.tools.mol import list_bonds
@@ -29,12 +31,12 @@ OBJ_2COL_SPHERE = '''
     difference {{
         sphere {{ <0, 0, 0>, .5 }}
         box {{ <-1, 0, -1>, <1, -1, 1> }}
-        {mat}(255, 188, 0)
+        {mat}({rgb1[0]}, {rgb1[1]}, {rgb1[2]})
     }}
     difference {{
         sphere {{ <0, 0, 0>, .5 }}
         box {{ <-1, 0, -1>, <1, 1, 1> }}
-        {mat}(0, 125, 255)
+        {mat}({rgb2[0]}, {rgb2[1]}, {rgb2[2]})
     }}
 }}
 '''
@@ -47,7 +49,7 @@ OBJ_ARROW = '''
             <0, l_shaft, 0>, 0.06
             <0, l_shaft+.08, 0>, 0
         }}
-        {mat}(0, 125, 255)
+        {mat}({rgb[0]}, {rgb[1]}, {rgb[2]})
     }}
 #end
 '''
@@ -60,7 +62,7 @@ OBJ_MID_ARROW = '''
             <0, l_shaft/2, 0>, 0.06
             <0, l_shaft/2+.08, 0>, 0
         }}
-        {mat}(0, 125, 255)
+        {mat}({rgb[0]}, {rgb[1]}, {rgb[2]})
     }}
 #end
 '''
@@ -74,7 +76,7 @@ OBJ_DUAL_ARROW = '''
                 <0, l_shaft/2, 0>, 0.06
                 <0, l_shaft/2+.08, 0>, 0
             }}
-            {mat}(9, 189, 27)
+            {mat}({rgb1[0]}, {rgb1[1]}, {rgb1[2]})
         }}
         union {{
             cylinder {{<0, 0, 0>, <0, -l_shaft/2, 0>, .025}}
@@ -82,7 +84,7 @@ OBJ_DUAL_ARROW = '''
                 <0, -l_shaft/2, 0>, 0.06
                 <0, -l_shaft/2-.08, 0>, 0
             }}
-            {mat}(245 47, 47)
+            {mat}({rgb2[0]}, {rgb2[1]}, {rgb2[2]})
         }}
     }}
 #end
@@ -592,9 +594,15 @@ the graphical interface if provided.
                               show_mol=vib is None,
                               **params)
                 if vib is not None:
+                    if 'vib_opts' in params:
+                        col0 = params['vib_opts'].get('col0')
+                        col1 = params['vib_opts'].get('col1')
+                    else:
+                        col0 = None
+                        col1 = None
                     write_pov_vib(fobj, self.__atcrd[mol], vib,
                                   representation=vib_repr, material=vib_mater,
-                                  **params)
+                                  color=col0, color2=col1, **params)
         else:
             if merge_mols:
                 box = build_box(self.__atlab[0], self.__atcrd[0], mol_repr)
@@ -1064,6 +1072,8 @@ def write_pov_vib(fobj: tp.TextIO,
                   scale_mode: float = 1.0,
                   material: str = 'glass',
                   show_obj: str = 'both',
+                  color: tp.Optional[tp.Any] = None,
+                  color2: tp.Optional[tp.Any] = None,
                   **kwargs):
     """Write normal mode description in a POV-Ray file.
 
@@ -1082,12 +1092,17 @@ def write_pov_vib(fobj: tp.TextIO,
         Scaling factor to be applied to the displacements.
     material
         Material to use for the vibrational representation.
+    color
+        Primarily color for the "positive" displacement.
+    color2
+        If relevant, color of the "negative" displacement.
     show_obj
         Add commands to show object(s). Possible values:
 
         * both: show combined molecule and vibration
         * vib: show only vibration
         * no: do not show
+    
     """
     try:
         if not fobj.writable():
@@ -1096,12 +1111,23 @@ def write_pov_vib(fobj: tp.TextIO,
         raise OSError('The file must be opened before') from err
 
     if material not in CHOICES_MATER:
-        raise ArgumentError('Unsupported material definition.')
+        raise ArgumentError('material',
+                            'Unsupported material definition.')
 
     fobj.write(f'\n#declare scl_vib = {scale_mode:.3f};\n')
 
+    scale_displ = 1
     if representation in MODELS['vib']['arrows']['alias']:
-        fobj.write(OBJ_ARROW.format(mat=CHOICES_MATER[material]))
+        if color is None:
+            rgb0 = VIBCOLS['arrow']
+        else:
+            try:
+                rgb0 = to_rgb_list(color)
+            except (ArgumentError, ValueError) as err:
+                raise ArgumentError('color',
+                                    'Incorrect color specifications') \
+                                    from err
+        fobj.write(OBJ_ARROW.format(mat=CHOICES_MATER[material], rgb=rgb0))
         fmt_vib = '''\
     object {{
         Build_Arrow({lvib})
@@ -1113,7 +1139,18 @@ def write_pov_vib(fobj: tp.TextIO,
     }}
 '''
     elif representation in MODELS['vib']['midarrows']['alias']:
-        fobj.write(OBJ_MID_ARROW.format(mat=CHOICES_MATER[material]))
+        scale_displ = 1.5  # we increase a bit the vector to be readable
+        if color is None:
+            rgb0 = VIBCOLS['arrow']
+        else:
+            try:
+                rgb0 = to_rgb_list(color)
+            except (ArgumentError, ValueError) as err:
+                raise ArgumentError('color',
+                                    'Incorrect color specifications') \
+                                    from err
+        fobj.write(OBJ_MID_ARROW.format(mat=CHOICES_MATER[material],
+                                        rgb=rgb0))
         fmt_vib = '''\
     object {{
         Build_MidArrow({lvib})
@@ -1125,7 +1162,27 @@ def write_pov_vib(fobj: tp.TextIO,
     }}
 '''
     elif representation in MODELS['vib']['dualarrows']['alias']:
-        fobj.write(OBJ_DUAL_ARROW.format(mat=CHOICES_MATER[material]))
+        if color is None:
+            rgb0 = VIBCOLS['arrow+']
+        else:
+            try:
+                rgb0 = to_rgb_list(color)
+            except (ArgumentError, ValueError) as err:
+                raise ArgumentError('color',
+                                    'Incorrect color specifications') \
+                                    from err
+        if color2 is None:
+            rgb1 = VIBCOLS['arrow-']
+        else:
+            try:
+                rgb1 = to_rgb_list(color2)
+            except (ArgumentError, ValueError) as err:
+                raise ArgumentError('color2',
+                                    'Incorrect color specifications') \
+                                    from err
+        fobj.write(OBJ_DUAL_ARROW.format(mat=CHOICES_MATER[material],
+                                         rgb1=rgb0, rgb2=rgb1))
+        scale_displ = 1.5  # we increase a bit the vector to be readable
         fmt_vib = '''\
     object {{
         Build_DualArrow({lvib})
@@ -1138,7 +1195,26 @@ def write_pov_vib(fobj: tp.TextIO,
 '''
 
     elif representation in MODELS['vib']['spheres']['alias']:
-        fobj.write(OBJ_2COL_SPHERE.format(mat=CHOICES_MATER[material]))
+        if color is None:
+            rgb0 = VIBCOLS['sphere+']
+        else:
+            try:
+                rgb0 = to_rgb_list(color)
+            except (ArgumentError, ValueError) as err:
+                raise ArgumentError('color',
+                                    'Incorrect color specifications') \
+                                    from err
+        if color2 is None:
+            rgb1 = VIBCOLS['sphere-']
+        else:
+            try:
+                rgb1 = to_rgb_list(color2)
+            except (ArgumentError, ValueError) as err:
+                raise ArgumentError('color2',
+                                    'Incorrect color specifications') \
+                                    from err
+        fobj.write(OBJ_2COL_SPHERE.format(mat=CHOICES_MATER[material],
+                                          rgb1=rgb0, rgb2=rgb1))
         fmt_vib = '''\
     object {{
         vib_sphere
@@ -1156,6 +1232,7 @@ def write_pov_vib(fobj: tp.TextIO,
     for xyz, dxyz in zip(at_crd, evec):
         ldxyz = np.linalg.norm(dxyz)
         rot = np.transpose(vrotate_3D(np.array([0, 1, 0]), dxyz/ldxyz))
+        ldxyz *= scale_displ
         fobj.write(fmt_vib.format(rot=rot.tolist(), trans=xyz.tolist(),
                                   lvib=ldxyz))
     fobj.write('}\n')
