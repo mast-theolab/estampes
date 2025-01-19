@@ -34,6 +34,13 @@ BONDDATA = {
 
 MOLCOLS = list(MPL_COLORS.values())
 
+VIBCOLS = {  # standard colors for vib. mode representations
+    'arrow': (0, 125, 255),
+    'arrow+': (9, 189, 27),
+    'arrow-': (245, 47, 47),
+    'sphere+': (0, 125, 255),
+    'sphere-': (255, 188, 0),
+}
 
 PATH_OBJ3D = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), '3d_models')
