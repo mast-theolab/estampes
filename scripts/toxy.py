@@ -84,13 +84,14 @@ Expected format: option(key=val)'
 
 
 def main():
-    '''Main function.'''
+    """Run the program."""
     if len(sys.argv) not in (LAYOUT_LENGTHS
                              + [i+1 for i in LAYOUT_LENGTHS]):
         print(f'''\
-Usage: {PROGNAME} spec level [func hwhm lower upper grain] [outfile].
+Usage: {PROGNAME} datfile spec level [func hwhm lower upper grain] [outfile].
 
 with
+datfile: data file (Gaussian log/fchk file)
 spec:  type of spectroscopy: IR, VCD, RS...
 level: level of theory: a(nharm), h(harm), e(lectronic)...
 func:  broadening function: l(orentzian), g(aussian)
@@ -153,7 +154,7 @@ Alternatively, the broadening and axis parameters can be inverted:
     try:
         level = level_theory[key.casefold()]
     except KeyError:
-        print(f'ERROR: Unrecognized level of theory, {arg}')
+        print(f'ERROR: Unrecognized level of theory, {key}')
         print(f'Available keys: {", ".join(level_theory)}')
         sys.exit(1)
 
@@ -237,7 +238,11 @@ Alternatively, the broadening and axis parameters can be inverted:
 
     # -- Output
     if arg_fout is None:
-        outfile = sys.stdout
+        fbase = os.path.splitext(fname)[0]
+        outfile = open(
+            f'{fbase}_{spec}_{level}_{func[0].upper()}{int(hwhm):03d}.csv',
+            'w', encoding='utf-8'
+        )
     else:
         if os.path.exists(arg_fout):
             print(f'NOTE: File {arg_fout} already exists.  Overwritten.')
