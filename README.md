@@ -3,9 +3,9 @@ ESTAMPES
 
 Description
 -----------
-A prototypical program for spectral analysis, which stands for _Experimental Support Toolbox for the Analysis, Modelling, Plotting and Elucidation of Spectra_.
+A prototypical program for spectral analysis, which stands for _Experimental Support Toolkit for Analysis, Modelling, Processing and Elaboration of Spectra_.
 
-The toolbox is separated in 3 components:
+The toolkit is separated in 3 components:
 * Low-level modules for data parsing, which relies as much as possible on internal Python modules.
 * Intermediate-level variables, functions and classes providing basic data of physical-chemical interest: constants, conversion functions, quantity properties, parameters for display...
 * higher-level stand-along scripts

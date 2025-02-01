@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 """
-    ESTAMPES: Experimental Support Toolbox for the Analysis, Modelling,
-              Plotting and Elucidation of Spectra.
+    ESTAMPES: Experimental Support Toolkit for Analysis, Modelling,
+              Processing and Elaboration of Spectra.
 
 This is the main program for data parser, which also acts as an
-  illustration of the toolbox.
+  illustration of the library.
 """
 
 # flake8: noqa: F402

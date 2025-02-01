@@ -14,7 +14,7 @@
 
 == Preamble
 
-"`{Estampes} Experimental Support Toolbox for the Analysis, Modelling, Plotting and Elucidation of Spectra`" is intended as a toolbox to facilitate prototype development and simple data analysis.
+"`{Estampes}: Experimental Support Toolkit for Analysis, Modelling, Processing and Elaboration of Spectra`" is designed as an ensemble of tools to facilitate prototype development and simple data analysis.
 
 
 == Presentation

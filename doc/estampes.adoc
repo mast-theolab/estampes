@@ -10,6 +10,6 @@
 
 == Preamble
 
-The "`Experimental Support Toolbox for the Analysis, Modelling, Plotting and Elucidation of Spectra`" (ESTAMPES) is a library and programs suite for code prototyping and data visualization.
+The "`Experimental Support Toolkit for Analysis, Modelling, Processing and Elaboration of Spectra`" (ESTAMPES) is a library and programs suite for code prototyping and data visualization.
 Its primary aim is to provide simple interfaces and tools to extract and manipulate data, primarily from [.smallcaps]##Gaussian##, but compatible with any other file format through _ad hoc_ parsers.
 Specialized programs are also provided as demonstrations of the capabilities of the library system and to facilitate data processing and visualization for common tasks.
