@@ -140,9 +140,7 @@ class VibMode(Qt3DCore.QEntity):
         else:
             raise ArgumentError('Unrecognized visualization mode')
         self.__optview['mode'] = _mode
-        _vibcol = None
-        _vibcol1 = None
-        if vibcol is None:
+
         _rgb0 = None
         _rgb1 = None
         if color is None:
