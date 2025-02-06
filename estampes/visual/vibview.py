@@ -150,16 +150,22 @@ class VibMode(Qt3DCore.QEntity):
             elif _mode == 'dualarrows':
                 # _rgb0 = (28, 214, 46)
                 _rgb0 = VIBCOLS['arrow+']
+            elif _mode == 'spheres':
+                # _rgb0 = (28, 214, 46)
+                _rgb0 = VIBCOLS['sphere+']
         else:
             try:
                 _rgb0 = to_rgb_list(color)
             except (ValueError, ArgumentError) as err:
                 raise ArgumentError('vibcol', 'Incorrect color specification'
                                     ) from err
-        if _mode in ('dualarrows', ):
+        if _mode in ('dualarrows', 'spheres'):
             if color2 is None:
                 # _rgb1 = (242, 46, 46)
-                _rgb1 = VIBCOLS['arrow-']
+                if _mode == 'dualarrows':
+                    _rgb1 = VIBCOLS['arrow-']
+                else:
+                    _rgb1 = VIBCOLS['sphere-']
             else:
                 try:
                     _rgb1 = to_rgb_list(color2)
