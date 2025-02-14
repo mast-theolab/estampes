@@ -26,6 +26,9 @@ Other blocks are:
 
 ## Unreleased
 
+### Important
+1. The logic in the POV-Ray description scene has been changed in this version to better match the interactive visualizer.  This means that the Z axis is now the vertical and Y points toward the camera, while the old previous, standard form was to have Y upwards and Z pointing in the direction opposite to the camera.  Note that to keep operations more intuitive, the left-handed representation is fully maintained.
+
 ### Added
 - **2XY**: New simple script to generate convoluted band-shapes or extract spectral data from files supported by ESTAMPES.
 - **BLS**: Added option `RamanSetup` in the curve specifications to choose the Raman/ROA setup.
@@ -34,6 +37,11 @@ Other blocks are:
 - **BLS**: Ballast can now support multiple files in a single curve, for instance to produce the spectrum of mixtures.  The format is "file1 @ weight1 & file2 @ weight2" (spaces are irrelevant between symbols).
 - **MRG**: Mirage was updated to support the new representations of normal modes.
 - **MRG**: Mirage now recognizes colors specifications as sub-options of `--vid-modes`.
+- **VIZ**: `MolWin` now supports a new shortcut 'CTRL+E' (COMMAND+E on Mac) to export a POV-Ray file describing the represented in the same orientation (currently translations are not considered).
+- **VIZ**: `Molecule`, `VibMode` and `POVBuilder` now supports explicit description of the representation model and material.  Old keywords like `rad_atom_as_bond` are deprecated and have been removed.
+- **VIZ**: `Molecule` now supports other "materials" (WIP).
+- **VIZ**: The description scene in POV-Ray has been changed to match the modified convention.  This way, the interactive viewer and POV-Ray describe by default the same scene.
+- **VIZ**: `Molecule` and `VibView` have a new method to retrieve visualization parameters, `viz_options`.
 - **VIZ**: Added two new representations of normal modes: as arrows are centered on the atoms (midarrows), as dual arrows showing the "positive" and "negative" displacements (dualarrows).
 - **LIB**: New module `base.aliases` to provide common aliases for keywords (e.g., spectroscopy, level of theory) regularly used within ESTAMPES.
 - **LIB**: The `Spectrum` class can now support multiple datasets and relative weights (for now purely numerical).

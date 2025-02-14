@@ -23,7 +23,7 @@ from estampes.tools.mol import list_bonds
 from estampes.visual.povrender import POVBuilder
 
 try:
-    from PySide6 import QtGui
+    from PySide6 import QtWidgets
     Qt_avail = True
     from estampes.visual.molui import MolWin
 except ModuleNotFoundError:
@@ -97,6 +97,8 @@ NOTE: only available if input file contains eigenvectors.'''
     parser.add_argument('--vib', type=int, help=msg)
     parser.add_argument('--vib-mat', choices=MATERIALS.keys(),
                         help='Material for the vibration.')
+    parser.add_argument('--vib-scale', type=float, default=1.0,
+                        help='Scaling factor to the vibrations')
     msg = f'''Model to represent vibrations:
 - spheres: {', '.join(MODELS['vib']['spheres']['alias'])}
 - arrows: {', '.join(MODELS['vib']['arrows']['alias'])}
@@ -192,6 +194,10 @@ def main():
         if opts.model in pars['alias']:
             mol_model = key
             break
+    else:
+        print('ERROR: Molecular representation model unsupported.')
+        print('       This should not happen.')
+        sys.exit(1)
     vib_opts = {'col0': None, 'col1': None}
     if read_vib:
         if opts.vib_model is None:
@@ -266,7 +272,7 @@ def main():
             builder = POVBuilder(opts.infiles, load_vibs=read_vib,
                                  tol_bonds=opts.bond_tol)
             builder.write_pov(povname=povfile, merge_mols=True,
-                              mol_repr=mol_model, vib_repr=vib_model,
+                              mol_model=mol_model, vib_model=vib_model,
                               mol_mater=mol_mat, vib_mater=vib_mat,
                               scale_atoms=scale_at, scale_bonds=scale_bo,
                               verbose=not opts.silent, vib_opts=vib_opts)
@@ -283,7 +289,7 @@ def main():
                 else:
                     povfile = opts.output
                 builder.write_pov(povname=povfile, id_vib=vib,
-                                  mol_repr=mol_model, vib_repr=vib_model,
+                                  mol_model=mol_model, vib_model=vib_model,
                                   mol_mater=mol_mat, vib_mater=vib_mat,
                                   scale_atoms=scale_at, scale_bonds=scale_bo,
                                   verbose=not opts.silent, vib_opts=vib_opts)
@@ -309,16 +315,15 @@ def main():
                 if read_vib:
                     mols_evec = moldat['evec']
 
-        app = QtGui.QGuiApplication()
-        rad_atom_as_bond = opts.model == 'sticks'
-        molwin = MolWin(num_mols, mols_atnum, mols_atcrd, mols_bonds, True,
-                        rad_atom_as_bond)
+        app = QtWidgets.QApplication()
+        molwin = MolWin(num_mols, mols_atnum, mols_atcrd, mols_bonds,
+                        mol_model, mol_mat, True, fnames=opts.infiles)
         if read_vib:
             if opts.vib <= 0 or opts.vib > mols_evec.shape[0]:
                 print('ERROR: Incorrect normal mode.')
                 sys.exit(2)
             molwin.add_vibmode(mols_evec[opts.vib-1].reshape(-1, 3),
-                               repr=vib_model, color=vib_opts['col0'],
+                               vib_model, vib_mat, color=vib_opts['col0'],
                                color2=vib_opts['col1'])
         molwin.show()
         sys.exit(app.exec())

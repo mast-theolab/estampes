@@ -3,9 +3,10 @@
 Provides classes to build simple or more advanced interfaces to
 visualize molecules and associated properties.
 """
+import os
 import typing as tp
 
-from PySide6 import QtCore, QtGui
+from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.Qt3DCore import Qt3DCore
 from PySide6.Qt3DRender import Qt3DRender
 from PySide6.Qt3DExtras import Qt3DExtras
@@ -14,6 +15,7 @@ from estampes.base.types import Type1Vib, TypeAtCrdM, TypeAtLabM, TypeBondsM, \
     TypeColor
 from estampes.visual.molview import Molecule
 from estampes.visual.vibview import VibMode
+from estampes.visual.povrender import POVBuilder, MSG_POV_CMD_HTML, MSG_POV_WIN
 
 
 class MolWin(Qt3DExtras.Qt3DWindow):
@@ -29,9 +31,11 @@ class MolWin(Qt3DExtras.Qt3DWindow):
                  atlabs: TypeAtLabM,
                  atcrds: TypeAtCrdM,
                  bonds: TypeBondsM,
+                 model: tp.Optional[str] = None,
+                 material: tp.Optional[str] = None,
                  col_bond_as_atom: bool = False,
-                 rad_atom_as_bond: bool = False,
-                 molcols: tp.Optional[TypeColor] = None):
+                 molcols: tp.Optional[TypeColor] = None,
+                 **extras):
         """Build an instance of MolWin.
 
         Builds an instance of MolWin.
@@ -48,12 +52,19 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         bonds
             2-tuples listing connected atoms.
             If `nmols>1`, list of lists.
+        model
+            Representation model of the molecule.
+        material
+            Material simulated for the molecule.
         col_bond_as_atom
             If true, bonds are colored based on the connected atoms
-        rad_atom_as_bond
-            If true, atomic radii are set equal to the bonds (tubes).
         molcols
             If not `None`, color of the each molecule.
+        extras
+            Extra keywords.  Supported:
+
+            `fname`: filename where data were stored.
+            `fnames`: sequence of filenames where data were stored.
         """
         super(MolWin, self).__init__()
 
@@ -61,9 +72,28 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         self.__mol = None
         self.__nmols = 0
 
+        if 'fnames' in extras:
+            fname = extras['fnames']
+        elif 'fname' in extras:
+            fname = extras['fname']
+        else:
+            fname = None
+        if isinstance(fname, str):
+            if nmols > 1:
+                raise ValueError('Expected list of filenames')
+            self.__fnames = fname
+        elif isinstance(fname, (tuple, list)):
+            if nmols == 1:
+                self.__fnames = fname[0]
+            else:
+                self.__fnames = fname[:]
+        else:
+            self.__fnames = None
+
         # Camera
         self.camera().lens().setPerspectiveProjection(45, 16 / 9, 0.1, 1000)
-        self.camera().setPosition(QtGui.QVector3D(0, 1, 40))
+        self.camera().setPosition(QtGui.QVector3D(0, 0, 40))
+        self.camera().setUpVector(QtGui.QVector3D(0, 1, 0))
         self.camera().setViewCenter(QtGui.QVector3D(0, 0, 0))
 
         # For camera controls
@@ -71,8 +101,8 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         Molecule.reset_counter()
         if nmols == 1:
             self.__nmols = 1
-            self.__mol = Molecule(atlabs, atcrds, bonds, col_bond_as_atom,
-                                  rad_atom_as_bond, molcols, self.rootEntity)
+            self.__mol = Molecule(atlabs, atcrds, bonds, model, material,
+                                  col_bond_as_atom, molcols, self.rootEntity)
             self.__mol.addMouse(self.camera)
             self.__mol.click_molatom.connect(self.atom_clicked)
         else:
@@ -84,7 +114,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
                 else:
                     molcol = molcols[i]
                 self.__mol.append(Molecule(atlabs[i], atcrds[i], bonds[i],
-                                           col_bond_as_atom, rad_atom_as_bond,
+                                           model, material, col_bond_as_atom,
                                            molcol, self.rootEntity))
                 self.__mol[-1].addMouse(self.camera)
                 self.__mol[-1].click_molatom.connect(self.atom_clicked)
@@ -102,8 +132,14 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         # for mol in mols:
         self.setRootEntity(self.rootEntity)
 
+        # Add shortcuts
+        self.keyPrint = QtGui.QShortcut(
+            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_E), self)
+        self.keyPrint.activated.connect(self.__export_pov)
+
     def add_vibmode(self, vib_mode: Type1Vib,
-                    repr: tp.Optional[str] = None,
+                    model: tp.Optional[str] = None,
+                    material: tp.Optional[str] = None,
                     color: tp.Optional[tp.Any] = None,
                     color2: tp.Optional[tp.Any] = None,
                     mol: int = -1):
@@ -115,8 +151,10 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         ---------
         vib_mode
             List of atomic displacements for a given mode.
-        repr
-            Representation of the vibration.
+        model
+            Representation model to visualize the modes.
+        material
+            Material to use in the representation of the modes.
         color
             Color of the object representing the displacement.
         color2
@@ -134,7 +172,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
                 raise ValueError('Molecule does not exist.') from err
         else:
             atcrd = self.__mol.at_crd
-        self.__vib = VibMode(atcrd, vib_mode, vizmode=repr,
+        self.__vib = VibMode(atcrd, vib_mode, model, material,
                              color=color, color2=color2,
                              rootEntity=self.rootEntity)
 
@@ -166,3 +204,84 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         # self.camera().setViewCenter(QtGui.QVector3D(mouseEvent.x(),
         #                                             mouseEvent.y(), 0))
         super(MolWin, self).mousePressEvent(mouseEvent)
+
+    def __export_pov(self):
+        """Export to POV-Ray description file.
+
+        Builds a POV-Ray description file based on current
+        configuration.
+        """
+        workdir = os.getcwd()
+        if self.__nmols > 1:
+            povfile = 'scene.pov'
+        elif self.__fnames is None:
+            povfile = 'molecule.pov'
+        else:
+            povfile = os.path.splitext(self.__fnames)[0] + '.pov'
+            workdir = os.path.realpath(os.path.dirname(povfile))
+
+        dialog = QtWidgets.QFileDialog()
+        dialog.setDirectory(workdir)
+        dialog.setWindowTitle('Export POV-Ray description file')
+        dialog.setNameFilter("POV-Ray files (*.pov)")
+        dialog.setNameFilter("All files (*)")
+        dialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
+        dialog.setDefaultSuffix('.pov')
+        dialog.selectFile(os.path.basename(povfile))
+        if not dialog.exec_():
+            return
+
+        povfile = os.path.realpath(dialog.selectedFiles()[0])
+
+        rmat = self.camera().transform().rotation().toRotationMatrix().data()
+        # We need to transpose the rotation matrix since it is intended for
+        # the camera and we want to apply it to the system.
+        # We then permute Y and Z in each dimension to correct from the right
+        # to the left-handed system.
+        rotmat = [
+            [rmat[0], rmat[6], rmat[3]],
+            [rmat[2], rmat[8], rmat[5]],
+            [rmat[1], rmat[7], rmat[4]]
+        ]
+        pov_opts = {
+            'rotation': rotmat,
+            'verbose': False
+        }
+        if self.__vib is not None:
+            mode = self.__vib.mode
+            pov_opts['id_vib'] = 0
+            pov_opts['vib_model'] = self.__vib.viz_options('model') or 'arrows'
+            pov_opts['vib_mater'] = self.__vib.viz_options('material') \
+                or 'plastic'
+        else:
+            mode = None
+        if self.__nmols == 1:
+            pov_opts['mol_model'] = self.__mol.viz_options('model')
+            pov_opts['mol_mater'] = self.__mol.viz_options('material')
+            builder = POVBuilder(None, povfile=povfile,
+                                 at_crds=self.__mol.at_crd,
+                                 at_labs=self.__mol.at_lab,
+                                 v_modes=mode,
+                                 nmols=self.__nmols, in_au=False)
+            builder.write_pov(**pov_opts)
+        else:
+            pov_opts['mol_model'] = self.__mol[0].viz_options('model')
+            pov_opts['mol_mater'] = self.__mol[0].viz_options('material')
+            builder = POVBuilder(None, povfile=povfile,
+                                 at_crds=[item.at_crd for item in self.__mol],
+                                 at_labs=[item.at_lab for item in self.__mol],
+                                 v_modes=mode,
+                                 nmols=self.__nmols, in_au=False)
+            builder.write_pov(**pov_opts)
+
+        txt = MSG_POV_CMD_HTML.format(file=povfile)
+        if os.sys.platform == 'win32':
+            txt += '\n\n' + MSG_POV_WIN
+        msgBox = QtWidgets.QMessageBox()
+        msgBox.setIcon(QtWidgets.QMessageBox.Information)
+        msgBox.setText("Information for the execution of POV-Ray")
+        msgBox.setInformativeText(txt)
+        msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msgBox.setDefaultButton(QtWidgets.QMessageBox.Ok)
+        msgBox.exec()

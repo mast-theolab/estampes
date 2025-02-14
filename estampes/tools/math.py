@@ -209,6 +209,54 @@ def levi_civita_tens() -> np.ndarray:
     return tensor
 
 
+def rotate(rotmat: npt.ArrayLike, array: npt.ArrayLike,
+           transpose: bool = False) -> tp.Union[np.ndarray, tp.List[tp.Any]]:
+    """Rotate an array.
+
+    Rotates an array using rotation matrix `rotmat`.
+
+    Parameters
+    ----------
+    rotmat
+        Rotation matrix.
+    array
+        Array to rotate.
+    transpose
+        Carry out the transpose rotation.
+
+    Returns
+    -------
+    np.ndarray | list
+        List or NumPy N-dimensional array with rotated quantities.
+
+    Notes
+    -----
+    * The function tries to return a quantity consistent with input
+      array.
+    * Only vectors and 2D arrays are supported.
+    * The function assumes that the last dimensions are the Cartesian
+      coordinates in case of ambiguity (e.g.: 3,3).
+    """
+    tolist = isinstance(array, (list, tuple))
+    array = np.asarray(array)
+    shape = array.shape
+    if len(shape) == 1:
+        op = 'ij,i->j' if transpose else 'ij,j->i'
+    elif len(shape) == 2:
+        if shape[1] == 3:
+            op = 'ji,kj->ki' if transpose else 'ij,kj->ki'
+        else:
+            op = 'ji,jk->ki' if transpose else 'ij,jk->ki'
+    else:
+        raise ArgumentError('array', 'Unsupported ')
+
+    res = np.einsum(op, rotmat, array)
+    if tolist:
+        return res.tolist()
+    else:
+        return res
+
+
 def square_ltmat(ltmat: tp.Union[tp.Sequence[float], np.ndarray],
                  what: str = 'symm') -> np.ndarray:
     """Square a lower-triangular matrix.

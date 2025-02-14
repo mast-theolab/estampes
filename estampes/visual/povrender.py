@@ -2,6 +2,32 @@
 
 This module provides functions and instruments to build input files for
 POV-Ray (http://www.povray.org/).
+
+Note: POV-Ray adopts a left-handed system contrary to standard,
+right-handed systems:
+
+.. code-block:: text
+
+      y ^   ^ z               y ^
+        |  /                    |
+        | /                     |
+        ---------> x            ---------> x
+                                /
+                               /
+                            z v
+      left-handed               right-handed
+
+This means that images typically generated directly from Cartesian
+coordinates may be appeared as mirror images.
+A standard correction is to invert the Y and Z components.
+To do so, Y and Z from atomic and vibrations specifications are
+inverted.
+For consistency with the interactive viewer, the camera is set
+along Y.
+
+.. warning
+The change of notation means that the Z axis is the "vertical", with
+X "on the right" and Y "toward the viewer".
 """
 
 import os
@@ -22,9 +48,46 @@ from estampes.data.physics import PHYSFACT
 from estampes.data.visual import BONDDATA, MODELS, MOLCOLS, RAD_VIS_SCL, \
     VIBCOLS
 from estampes.tools.atom import convert_labsymb
-from estampes.tools.math import vrotate_3D
+from estampes.tools.math import rotate, vrotate_3D
 from estampes.tools.mol import list_bonds
 
+MSG_POV_CMD = '''
+To run POVRay, you can use the following input (on Unix systems):
+
+    povray +W1600 +H1200 +A +UA -D {file}
+
++W: Set the width of the image, in pixels
++H: Set the height of the image, in pixels
++A: Enable anti-aliasing for smoother images
++UA: Activate background transparency
+-D: deactivate the display of the image while it is generated.
+    Remove the option to see the image being generated in real-time.
+'''
+MSG_POV_CMD_HTML = '''
+<p>To run POVRay, you can use the following input (on Unix systems):</p>
+
+<pre>
+povray +W1600 +H1200 +A +UA -D {file}
+</pre>
+
+<dl>
+    <dt>+W</dt>
+    <dd>Set the width of the image, in pixels</dd>
+    <dt>+H</dt>
+    <dd>Set the height of the image, in pixels</dd>
+    <dt>+A</dt>
+    <dd>Enable anti-aliasing for smoother images</dd>
+    <dt>+UA</dt>
+    <dd>Activate background transparency</dd>
+    <dt>-D</dt>
+    <dd>deactivate the display of the image while it is generated.
+    Remove the option to see the image being generated in real-time.</dd>
+</dl>
+'''
+MSG_POV_WIN = '''
+For Windows, if you run POVRay for Windows, the easiest way would be to use
+the graphical interface if provided.
+'''
 
 OBJ_2COL_SPHERE = '''
 #declare vib_sphere = union {{
@@ -244,6 +307,7 @@ class POVBuilder():
         self.__vmodes = []
         self.__infiles = []
         self.__loaded = []
+        self.__nvibs = 0
         if infiles is not None:
             if isinstance(infiles, (tuple, list)):
                 if load_data:
@@ -286,17 +350,33 @@ class POVBuilder():
                         raise ArgumentError(f'Expected {nmols} atomic labels.')
                 if v_modes is not None:
                     self.__vmodes = np.array(v_modes)
-                    if self.__vmodes.ndim < 3:
-                        raise ArgumentError('Expected array of vib. modes')
-                    if self.__vmodes.ndim == 4:
+                    shape = self.__vmodes.shape
+                    if len(shape) < 3:
                         raise ArgumentError(
-                            'Mode specifications should be a 1D vector')
-                    if self.__vmodes.ndim > 4:
-                        raise ArgumentError(
-                            'Too many dimensions for vib. mode specifications')
-                    if self.__vmodes.shape[0] < nmols:
-                        raise ArgumentError(
-                            f'Expected {nmols} definitions of modes')
+                            'modes',
+                            'Array of modes must have at least 3 dimensions:'
+                            + ' [nmols][1|nvib][...]')
+                    if shape[0] != nmols:
+                        raise IndexError(
+                            'The modes do not match the number of molecules')
+                    n_at3 = self.__atcrd[0].size
+                    self.__nvibs = self.__vmodes[0].size // n_at3
+                    if self.__nvibs == 1:
+                        # We have only 1 vibration stored, reverse number for
+                        # internal use
+                        self.__nvibs = -1
+                        if self.__vmodes[0].ndim == 2:
+                            for i in range(self.__nmols):
+                                self.__vmodes[i] = np.reshape(
+                                    self.__vmodes[i], (1, n_at3))
+                    else:
+                        if self.__vmodes[0].ndim == 3:
+                            for i in range(self.__nmols):
+                                self.__vmodes[i] = np.reshape(
+                                    self.__vmodes[i], (-1, n_at3))
+                        elif self.__vmodes[0].ndim != 2:
+                            raise ArgumentError(
+                                'Expected vibrational modes as 2D array')
                 else:
                     self.__vmodes = [None for _ in range(nmols)]
                 self.__loaded = [True for _ in range(nmols)]
@@ -305,6 +385,9 @@ class POVBuilder():
             elif nmols in (0, 1):
                 self.__nmols = 1
                 self.__atcrd = [np.array(at_crds)]
+                # We store the number of atoms to check vibrations
+                # Indeed, we may have a full array or only 1 vibration
+                n_at3 = self.__atcrd[0].size
                 if self.__atcrd[0].ndim != 2:
                     raise ArgumentError('Expected coordinates as 2D array')
                 self.__atlab = [np.array(at_labs)]
@@ -312,9 +395,22 @@ class POVBuilder():
                     raise ArgumentError('Expected atomic numbers as 1D array')
                 if v_modes is not None:
                     self.__vmodes = [np.array(v_modes)]
-                    if self.__vmodes[0].ndim != 2:
-                        raise ArgumentError(
-                            'Expected vibrational modes as 2D array')
+                    # first check how many elements are given
+                    self.__nvibs = self.__vmodes[0].size // n_at3
+                    if self.__nvibs == 1:
+                        # We have only 1 vibration stored, reverse number for
+                        # internal use
+                        self.__nvibs = -1
+                        if self.__vmodes[0].ndim == 2:
+                            self.__vmodes[0] = np.reshape(self.__vmodes[0],
+                                                          (1, n_at3))
+                    else:
+                        if self.__vmodes[0].ndim == 3:
+                            self.__vmodes[0] = np.reshape(
+                                self.__vmodes[0], (-1, n_at3))
+                        elif self.__vmodes[0].ndim != 2:
+                            raise ArgumentError(
+                                'Expected vibrational modes as 2D array')
                 else:
                     self.__vmodes = [None]
                 self.__loaded = [True]
@@ -461,9 +557,9 @@ class POVBuilder():
                   id_mol: tp.Optional[int] = None,
                   id_vib: tp.Optional[int] = None,
                   merge_mols: bool = True,
-                  mol_repr: str = 'balls',
+                  mol_model: str = 'balls',
                   mol_mater: str = 'plastic',
-                  vib_repr: str = 'arrows',
+                  vib_model: str = 'arrows',
                   vib_mater: str = 'plastic',
                   verbose: bool = True,
                   **params):
@@ -483,11 +579,11 @@ class POVBuilder():
             If not provided, no vibration is shown.
         merge_mols
             Merge molecules in a single file.
-        mol_repr
+        mol_model
             Representation model for atoms.
         mol_mater
             Material to be used for the molecule.
-        vib_repr
+        vib_model
             Representation model for vibrations.
         vib_mater
             Material to be used for the vibration.
@@ -496,27 +592,13 @@ class POVBuilder():
         params
             Additional parameters, transmitted to:
 
-            - self.load_data
+            - build_box: rotation
+            - load_data
             - write_pov_head
-            - write_pov_mol
-            - write_pov_vib
+            - write_pov_mol: rotation
+            - write_pov_vib: rotation
         """
-        fmt_write_file = 'Writing POV-Ray description scene in file: {file}'
-        msg_cmds = '''
-To run POVRay, you can use the following input (on Unix systems):
-povray +W1600 +H1200 +A +UA -D {file}
-
-+W: Set the width of the image, in pixels
-+H: Set the height of the image, in pixels
-+A: Enable anti-aliasing for smoother images
-+UA: Activate background transparency
--D: deactivate the display of the image while it is generated.
-    Remove the option to see the image being generated in real-time.
-'''
-        msg_cmds_win = '''
-For Windows, if you run POVRay for Windows, the easiest way would be to use
-the graphical interface if provided.
-'''
+        fmt_write_file = 'Description scene saved in file: {file}'
         # Initial check on arguments validity/consistency
         mol = None
         if id_mol is not None:
@@ -545,11 +627,13 @@ the graphical interface if provided.
                 else:
                     raise ArgumentError(
                         'Vibrational modes not available for this molecule')
-            try:
+            if self.__nvibs == -1:
+                vib = self.__vmodes[mol][-1].reshape(-1, 3)
+            elif id_vib < self.__nvibs:
                 vib = self.__vmodes[mol][id_vib].reshape(-1, 3)
-            except IndexError as err:
+            else:
                 raise ArgumentError(
-                    f'Cannot find vibration with index {id_vib}') from err
+                    f'Cannot find vibration with index {id_vib}')
         # Build name template
         if povname:
             _povfile = povname
@@ -575,7 +659,8 @@ the graphical interface if provided.
         # First, consider all possible cases where only 1 molecule needs to be
         # printed
         if self.__nmols == 1 or id_mol is not None:
-            box = build_box(self.__atlab[mol], self.__atcrd[mol], mol_repr)
+            box = build_box(self.__atlab[mol], self.__atcrd[mol], mol_model,
+                            **params)
             if vib is not None:
                 ivib = id_vib+1
             else:
@@ -585,12 +670,12 @@ the graphical interface if provided.
             with open(_file, 'w', encoding='utf-8') as fobj:
                 if verbose:
                     print(fmt_write_file.format(file=_file))
-                zcam = set_cam_zpos(box)
-                write_pov_head(fobj, zcam, **params)
+                cam_depth = set_cam_depth(box)
+                write_pov_head(fobj, cam_depth, **params)
                 write_pov_mol(fobj, 1, self.__atlab[mol], self.__atcrd[mol],
                               self.__bonds[mol],
                               col_bond_as_atom=True,
-                              representation=mol_repr, material=mol_mater,
+                              representation=mol_model, material=mol_mater,
                               show_mol=vib is None,
                               **params)
                 if vib is not None:
@@ -601,14 +686,15 @@ the graphical interface if provided.
                         col0 = None
                         col1 = None
                     write_pov_vib(fobj, self.__atcrd[mol], vib,
-                                  representation=vib_repr, material=vib_mater,
+                                  representation=vib_model, material=vib_mater,
                                   color=col0, color2=col1, **params)
         else:
             if merge_mols:
-                box = build_box(self.__atlab[0], self.__atcrd[0], mol_repr)
+                box = build_box(self.__atlab[0], self.__atcrd[0], mol_model,
+                                **params)
                 for i in range(1, self.__nmols):
                     box_ = build_box(self.__atlab[i], self.__atcrd[i],
-                                     mol_repr)
+                                     mol_model, **params)
                     if box['xmin'] > box_['xmin']:
                         box['xmin'] = box_['xmin']
                     if box['ymin'] > box_['ymin']:
@@ -630,11 +716,11 @@ the graphical interface if provided.
                 with open(_file, 'w', encoding='utf-8') as fobj:
                     if verbose:
                         print(fmt_write_file.format(file=_file))
-                    zcam = set_cam_zpos(box)
-                    write_pov_head(fobj, zcam, **params)
+                    cam_depth = set_cam_depth(box)
+                    write_pov_head(fobj, cam_depth, **params)
                     write_pov_mol(fobj, self.__nmols, self.__atlab,
                                   self.__atcrd, self.__bonds,
-                                  representation=mol_repr, material=mol_mater,
+                                  representation=mol_model, material=mol_mater,
                                   **params)
             else:
                 if '{mol' not in _povfile:
@@ -644,26 +730,28 @@ the graphical interface if provided.
                 if '{vib}' in _povfile:
                     _povfile = re.sub(r'\{vib:?[^}]*\}', 'N/A', _povfile)
                 for i in range(self.__nmols):
-                    box = build_box(self.__atlab[i], self.__atcrd[i], mol_repr)
+                    box = build_box(self.__atlab[i], self.__atcrd[i],
+                                    mol_model, **params)
                     _file = _povfile.format(mol=i+1)
                     with open(_file, 'w', encoding='utf-8') as fobj:
                         if verbose:
                             print(fmt_write_file.format(file=_file))
-                        zcam = set_cam_zpos(box)
-                        write_pov_head(fobj, zcam, **params)
+                        cam_depth = set_cam_depth(box)
+                        write_pov_head(fobj, cam_depth, **params)
                         write_pov_mol(fobj, 1, self.__atlab[i],
                                       self.__atcrd[i], self.__bonds[i],
-                                      representation=mol_repr,
+                                      representation=mol_model,
                                       material=mol_mater, **params)
         if verbose:
-            print(msg_cmds.format(file=_file))
+            print(MSG_POV_CMD.format(file=_file))
             if os.sys.platform == 'win32':
-                print(msg_cmds_win)
+                print(MSG_POV_WIN)
 
 
 def build_box(at_lab: TypeAtLab,
               at_crd: TypeAtCrd,
-              at_repr: str = 'balls') -> tp.Dict[str, float]:
+              at_repr: str = 'balls',
+              **extras) -> tp.Dict[str, float]:
     """Build the outer box containing the molecule.
 
     Builds the outer box containing the whole molecule and returns its
@@ -684,12 +772,18 @@ def build_box(at_lab: TypeAtLab,
         3-tuples with atomic coordinates, in Ang.
     at_repr
         Atomic representation to build properly the box.
+    extras
+        Extra parameters.
 
     Returns
     -------
     dict
         Dictionary with positions of `xmin`, `xmax`, `ymin`, `ymax`,
         `zmin`, `zmax`.
+
+    Notes
+    -----
+    Y and Z are corrected when building the box.
     """
     xmin, ymin, zmin, xmax, ymax, zmax = +inf, +inf, +inf, -inf, -inf, -inf
     if at_repr != 'sticks':
@@ -698,19 +792,34 @@ def build_box(at_lab: TypeAtLab,
         _rad = max([x[rkey] for x in atdat.values()])
     else:
         _rad = BONDDATA['rvis']*RAD_VIS_SCL
-    for x, z, y in at_crd:
-        if x < xmin:
-            xmin = x
-        if x > xmax:
-            xmax = x
-        if y < ymin:
-            ymin = y
-        if y > ymax:
-            ymax = y
-        if z < zmin:
-            zmin = z
-        if z > zmax:
-            zmax = z
+    if 'rotation' not in extras:
+        for x, z, y in at_crd:
+            if x < xmin:
+                xmin = x
+            if x > xmax:
+                xmax = x
+            if y < ymin:
+                ymin = y
+            if y > ymax:
+                ymax = y
+            if z < zmin:
+                zmin = z
+            if z > zmax:
+                zmax = z
+    else:
+        for x, z, y in rotate(extras['rotation'], at_crd, True):
+            if x < xmin:
+                xmin = x
+            if x > xmax:
+                xmax = x
+            if y < ymin:
+                ymin = y
+            if y > ymax:
+                ymax = y
+            if z < zmin:
+                zmin = z
+            if z > zmax:
+                zmax = z
     xmin = xmin - _rad
     xmax = xmax + _rad
     ymin = ymin - _rad
@@ -724,20 +833,15 @@ def build_box(at_lab: TypeAtLab,
     }
 
 
-def set_cam_zpos(box_mol: tp.Dict[str, float],
-                 xangle: tp.Union[float, int] = 68,
-                 yangle: tp.Union[float, int] = 53) -> float:
-    """Set Z position of camera in POV-Ray.
+def set_cam_depth(box_mol: tp.Dict[str, float],
+                  xangle: tp.Union[float, int] = 68,
+                  yangle: tp.Union[float, int] = 53) -> float:
+    """Set the camera distance from center.
 
-    Sets the Z position of the camera in POV-Ray, assuming that the axes
-    are the following:
-
-    .. code-block:: text
-
-        y ^   ^ z
-          |  /
-          | /
-          -------------> x
+    Set the camera distance from center.
+    As explained in the beginning, the camera is set along Y.
+    However, the box specifications use the true coordinates,
+    so we use Z specifications as Y values.
 
     References
     ----------
@@ -759,18 +863,18 @@ def set_cam_zpos(box_mol: tp.Dict[str, float],
     """
     Zx = max(abs(box_mol['xmin'])/tan(radians(xangle/2.)),
              abs(box_mol['xmax'])/tan(radians(xangle/2.)))
-    Zy = max(abs(box_mol['ymin'])/tan(radians(yangle/2.)),
-             abs(box_mol['ymax'])/tan(radians(yangle/2.)))
-    rval = box_mol['zmin'] - max(Zx, Zy)
+    Zz = max(abs(box_mol['zmin'])/tan(radians(yangle/2.)),
+             abs(box_mol['zmax'])/tan(radians(yangle/2.)))
+    rval = box_mol['ymax'] + max(Zx, Zz)
     scale = 100.
     # round to 2 decimal digits (slightly overestimating the value)
     return (int(rval*scale)-1)/scale
 
 
 def write_pov_head(fobj: tp.TextIO,
-                   zcam: float = -8.0,
+                   cam_depth: float = +8.0,
                    incl_material: str = 'all',
-                   **kwargs):
+                   **extras):
     """Write the header for POV-Ray input file.
 
     Writes the header in a POV-Ray input file.
@@ -779,8 +883,8 @@ def write_pov_head(fobj: tp.TextIO,
     ----------
     fobj
         File object where the header will be written.
-    zcam
-        Position of the camera along -Z.
+    cam_depth
+        Position of the camera along the main depth axis.
     incl_material
         Include material definition.
         Possible values: glass, metal, plastic, all.
@@ -807,21 +911,23 @@ global_settings {{
 background {{ 1.0 }}
 
 camera {{
-    location <   0.00000,   0.00100, {zcam:10.5f}>*dist
-    look_at  <   0.00000,   0.00000,    0.00000>
+    location <   0.00000,{cam_depth:10.5f},    0.00100>*dist
+    look_at  <   0.00000,    0.00000,    0.00000>
+    sky      <   0.00000,    0.00000,    1.00000>
+
 }}
 
 light_source {{
-    <10.000, 10.000, -20.000>*dist
+    <10.000, 30.000, 10.000>*dist
     color rgb <1.000, 1.000, 1.000>
     fade_distance 25.000
-    fade_power 0
+    fade_power 2
     parallel
     point_at <0.000, 0.000, 0.000>
 }}
 
 light_source {{
-    <-10.000, -15.000, -15.000>*dist
+    <0.000,  2.000, 40.000>*dist
     color rgb <1.000, 1.000, 1.000>*.3
     fade_distance 30
     fade_power 0
@@ -848,7 +954,7 @@ def write_pov_mol(fobj: tp.TextIO,
                   scale_bonds: float = 1.0,
                   material: str = 'plastic',
                   show_mol: bool = True,
-                  **kwargs):
+                  **extras):
     """Write molecular specifications in a POV-Ray file.
 
     Builds and writes in an opened POV-Ray file the molecular
@@ -878,6 +984,10 @@ def write_pov_mol(fobj: tp.TextIO,
         Material to use for the molecular representation.
     show_mol
         Add block to display the molecule.
+    extras
+        Extra arguments:
+
+        rotation: rotation matrix to be applied on final object.
     """
     try:
         if not fobj.writable():
@@ -1027,10 +1137,22 @@ def write_pov_mol(fobj: tp.TextIO,
         # -- Close and add molecules
         fobj.write('}\n')
         if show_mol:
-            fobj.write('''
+            rmat = extras.get('rotation')
+            if rmat is None:
+                fobj.write('''
 object {
     molecule
 }
+''')
+            else:
+                fobj.write(f'''
+object {{
+    molecule
+    matrix <{rmat[0][0]:14.10f}, {rmat[0][1]:14.10f}, {rmat[0][2]:14.10f},
+            {rmat[1][0]:14.10f}, {rmat[1][1]:14.10f}, {rmat[1][2]:14.10f},
+            {rmat[2][0]:14.10f}, {rmat[2][1]:14.10f}, {rmat[2][2]:14.10f},
+                   0.00000,        0.00000,        0.00000>
+}}
 ''')
 
     else:
@@ -1062,6 +1184,14 @@ object {
         fobj.write('union {\n')
         for i in range(nmols):
             fobj.write(f'    object {{ mol{i+1:02d} }}\n')
+        rmat = extras.get('rotation')
+        if rmat is not None:
+            fobj.write(f'''
+    matrix <{rmat[0][0]:14.10f}, {rmat[0][1]:14.10f}, {rmat[0][2]:14.10f},
+            {rmat[1][0]:14.10f}, {rmat[1][1]:14.10f}, {rmat[1][2]:14.10f},
+            {rmat[2][0]:14.10f}, {rmat[2][1]:14.10f}, {rmat[2][2]:14.10f},
+                   0.00000,        0.00000,        0.00000>
+''')
         fobj.write('}\n')
 
 
@@ -1069,12 +1199,13 @@ def write_pov_vib(fobj: tp.TextIO,
                   at_crd: TypeAtCrdM,
                   evec: Type1Vib,
                   representation: str = 'arrow',
-                  scale_mode: float = 1.0,
+                  scale_vib: float = 1.0,
                   material: str = 'glass',
                   show_obj: str = 'both',
                   color: tp.Optional[tp.Any] = None,
                   color2: tp.Optional[tp.Any] = None,
-                  **kwargs):
+                  scale_obj: float = 1.0,
+                  **extras):
     """Write normal mode description in a POV-Ray file.
 
     Builds and writes in an opened POV-Ray file the specifications to
@@ -1088,21 +1219,26 @@ def write_pov_vib(fobj: tp.TextIO,
         Description of the vibrational displacement from each center.
     representation
         Representation of the displacement: arrows, spheres
-    scale_mode
+    scale_vib
         Scaling factor to be applied to the displacements.
     material
         Material to use for the vibrational representation.
-    color
-        Primarily color for the "positive" displacement.
-    color2
-        If relevant, color of the "negative" displacement.
     show_obj
         Add commands to show object(s). Possible values:
 
         * both: show combined molecule and vibration
         * vib: show only vibration
         * no: do not show
-    
+    color
+        Primarily color for the "positive" displacement.
+    color2
+        If relevant, color of the "negative" displacement.
+    scale_obj
+        Scaling factor applied to each object describing the vibration.
+    extras
+        Extra arguments:
+
+        rotation: rotation matrix to be applied on final object.
     """
     try:
         if not fobj.writable():
@@ -1114,7 +1250,16 @@ def write_pov_vib(fobj: tp.TextIO,
         raise ArgumentError('material',
                             'Unsupported material definition.')
 
-    fobj.write(f'\n#declare scl_vib = {scale_mode:.3f};\n')
+    if (not isinstance(scale_vib, (int, float)) or
+            not isinstance(scale_vib, (int, float))):
+        raise ArgumentError(
+            'Scaling factor(s) for the vibration must be a number.')
+
+    if not isinstance(scale_vib, (int, float)):
+        raise ArgumentError(
+            'Scaling factor for the vibration must be a number.')
+
+    fobj.write(f'\n#declare scl_vib = {scale_obj:.3f};\n')
 
     scale_displ = 1
     if representation in MODELS['vib']['arrows']['alias']:
@@ -1232,22 +1377,29 @@ def write_pov_vib(fobj: tp.TextIO,
     for xyz, dxyz in zip(at_crd, evec):
         ldxyz = np.linalg.norm(dxyz)
         rot = np.transpose(vrotate_3D(np.array([0, 1, 0]), dxyz/ldxyz))
-        ldxyz *= scale_displ
+        ldxyz *= scale_displ*scale_vib
         fobj.write(fmt_vib.format(rot=rot.tolist(), trans=xyz.tolist(),
                                   lvib=ldxyz))
     fobj.write('}\n')
 
     # Conclude with options for showing
+    rmat = extras.get('rotation')
     if show_obj.lower() == 'both':
         fobj.write('''
 union {
     object { molecule }
     object { vib }
-}
 ''')
     elif show_obj.lower() == 'vib':
         fobj.write('''
 object {
     vib
-}
 ''')
+    if rmat is not None:
+        fobj.write(f'''
+    matrix <{rmat[0][0]:14.10f}, {rmat[0][1]:14.10f}, {rmat[0][2]:14.10f},
+            {rmat[1][0]:14.10f}, {rmat[1][1]:14.10f}, {rmat[1][2]:14.10f},
+            {rmat[2][0]:14.10f}, {rmat[2][1]:14.10f}, {rmat[2][2]:14.10f},
+                   0.00000,        0.00000,        0.00000>
+''')
+    fobj.write('}\n')

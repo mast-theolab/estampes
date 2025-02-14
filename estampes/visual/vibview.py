@@ -13,10 +13,10 @@ from PySide6.Qt3DCore import Qt3DCore
 from PySide6.Qt3DRender import Qt3DRender
 from PySide6.Qt3DExtras import Qt3DExtras
 
-from estampes.base import Type1Vib, TypeAtCrd, TypeColor
+from estampes.base import Type1Vib, TypeAtCrd
 from estampes.base.errors import ArgumentError
 from estampes.data.colors import to_rgb_list
-from estampes.data.visual import PATH_OBJ3D, MODELS, VIBCOLS
+from estampes.data.visual import PATH_OBJ3D, MATERIALS, MODELS, VIBCOLS
 from estampes.tools.math import vrotate_3D
 
 
@@ -40,7 +40,8 @@ class VibMode(Qt3DCore.QEntity):
     def __init__(self,
                  at_crd: TypeAtCrd,
                  vib_mode: Type1Vib,
-                 vizmode: tp.Optional[str] = None,
+                 model: tp.Optional[str] = None,
+                 material: tp.Optional[str] = None,
                  color: tp.Optional[tp.Any] = None,
                  color2: tp.Optional[tp.Any] = None,
                  rootEntity: tp.Optional[Qt3DCore.QEntity] = None):
@@ -54,13 +55,17 @@ class VibMode(Qt3DCore.QEntity):
             List of atomic centers, as origins for the vibrations, in Ang.
         vib_mode
             List of atomic displacements for a given mode.
-        vizmode
-            Visualization mode.
-            arrow: displacements are represented as arrow.
+        model
+            Representation model to visualize the modes.
+            See [[update_renderer]] for details.
+        material
+            Material to use in the representation of the modes.
         color
             Color of the object representing the displacement.
+            Typically the "positive" color.
         color2
             Secondary color of the object representing the displacement.
+            Typically the "negative" color
         rootEntity
             Qt root entity to connect the new `VibMode` QEntity.
         """
@@ -68,12 +73,48 @@ class VibMode(Qt3DCore.QEntity):
 
         self.__atcrd = None
         self.__vmode = None
+        self.__optview = {
+            'model': None,
+            'material': None,
+            'vib_scale': None,
+            'col+': None,
+            'col-': None
+        }
         # The initialization below should be properly handled through
         # functions.  Just making sure everything declared.
         self.__vib_objs = self.__vib_mesh = self.__vib_trro = None
 
-        self.set_display_settings(vizmode=vizmode, color=color, color2=color2)
+        self.set_display_settings(model=model, material=material, color=color,
+                                  color2=color2)
         self.update_vib(vib_mode, at_crd)
+
+    @property
+    def mode(self) -> Type1Vib:
+        """Return the mode definition.
+
+        Returns the displacement coordinates corresponding of the mode
+        of interest.
+        """
+        return self.__vmode
+
+    def viz_options(self, key: tp.Optional[str] = None) -> tp.Optional[tp.Any]:
+        """Return one or more visual-centric options
+
+        Returns information specific to a given key or the whole array.
+        """
+        if key is None:
+            return self.__optview
+        else:
+            if key in ('model', 'representation'):
+                return self.__optview.get('model')
+            elif key in ('material', ):
+                return self.__optview.get('material')
+            elif key in ('scale', 'vib_scale'):
+                return self.__optview.get('vib_scale')
+            elif key in ('col', 'col+', 'col0'):
+                return self.__optview.get('col+')
+            elif key in ('col-', 'col1'):
+                return self.__optview.get('col-')
 
     def update_vib(self,
                    vib_mode: Type1Vib,
@@ -101,9 +142,10 @@ class VibMode(Qt3DCore.QEntity):
             self.update_render()
 
     def set_display_settings(self, *,
-                             vizmode: tp.Optional[str] = None,
+                             model: tp.Optional[str] = None,
+                             material: tp.Optional[str] = None,
                              color: tp.Optional[tp.Any] = None,
-                             scale_mode: float = 1.0,
+                             scale_vib: float = 1.0,
                              color2: tp.Optional[tp.Any] = None):
         """Set display settings for the vibration.
 
@@ -111,12 +153,14 @@ class VibMode(Qt3DCore.QEntity):
 
         Parameters
         ----------
-        vizmode
-            Visualization mode.
+        model
+            Representation model to visualize the modes.
             See [[update_renderer]] for details.
+        material
+            Material to use in the representation of the modes.
         color
             Primary color of the vibration.
-        scale_mode
+        scale_vib
             Scaling factor to be applied to the displacements.
         color2
             Secondary color of the vibration (typically: negative sign).
@@ -128,29 +172,54 @@ class VibMode(Qt3DCore.QEntity):
         ArgumentError
             Incorrect argument types.
         """
-        self.__material = Qt3DExtras.QDiffuseSpecularMaterial
-
-        self.__optview = {}
-        if vizmode is None:
-            _mode = 'arrows'
+        if model is None:
+            model_key = 'arrows'
         for key, info in MODELS['vib'].items():
-            if vizmode.lower() in info['alias']:
-                _mode = key
+            if model.lower() in info['alias']:
+                model_key = key
                 break
         else:
             raise ArgumentError('Unrecognized visualization mode')
-        self.__optview['mode'] = _mode
+        self.__optview['model'] = model_key
+
+        if material is None:
+            material_key = 'plastic'
+        else:
+            if material not in MATERIALS:
+                raise ArgumentError('material', 'Unrecognized material')
+            else:
+                material_key = material
+        self.__optview['material'] = material_key
+
+        __alpha = 255
+        if material_key == 'plastic':
+            self.__material = Qt3DExtras.QDiffuseSpecularMaterial
+        elif material_key == 'metal':
+            self.__material = Qt3DExtras.QMetalRoughMaterial
+            self.__material.metalness = .65
+            self.__material.roughness = 0
+        elif material_key == 'glass':
+            self.__material = Qt3DExtras.QDiffuseSpecularMaterial
+            __alpha = 160
+            self.__material.shininess = 300
+        else:
+            raise KeyError('Unspecified material')
+
+        if not isinstance(scale_vib, (int, float)):
+            raise ArgumentError(
+                'Scaling factor for the vibration must be a number.')
+        self.__optview['vib_scale'] = scale_vib
 
         _rgb0 = None
         _rgb1 = None
         if color is None:
-            if _mode in ('arrows', 'midarrows'):
+            if model_key in ('arrows', 'midarrows'):
                 # _rgb0 = (54, 117, 188)
                 _rgb0 = VIBCOLS['arrow']
-            elif _mode == 'dualarrows':
+            elif model_key == 'dualarrows':
                 # _rgb0 = (28, 214, 46)
                 _rgb0 = VIBCOLS['arrow+']
-            elif _mode == 'spheres':
+            elif model_key == 'spheres':
                 # _rgb0 = (28, 214, 46)
                 _rgb0 = VIBCOLS['sphere+']
         else:
@@ -159,10 +228,10 @@ class VibMode(Qt3DCore.QEntity):
             except (ValueError, ArgumentError) as err:
                 raise ArgumentError('vibcol', 'Incorrect color specification'
                                     ) from err
-        if _mode in ('dualarrows', 'spheres'):
+        if model_key in ('dualarrows', 'spheres'):
             if color2 is None:
                 # _rgb1 = (242, 46, 46)
-                if _mode == 'dualarrows':
+                if model_key == 'dualarrows':
                     _rgb1 = VIBCOLS['arrow-']
                 else:
                     _rgb1 = VIBCOLS['sphere-']
@@ -174,13 +243,19 @@ class VibMode(Qt3DCore.QEntity):
                                         'Incorrect color specification'
                                         ) from err
 
-        self.__optview['col'] = _rgb0
+        self.__optview['col+'] = _rgb0
         self.__vibmat = self.__material(self)
-        self.__vibmat.setAmbient(QtGui.QColor(*_rgb0))
+        if self.__optview['material'] == 'metal':
+            self.__vibmat.setBaseColor(QtGui.QColor(*_rgb0, __alpha))
+        else:
+            self.__vibmat.setAmbient(QtGui.QColor(*_rgb0, __alpha))
         if _rgb1 is not None:
-            self.__optview['col1'] = _rgb1
+            self.__optview['col-'] = _rgb1
             self.__vibmat1 = self.__material(self)
-            self.__vibmat1.setAmbient(QtGui.QColor(*_rgb1))
+            if self.__optview['material'] == 'metal':
+                self.__vibmat1.setBaseColor(QtGui.QColor(*_rgb1, __alpha))
+            else:
+                self.__vibmat1.setAmbient(QtGui.QColor(*_rgb1, __alpha))
 
     def update_render(self):
         """Update rendering of the vibration.
@@ -188,13 +263,17 @@ class VibMode(Qt3DCore.QEntity):
         Updates the rendering of the vibration with the current display
           settings.
         """
-        if self.__optview['mode'] == 'arrows':
+        if self.__optview['model'] == 'arrows':
+            # arrows: modes as simple arrows starting from atoms.
             self.__build_arrows()
-        elif self.__optview['mode'] == 'midarrows':
+        elif self.__optview['model'] == 'midarrows':
+            # midarrows: arrows crossing atoms.
             self.__build_centered_arrows()
-        elif self.__optview['mode'] == 'dualarrows':
+        elif self.__optview['model'] == 'dualarrows':
+            # dualarrows: two arrows showing the + and - directions.
             self.__build_dual_arrows()
-        elif self.__optview['mode'] == 'spheres':
+        elif self.__optview['model'] == 'spheres':
+            # spheres: demi-spheres, direction perpendicular to disk.
             self.__build_spheres()
 
     def __build_arrows(self):
@@ -207,7 +286,7 @@ class VibMode(Qt3DCore.QEntity):
         self.__vib_trro = []
         self.__vib_mesh = []
         shaft_r = 0.03
-        shaft_l = 3
+        shaft_l = 3*self.__optview['vib_scale']
         head_r = 0.06
         head_l = 0.1
         for xyz, dxyz in zip(self.__atcrd, self.__vmode):
@@ -247,7 +326,7 @@ class VibMode(Qt3DCore.QEntity):
 
         Builds a list of centered arrows representing the atomic
         displacements for a given vibration.
-        In this representation, the arrow passes through the atom 
+        In this representation, the arrow passes through the atom
         """
         self.__vib_objs = []
         self.__vib_trro = []
@@ -293,7 +372,7 @@ class VibMode(Qt3DCore.QEntity):
 
         Builds a list of centered arrows representing the atomic
         displacements for a given vibration.
-        In this representation, the arrow passes through the atom 
+        In this representation, the arrow passes through the atom.
         """
         self.__vib_objs = []
         self.__vib_trro = []
@@ -377,7 +456,7 @@ class VibMode(Qt3DCore.QEntity):
             mesh.setSource(path_obj)
             rot = vrotate_3D(np.array([0, 1, 0]), dxyz/ldxyz)
             rot3x3 = QtGui.QMatrix3x3(np.array(rot).reshape(9).tolist())
-            trro.setScale(ldxyz*.5)
+            trro.setScale(ldxyz*.5*scale_vib)
             trro.setRotation(
                 QtGui.QQuaternion.fromRotationMatrix(rot3x3))
             trro.setTranslation(QtGui.QVector3D(*xyz))

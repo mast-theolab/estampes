@@ -17,7 +17,7 @@ from estampes.base.types import TypeAtCrd, TypeAtLab, \
     TypeBonds, TypeColor
 from estampes.base.errors import ArgumentError
 from estampes.data.atom import atomic_data
-from estampes.data.visual import BONDDATA, RAD_VIS_SCL
+from estampes.data.visual import BONDDATA, MATERIALS, MODELS, RAD_VIS_SCL
 from estampes.tools.math import vrotate_3D
 
 
@@ -49,8 +49,9 @@ class Molecule(Qt3DCore.QEntity):
                  at_lab: TypeAtLab,
                  at_crd: TypeAtCrd,
                  bonds: TypeBonds,
-                 col_bond_as_atom: bool = False,
-                 rad_atom_as_bond: bool = False,
+                 model: tp.Optional[str] = None,
+                 material: tp.Optional[str] = None,
+                 col_bond_as_atom: tp.Optional[bool] = None,
                  molcol: tp.Optional[TypeColor] = None,
                  rootEntity: tp.Optional[Qt3DCore.QEntity] = None):
         """Initialize a Molecule instance.
@@ -65,10 +66,12 @@ class Molecule(Qt3DCore.QEntity):
             3-tuples with atomic coordinates, in Ang.
         bonds
             2-tuples listing connected atoms.
+        model
+            Representation model of the molecule.
+        material
+            Material simulated for the molecule.
         col_bond_as_atom
             If true, bonds are colored based on the connected atoms
-        rad_atom_as_bond
-            If true, atomic radii are set equal to the bonds (tubes).
         molcol
             If not None, the whole molecule is set with the given color.
         rootEntity
@@ -79,6 +82,13 @@ class Molecule(Qt3DCore.QEntity):
         type(self).__mol_count += 1
         self.__mol_id = type(self).__mol_count
 
+        # Initialize dictionary of options for visualization
+        self.__optview = {
+            'model': None,
+            'material': None,
+            'col_bond': None,
+            'molcol': None
+        }
         # The initialization below should be properly handled through
         # functions.  Just making sure everything declared.
         self.__atlist = self.__atdata = self.__at_mat = self.__at_rad = None
@@ -87,18 +97,46 @@ class Molecule(Qt3DCore.QEntity):
         self.__at_obj = self.__at_pick = self.__at_mesh = self.__at_tvec = None
 
         self.set_display_settings(
+            model=model,
+            material=material,
             col_bond_as_atom=col_bond_as_atom,
-            rad_atom_as_bond=rad_atom_as_bond,
             molcol=molcol)
         self.update_geom(at_lab, at_crd, bonds)
 
     @property
-    def at_crd(self):
-        """Get atomic coordinates.
+    def at_crd(self) -> TypeAtCrd:
+        """Return atomic coordinates.
 
         Returns atomic coordinates in the Cartesian space.
         """
         return self.__atcrd
+
+    @property
+    def at_lab(self) -> TypeAtLab:
+        """Return atomic labels.
+
+        Returns atomic labels.
+        """
+        return self.__atlab
+
+    def viz_options(self, key: tp.Optional[str] = None) -> tp.Optional[tp.Any]:
+        """Return one or more visual-centric options
+
+        Returns information specific to a given key or the whole array.
+        """
+        if key is None:
+            return self.__optview
+        else:
+            if key in ('molcol', 'color'):
+                return self.__optview.get('molcol')
+            elif key in ('model', 'representation'):
+                return self.__optview.get('model')
+            elif key in ('material',):
+                return self.__optview.get('material')
+            elif key in ('col_bond', 'col_bond_as_atom'):
+                return self.__optview.get('col_bond')
+            else:
+                return None
 
     def update_geom(self,
                     at_lab: TypeAtLab,
@@ -135,8 +173,9 @@ class Molecule(Qt3DCore.QEntity):
             self.update_render()
 
     def set_display_settings(self, *,
-                             col_bond_as_atom: bool = False,
-                             rad_atom_as_bond: bool = False,
+                             model: tp.Optional[str] = None,
+                             material: tp.Optional[str] = None,
+                             col_bond_as_atom: tp.Optional[bool] = None,
                              molcol: tp.Optional[TypeColor] = None):
         """Set display settings for the molecule.
 
@@ -144,10 +183,12 @@ class Molecule(Qt3DCore.QEntity):
 
         Parameters
         ----------
+        model
+            Representation model of the molecule.
+        material
+            Material simulated for the molecule.
         col_bond_as_atom
             Each bond half uses the color of the connected atom.
-        rad_atom_as_bond
-            Atoms are rendered with the same radii as bonds (tubes).
         molcol
             If not None, use the given color for the whole molecule.
 
@@ -158,13 +199,36 @@ class Molecule(Qt3DCore.QEntity):
         ArgumentError
             Incorrect argument types.
         """
-        self.__material = Qt3DExtras.QDiffuseSpecularMaterial
-        self.__optview = {
-            'col_bond': col_bond_as_atom,
-            'rad_atom': rad_atom_as_bond,
-        }
+        # Check options with specific choices
+        if model is None:
+            model_key = 'balls'
+        else:
+            for key, val in MODELS['mol'].items():
+                if model in val['alias']:
+                    model_key = key
+                    break
+            else:
+                raise ArgumentError('model', 'Unrecognized molecular model')
+        self.__optview['model'] = model_key
+
+        if material is None:
+            material_key = 'plastic'
+        else:
+            if material not in MATERIALS:
+                raise ArgumentError('material', 'Unrecognized material')
+            else:
+                material_key = material
+        self.__optview['material'] = material_key
+
+        self.__opacity = 255
+        if material_key == 'glass':
+            self.__opacity = 180
+
         if molcol is None:
             _molcol = None
+            # If there is no overall color molecule, then check how to handle
+            # bond colors.
+            self.__optview['col_bond'] = col_bond_as_atom
         elif isinstance(molcol, str):
             if not molcol.startswith('#'):
                 raise ArgumentError('Wrong color for molecule.')
@@ -173,8 +237,8 @@ class Molecule(Qt3DCore.QEntity):
             _molcol = list(molcol)
         self.__optview['molcol'] = _molcol
         if not col_bond_as_atom:
-            self.__bo_mat = self.__material(self)
-            self.__bo_mat.setAmbient(QtGui.QColor(*BONDDATA['rgb']))
+            self.__bo_mat = self.__set_material(BONDDATA['rgb'],
+                                                self.__opacity)
         else:
             self.__bo_mat = None
 
@@ -221,18 +285,21 @@ class Molecule(Qt3DCore.QEntity):
         self.__at_mat = {}
         self.__at_rad = {}
 
-        __molcol = self.__optview['molcol']
         for atom in self.__atlist:
-            if __molcol is None:
-                r, g, b = self.__atdata[atom]['rgb']
+            if self.__optview['molcol'] is None:
+                r, g, b, a = *self.__atdata[atom]['rgb'], \
+                              self.__opacity
             else:
-                r, g, b = __molcol
-            self.__at_mat[atom] = self.__material(self)
-            self.__at_mat[atom].setAmbient(QtGui.QColor(r, g, b))
-            if self.__optview['rad_atom']:
-                rval = self.__bo_rad
-            else:
+                r, g, b, a = *self.__optview['molcol'], self.__opacity
+            self.__at_mat[atom] = self.__set_material([r, g, b], a)
+            if self.__optview['model'] == 'balls':
                 rval = self.__atdata[atom]['rvis']*RAD_VIS_SCL
+            elif self.__optview['model'] == 'sticks':
+                rval = self.__bo_rad
+            elif self.__optview['model'] == 'spheres':
+                rval = self.__atdata[atom]['rvdw']
+            else:
+                raise KeyError('Unsupported model for the radius setup')
             self.__at_rad[atom] = rval
 
     def __build_bonds(self):
@@ -349,6 +416,42 @@ class Molecule(Qt3DCore.QEntity):
             self.click_molatom.emit(
                 [self.__mol_id,
                  self.__at_obj.index(clickEvent.entity())+1])
+            
+    def __set_material(self,
+                       color: tp.Sequence[int],
+                       opacity: int = 255
+                       ) -> Qt3DExtras.QDiffuseSpecularMaterial:
+        """Set material for a given object.
+        
+        Returns the material parameters for a given color and opacity,
+        given the default material set internally.
+        
+        Parameters
+        ----------
+        color
+            color parameters as a RGB sequence.
+        opacity
+            Opacity (alpha).
+        """
+        if self.__optview['material'] == 'plastic':
+            matter = Qt3DExtras.QDiffuseSpecularMaterial(self)
+            matter.setShininess(100)
+            matter.setAmbient(QtGui.QColor(*color))
+        elif self.__optview['material'] == 'metal':
+            matter = Qt3DExtras.QDiffuseSpecularMaterial(self)
+            matter.setSpecular(QtGui.QColor(*[min(1.5*i, 255) for i in color]))
+            matter.setDiffuse(QtGui.QColor(100, 100, 100))
+            matter.setAmbient(QtGui.QColor(*color))
+            matter.setShininess(2000)
+        elif self.__optview['material'] == 'glass':
+            matter = Qt3DExtras.QDiffuseSpecularMaterial(self)
+            matter.setDiffuse(QtGui.QColor(255, 255, 255, 150))
+            matter.setAlphaBlendingEnabled(True)
+            matter.setShininess(300)
+            matter.setAmbient(QtGui.QColor(*color, opacity))
+        else:
+            raise KeyError('Unspecified material')
+        return matter
 
     @classmethod
     def reset_counter(cls):
