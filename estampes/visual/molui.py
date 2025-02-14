@@ -91,10 +91,11 @@ class MolWin(Qt3DExtras.Qt3DWindow):
             self.__fnames = None
 
         # Camera
-        self.camera().lens().setPerspectiveProjection(45, 16 / 9, 0.1, 1000)
-        self.camera().setPosition(QtGui.QVector3D(0, 0, 40))
-        self.camera().setUpVector(QtGui.QVector3D(0, 1, 0))
-        self.camera().setViewCenter(QtGui.QVector3D(0, 0, 0))
+        self.__cam = self.camera()
+        self.__cam.lens().setPerspectiveProjection(45, 16 / 9, 0.1, 1000)
+        self.__cam.setPosition(QtGui.QVector3D(0, 0, 40))
+        self.__cam.setUpVector(QtGui.QVector3D(0, 1, 0))
+        self.__cam.setViewCenter(QtGui.QVector3D(0, 0, 0))
 
         # For camera controls
         self.rootEntity = Qt3DCore.QEntity()
@@ -116,13 +117,13 @@ class MolWin(Qt3DExtras.Qt3DWindow):
                 self.__mol.append(Molecule(atlabs[i], atcrds[i], bonds[i],
                                            model, material, col_bond_as_atom,
                                            molcol, self.rootEntity))
-                self.__mol[-1].addMouse(self.camera)
+                self.__mol[-1].addMouse(self.__cam)
                 self.__mol[-1].click_molatom.connect(self.atom_clicked)
         self.camController = Qt3DExtras.QOrbitCameraController(self.rootEntity)
         self.camController.setLinearSpeed(50)
         self.camController.setLookSpeed(180)
-        self.camController.setCamera(self.camera())
-        self.obj_light = Qt3DCore.QEntity(self.camera())
+        self.camController.setCamera(self.__cam)
+        self.obj_light = Qt3DCore.QEntity(self.__cam)
         self.camLight = Qt3DRender.QPointLight(self.obj_light)
         self.cam_tvec = Qt3DCore.QTransform()
         self.cam_tvec.setTranslation(QtGui.QVector3D(0, 50, 100))
@@ -132,10 +133,19 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         # for mol in mols:
         self.setRootEntity(self.rootEntity)
 
+        # Capture entity for screenshot
+        # self.__capture = Qt3DRender.QRenderCapture(self.__cam)
+        self.__capture = Qt3DRender.QRenderCapture(self.__cam)
+        self.activeFrameGraph().setParent(self.__capture)
+        self.setActiveFrameGraph(self.__capture)
+
         # Add shortcuts
-        self.keyPrint = QtGui.QShortcut(
+        self.keyExport = QtGui.QShortcut(
             QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_E), self)
-        self.keyPrint.activated.connect(self.__export_pov)
+        self.keyExport.activated.connect(self.__export_pov)
+        self.keyPrint = QtGui.QShortcut(
+            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_P), self)
+        self.keyPrint.activated.connect(self.__capture_scene)
 
     def add_vibmode(self, vib_mode: Type1Vib,
                     model: tp.Optional[str] = None,
@@ -199,9 +209,9 @@ class MolWin(Qt3DExtras.Qt3DWindow):
     def mousePressEvent(self, mouseEvent):
         """Define the event for mouse pressing."""
         if mouseEvent.button() == QtCore.Qt.RightButton:
-            self.camera().setViewCenter(QtGui.QVector3D(0, 0, 0))
+            self.__cam.setViewCenter(QtGui.QVector3D(0, 0, 0))
         # print(mouseEvent.x())
-        # self.camera().setViewCenter(QtGui.QVector3D(mouseEvent.x(),
+        # self.__cam.setViewCenter(QtGui.QVector3D(mouseEvent.x(),
         #                                             mouseEvent.y(), 0))
         super(MolWin, self).mousePressEvent(mouseEvent)
 
@@ -234,7 +244,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
 
         povfile = os.path.realpath(dialog.selectedFiles()[0])
 
-        rmat = self.camera().transform().rotation().toRotationMatrix().data()
+        rmat = self.__cam.transform().rotation().toRotationMatrix().data()
         # We need to transpose the rotation matrix since it is intended for
         # the camera and we want to apply it to the system.
         # We then permute Y and Z in each dimension to correct from the right
@@ -285,3 +295,38 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
         msgBox.setDefaultButton(QtWidgets.QMessageBox.Ok)
         msgBox.exec()
+
+    def __capture_scene(self):
+        """Capture current scene."""
+        shot = self.__capture.requestCapture()
+        loop = QtCore.QEventLoop()
+        shot.completed.connect(loop.quit)
+        QtCore.QTimer.singleShot(200, loop.quit)  # Timeout after 1 second
+        loop.exec()
+
+        img = shot.image()
+        if not img:
+            return
+
+        supported = ('.bmp', '.jpeg', '.jpg', '.png', '.ppm', '.xbm', '.xpm')
+        ftype = 'png'
+        if self.__nmols > 1 or self.__fnames is None:
+            fname = f'scene.{ftype}'
+        else:
+            fname = f'{os.path.splitext(self.__fnames)[0]}.{ftype}'
+
+        dialog = QtWidgets.QFileDialog()
+        dialog.setDirectory(os.getcwd())
+        dialog.setWindowTitle('Export screenshot')
+        dialog.setNameFilter(
+            f"Supported image files (*{' *'.join(supported)})")
+        dialog.setNameFilter("All files (*)")
+        dialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
+        dialog.setDefaultSuffix('.png')
+        dialog.selectFile(os.path.basename(fname))
+        if not dialog.exec_():
+            return
+
+        fname = os.path.realpath(dialog.selectedFiles()[0])
+        img.save(fname)

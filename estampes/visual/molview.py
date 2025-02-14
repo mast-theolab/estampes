@@ -411,21 +411,21 @@ class Molecule(Qt3DCore.QEntity):
             # loc_pos: local position of the clicked point in the object
             loc_pos = clickEvent.localIntersection()
             # Subtracting them give us the origin of the sphere
-            self.__cam().setViewCenter(abs_pos-loc_pos)
+            self.__cam.setViewCenter(abs_pos-loc_pos)
         elif clickEvent.button() == Qt3DRender.QPickEvent.LeftButton:
             self.click_molatom.emit(
                 [self.__mol_id,
                  self.__at_obj.index(clickEvent.entity())+1])
-            
+
     def __set_material(self,
                        color: tp.Sequence[int],
                        opacity: int = 255
                        ) -> Qt3DExtras.QDiffuseSpecularMaterial:
         """Set material for a given object.
-        
+
         Returns the material parameters for a given color and opacity,
         given the default material set internally.
-        
+
         Parameters
         ----------
         color

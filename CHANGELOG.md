@@ -37,6 +37,7 @@ Other blocks are:
 - **BLS**: Ballast can now support multiple files in a single curve, for instance to produce the spectrum of mixtures.  The format is "file1 @ weight1 & file2 @ weight2" (spaces are irrelevant between symbols).
 - **MRG**: Mirage was updated to support the new representations of normal modes.
 - **MRG**: Mirage now recognizes colors specifications as sub-options of `--vid-modes`.
+- **VIZ**: `MolUI` can now export screenshots with 'CTRL+P' (CMD+P on Mac). The export is still experimental and can give offset colors.
 - **VIZ**: `MolWin` now supports a new shortcut 'CTRL+E' (COMMAND+E on Mac) to export a POV-Ray file describing the represented in the same orientation (currently translations are not considered).
 - **VIZ**: `Molecule`, `VibMode` and `POVBuilder` now supports explicit description of the representation model and material.  Old keywords like `rad_atom_as_bond` are deprecated and have been removed.
 - **VIZ**: `Molecule` now supports other "materials" (WIP).
