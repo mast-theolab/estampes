@@ -104,7 +104,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
             self.__nmols = 1
             self.__mol = Molecule(atlabs, atcrds, bonds, model, material,
                                   col_bond_as_atom, molcols, self.rootEntity)
-            self.__mol.addMouse(self.camera)
+            self.__mol.addMouse(self.__cam)
             self.__mol.click_molatom.connect(self.atom_clicked)
         else:
             self.__nmols = nmols
