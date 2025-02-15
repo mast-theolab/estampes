@@ -7,6 +7,7 @@ from math import sqrt
 import typing as tp
 
 import numpy as np
+import numpy.typing as npt
 
 from PySide6 import QtCore, QtGui
 from PySide6.Qt3DCore import Qt3DCore
@@ -95,6 +96,9 @@ class Molecule(Qt3DCore.QEntity):
         self.__cam = None
         self.__bo_obj = self.__bo_mesh = self.__bo_trro = None
         self.__at_obj = self.__at_pick = self.__at_mesh = self.__at_tvec = None
+        # Atomic displacement for animation
+        self.__at_displ = self.__at_displ_step = None
+        self.vibrate = None
 
         self.set_display_settings(
             model=model,
@@ -366,6 +370,125 @@ class Molecule(Qt3DCore.QEntity):
             self.__bo_obj.append(bo_obj)
             self.__bo_trro.append(bo_trro)
             self.__bo_mesh.append(bo_mesh)
+
+    def animate(self,
+                displ: tp.Optional[npt.ArrayLike] = None,
+                vibrate: bool = True,
+                amplitude: float = .5,
+                duration: int = 1):
+        """Move atoms and correct bonds along chosen displacement.
+
+        Creates an animation of the atoms displacement.
+
+        Parameters
+        ----------
+        displ
+            Displacement array.  If None, use existing one.
+        vibrate
+            Consider symmetric displacements.
+        amplitude
+            Maximum amplitude of the displacement.
+            With vibrate, the same value is used in both directions.
+        duration
+            Duration of a 1 period (in ms).
+        """
+        if self.vibrate is not None:
+            if self.vibrate.state() == QtCore.QAbstractAnimation.Running:
+                self.vibrate.pause()
+                return
+            elif (self.vibrate.state() == QtCore.QAbstractAnimation.Paused
+                    and displ is None):
+                self.vibrate.resume()
+                return
+        if displ is not None:
+            displ = np.asarray(displ)
+            shape = displ.shape
+            if len(shape) == 1:
+                self.__at_displ.reshape(-1, 3)
+            elif len(shape) != 2:
+                raise ArgumentError(
+                    'displ',
+                    'Too many dimension in displacement parameters')
+            else:
+                self.__at_displ = displ.copy()
+            if self.__at_displ.shape[0] != len(self.__at_obj):
+                raise IndexError(
+                    'Number of displacements inconsistent with molecule')
+
+        self.vibrate = QtCore.QPropertyAnimation(self, b"shift_atoms")
+        self.vibrate.setStartValue(0)
+        if vibrate:
+            self.vibrate.setKeyValueAt(.25, -abs(amplitude))
+            self.vibrate.setKeyValueAt(.75, abs(amplitude))
+            self.vibrate.setEndValue(0)
+            self.vibrate.setDuration(abs(int(duration)))
+            self.vibrate.setLoopCount(-1)
+        else:
+            self.vibrate.setEndValue(1)
+            self.vibrate.setDuration(abs(int(duration)))
+        self.vibrate.start()
+
+    def __shift_atoms(self, step: float):
+        """Shift atoms by a given step.
+
+        Shifts atoms by a given step along the displacement vectors
+        stored internall and corrects the bonds accordingly.
+
+        Parameters
+        ----------
+        step
+            Value of the step.
+        
+        Notes
+        -----
+        * The bonds are not broken by the displacement, they are simply
+          corrected.  To break it, it is necessary to provide new
+          geometries and require the system to rebuild them.
+        """
+        if self.__at_displ is None:
+            return
+        self.__at_displ_step = step
+        new_crds = []
+        for atvec, atxyz, displ in zip(self.__at_tvec, self.__atcrd,
+                                       self.__at_displ):
+            new_crds.append(atxyz+step*displ)
+            atvec.setTranslation(QtGui.QVector3D(*new_crds[-1]))
+
+        for i, bond in enumerate(self.__bonds):
+            iat1, iat2 = bond
+            xyzat1 = new_crds[iat1]
+            xyzat2 = new_crds[iat2]
+            xyzmid = (xyzat1+xyzat2)/2.
+            # First half of bond
+            delta = xyzmid - xyzat1
+            bo_len = sqrt(np.dot(delta, delta))
+            self.__bo_mesh[2*i].setLength(bo_len)
+            bo_rot = vrotate_3D(np.array([0, 1, 0]), delta/bo_len)
+            rot3x3 = QtGui.QMatrix3x3(np.array(bo_rot).reshape(9).tolist())
+            self.__bo_trro[2*i].setRotation(
+                QtGui.QQuaternion.fromRotationMatrix(rot3x3))
+            self.__bo_trro[2*i].setTranslation(
+                QtGui.QVector3D(*(xyzat1+delta/2)))
+            # Second half of bond
+            delta = xyzat2 - xyzmid
+            bo_len = sqrt(np.dot(delta, delta))
+            self.__bo_mesh[2*i+1].setLength(bo_len)
+            bo_rot = vrotate_3D(np.array([0, 1, 0]), delta/bo_len)
+            rot3x3 = QtGui.QMatrix3x3(np.array(bo_rot).reshape(9).tolist())
+            self.__bo_trro[2*i+1].setRotation(
+                QtGui.QQuaternion.fromRotationMatrix(rot3x3))
+            self.__bo_trro[2*i+1].setTranslation(
+                QtGui.QVector3D(*(xyzmid+delta/2)))
+
+        self.step_changed.emit()
+
+    def __get_shift(self):
+        """Returns object"""
+        return self.__at_displ_step
+
+    step_changed = QtCore.Signal()
+    shift_atoms = QtCore.Property(float, __get_shift, __shift_atoms,
+                                  notify=step_changed)
 
     def __build_atoms(self):
         """Build atom objects and associated properties.
