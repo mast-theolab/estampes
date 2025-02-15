@@ -71,6 +71,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         self.__vib = None
         self.__mol = None
         self.__nmols = 0
+        self.__vib_changed_since_anim = None
 
         if 'fnames' in extras:
             fname = extras['fnames']
@@ -146,6 +147,9 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         self.keyPrint = QtGui.QShortcut(
             QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_P), self)
         self.keyPrint.activated.connect(self.__capture_scene)
+        self.keyVib = QtGui.QShortcut(
+            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_A), self)
+        self.keyVib.activated.connect(self.__anim_vibration)
 
     def add_vibmode(self, vib_mode: Type1Vib,
                     model: tp.Optional[str] = None,
@@ -173,6 +177,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
             Set target molecule if several of interest.
             Default: last included molecule.
         """
+        self.__vib_changed_since_anim = True
         if self.__vib is not None:
             del self.__vib
         if self.__nmols > 1:
@@ -187,6 +192,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
                              rootEntity=self.rootEntity)
 
     def upd_vibmode(self, vib_mode: Type1Vib):
+        self.__vib_changed_since_anim = True
         if self.__vib is None:
             self.__add_vibmode(vib_mode)
         else:
@@ -330,3 +336,19 @@ class MolWin(Qt3DExtras.Qt3DWindow):
 
         fname = os.path.realpath(dialog.selectedFiles()[0])
         img.save(fname)
+
+    def __anim_vibration(self):
+        """Animate vibration.
+
+        Runs/stop the animation of the vibration
+        """
+        if self.__vib is None:
+            return
+        if self.__nmols == 1:
+            if self.__vib_changed_since_anim:
+                self.__mol.animate(self.__vib.mode)
+                self.__vib_changed_since_anim = False
+            else:
+                self.__mol.animate()
+        else:
+            raise NotImplementedError('Multi-mols vibrations NYI')
