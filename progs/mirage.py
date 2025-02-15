@@ -167,7 +167,10 @@ def extract_data(infile: tp.Sequence[str],
     data['bonds'] = list_bonds(data['atnum'], data['coord'], tol_bond)
 
     if read_vib:
-        data['evec'] = dfile.get_hess_data(True, False)
+        data['evec'] = dfile.get_hess_data(get_evec=False, get_eval=False,
+                                           get_lweigh=True)
+        # data['evec'] = dfile.get_hess_data(get_evec=True, get_eval=False,
+        #                                    get_lweigh=False)
 
     return data
 
