@@ -461,6 +461,37 @@ class Molecule(Qt3DCore.QEntity):
                 self.vibrate.stop()
                 self.vibrate.setCurrentTime(0)
 
+    def redraw(self):
+        """Simply redraw the molecule with the default positions."""
+        for atvec, atxyz in zip(self.__at_tvec, self.__atcrd):
+            atvec.setTranslation(QtGui.QVector3D(*atxyz))
+
+        for i, bond in enumerate(self.__bonds):
+            iat1, iat2 = bond
+            xyzat1 = self.__atcrd[iat1]
+            xyzat2 = self.__atcrd[iat2]
+            xyzmid = (xyzat1+xyzat2)/2.
+            # First half of bond
+            delta = xyzmid - xyzat1
+            bo_len = sqrt(np.dot(delta, delta))
+            self.__bo_mesh[2*i].setLength(bo_len)
+            bo_rot = vrotate_3D(np.array([0, 1, 0]), delta/bo_len)
+            rot3x3 = QtGui.QMatrix3x3(np.array(bo_rot).reshape(9).tolist())
+            self.__bo_trro[2*i].setRotation(
+                QtGui.QQuaternion.fromRotationMatrix(rot3x3))
+            self.__bo_trro[2*i].setTranslation(
+                QtGui.QVector3D(*(xyzat1+delta/2)))
+            # Second half of bond
+            delta = xyzat2 - xyzmid
+            bo_len = sqrt(np.dot(delta, delta))
+            self.__bo_mesh[2*i+1].setLength(bo_len)
+            bo_rot = vrotate_3D(np.array([0, 1, 0]), delta/bo_len)
+            rot3x3 = QtGui.QMatrix3x3(np.array(bo_rot).reshape(9).tolist())
+            self.__bo_trro[2*i+1].setRotation(
+                QtGui.QQuaternion.fromRotationMatrix(rot3x3))
+            self.__bo_trro[2*i+1].setTranslation(
+                QtGui.QVector3D(*(xyzmid+delta/2)))
+
     def __shift_atoms(self, step: float):
         """Shift atoms by a given step.
 

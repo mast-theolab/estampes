@@ -27,7 +27,8 @@ Other blocks are:
 ## Unreleased
 
 ### Added
-- **VIZ**: `Molecules.animation_status` provides a getter/setter on the animation status (running, paused, stopped...).
+- **VIZ**: `Molecule.redraw()` can redraw the molecule from the stored geometries.
+- **VIZ**: `Molecule.animation_status` provides a getter/setter on the animation status (running, paused, stopped...).
 
 ## [0.6.0] - 2025-02-16
 
