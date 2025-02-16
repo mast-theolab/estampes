@@ -202,12 +202,23 @@ class MolWin(Qt3DExtras.Qt3DWindow):
                              color=color, color2=color2,
                              rootEntity=self.rootEntity)
 
-    def upd_vibmode(self, vib_mode: Type1Vib):
+    def upd_vibmode(self, vib_mode: Type1Vib, **kwargs):
+        """Update vibrational mode.
+
+        Extra keywords are sent to add_vibmode.
+        """
         self.__vib_changed_since_anim = True
         if self.__vib is None:
-            self.__add_vibmode(vib_mode)
+            self.add_vibmode(vib_mode, **kwargs)
         else:
             self.__vib.update_vib(vib_mode)
+            if self.__mol.animation_status != 'unknown':
+                self.__mol.redraw()
+        if self.__mol.animation_status == 'running':
+            self.__mol.animation_status = 'reset'
+            self.__anim_vibration()
+        elif self.__mol.animation_status != 'unknown':
+            self.__mol.animation_status = 'reset'
 
     @QtCore.Slot(list)
     def atom_clicked(self, molatom: tp.Sequence[int]):

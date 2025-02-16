@@ -27,6 +27,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **VIZ**: `MolUI` can now update molecular vibrations during animation.
 - **VIZ**: `Molecule.redraw()` can redraw the molecule from the stored geometries.
 - **VIZ**: `Molecule.animation_status` provides a getter/setter on the animation status (running, paused, stopped...).
 
