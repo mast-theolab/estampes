@@ -320,7 +320,8 @@ def main():
 
         app = QtWidgets.QApplication()
         molwin = MolWin(num_mols, mols_atnum, mols_atcrd, mols_bonds,
-                        mol_model, mol_mat, True, fnames=opts.infiles)
+                        mol_model, mol_mat, True, fnames=opts.infiles,
+                        skip_guide=opts.silent)
         if read_vib:
             if opts.vib <= 0 or opts.vib > mols_evec.shape[0]:
                 print('ERROR: Incorrect normal mode.')
