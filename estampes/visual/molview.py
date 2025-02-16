@@ -375,7 +375,7 @@ class Molecule(Qt3DCore.QEntity):
                 displ: tp.Optional[npt.ArrayLike] = None,
                 vibrate: bool = True,
                 amplitude: float = .5,
-                duration: int = 1):
+                duration: int = 1000):
         """Move atoms and correct bonds along chosen displacement.
 
         Creates an animation of the atoms displacement.
