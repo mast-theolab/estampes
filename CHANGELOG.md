@@ -39,17 +39,17 @@ Other blocks are:
 - **BLS**: A filetype can now be provided to the file parser if the file extensions is ambiguous.
 - **BLS**: Ballast can now support multiple files in a single curve, for instance to produce the spectrum of mixtures.  The format is "file1 @ weight1 & file2 @ weight2" (spaces are irrelevant between symbols).
 - **MRG**: Mirage was updated to support the new representations of normal modes.
-- **MRG**: Mirage now recognizes colors specifications as sub-options of `--vid-modes`.
+- **MRG**: Mirage now recognizes colors specifications as sub-options of `--vid-model`.
 - **VIZ**: A summary of the commands available in the molecular viewer with `MolWin` is now printed by default (can be deactivated with parameter `skip_guide=True` given to constructor).  It can be recalled at any moment with 'CTRL+SHIFT+H' (CMD+SHIFT+H on Mac).
 - **VIZ**: `MolWin` can now animate vibrations with 'CTRL+A' (CMD+A on Mac). The animation can be paused and resumed.
-- **VIZ**: New method of `Molecule` to control animated atomic displacements, "animate".  While intended for vibrations, it can be use for any kind of displacements.
+- **VIZ**: New method of `Molecule` to control animated atomic displacements, "animate".  While intended for vibrations, it can be used for any kind of displacements.
 - **VIZ**: `MolWin` can now export screenshots with 'CTRL+P' (CMD+P on Mac). The export is still experimental and can give offset colors.
 - **VIZ**: `MolWin` now supports a new shortcut 'CTRL+E' (COMMAND+E on Mac) to export a POV-Ray file describing the represented in the same orientation (currently translations are not considered).
-- **VIZ**: `Molecule`, `VibMode` and `POVBuilder` now supports explicit description of the representation model and material.  Old keywords like `rad_atom_as_bond` are deprecated and have been removed.
+- **VIZ**: `Molecule`, `VibMode` and `POVBuilder` now support explicit description of the representation model and material.  Old keywords like `rad_atom_as_bond` are deprecated and have been removed.
 - **VIZ**: `Molecule` now supports other "materials" (WIP).
 - **VIZ**: The description scene in POV-Ray has been changed to match the modified convention.  This way, the interactive viewer and POV-Ray describe by default the same scene.
 - **VIZ**: `Molecule` and `VibView` have a new method to retrieve visualization parameters, `viz_options`.
-- **VIZ**: Added two new representations of normal modes: as arrows are centered on the atoms (midarrows), as dual arrows showing the "positive" and "negative" displacements (dualarrows).
+- **VIZ**: Added two new representations of normal modes: as arrows centered on the atoms (midarrows), as dual arrows showing the "positive" and "negative" displacements (dualarrows).
 - **LIB**: New module `base.aliases` to provide common aliases for keywords (e.g., spectroscopy, level of theory) regularly used within ESTAMPES.
 - **LIB**: The `Spectrum` class can now support multiple datasets and relative weights (for now purely numerical).
 - **LIB**: New function `tools.vib.build_vibrations` constructs the normal coordinates vector and frequencies Cartesian force constants.  The function is inspired by the white paper of Gaussian (https://gaussian.com/vib/), transcribed in Python by M. Fusè.
@@ -77,13 +77,13 @@ Other blocks are:
 - **API**: Fixed parsing of energy second derivatives from Gaussian log files.
 - **API**: ESTAMPES could fail to read the last diagonal element of the Cartesian force constants from a Gaussian log file if the last element was in a separate block in the output (case where 3*natoms-1 is a muliple of 5).
 
-## Changed
+### Changed
 - **LIB**: `spec.convert_y` now returns 3 objects, distinguishing conversions to be applied on values from the X axis and instead on values from the original X values (e.g., Raman/ROA hybrid units).
 - **LIB**: `spec.broaden` now supports an additional argument, `xconv`, for conversions specific to X values, that cannot be done using the X axis.
 - **LIB**: `Spectrum` now does an approximate search on the incident frequencies if the value in input is truncated to the integer part.
 - **API**: Method `dfile.get_hess_data` has been completely rewritten to provide more accurate results by properly projecting out rotations and translations, and avoid code duplication.
 
-## Removed
+### Removed
 - **API**: Functions `get_hess_data` in parsers' modules are now deprecated and have been removed.  The `dfile.get_hess_data` method should be used instead or `tools.vib.build_vibrations` for a more general form.
 
 
