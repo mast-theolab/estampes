@@ -6,8 +6,10 @@
 *.chk
 *.fch*
 tests/in_progress/*
+mytests/*
+myprogs/*
 
-# Bug-testing director
+# Bug-testing directory
 bugs/*
 
 # Blender source files

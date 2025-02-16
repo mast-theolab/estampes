@@ -26,6 +26,9 @@ Other blocks are:
 
 ## Unreleased
 
+
+## [0.6.0] - 2025-02-16
+
 ### Important
 1. The logic in the POV-Ray description scene has been changed in this version to better match the interactive visualizer.  This means that the Z axis is now the vertical and Y points toward the camera, while the old previous, standard form was to have Y upwards and Z pointing in the direction opposite to the camera.  Note that to keep operations more intuitive, the left-handed representation is fully maintained.
 
