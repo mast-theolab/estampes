@@ -65,6 +65,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
 
             `fname`: filename where data were stored.
             `fnames`: sequence of filenames where data were stored.
+            `skip_guide`: Skip introduction message.
         """
         super(MolWin, self).__init__()
 
@@ -72,6 +73,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         self.__mol = None
         self.__nmols = 0
         self.__vib_changed_since_anim = None
+        self.__infoBox = None
 
         if 'fnames' in extras:
             fname = extras['fnames']
@@ -140,16 +142,25 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         self.activeFrameGraph().setParent(self.__capture)
         self.setActiveFrameGraph(self.__capture)
 
+        if not extras.get('skip_guide', False):
+            self.__show_help()
+
         # Add shortcuts
+        self.keyHelp = QtGui.QShortcut(
+            QtGui.QKeySequence(
+                QtGui.Qt.CTRL | QtGui.Qt.SHIFT | QtGui.Qt.Key_H),
+            self)
+        self.keyHelp.activated.connect(self.__show_help)
+        self.keyHelp.activatedAmbiguously.connect(self.__show_help)
+        self.keyVib = QtGui.QShortcut(
+            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_A), self)
+        self.keyVib.activated.connect(self.__anim_vibration)
         self.keyExport = QtGui.QShortcut(
             QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_E), self)
         self.keyExport.activated.connect(self.__export_pov)
         self.keyPrint = QtGui.QShortcut(
             QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_P), self)
         self.keyPrint.activated.connect(self.__capture_scene)
-        self.keyVib = QtGui.QShortcut(
-            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_A), self)
-        self.keyVib.activated.connect(self.__anim_vibration)
 
     def add_vibmode(self, vib_mode: Type1Vib,
                     model: tp.Optional[str] = None,
@@ -352,3 +363,77 @@ class MolWin(Qt3DExtras.Qt3DWindow):
                 self.__mol.animate()
         else:
             raise NotImplementedError('Multi-mols vibrations NYI')
+
+    def __show_help(self):
+        """Show help message"""
+        self.__infoBox = QtWidgets.QMessageBox()
+        self.__infoBox.setIcon(QtWidgets.QMessageBox.Information)
+        self.__infoBox.setText("Available commands")
+        self.__infoBox.setInformativeText("""
+<style>
+h3 {
+    font-style: italic;
+    text-decoration: underline double;
+}
+dt {
+    font-weight: bold;
+    font-size: 1.2em;
+    margin-bottom: .2em;
+    margin-top: .2em;
+}
+</style>
+<h3>Basic navigation</h3>
+
+<dl>
+    <dt>Left mouse button</dt>
+    <dd>While the left mouse button is pressed, mouse movement along x-axis \
+moves the camera left and right and movement along y-axis moves it up and \
+down.</dd>
+    <dt>Right mouse button</dt>
+    <dd>While the right mouse button is pressed, mouse movement along x-axis \
+pans the camera around the camera view center and movement along y-axis tilts \
+it around the camera view center.</dd>
+    <dt>Both left and right mouse button</dt>
+    <dd>While both the left and the right mouse button are pressed, mouse \
+movement along y-axis zooms the camera in and out without changing the view \
+center.</dd>
+    <dt>Mouse scroll wheel</dt>
+    <dd>Zooms the camera in and out without changing the view center.</dd>
+    <dt>Arrow keys</dt>
+    <dd>Move the camera vertically and horizontally relative to camera \
+viewport.</dd>
+    <dt>Page up and page down keys</dt>
+    <dd>Move the camera forwards and backwards.</dd>
+    <dt>Shift key</dt>
+    <dd>Changes the behavior of the up and down arrow keys to zoom the camera \
+in and out without changing the view center. The other movement keys are \
+disabled.</dd>
+    <dt>Alt key</dt>
+    <dd>Changes the behovior of the arrow keys to pan and tilt the camera \
+around the view center. Disables the page up and page down keys.</dd>
+    <dt>Escape</dt>
+    <dd>Moves the camera so that entire scene is visible in the camera \
+viewport.</dd>
+</dl>
+
+<h3>Shortcuts</h3>
+
+<p>On Mac OSX, <code>Ctrl</code> is replaced by <code>Command</code>.</p>
+
+<dl>
+    <dt>Ctrl+A</dt>
+    <dd>Animates vibration if a vibration has been selected.<br />
+Pressing it again pauses or resumes the motion.</dd>
+    <dt>Ctrl+E</dt>
+    <dd>Exports current scene as a POV-Ray scene description file.</dd>
+    <dt>Ctrl+Shift+H</dt>
+    <dd>Prints this help message.</dd>
+    <dt>Ctrl+P</dt>
+    <dd>Captures the current scene and saves it as an image.<br />
+    <strong>Note:</strong> The option is currently experimental and may \
+fail.</dd>
+</dl>
+""")
+        self.__infoBox.setStandardButtons(QtWidgets.QMessageBox.Close)
+        self.__infoBox.setDefaultButton(QtWidgets.QMessageBox.Close)
+        self.__infoBox.show()

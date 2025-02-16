@@ -37,7 +37,8 @@ Other blocks are:
 - **BLS**: Ballast can now support multiple files in a single curve, for instance to produce the spectrum of mixtures.  The format is "file1 @ weight1 & file2 @ weight2" (spaces are irrelevant between symbols).
 - **MRG**: Mirage was updated to support the new representations of normal modes.
 - **MRG**: Mirage now recognizes colors specifications as sub-options of `--vid-modes`.
-- **VIZ**: `MolWin` can now animate vibrations with 'CTRL+A' (CMD+A on Mac). The animation
+- **VIZ**: A summary of the commands available in the molecular viewer with `MolWin` is now printed by default (can be deactivated with parameter `skip_guide=True` given to constructor).  It can be recalled at any moment with 'CTRL+SHIFT+H' (CMD+SHIFT+H on Mac).
+- **VIZ**: `MolWin` can now animate vibrations with 'CTRL+A' (CMD+A on Mac). The animation can be paused and resumed.
 - **VIZ**: New method of `Molecule` to control animated atomic displacements, "animate".  While intended for vibrations, it can be use for any kind of displacements.
 - **VIZ**: `MolWin` can now export screenshots with 'CTRL+P' (CMD+P on Mac). The export is still experimental and can give offset colors.
 - **VIZ**: `MolWin` now supports a new shortcut 'CTRL+E' (COMMAND+E on Mac) to export a POV-Ray file describing the represented in the same orientation (currently translations are not considered).
