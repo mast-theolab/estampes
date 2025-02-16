@@ -95,6 +95,8 @@ def build_opts(parser: argparse.ArgumentParser):
     msg = '''Vibrational mode to display.
 NOTE: only available if input file contains eigenvectors.'''
     parser.add_argument('--vib', type=int, help=msg)
+    msg = '''Show list of modes together with visualizer.'''
+    parser.add_argument('--vibs', action='store_true', help=msg)
     parser.add_argument('--vib-mat', choices=MATERIALS.keys(),
                         help='Material for the vibration.')
     parser.add_argument('--vib-scale', type=float, default=1.0,
@@ -167,8 +169,8 @@ def extract_data(infile: tp.Sequence[str],
     data['bonds'] = list_bonds(data['atnum'], data['coord'], tol_bond)
 
     if read_vib:
-        data['evec'] = dfile.get_hess_data(get_evec=False, get_eval=False,
-                                           get_lweigh=True)
+        data['eval'], data['evec'] = dfile.get_hess_data(
+            get_evec=False, get_eval=True, get_lweigh=True)
         # data['evec'] = dfile.get_hess_data(get_evec=True, get_eval=False,
         #                                    get_lweigh=False)
 
@@ -190,7 +192,15 @@ def main():
     else:
         opmode = 'povray'
 
-    read_vib = opts.vib is not None
+    # Check if reading vibrational modes requested and check that
+    # options are not overlapping.
+    if opts.vib is not None and opts.vibs:
+        print('ERROR: Option --vib and --vibs are incompatible.')
+        sys.exit(1)
+    if opts.vibs and opmode != 'display':
+        print('ERROR: --vibs only available for interactive viewer')
+        sys.exit(1)
+    read_vib = opts.vib is not None or opts.vibs
 
     # Set representation models
     for key, pars in MODELS['mol'].items():
@@ -253,6 +263,7 @@ def main():
         mols_atnum = []
         mols_bonds = []
         mols_evec = []
+        mols_eval = []
 
     if opmode == 'povray':
         if read_vib and num_mols > 1:
@@ -311,26 +322,60 @@ def main():
                 mols_bonds.append(moldat['bonds'])
                 if read_vib:
                     mols_evec.append(moldat['evec'])
+                    mols_eval.append(moldat['eval'])
             else:
                 mols_atcrd = moldat['coord']
                 mols_atnum = moldat['atnum']
                 mols_bonds = moldat['bonds']
                 if read_vib:
                     mols_evec = moldat['evec']
+                    mols_eval = moldat['eval']
 
-        app = QtWidgets.QApplication()
-        molwin = MolWin(num_mols, mols_atnum, mols_atcrd, mols_bonds,
-                        mol_model, mol_mat, True, fnames=opts.infiles,
-                        skip_guide=opts.silent)
-        if read_vib:
-            if opts.vib <= 0 or opts.vib > mols_evec.shape[0]:
-                print('ERROR: Incorrect normal mode.')
-                sys.exit(2)
-            molwin.add_vibmode(mols_evec[opts.vib-1].reshape(-1, 3),
-                               vib_model, vib_mat, color=vib_opts['col0'],
-                               color2=vib_opts['col1'])
-        molwin.show()
-        sys.exit(app.exec())
+        if not opts.vibs:
+            app = QtWidgets.QApplication()
+            molwin = MolWin(num_mols, mols_atnum, mols_atcrd, mols_bonds,
+                            mol_model, mol_mat, True, fnames=opts.infiles,
+                            skip_guide=opts.silent)
+            if read_vib:
+                if opts.vib <= 0 or opts.vib > mols_evec.shape[0]:
+                    print('ERROR: Incorrect normal mode.')
+                    sys.exit(2)
+                molwin.add_vibmode(mols_evec[opts.vib-1].reshape(-1, 3),
+                                   vib_model, vib_mat, color=vib_opts['col0'],
+                                   color2=vib_opts['col1'])
+            molwin.show()
+            sys.exit(app.exec())
+        else:
+            app = QtWidgets.QApplication()
+            win = QtWidgets.QWidget()
+            layout = QtWidgets.QHBoxLayout()
+            molwin = MolWin(num_mols, mols_atnum, mols_atcrd, mols_bonds,
+                            mol_model, mol_mat, True, fnames=opts.infiles,
+                            skip_guide=opts.silent)
+            view3D = QtWidgets.QWidget.createWindowContainer(molwin)
+            layout.addWidget(view3D, 4)
+
+            table = QtWidgets.QTableWidget()
+            table.setRowCount(len(mols_eval))
+            table.setColumnCount(1)
+            table.setHorizontalHeaderLabels(["Energy"])
+            for i, freq in enumerate(mols_eval):
+                item_freq = QtWidgets.QTableWidgetItem(
+                    f'{freq:12.4f} cm⁻¹')
+                table.setItem(i, 0, item_freq)
+            table.resizeColumnToContents(0)
+            table.cellClicked.connect(
+                lambda row, col: molwin.upd_vibmode(
+                    mols_evec[row].reshape(-1, 3), model=vib_model,
+                    material=vib_mat, color=vib_opts['col0'],
+                    color2=vib_opts['col1'])
+            )
+            layout.addWidget(table, 1)
+
+            win.setLayout(layout)
+            win.setGeometry(300, 200, 800, 600)
+            win.show()
+            sys.exit(app.exec())
 
 
 if __name__ == '__main__':

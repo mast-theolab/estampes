@@ -27,6 +27,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **MRG**: New option `--vibs` provides a list of normal modes, providing a way to look at different vibrations in a single run.
 - **VIZ**: `MolUI` can now update molecular vibrations during animation.
 - **VIZ**: `Molecule.redraw()` can redraw the molecule from the stored geometries.
 - **VIZ**: `Molecule.animation_status` provides a getter/setter on the animation status (running, paused, stopped...).
