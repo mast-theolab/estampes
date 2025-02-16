@@ -428,6 +428,39 @@ class Molecule(Qt3DCore.QEntity):
             self.vibrate.setDuration(abs(int(duration)))
         self.vibrate.start()
 
+    @property
+    def animation_status(self) -> str:
+        """Return the animation status."""
+        if self.vibrate is None:
+            status = 'unknown'
+        else:
+            if self.vibrate.state() == QtCore.QAbstractAnimation.Running:
+                status = 'running'
+            elif self.vibrate.state() == QtCore.QAbstractAnimation.Paused:
+                status = 'paused'
+            elif self.vibrate.state() == QtCore.QAbstractAnimation.Stopped:
+                status = 'stopped'
+            else:
+                raise ValueError('Unknown animation state.')
+        return status
+
+    @animation_status.setter
+    def animation_status(self, status: str):
+        """Set the animation status."""
+        if self.vibrate is not None:
+            if status.lower() == 'running':
+                if self.vibrate.state() == QtCore.QAbstractAnimation.Paused:
+                    self.vibrate.resume()
+                elif self.vibrate.state() == QtCore.QAbstractAnimation.Stopped:
+                    self.vibrate.start()
+            elif status.lower() == 'stopped':
+                self.vibrate.stop()
+            elif status.lower() == 'paused':
+                self.vibrate.pause()
+            elif status.lower() == 'reset':
+                self.vibrate.stop()
+                self.vibrate.setCurrentTime(0)
+
     def __shift_atoms(self, step: float):
         """Shift atoms by a given step.
 
@@ -438,7 +471,7 @@ class Molecule(Qt3DCore.QEntity):
         ----------
         step
             Value of the step.
-        
+
         Notes
         -----
         * The bonds are not broken by the displacement, they are simply
