@@ -80,12 +80,9 @@ def parse_data(qdict: TypeQInfo,
         else:
             iref = -1
             # Check if transition information may be present:
-            if not isinstance(datablocks[first], (list, tuple)):
-                if (qlabel.rstate == 'c'
-                        and 'Excited State' in ''.join(datablocks[first])):
-                    realfirst = first + 1
-                else:
-                    realfirst = first
+            if (qlabel.rstate == 'c'
+                    and 'Excited State' in ''.join(datablocks[first])):
+                realfirst = first + 1
             else:
                 realfirst = first
             for i in range(realfirst, last+1):
@@ -143,8 +140,12 @@ def parse_data(qdict: TypeQInfo,
             # By default, we choose the standard orientation if present
             if datablocks[last]:
                 i = last
+                if qlabel.kind != 'orient':
+                    dobjs[qkey].add_field('orient', value='standard')
             else:
                 i = first
+                if qlabel.kind != 'orient':
+                    dobjs[qkey].add_field('orient', value='input')
             data = []
             if qlabel.kind in ('all', 'scan'):
                 for block in datablocks[i]:
@@ -155,9 +156,23 @@ def parse_data(qdict: TypeQInfo,
                     data.append(_block)
                 num = len(datablocks[i])
             else:
-                for line in datablocks[i]:
-                    data.append([float(item)*__ang2au
-                                 for item in line.split()])
+                if qlabel.kind == 'orient':
+                    dobjs[qkey].add_field('orient', value='all')
+                    data = {}
+                    if datablocks[first]:
+                        data['input'] = []
+                        for line in datablocks[i]:
+                            data['input'].append([float(item)*__ang2au
+                                                  for item in line.split()])
+                    elif datablocks[last]:
+                        data['standard'] = []
+                        for line in datablocks[i]:
+                            data['standard'].append([float(item)*__ang2au
+                                                     for item in line.split()])
+                else:
+                    for line in datablocks[i]:
+                        data.append([float(item)*__ang2au
+                                    for item in line.split()])
                 num = 1
             dobjs[qkey].set(data=data)
             dobjs[qkey].add_field('ngeoms', value=num)
