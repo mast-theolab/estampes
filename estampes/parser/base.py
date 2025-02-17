@@ -222,7 +222,7 @@ class DataFile(object):
                 if get_evec:
                     eigvec = res['evec']
                 if get_eval:
-                    eigval = res['eval']
+                    eigval = res['freq']
                 if get_rmas:
                     redmas = res['redmas']
                 if get_lweigh:
@@ -303,7 +303,7 @@ class DataFile(object):
                     if get_evec:
                         eigvec = res['evec']
                     if get_eval:
-                        eigval = res['eval']
+                        eigval = res['freq']
                     if get_rmas:
                         redmas = res['redmas']
                     if get_lweigh:
