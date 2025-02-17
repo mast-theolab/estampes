@@ -33,6 +33,7 @@ Other blocks are:
 - **VIZ**: `Molecule.animation_status` provides a getter/setter on the animation status (running, paused, stopped...).
 
 ### Fixed
+- **LIB**: `DataFile.get_hess_data` failed to return the eigenvectors/eigenvalues from a Gaussian log file if the Cartesian force constants were missing.
 - **LIB**: `DataFile.get_hess_data` failed to read vibrational energies when generated from the Cartesian force constants through `tools.vib.build_vibrations`.
 
 ## [0.6.0] - 2025-02-16

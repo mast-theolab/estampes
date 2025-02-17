@@ -263,8 +263,8 @@ class DataFile(object):
                                               descriptor='freq', level='H')
             tmp_data = self.get_data(error_noqty=False, **read_data)
 
-            do_calc = force_calc
-            if not force_calc:
+            do_calc = force_calc and tmp_data['d2EdX2'] is not None
+            if not do_calc:
                 if calc_evec:
                     if (tmp_data['hessvec'] is not None
                             and tmp_data['atmas'] is not None):
