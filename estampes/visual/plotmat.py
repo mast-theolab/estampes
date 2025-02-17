@@ -241,6 +241,7 @@ def plot_kvec(vec: np.ndarray,
         else:
             z = 0.0
             fmt = 'i={y:1.0f}'
+            label = None
         return fmt.format(y=y+1, z=z, lab=label)
 
     def vmode(x, _pos):
@@ -280,6 +281,8 @@ def plot_kvec(vec: np.ndarray,
                 plot2[i].set_color('#73BFFF')
         # Add delimiter vertical line at 0 for readability
         canvas.axvline(x=0, color='black')
+    else:
+        _vec2 = None
     if show_grid:
         canvas.grid(color='.9')
     canvas.set_xlabel(xlab_kvec)
