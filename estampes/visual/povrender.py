@@ -33,7 +33,7 @@ X "on the right" and Y "toward the viewer".
 import os
 import re
 import typing as tp
-from math import inf, tan, radians
+from math import inf, isclose, radians, tan
 
 import numpy as np
 
@@ -1376,6 +1376,8 @@ def write_pov_vib(fobj: tp.TextIO,
     fobj.write('\n#declare vib = union{\n')
     for xyz, dxyz in zip(at_crd, evec):
         ldxyz = np.linalg.norm(dxyz)
+        if isclose(ldxyz, 0.0):
+            continue
         rot = np.transpose(vrotate_3D(np.array([0, 1, 0]), dxyz/ldxyz))
         ldxyz *= scale_displ*scale_vib
         fobj.write(fmt_vib.format(rot=rot.tolist(), trans=xyz.tolist(),

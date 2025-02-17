@@ -4,6 +4,7 @@ This modules provides low-level elements to represent modes.
 """
 
 import os
+from math import isclose
 import typing as tp
 
 import numpy as np
@@ -299,6 +300,11 @@ class VibMode(Qt3DCore.QEntity):
             head_trro = Qt3DCore.QTransform()
             # Operations
             ldxyz = np.linalg.norm(dxyz)
+            # Note: if vector length is null, we do not add any object
+            # This means that the length of the final groups may be smaller
+            #   than the number of atoms.
+            if isclose(ldxyz, 0.0):
+                continue
             shaft_mesh.setRadius(shaft_r)
             shaft_mesh.setLength(ldxyz*shaft_l)
             rot = vrotate_3D(np.array([0, 1, 0]), dxyz/ldxyz)
@@ -345,6 +351,8 @@ class VibMode(Qt3DCore.QEntity):
             head_trro = Qt3DCore.QTransform()
             # Operations
             ldxyz = np.linalg.norm(dxyz)
+            if isclose(ldxyz, 0.0):
+                continue
             shaft_mesh.setRadius(shaft_r)
             shaft_mesh.setLength(ldxyz*shaft_l)
             rot = vrotate_3D(np.array([0, 1, 0]), dxyz/ldxyz)
@@ -395,6 +403,8 @@ class VibMode(Qt3DCore.QEntity):
             head_trro2 = Qt3DCore.QTransform()
             # Operations
             ldxyz = np.linalg.norm(dxyz)
+            if isclose(ldxyz, 0.0):
+                continue
             shaft_mesh.setRadius(shaft_r)
             shaft_mesh.setLength(ldxyz*shaft_l)
             rot1 = vrotate_3D(np.array([0, 1, 0]), dxyz/ldxyz)
@@ -453,6 +463,8 @@ class VibMode(Qt3DCore.QEntity):
             trro = Qt3DCore.QTransform()
             # Operations
             ldxyz = np.linalg.norm(dxyz)
+            if isclose(ldxyz, 0.0):
+                continue
             mesh.setSource(path_obj)
             rot = vrotate_3D(np.array([0, 1, 0]), dxyz/ldxyz)
             rot3x3 = QtGui.QMatrix3x3(np.array(rot).reshape(9).tolist())

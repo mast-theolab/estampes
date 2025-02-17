@@ -33,6 +33,7 @@ Other blocks are:
 - **VIZ**: `Molecule.animation_status` provides a getter/setter on the animation status (running, paused, stopped...).
 
 ### Fixed
+- **VIZ**: Fixed warning message "invalid value encountered in divide" when the vibration to display in `visual.VibView` or `visual.povrender` had a null component on one atom.
 - **LIB**: `DataFile.get_hess_data` failed to return the eigenvectors/eigenvalues from a Gaussian log file if the Cartesian force constants were missing.
 - **LIB**: `DataFile.get_hess_data` failed to read vibrational energies when generated from the Cartesian force constants through `tools.vib.build_vibrations`.
 
