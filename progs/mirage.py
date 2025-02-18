@@ -376,6 +376,7 @@ def main():
             )
             layout.addWidget(table, 1)
 
+            view3D.setFocus()
             win.setLayout(layout)
             win.setGeometry(300, 200, 800, 600)
             win.show()

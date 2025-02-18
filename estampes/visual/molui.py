@@ -77,7 +77,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         self.__mol = None
         self.__nmols = 0
         self.__vib_changed_since_anim = None
-        self.__infoBox = None
+        self.__dialog = None
 
         if 'fnames' in extras:
             fname = extras['fnames']
@@ -153,20 +153,25 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         self.keyHelp = QtGui.QShortcut(
             QtGui.QKeySequence(
                 QtGui.Qt.CTRL | QtGui.Qt.SHIFT | QtGui.Qt.Key_H),
-            self)
+            self,
+            context=QtCore.Qt.WidgetShortcut)
         self.keyHelp.activated.connect(self.__show_help)
         self.keyHelp.activatedAmbiguously.connect(self.__show_help)
         self.keyVib = QtGui.QShortcut(
-            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_A), self)
+            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_A), self,
+            context=QtCore.Qt.WidgetShortcut)
         self.keyVib.activated.connect(self.__anim_vibration)
         self.keyExport = QtGui.QShortcut(
-            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_E), self)
+            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_E), self,
+            context=QtCore.Qt.WidgetShortcut)
         self.keyExport.activated.connect(self.__export_pov)
         self.keyGeom = QtGui.QShortcut(
-            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_G), self)
+            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_G), self,
+            context=QtCore.Qt.WidgetShortcut)
         self.keyGeom.activated.connect(self.__show_geom)
         self.keyPrint = QtGui.QShortcut(
-            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_P), self)
+            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_P), self,
+            context=QtCore.Qt.WidgetShortcut)
         self.keyPrint.activated.connect(self.__capture_scene)
 
     def add_vibmode(self, vib_mode: Type1Vib,
@@ -265,19 +270,20 @@ class MolWin(Qt3DExtras.Qt3DWindow):
             povfile = os.path.splitext(self.__fnames)[0] + '.pov'
             workdir = os.path.realpath(os.path.dirname(povfile))
 
-        dialog = QtWidgets.QFileDialog()
-        dialog.setDirectory(workdir)
-        dialog.setWindowTitle('Export POV-Ray description file')
-        dialog.setNameFilter("POV-Ray files (*.pov)")
-        dialog.setNameFilter("All files (*)")
-        dialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
-        dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setDefaultSuffix('.pov')
-        dialog.selectFile(os.path.basename(povfile))
-        if not dialog.exec_():
+        self.__dialog = QtWidgets.QFileDialog()
+        self.__dialog.setDirectory(workdir)
+        self.__dialog.setWindowTitle('Export POV-Ray description file')
+        self.__dialog.setNameFilter("POV-Ray files (*.pov)")
+        self.__dialog.setNameFilter("All files (*)")
+        self.__dialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        self.__dialog.setAcceptMode(
+            QtWidgets.QFileDialog.AcceptMode.AcceptSave)
+        self.__dialog.setDefaultSuffix('.pov')
+        self.__dialog.selectFile(os.path.basename(povfile))
+        if not self.__dialog.exec_():
             return
 
-        povfile = os.path.realpath(dialog.selectedFiles()[0])
+        povfile = os.path.realpath(self.__dialog.selectedFiles()[0])
 
         rmat = self.__cam.transform().rotation().toRotationMatrix().data()
         # We need to transpose the rotation matrix since it is intended for
@@ -350,20 +356,21 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         else:
             fname = f'{os.path.splitext(self.__fnames)[0]}.{ftype}'
 
-        dialog = QtWidgets.QFileDialog()
-        dialog.setDirectory(os.getcwd())
-        dialog.setWindowTitle('Export screenshot')
-        dialog.setNameFilter(
+        self.__dialog = QtWidgets.QFileDialog()
+        self.__dialog.setDirectory(os.getcwd())
+        self.__dialog.setWindowTitle('Export screenshot')
+        self.__dialog.setNameFilter(
             f"Supported image files (*{' *'.join(supported)})")
-        dialog.setNameFilter("All files (*)")
-        dialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
-        dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
-        dialog.setDefaultSuffix('.png')
-        dialog.selectFile(os.path.basename(fname))
-        if not dialog.exec_():
+        self.__dialog.setNameFilter("All files (*)")
+        self.__dialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        self.__dialog.setAcceptMode(
+            QtWidgets.QFileDialog.AcceptMode.AcceptSave)
+        self.__dialog.setDefaultSuffix('.png')
+        self.__dialog.selectFile(os.path.basename(fname))
+        if not self.__dialog.exec():
             return
 
-        fname = os.path.realpath(dialog.selectedFiles()[0])
+        fname = os.path.realpath(self.__dialog.selectedFiles()[0])
         img.save(fname)
 
     def __anim_vibration(self):
@@ -452,7 +459,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
             do_convert = False
         if do_convert:
             atlab = convert_labsymb(True, *atlab)
-        dialog = QtWidgets.QDialog()
+        self.__dialog = QtWidgets.QDialog()
         layout = QtWidgets.QVBoxLayout()
         geom = QtWidgets.QTextEdit()
         geom.setReadOnly(True)
@@ -466,7 +473,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
 
         buttons = QtWidgets.QHBoxLayout()
         btn_close = QtWidgets.QPushButton('Close')
-        btn_close.clicked.connect(dialog.close)
+        btn_close.clicked.connect(self.__dialog.close)
         btn_clip = QtWidgets.QPushButton('Copy to clipboard')
         btn_clip.clicked.connect(to_clipboard)
         btn_save = QtWidgets.QPushButton('Save')
@@ -478,15 +485,15 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         buttons.addWidget(btn_save)
         layout.addLayout(buttons)
 
-        dialog.setLayout(layout)
-        dialog.exec()
+        self.__dialog.setLayout(layout)
+        self.__dialog.exec()
 
     def __show_help(self):
         """Show help message"""
-        self.__infoBox = QtWidgets.QMessageBox()
-        self.__infoBox.setIcon(QtWidgets.QMessageBox.Information)
-        self.__infoBox.setText("Available commands")
-        self.__infoBox.setInformativeText("""
+        self.__dialog = QtWidgets.QMessageBox()
+        self.__dialog.setIcon(QtWidgets.QMessageBox.Information)
+        self.__dialog.setText("Available commands")
+        self.__dialog.setInformativeText("""
 <style>
 h3 {
     font-style: italic;
@@ -553,6 +560,6 @@ Pressing it again pauses or resumes the motion.</dd>
 fail.</dd>
 </dl>
 """)
-        self.__infoBox.setStandardButtons(QtWidgets.QMessageBox.Close)
-        self.__infoBox.setDefaultButton(QtWidgets.QMessageBox.Close)
-        self.__infoBox.show()
+        self.__dialog.setStandardButtons(QtWidgets.QMessageBox.Close)
+        self.__dialog.setDefaultButton(QtWidgets.QMessageBox.Close)
+        self.__dialog.show()

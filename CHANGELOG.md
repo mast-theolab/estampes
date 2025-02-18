@@ -36,6 +36,7 @@ Other blocks are:
 - **VIZ**: `Molecule.animation_status` provides a getter/setter on the animation status (running, paused, stopped...).
 
 ### Fixed
+- **MRG**: `MolUI` shortcuts now work with `--vibs` option.
 - **VIZ**: Fixed warning message about unset label when moving the cursor out of the bar plot in `plot_kvec`.
 - **VIZ**: Fixed warning message "invalid value encountered in divide" when the vibration to display in `visual.VibView` or `visual.povrender` had a null component on one atom.
 - **LIB**: `DataFile.get_hess_data` failed to return the eigenvectors/eigenvalues from a Gaussian log file if the Cartesian force constants were missing.
