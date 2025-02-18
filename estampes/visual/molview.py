@@ -107,13 +107,23 @@ class Molecule(Qt3DCore.QEntity):
             molcol=molcol)
         self.update_geom(at_lab, at_crd, bonds)
 
-    @property
-    def at_crd(self) -> TypeAtCrd:
+    def get_at_crd(self, actual: bool = False) -> TypeAtCrd:
         """Return atomic coordinates.
 
         Returns atomic coordinates in the Cartesian space.
+
+        Parameters
+        ----------
+        actual
+            Print the actual coordinates, including atomic shift if set.
         """
+        if actual:
+            if self.__at_displ_step is not None:
+                return self.__atcrd + self.__at_displ_step*self.__at_displ
+            return self.__atcrd
         return self.__atcrd
+
+    at_crd = property(get_at_crd)
 
     @property
     def at_lab(self) -> TypeAtLab:
@@ -374,7 +384,7 @@ class Molecule(Qt3DCore.QEntity):
     def animate(self,
                 displ: tp.Optional[npt.ArrayLike] = None,
                 vibrate: bool = True,
-                amplitude: float = .5,
+                amplitude: float = 1.0,
                 duration: int = 1000):
         """Move atoms and correct bonds along chosen displacement.
 
