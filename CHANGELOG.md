@@ -42,6 +42,9 @@ Other blocks are:
 - **LIB**: `DataFile.get_hess_data` failed to read vibrational energies when generated from the Cartesian force constants through `tools.vib.build_vibrations`.
 - **API**: Fixed broken extraction of non-transition quantities in excited states.
 
+### Changed
+- **MRG**: The list of frequencies cannot be edited anymore and remains more readable when the window is resized.
+
 ## [0.6.0] - 2025-02-16
 
 ### Important

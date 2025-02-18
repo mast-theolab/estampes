@@ -23,7 +23,7 @@ from estampes.tools.mol import list_bonds
 from estampes.visual.povrender import POVBuilder
 
 try:
-    from PySide6 import QtWidgets
+    from PySide6 import QtCore, QtWidgets
     Qt_avail = True
     from estampes.visual.molui import MolWin
 except ModuleNotFoundError:
@@ -362,8 +362,12 @@ def main():
             for i, freq in enumerate(mols_eval):
                 item_freq = QtWidgets.QTableWidgetItem(
                     f'{freq:12.4f} cm⁻¹')
+                item_freq.setTextAlignment(QtCore.Qt.AlignRight)
                 table.setItem(i, 0, item_freq)
+            table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
             table.resizeColumnToContents(0)
+            table.horizontalHeader().setSectionResizeMode(
+                QtWidgets.QHeaderView.Stretch)
             table.cellClicked.connect(
                 lambda row, col: molwin.upd_vibmode(
                     mols_evec[row].reshape(-1, 3), model=vib_model,
