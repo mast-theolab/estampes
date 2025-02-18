@@ -1,6 +1,6 @@
 = ESTAMPES
 :email: julien.bloino@sns.it
-:revnumber: 0.6.0
+:revnumber: 0.6.1
 :revremark: Bump to new version
 :toc: left
 :toclevels: 3

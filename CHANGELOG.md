@@ -26,6 +26,9 @@ Other blocks are:
 
 ## Unreleased
 
+
+## [0.6.1] - 2025-02-18
+
 ### Added
 - **MRG**: New option `--vibs` provides a list of normal modes, providing a way to look at different vibrations in a single run.
 - **VIZ**: `MolUI` can now export XYZ structures, considering orientation, translation and/or vibrational displacements.

@@ -10,7 +10,7 @@ packages = ["estampes", "progs", "scripts"]
 
 [project]
 name = "estampes"
-version = "0.6.0"
+version = "0.6.1"
 requires-python = ">= 3.8"
 authors = [
     {name = "Julien Bloino", email = "julien.bloino@gmail.com"}
