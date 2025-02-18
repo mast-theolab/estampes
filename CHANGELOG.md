@@ -28,6 +28,8 @@ Other blocks are:
 
 ### Added
 - **MRG**: New option `--vibs` provides a list of normal modes, providing a way to look at different vibrations in a single run.
+- **VIZ**: `MolUI` can now export XYZ structures, considering orientation, translation and/or vibrational displacements.
+- **VIZ**: New shortcut 'CTRL+G' (CMD+G on Mac) to export the XYZ structures.
 - **VIZ**: New getter for atomic coordinates can return the atomic coordinates or displaced atomic coordinates with `get_at_crd(True)`.
 - **VIZ**: `MolUI` can now update molecular vibrations during animation.
 - **VIZ**: `Molecule.redraw()` can redraw the molecule from the stored geometries.

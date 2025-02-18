@@ -6,6 +6,8 @@ visualize molecules and associated properties.
 import os
 import typing as tp
 
+import numpy as np
+
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.Qt3DCore import Qt3DCore
 from PySide6.Qt3DRender import Qt3DRender
@@ -13,6 +15,8 @@ from PySide6.Qt3DExtras import Qt3DExtras
 
 from estampes.base.types import Type1Vib, TypeAtCrdM, TypeAtLabM, TypeBondsM, \
     TypeColor
+from estampes.tools.atom import convert_labsymb
+from estampes.tools.math import rotate
 from estampes.visual.molview import Molecule
 from estampes.visual.vibview import VibMode
 from estampes.visual.povrender import POVBuilder, MSG_POV_CMD_HTML, MSG_POV_WIN
@@ -158,6 +162,9 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         self.keyExport = QtGui.QShortcut(
             QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_E), self)
         self.keyExport.activated.connect(self.__export_pov)
+        self.keyGeom = QtGui.QShortcut(
+            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_G), self)
+        self.keyGeom.activated.connect(self.__show_geom)
         self.keyPrint = QtGui.QShortcut(
             QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_P), self)
         self.keyPrint.activated.connect(self.__capture_scene)
@@ -375,6 +382,105 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         else:
             raise NotImplementedError('Multi-mols vibrations NYI')
 
+    def __show_geom(self):
+        """Open a dialog displaying the current geometry."""
+        def update_geom(which: int = 0):
+            if 0 <= which < 3:
+                atcrd = self.__mol.get_at_crd(True)
+            else:
+                atcrd = self.__mol.get_at_crd(False)
+            if which % 3 != 2:
+                transformation = self.__cam.transform()
+                rmat = np.reshape(
+                    transformation.rotation().toRotationMatrix().data(),
+                    (3, 3))
+                atcrd = rotate(rmat, atcrd)
+                if which % 3 == 0:
+                    tvec = np.array([
+                        -transformation.translation().x(),
+                        -transformation.translation().y(),
+                        transformation.translation().z()])
+                    atcrd += tvec
+            lines = [f'<pre>{len(atlab)}\n', f'{list_choices[which]}\n']
+            for lab, crd in zip(atlab, atcrd):
+                lines.append(fmt_xyz.format(at=lab, xyz=crd))
+            lines.append('</pre>')
+            geom.setText(''.join(lines))
+
+        def to_clipboard():
+            clipboard = QtGui.QClipboard()
+            clipboard.setText(geom.toPlainText())
+
+        def save_xyz():
+            if self.__nmols > 1 or self.__fnames is None:
+                fname = 'system.xyz'
+            else:
+                fname = f'{os.path.splitext(self.__fnames)[0]}.xyz'
+            win_save = QtWidgets.QFileDialog()
+            win_save.setDirectory(os.getcwd())
+            win_save.setWindowTitle("Export XYZ file")
+            win_save.setNameFilter("XYZ files (*.xyz *.XYZ)")
+            win_save.setNameFilter("All files (*)")
+            win_save.setFileMode(QtWidgets.QFileDialog.AnyFile)
+            win_save.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
+            win_save.setDefaultSuffix('.xyz')
+            win_save.selectFile(os.path.basename(fname))
+            if not win_save.exec_():
+                return
+            fname = os.path.realpath(win_save.selectedFiles()[0])
+            with open(fname, 'w', encoding='utf-8') as fobj:
+                fobj.write(geom.toPlainText())
+
+        if self.__nmols > 1:
+            raise NotImplementedError('Geometries for multiple molecules NYI')
+
+        fmt_xyz = '{at:<2s}{xyz[0]:14.8f}{xyz[1]:14.8f}{xyz[2]:14.8f}\n'
+        list_choices = [
+            'Current geometry, including all transformations',
+            'Current geometry, including only rotations',
+            'Current geometry in original orientation',
+            'Reference geometry, including all transformations',
+            'Reference geometry, including only rotations',
+            'Reference geometry in original orientation'
+        ]
+        atlab = self.__mol.at_lab
+        for atom in atlab:
+            if isinstance(atom, int):
+                do_convert = True
+                break
+        else:
+            do_convert = False
+        if do_convert:
+            atlab = convert_labsymb(True, *atlab)
+        dialog = QtWidgets.QDialog()
+        layout = QtWidgets.QVBoxLayout()
+        geom = QtWidgets.QTextEdit()
+        geom.setReadOnly(True)
+        update_geom(0)
+        layout.addWidget(geom)
+
+        choices = QtWidgets.QComboBox()
+        choices.addItems(list_choices)
+        choices.currentIndexChanged.connect(update_geom)
+        layout.addWidget(choices)
+
+        buttons = QtWidgets.QHBoxLayout()
+        btn_close = QtWidgets.QPushButton('Close')
+        btn_close.clicked.connect(dialog.close)
+        btn_clip = QtWidgets.QPushButton('Copy to clipboard')
+        btn_clip.clicked.connect(to_clipboard)
+        btn_save = QtWidgets.QPushButton('Save')
+        btn_save.clicked.connect(save_xyz)
+        buttons.addWidget(btn_close)
+        buttons.addStretch()
+        buttons.addWidget(btn_clip)
+        buttons.addStretch()
+        buttons.addWidget(btn_save)
+        layout.addLayout(buttons)
+
+        dialog.setLayout(layout)
+        dialog.exec()
+
     def __show_help(self):
         """Show help message"""
         self.__infoBox = QtWidgets.QMessageBox()
@@ -437,6 +543,8 @@ viewport.</dd>
 Pressing it again pauses or resumes the motion.</dd>
     <dt>Ctrl+E</dt>
     <dd>Exports current scene as a POV-Ray scene description file.</dd>
+    <dt>Ctrl+G</dt>
+    <dd>Displays the current geometry as a text file.</dd>
     <dt>Ctrl+Shift+H</dt>
     <dd>Prints this help message.</dd>
     <dt>Ctrl+P</dt>
