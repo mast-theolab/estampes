@@ -154,24 +154,24 @@ class MolWin(Qt3DExtras.Qt3DWindow):
             QtGui.QKeySequence(
                 QtGui.Qt.CTRL | QtGui.Qt.SHIFT | QtGui.Qt.Key_H),
             self,
-            context=QtCore.Qt.WidgetShortcut)
+            context=QtCore.Qt.ApplicationShortcut)
         self.keyHelp.activated.connect(self.__show_help)
         self.keyHelp.activatedAmbiguously.connect(self.__show_help)
         self.keyVib = QtGui.QShortcut(
             QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_A), self,
-            context=QtCore.Qt.WidgetShortcut)
+            context=QtCore.Qt.ApplicationShortcut)
         self.keyVib.activated.connect(self.__anim_vibration)
         self.keyExport = QtGui.QShortcut(
             QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_E), self,
-            context=QtCore.Qt.WidgetShortcut)
+            context=QtCore.Qt.ApplicationShortcut)
         self.keyExport.activated.connect(self.__export_pov)
         self.keyGeom = QtGui.QShortcut(
             QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_G), self,
-            context=QtCore.Qt.WidgetShortcut)
+            context=QtCore.Qt.ApplicationShortcut)
         self.keyGeom.activated.connect(self.__show_geom)
         self.keyPrint = QtGui.QShortcut(
             QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_P), self,
-            context=QtCore.Qt.WidgetShortcut)
+            context=QtCore.Qt.ApplicationShortcut)
         self.keyPrint.activated.connect(self.__capture_scene)
 
     def add_vibmode(self, vib_mode: Type1Vib,

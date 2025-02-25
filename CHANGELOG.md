@@ -26,6 +26,9 @@ Other blocks are:
 
 ## Unreleased
 
+### Changed
+- **VIZ**: `MolUI` shortcuts are set at the application level, so they work if the visualizer is embedded in a window or at the root.
+
 
 ## [0.6.1] - 2025-02-18
 
