@@ -22,10 +22,7 @@ import matplotlib.pyplot as plt
 
 # Make PySide optional
 try:
-    from PySide6 import QtCore, QtGui
-    from PySide6.Qt3DCore import Qt3DCore
-    from PySide6.Qt3DRender import Qt3DRender
-    from PySide6.Qt3DExtras import Qt3DExtras
+    from PySide6 import QtWidgets
     QtYes = True
 except ModuleNotFoundError:
     QtYes = False
@@ -33,16 +30,14 @@ except ModuleNotFoundError:
 # Deactivate molecular visualization if Qt not available
 has_molview = QtYes
 
-from estampes.base import QuantityError, TypeAtCrdM, TypeAtLabM, \
-    TypeBondsM, TypeColor, QLabel
+from estampes.base import QuantityError, QLabel
 from estampes.base.spectrum import VSPC2DATA, Spectrum
 from estampes.parser import DataFile
 from estampes.data.physics import PHYSFACT
 from estampes.tools.atom import convert_labsymb
 from estampes.tools.mol import list_bonds
-if has_molview:
-    from estampes.visual.molview import Molecule
-    from estampes.data.visual import MOLCOLS
+from estampes.visual.molui import MolWin
+from estampes.data.visual import MOLCOLS
 from estampes.visual.plotmat import plot_jmat, plot_cmat, plot_kvec
 from estampes.visual.plotspec import format_label, plot_spec_2D
 
@@ -72,83 +67,6 @@ if has_molview:
         'MidS': QLabel(quantity='fcdat', descriptor='GeomMS'),
         'ExtG': QLabel(quantity='fcdat', descriptor='ExGeom')
     }
-
-
-if QtYes and has_molview:
-    class MolWin(Qt3DExtras.Qt3DWindow):
-        """Qt3D Window for the visualization of molecule(s)
-    
-        Attributes
-        ----------
-        nmols
-            Number of molecules stored in `atlabs`, `atcrds` and `bonds`.
-        atlabs
-            Atomic labels.
-            If `nmols>1`, list of lists.
-        atcrds
-            3-tuples with atomic coordinates, in Ang.
-            If `nmols>1`, list of lists.
-        bonds
-            2-tuples listing connected atoms.
-            If `nmols>1`, list of lists.
-        col_bond_as_atom
-            If true, bonds are colored based on the connected atoms
-        rad_atom_as_bond
-            If true, atomic radii are set equal to the bonds (tubes).
-        molcols
-            If not `None`, color of the each molecule.
-        """
-        def __init__(self, nmols: int,
-                    atlabs: TypeAtLabM,
-                    atcrds: TypeAtCrdM,
-                    bonds: TypeBondsM,
-                    col_bond_as_atom: bool = False,
-                    rad_atom_as_bond: bool = False,
-                    molcols: tp.Optional[TypeColor] = None):
-            super(MolWin, self).__init__()
-    
-            # Camera
-            self.camera().lens().setPerspectiveProjection(45, 16 / 9, 0.1,
-                                                          1000)
-            self.camera().setPosition(QtGui.QVector3D(0, 1, 40))
-            self.camera().setViewCenter(QtGui.QVector3D(0, 0, 0))
-    
-            # For camera controls
-            self.rootEntity = Qt3DCore.QEntity()
-            if nmols == 1:
-                self.mol = Molecule(atlabs, atcrds, bonds, col_bond_as_atom,
-                                    rad_atom_as_bond, molcols, self.rootEntity)
-                self.mol.addMouse(self.camera)
-            else:
-                self.mols = []
-                for i in range(nmols):
-                    self.mols.append(Molecule(atlabs[i], atcrds[i], bonds[i],
-                                              col_bond_as_atom,
-                                              rad_atom_as_bond, molcols[i],
-                                              self.rootEntity))
-                    self.mols[-1].addMouse(self.camera)
-            self.camController = \
-                Qt3DExtras.QOrbitCameraController(self.rootEntity)
-            self.camController.setLinearSpeed(50)
-            self.camController.setLookSpeed(180)
-            self.camController.setCamera(self.camera())
-            self.obj_light = Qt3DCore.QEntity(self.camera())
-            self.camLight = Qt3DRender.QPointLight(self.obj_light)
-            self.cam_tvec = Qt3DCore.QTransform()
-            self.cam_tvec.setTranslation(QtGui.QVector3D(0, 50, 100))
-            self.obj_light.addComponent(self.camLight)
-            self.obj_light.addComponent(self.cam_tvec)
-            # self.camLight.setIntensity(100)
-            # for mol in mols:
-            self.setRootEntity(self.rootEntity)
-    
-        def mousePressEvent(self, mouseEvent):
-            if (mouseEvent.button() == QtCore.Qt.RightButton):
-                self.camera().setViewCenter(QtGui.QVector3D(0, 0, 0))
-            # print(mouseEvent.x())
-            # self.camera().setViewCenter(QtGui.QVector3D(mouseEvent.x(),
-            #                                             mouseEvent.y(), 0))
-            super(MolWin, self).mousePressEvent(mouseEvent)
 
 
 def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
@@ -302,10 +220,10 @@ def mode_molview(dfile: DataFile):
     atcrd = np.array(dobjs['atcrd'].data)*PHYSFACT.bohr2ang
     bonds = list_bonds(atlab, atcrd, 1.2)
 
-    app = QtGui.QGuiApplication(sys.argv)
-    view = MolWin(1, atlab, atcrd, bonds, True, False)
+    app = QtWidgets.QApplication(sys.argv)
+    view = MolWin(1, atlab, atcrd, bonds, col_bond_as_atom=True)
     view.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 def mode_vibronic(dfile: DataFile,
@@ -363,10 +281,11 @@ def mode_vibronic(dfile: DataFile,
             bonds.append(list_bonds(atlabs[-1], atcrds[-1], 1.2))
             molcols.append(MOLCOLS[i])
             i += 1
-        app = QtGui.QGuiApplication(sys.argv)
-        view = MolWin(2, atlabs, atcrds, bonds, True, True, molcols)
+        app = QtWidgets.QApplication(sys.argv)
+        view = MolWin(2, atlabs, atcrds, bonds, model='sticks',
+                      col_bond_as_atom=True, molcols=molcols, skip_guide=True)
         view.show()
-        sys.exit(app.exec_())
+        sys.exit(app.exec())
     else:
         if qty == 'jmat' and not dobjs['JMat'].data:
             # First check that it is not a reduced-dimensionality case
@@ -443,6 +362,8 @@ def mode_vibspec(dfile: DataFile,
                     fobj.write(fmt.format(x, y))
         else:
             save_img = True
+    else:
+        save_img = False
     figsize = (10, 8)
     fig, subp = plt.subplots(1, 1, tight_layout=True)
     fig.set_size_inches(figsize)

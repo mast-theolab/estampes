@@ -26,8 +26,12 @@ Other blocks are:
 
 ## Unreleased
 
+### Fixed
+- **ESP**: _ESParser_ now uses `MolWin` to build the molecular viewer and does not anymore use an alternative version.
+- **ESP**: _ESParser_ could crash when trying to display molecules because of an error in the definition of the representation model.
+
 ### Changed
-- **VIZ**: `MolUI` shortcuts are set at the application level, so they work if the visualizer is embedded in a window or at the root.
+- **VIZ**: `MolWin` shortcuts are set at the application level, so they work if the visualizer is embedded in a window or at the root.
 - **VIZ**: The way the Qt orbital camera moves, extracting the translation components made little sense.  The translation operations now only consider the zoom along the Z axis.
 
 
