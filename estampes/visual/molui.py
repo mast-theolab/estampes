@@ -133,10 +133,10 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         self.camController.setCamera(self.__cam)
         self.obj_light = Qt3DCore.QEntity(self.__cam)
         self.camLight = Qt3DRender.QPointLight(self.obj_light)
-        self.cam_tvec = Qt3DCore.QTransform()
-        self.cam_tvec.setTranslation(QtGui.QVector3D(0, 50, 100))
+        self.light_transfo = Qt3DCore.QTransform()
+        self.light_transfo.setTranslation(QtGui.QVector3D(0, 50, 100))
         self.obj_light.addComponent(self.camLight)
-        self.obj_light.addComponent(self.cam_tvec)
+        self.obj_light.addComponent(self.light_transfo)
         # self.camLight.setIntensity(100)
         # for mol in mols:
         self.setRootEntity(self.rootEntity)
