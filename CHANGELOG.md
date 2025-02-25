@@ -28,6 +28,7 @@ Other blocks are:
 
 ### Changed
 - **VIZ**: `MolUI` shortcuts are set at the application level, so they work if the visualizer is embedded in a window or at the root.
+- **VIZ**: The way the Qt orbital camera moves, extracting the translation components made little sense.  The translation operations now only consider the zoom along the Z axis.
 
 
 ## [0.6.1] - 2025-02-18

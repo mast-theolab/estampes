@@ -98,9 +98,10 @@ class MolWin(Qt3DExtras.Qt3DWindow):
             self.__fnames = None
 
         # Camera
+        self.__cam_origin = np.array([0, 0, 40])
         self.__cam = self.camera()
         self.__cam.lens().setPerspectiveProjection(45, 16 / 9, 0.1, 1000)
-        self.__cam.setPosition(QtGui.QVector3D(0, 0, 40))
+        self.__cam.setPosition(QtGui.QVector3D(*self.__cam_origin))
         self.__cam.setUpVector(QtGui.QVector3D(0, 1, 0))
         self.__cam.setViewCenter(QtGui.QVector3D(0, 0, 0))
 
@@ -404,9 +405,9 @@ class MolWin(Qt3DExtras.Qt3DWindow):
                 atcrd = rotate(rmat, atcrd)
                 if which % 3 == 0:
                     tvec = np.array([
-                        -transformation.translation().x(),
-                        -transformation.translation().y(),
-                        transformation.translation().z()])
+                        0, 0,
+                        transformation.translation().z()-self.__cam_origin[-1]
+                        ])
                     atcrd += tvec
             lines = [f'<pre>{len(atlab)}\n', f'{list_choices[which]}\n']
             for lab, crd in zip(atlab, atcrd):
