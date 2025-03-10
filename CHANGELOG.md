@@ -29,6 +29,7 @@ Other blocks are:
 ### Fixed
 - **ESP**: _ESParser_ now uses `MolWin` to build the molecular viewer and does not anymore use an alternative version.
 - **ESP**: _ESParser_ could crash when trying to display molecules because of an error in the definition of the representation model.
+- **API**: Support of intermediate states in vibronic Gaussian log files.
 
 ### Changed
 - **VIZ**: `MolWin` shortcuts are set at the application level, so they work if the visualizer is embedded in a window or at the root.

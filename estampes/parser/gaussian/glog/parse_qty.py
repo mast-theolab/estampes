@@ -371,6 +371,12 @@ def parse_fcdat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
         for line in dblock[iref]:
             data.append([float(item)*__ang2au for item in line.split()])
         dobj.set(data=data)
+    elif qlab.kind == 'GeomMS':
+        data = []
+        # By default, we choose the standard orientation if present
+        for line in dblock[iref]:
+            data.append([float(item)*__ang2au for item in line.split()])
+        dobj.set(data=data)
     elif qlab.kind == 'ExGeom':
         data = []
         # By default, we choose the standard orientation if present

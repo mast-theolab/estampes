@@ -392,12 +392,16 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                    r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$')
             num = (0, 0)
         elif qlab.kind == 'GeomMS':
-            lnk = 718
-            key = '              New orientation in intermediate state'
-            sub = 5
-            def end(s): return s.startswith(' ------')
-            fmt = r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$'
-            num = 0
+            # The second block is for my working
+            lnk = (718, 718)
+            key = ('              New orientation in intermediate state',
+                   '           New orientation in intermediate state')
+            sub = (5, 5)
+            end = (lambda s: s.startswith(' ------'),
+                   lambda s: s.startswith(' ------'))
+            fmt = (r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$',
+                   r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$')
+            num = (0, 0)
         elif qlab.kind == 'ExGeom':
             lnk = -718
             key = ' Extrapolated geometry'
