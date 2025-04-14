@@ -27,6 +27,9 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **OAR**: New option to show/hide the plots of J and K: `--show-plots`/`--no-plots`.
+- **OAR**: It is now possible to view the 3D representation of the structural overlap with the option `--show-mols`.
+- **OAR**: It is now possible to request that the structural overlapped be maximized before computing J and K.
 - **LIB**: New function `tools.mol.eckart_orient` to rotate a molecule to one of the Eckart orientations.
 
 ### Fixed
