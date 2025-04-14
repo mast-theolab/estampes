@@ -26,6 +26,9 @@ Other blocks are:
 
 ## Unreleased
 
+### Added
+- **LIB**: New function `tools.mol.eckart_orient` to rotate a molecule to one of the Eckart orientations.
+
 ### Fixed
 - **ESP**: _ESParser_ now uses `MolWin` to build the molecular viewer and does not anymore use an alternative version.
 - **ESP**: _ESParser_ could crash when trying to display molecules because of an error in the definition of the representation model.

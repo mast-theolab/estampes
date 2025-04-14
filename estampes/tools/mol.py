@@ -92,11 +92,15 @@ def list_bonds(at_lab: TypeAtLab,
 
 
 def eckart_orient(at_crd: TypeAtCrd,
-                  at_mass: TypeAtMas) -> np.ndarray:
+                  at_mass: TypeAtMas,
+                  get_rotation: bool = False,
+                  get_translation: bool = False,
+                  as_tuple: bool = False) -> tp.Dict[str, np.ndarray]:
     """Return Eckart orientation.
 
     Given a set of atomic coordinates and the masses, return a new
-    orientation suitable to meet the Eckart conditions.
+    orientation suitable to meet the Eckart conditions, and optionally
+    additional parameters.
 
     Parameters
     ----------
@@ -104,17 +108,43 @@ def eckart_orient(at_crd: TypeAtCrd,
         Atomic coordinates as XYZ vectors, as a 2D array.
     at_mass
         Atomic masses, as a 1D array.
+    get_rotation
+        Return the rotation matrix.
+    get_translation
+        Return the translation vector to origin as well.
 
     Returns
     -------
-    np.ndarray
-        (n_atoms,3) New oriented structure.
+    dict
+        Dictionary containing the following NumPy arrays, depending
+        on options:
+
+        'coords': (n_atoms,3) New oriented structure.
+        'rotmat': (3,3) rotation matrix (not by default).
+        'transl': (3) translation vector (not by default).
     """
-    c_new = at_crd - center_of_mass(at_crd, at_mass)
+    tvec = - center_of_mass(at_crd, at_mass)
+    c_new = at_crd  + tvec
     _, pmom_evec = inertia_mom(at_crd, at_mass)
+    # Check if chirality preserved:
+    x = pmom_evec[0,0] * (pmom_evec[1,1]*pmom_evec[2,2]
+                          - pmom_evec[2,1]*pmom_evec[1,2]) \
+        + pmom_evec[0,1] * (pmom_evec[1,2]*pmom_evec[2,0]
+                          - pmom_evec[1,0]*pmom_evec[2,2]) \
+        + pmom_evec[0,2] * (pmom_evec[1,0]*pmom_evec[2,1]
+                          - pmom_evec[1,1]*pmom_evec[2,0])
+    if x < 0.0:
+        pmom_evec[:,0] *= -1
+
     c_new = c_new @ pmom_evec
 
-    return c_new
+    res = {'coords': c_new}
+    if get_rotation:
+        res['rotmat'] = pmom_evec
+    if get_translation:
+        res['rotmat'] = tvec
+
+    return res
 
 
 def inertia_mom(at_crd: TypeAtCrd,

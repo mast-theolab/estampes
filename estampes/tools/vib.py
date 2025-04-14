@@ -14,7 +14,7 @@ import numpy.typing as npt
 from estampes.base import TypeAtCrd, TypeAtMas
 from estampes.base.errors import ArgumentError, QuantityError
 from estampes.data.physics import phys_fact
-from estampes.tools.mol import center_of_mass, inertia_mom
+from estampes.tools.mol import eckart_orient
 
 
 # ==============
@@ -227,11 +227,7 @@ def build_vibrations(fc_cart: npt.ArrayLike,
         # following the white paper from Gaussian
         # First, we build the reference rotations and translations
         # Compute the center of mass and translates the molecule
-        c_eck = at_crd - center_of_mass(at_crd, at_mass)
-        # Compute the principal moments of inertia.
-        _, p_evec = inertia_mom(c_eck, at_mass)
-        # Set the molecule in Eckart orientation
-        c_eck = c_eck @ p_evec
+        c_eck, p_evec = eckart_orient(at_crd, at_mass, True).values()
         # Second, build the rotation and translations
         new_evec = np.zeros((n_at3, n_at3))
         # Note: the matrix will be built putting eigenvectors as columns
