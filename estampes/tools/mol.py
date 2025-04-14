@@ -91,6 +91,32 @@ def list_bonds(at_lab: TypeAtLab,
     return bonds
 
 
+def eckart_orient(at_crd: TypeAtCrd,
+                  at_mass: TypeAtMas) -> np.ndarray:
+    """Return Eckart orientation.
+
+    Given a set of atomic coordinates and the masses, return a new
+    orientation suitable to meet the Eckart conditions.
+
+    Parameters
+    ----------
+    at_crd
+        Atomic coordinates as XYZ vectors, as a 2D array.
+    at_mass
+        Atomic masses, as a 1D array.
+
+    Returns
+    -------
+    np.ndarray
+        (n_atoms,3) New oriented structure.
+    """
+    c_new = at_crd - center_of_mass(at_crd, at_mass)
+    _, pmom_evec = inertia_mom(at_crd, at_mass)
+    c_new = c_new @ pmom_evec
+
+    return c_new
+
+
 def inertia_mom(at_crd: TypeAtCrd,
                 at_mass: TypeAtMas) -> tp.Tuple[np.ndarray, np.ndarray]:
     """Build inertia moments
