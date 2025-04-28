@@ -560,6 +560,7 @@ class QLabel():
         +=========+====================================================+
         |   X     | Derivatives with respect to Cartesian coordinates  |
         |   Q     | Derivatives with respect to normal coordinates     |
+        |  qred   | Derivatives wrt reduced normal coordinates         |
         |   I     | Derivatives with respect to internal coordinates   |
         |   QX    | Derivatives in ixed normal-Cartesian coordinates   |
         +---------+----------------------------------------------------+
@@ -598,7 +599,7 @@ class QLabel():
                 self.__dcrd = None
         else:
             self.__dcrd = dercoord.upper()
-            if self.__dcrd not in ['X', 'Q', 'QX', 'I']:
+            if self.__dcrd not in ['X', 'Q', 'QX', 'I', 'QRED']:
                 raise ValueError('Incorrect derivatives coordinates')
 
     def __set_state_trans(self, refstate: tp.Optional[TypeRSta]) -> None:
