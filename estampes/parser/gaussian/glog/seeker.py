@@ -12,7 +12,7 @@ from estampes.base import QLabel, \
 from estampes.parser.gaussian.glog.search_keys import keys_prp_3xx
 from estampes.parser.gaussian.glog.types import TypeQKwrd
 from estampes.parser.gaussian.glog.logkeys import RR_OMEGA_LINE, \
-    RR_OMEGA_UNIT, RR_OMEGA_VAL
+    RR_OMEGA_UNIT, RR_OMEGA_VAL, KEY_FP, KEY_UINT
 
 
 def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
@@ -423,6 +423,13 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                    + r'\|[0-9();]+>)\s*$',
                    r'^\s*(?P<val>\d+\s+\|\s+\d+)\s*$')
             num = (0, 0)
+        elif qlab.kind == 'NMOrder':
+            lnk = 717
+            key = '        Vibro-Rotational Analysis Based on Symmetry'
+            sub = 2
+            def end(s): return '=====' in s
+            fmt = r'^\s*(?P<val>\([HA]\)\s+\|(?:\s+\d+\|)+)\s*$'
+            num = 0
         elif qlab.kind == 'XMat':
             # The second group is to correct the numbering if passive modes
             #     present.
@@ -432,6 +439,30 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
             def end(s): return not s.strip()
             fmt = r'^\s+(?P<val>\d+(?:\s+\d+|' \
                 + r'\s+-?\d+\.\d+D?[-+]\d+){1,5})\s*$'
+            num = 0
+        elif qlab.kind == 'freq':
+            lnk = 717
+            key = ' :      QUADRATIC FORCE CONSTANTS IN NORMAL MODES'
+            sub = 6
+            def end(s): return '...........' in s
+            fmt = r'^\s+(?P<val>(?:' + KEY_UINT + r'){2}\s+' \
+                + KEY_FP + r')(?:\s+' + KEY_FP + r'){2}\s*$'
+            num = 0
+        elif qlab.kind == 'cubic':
+            lnk = 717
+            key = ' :        CUBIC FORCE CONSTANTS IN NORMAL MODES'
+            sub = 6
+            def end(s): return '...........' in s
+            fmt = r'^\s+(?P<val>(?:' + KEY_UINT + r'){3}\s+' \
+                + KEY_FP + r')(?:\s+' + KEY_FP + r'){2}\s*$'
+            num = 0
+        elif qlab.kind == 'quartic':
+            lnk = 717
+            key = ' :       QUARTIC FORCE CONSTANTS IN NORMAL MODES'
+            sub = 6
+            def end(s): return '=====' in s
+            fmt = r'^\s+(?P<val>(?:' + KEY_UINT + r'){4}\s+' \
+                + KEY_FP + r')(?:\s+' + KEY_FP + r'){2}\s*$'
             num = 0
         else:
             raise NotImplementedError()

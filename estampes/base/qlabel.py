@@ -288,23 +288,68 @@ class QLabel():
         =========  ========  ===========================================
          Option     Sub       Description
         =========  ========  ===========================================
-         Intens    IR         Infrared intensity
             101    Len        Length-gauge dipole strength
-
                    Vel        Velocity-gauge dipole strength
-         DipStr    Len        Length-gauge dipole strength
+            30x    static     static definition of the property
+                   dynamic    frequency-dependent form of the property
 
+           130x    static     static definition of the vibronic property
+                   dynamic    frequency-dependent form of the property
+
+         AnySpec   Spec       Spectral data.
+                   SpcPar     Parameters/Information on the spectrum.
+
+         AtCrd     last       (default) Last geometry in data file.
+                   all        All available geometries in data file.
+                   first      Consider nly the first geometry in file.
+
+         DipStr    Len        (default) Length-gauge dipole strength
                    Vel        Velocity-gauge dipole strength
+
+         FCDat     JMat       (default) Duschinsky matrix J
+                   AMat       Sharp-Rosenstock A matrix
+                   Assign     Band assignment information
+                   BVec       Sharp-Rosenstock B vector
+                   CMat       Sharp-Rosenstock C matrix
+                   Conv       Spectral progression information
+                   DVec       Sharp-Rosenstock D vector
+                   E(0-0)     0-0 energy
+                   EMat       Sharp-Rosenstock E matrix
+                   ExcState   Identifier of the excited state
+                   ExGeom     Extrapolated geometry (vertical models)
+                   GeomFS     Final-state geometry
+                   GeomIS     Initial-state geometry
+                   GeomMS     Intermediate-state geometry
+                   JMatF      Full Duschinsky matrix J
+                   KVec       Duschinsky shift vector K
+                   RedDim     Reduced-dimensionality information
+                   SimInf     Information on the simulation
+                   SpcPar     Information on spectrum
+                   Spec       Vibronic spectrum
+
          HessDat   freq       Frequency of each vibration
                    redmas     Reduced mass of each vibration
 
-         vtrans     RR        Transition information for resonance Raman
+         Intens    IR         Infrared intensity
 
-         vlevel     RR        Vibrational energies for resonance Raman
+         ramact    static     Static Raman (far-from-resonance)
+                   dynamic    Dynamic (frequency-dependent, FFR) Raman
+                   RR         Resonance Raman activity
 
-         ramact     static    Static Raman (far-from-resonance)
-                    dynamic   Dynamic (frequency-dependent, FFR) Raman
-                    RR        Resonance Raman activity
+         roaact    dynamic    Dynamic (frequency-dependent, FFR) ROA
+                   RR         Resonance Raman optical activity
+
+         vlevel    RR         Vibrational energies for resonance Raman
+
+         VPTDat    XMat       VPT X matrix
+                   CICoef     Coeffs. of the variational step in GVPT2
+                   cubic      Cubic force constants (in cm-1)
+                   freq       Harmonic frequencies used in VPT calculations
+                   GMat       Wilson G matrix
+                   NMOrder    Order of normal modes in VPT block
+                   quartic    Quartic force constants (in cm-1)
+
+         vtrans    RR         Transition information for resonance Raman
         =========  ========  ===========================================
 
         Parameters
@@ -444,9 +489,17 @@ class QLabel():
                     self.__qdesc = 'GMat'
                 elif key in ('CICOEF', 'VARCOEF'):
                     self.__qdesc = 'CICoef'
+                elif key in ('NMORD', 'NMORDER'):
+                    self.__qdesc = 'NMOrder'
+                elif key in ('FREQ', 'QUAD', 'QUADRATIC', 'FIJ'):
+                    self.__qdesc = 'freq'
+                elif key in ('CUBIC', 'FIJK'):
+                    self.__qdesc = 'cubic'
+                elif key in ('QUARTIC', 'FIJKL'):
+                    self.__qdesc = 'quartic'
                 else:
                     raise ArgumentError(
-                        f'Incorrect sup-opt for {self.__qtype}')
+                        f'Incorrect/Unrecognized sup-opt for {self.__qtype}')
         elif self.__qtype in ('vtrans', 'vlevel'):
             if descriptor is not None:
                 key = descriptor.upper()

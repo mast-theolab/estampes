@@ -33,6 +33,7 @@ Other blocks are:
 - **LIB**(`tools.mol`): New function `eckart_orient` to rotate a molecule to one of the Eckart orientations.
 - **LIB**(`tools.anharm`): New module to store functions related to the anharmonic treatment.
 - **LIB**(`tools.anharm`): New function `variational_notation` to check if the vibrational states in a data file related to anharmonic calculations are expressed in an harmonic basis or as pure variational states, which can limit some analyses.
+- **API**: Added extraction of normal-modes ordering (`VPTDat:NMOrder`), quadratic (`VPTDat:Freq`), cubic (`VPTDat:cubic`) and quartic (`VPTDat:quartic`) force constants from Gaussian log files containing VPT2 calculations.
 
 ### Fixed
 - **ESP**: _ESParser_ now uses `MolWin` to build the molecular viewer and does not anymore use an alternative version.

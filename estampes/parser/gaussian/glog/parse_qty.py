@@ -488,6 +488,57 @@ def parse_vptdat(qlab: QLabel, dblock: tp.List[str]) -> QData:
                     data[ioff:ioff+ncols] = [float(item.replace('D', 'e'))
                                              for item in cols[1:]]
         dobj.set(data=data)
+    elif qlab.kind == 'NMOrder':
+        data = {'H->A': {}, 'A->H': {}}
+        for line_H, line_A in zip(dblock[-1][::2], dblock[-1][1::2]):
+            cols_H = [int(item) for item in line_H.split('|')[1:-1]]
+            cols_A = [int(item) for item in line_A.split('|')[1:-1]]
+            for mode_H, mode_A in zip(cols_H, cols_A):
+                data['H->A'][mode_H] = mode_A
+                data['A->H'][mode_A] = mode_H
+        dobj.set(data=data)
+    elif qlab.kind == 'freq':
+        dobj.set(unit='cm^{-1}')
+        data = {}
+        # store in linear form
+        for line in dblock[-1]:
+            cols = line.split()
+            modes = [int(i) for i in cols[:2]]
+            value = float(cols[-1])
+            data[modes[0]] = value
+        dobj.set(data=data)
+    elif qlab.kind == 'cubic':
+        dobj.set(unit='cm^{-1}')
+        data = {}
+        # store in linear form
+        for line in dblock[-1]:
+            cols = line.split()
+            modes = [int(i) for i in cols[:3]]
+            value = float(cols[-1])
+            if modes[0] not in data:
+                data[modes[0]] = {modes[1]: {modes[2]: value}}
+            elif modes[1] not in data[modes[0]]:
+                data[modes[0]][modes[1]] = {modes[2]: value}
+            else:
+                data[modes[0]][modes[1]][modes[2]] = value
+        dobj.set(data=data)
+    elif qlab.kind == 'quartic':
+        dobj.set(unit='cm^{-1}')
+        data = {}
+        # store in linear form
+        for line in dblock[-1]:
+            cols = line.split()
+            modes = [int(i) for i in cols[:4]]
+            value = float(cols[-1])
+            if modes[0] not in data:
+                data[modes[0]] = {modes[1]: {modes[2]: {modes[3]: value}}}
+            elif modes[1] not in data[modes[0]]:
+                data[modes[0]][modes[1]] = {modes[2]: {modes[3]: value}}
+            elif modes[2] not in data[modes[0]][modes[1]]:
+                data[modes[0]][modes[1]][modes[2]] = {modes[3]: value}
+            else:
+                data[modes[0]][modes[1]][modes[2]][modes[3]] = value
+        dobj.set(data=data)
     else:
         raise NotImplementedError()
 
