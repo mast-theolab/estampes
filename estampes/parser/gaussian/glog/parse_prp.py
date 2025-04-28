@@ -47,58 +47,98 @@ def parse_en_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
             raise NotImplementedError()
 
         if qlab.derord == 0:
-            if qlab.rstate == 'c':
-                def conv(s):
-                    return float(s.split('=')[1].replace('D', 'e'))
+            def conv(s):
+                return float(s.split('=')[1].replace('D', 'e'))
 
-                fmt = re.compile(r'E\(?(.*?)\)?\s+')
-                N = 2 if dblock[-1] else 1
-                nblocks = len(dblock[iref])
-                data = {}
-                for i in range(iref, iref+N):
-                    if nblocks > 1:
-                        txt = dblock[i][0][0]
-                        val = [conv(item[0]) for item in dblock[i]]
-                    else:
-                        txt = dblock[i][0]
-                        val = conv(txt)
-                    res = fmt.search(txt)
-                    try:
-                        tag = res.group(1)
-                    except AttributeError:
-                        msg = 'Unsupported energy format'
-                        raise ParseKeyError(msg) from None
-                    data[tag] = val
-                dobj.set(data=data[tag])
-                dobj.set(unit='Eh')
-                for key, val in data.items():
-                    dobj.add_field(key, value=val)
+            fmt = re.compile(r'E\(?(.*?)\)?\s+')
+            N = 2 if dblock[-1] else 1
+            nblocks = len(dblock[iref])
+            data = {}
+            for i in range(iref, iref+N):
+                if nblocks > 1:
+                    txt = dblock[i][0][0]
+                    val = [conv(item[0]) for item in dblock[i]]
+                else:
+                    txt = dblock[i][0]
+                    val = conv(txt)
+                res = fmt.search(txt)
+                try:
+                    tag = res.group(1)
+                except AttributeError:
+                    msg = 'Unsupported energy format'
+                    raise ParseKeyError(msg) from None
+                data[tag] = val
+            dobj.set(data=data[tag])
+            dobj.set(unit='Eh')
+            for key, val in data.items():
+                dobj.add_field(key, value=val)
         elif qlab.derord == 2:
-            if qlab.rstate == 'c':
-                maxcols = 5
-                nbloc = 0
-                dobj.set(unit='Eh.a0^{-2}')
-                dobj.set(shape='LT')
-                data = []
-                # store in linear form
-                for line in dblock[iref]:
-                    if '.' not in line:
-                        nbloc += 1
+            maxcols = 5
+            nbloc = 0
+            dobj.set(unit='Eh.a0^{-2}')
+            dobj.set(shape='LT')
+            data = []
+            # store in linear form
+            for line in dblock[iref]:
+                if '.' not in line:
+                    nbloc += 1
+                else:
+                    cols = line.split()
+                    i = int(cols[0])
+                    if nbloc == 1:
+                        data.extend([float(item.replace('D', 'e'))
+                                        for item in cols[1:]])
+                        if i > 5:
+                            data.extend(0.0 for _ in range(maxcols, i))
                     else:
-                        cols = line.split()
-                        i = int(cols[0])
-                        if nbloc == 1:
-                            data.extend([float(item.replace('D', 'e'))
-                                         for item in cols[1:]])
-                            if i > 5:
-                                data.extend(0.0 for _ in range(maxcols, i))
-                        else:
-                            ioff = i*(i-1)//2 + (nbloc-1)*maxcols
-                            ncols = len(cols) - 1
-                            data[ioff:ioff+ncols] \
-                                = [float(item.replace('D', 'e'))
-                                   for item in cols[1:]]
-                dobj.set(data=data)
+                        ioff = i*(i-1)//2 + (nbloc-1)*maxcols
+                        ncols = len(cols) - 1
+                        data[ioff:ioff+ncols] \
+                            = [float(item.replace('D', 'e'))
+                                for item in cols[1:]]
+            dobj.set(data=data)
+        elif qlab.derord == 3:
+            if qlab.dercrd == 'Q':
+                dobj.set(unit='Eh.u^{-3/2}.a0^{-3}')
+            elif qlab.dercrd == 'QRED':
+                dobj.set(unit='cm^{-1}')
+            else:
+                dobj.set(unit='N/A')
+            data = {}
+            # store in linear form
+            for line in dblock[iref]:
+                cols = line.split()
+                modes = [int(i) for i in cols[:3]]
+                value = float(cols[-1])
+                if modes[0] not in data:
+                    data[modes[0]] = {modes[1]: {modes[2]: value}}
+                elif modes[1] not in data[modes[0]]:
+                    data[modes[0]][modes[1]] = {modes[2]: value}
+                else:
+                    data[modes[0]][modes[1]][modes[2]] = value
+            dobj.set(data=data)
+        elif qlab.derord == 4:
+            if qlab.dercrd == 'Q':
+                dobj.set(unit='Eh.u^{-3/2}.a0^{-3}')
+            elif qlab.dercrd == 'QRED':
+                dobj.set(unit='cm^{-1}')
+            else:
+                dobj.set(unit='N/A')
+            data = {}
+            # store in linear form
+            for line in dblock[iref]:
+                cols = line.split()
+                modes = [int(i) for i in cols[:4]]
+                value = float(cols[-1])
+                if modes[0] not in data:
+                    data[modes[0]] = {modes[1]: {modes[2]: {modes[3]: value}}}
+                elif modes[1] not in data[modes[0]]:
+                    data[modes[0]][modes[1]] = {modes[2]: {modes[3]: value}}
+                elif modes[2] not in data[modes[0]][modes[1]]:
+                    data[modes[0]][modes[1]][modes[2]] = {modes[3]: value}
+                else:
+                    data[modes[0]][modes[1]][modes[2]][modes[3]] = value
+            dobj.set(data=data)
         else:
             raise NotImplementedError('Higher-order energy deriv. NYI.')
 

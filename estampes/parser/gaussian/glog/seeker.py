@@ -720,6 +720,53 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                         num1.append(0)
                     elif isinstance(qlab.rstate, int):
                         raise NotImplementedError()
+                elif qlab.derord == 3:
+                    if qlab.rstate == 'c':
+                        lnk1.append(-717)
+                        key1.append(
+                            ' :        CUBIC FORCE CONSTANTS IN NORMAL MODES')
+                        sub1.append(6)
+                        end1.append(lambda s: '...........' in s)
+                        if qlab.dercrd == 'QRED':
+                            fmt1.append(
+                                r'^\s+(?P<val>(?:' + KEY_UINT + r'){3}\s+'
+                                + KEY_FP + r')(?:\s+' + KEY_FP + r'){2}\s*$')
+                        elif qlab.dercrd == 'Q':
+                            fmt1.append(
+                                r'^\s+(?P<val>(?:' + KEY_UINT + r'){3}(?:\s+'
+                                + KEY_FP + r'){3})\s*$')
+                        else:
+                            msg = 'Cubic force constants only supported wrt ' \
+                                + 'normal coordinates'
+                            raise NotImplementedError(msg)
+                        num1.append(0)
+                    elif isinstance(qlab.rstate, int):
+                        raise NotImplementedError()
+                elif qlab.derord == 4:
+                    if qlab.rstate == 'c':
+                        lnk1.append(-717)
+                        key1.append(
+                            ' :       QUARTIC FORCE CONSTANTS IN NORMAL MODES')
+                        sub1.append(6)
+                        end1.append(lambda s: '=====' in s)
+                        if qlab.dercrd == 'QRED':
+                            fmt1.append(
+                                r'^\s+(?P<val>(?:' + KEY_UINT + r'){4}\s+'
+                                + KEY_FP + r')(?:\s+' + KEY_FP + r'){2}\s*$')
+                        elif qlab.dercrd == 'Q':
+                            fmt1.append(
+                                r'^\s+(?P<val>(?:' + KEY_UINT + r'){4}(?:\s+'
+                                + KEY_FP + r'){3})\s*$')
+                        else:
+                            msg = 'Quartic force constants only supported wrt ' \
+                                + 'normal coordinates'
+                            raise NotImplementedError(msg)
+                        num1.append(0)
+                    elif isinstance(qlab.rstate, int):
+                        raise NotImplementedError()
+                else:
+                    raise NotImplementedError(
+                        'Unsupported derivative order of energy')
             elif qlab.label == 101:
                 if qlab.derord == 0:
                     if qlab.rstate == 'c':
