@@ -30,7 +30,9 @@ Other blocks are:
 - **OAR**: New option to show/hide the plots of J and K: `--show-plots`/`--no-plots`.
 - **OAR**: It is now possible to view the 3D representation of the structural overlap with the option `--show-mols`.
 - **OAR**: It is now possible to request that the structural overlapped be maximized before computing J and K.
-- **LIB**: New function `tools.mol.eckart_orient` to rotate a molecule to one of the Eckart orientations.
+- **LIB**(`tools.mol`): New function `eckart_orient` to rotate a molecule to one of the Eckart orientations.
+- **LIB**(`tools.anharm`): New module to store functions related to the anharmonic treatment.
+- **LIB**(`tools.anharm`): New function `variational_notation` to check if the vibrational states in a data file related to anharmonic calculations are expressed in an harmonic basis or as pure variational states, which can limit some analyses.
 
 ### Fixed
 - **ESP**: _ESParser_ now uses `MolWin` to build the molecular viewer and does not anymore use an alternative version.
@@ -38,8 +40,8 @@ Other blocks are:
 - **API**: Support of intermediate states in vibronic Gaussian log files.
 
 ### Changed
-- **VIZ**: `MolWin` shortcuts are set at the application level, so they work if the visualizer is embedded in a window or at the root.
-- **VIZ**: The way the Qt orbital camera moves, extracting the translation components made little sense.  The translation operations now only consider the zoom along the Z axis.
+- **VIZ**(`visual.molui`): `MolWin` shortcuts are set at the application level, so they work if the visualizer is embedded in a window or at the root.
+- **VIZ**(`visual.molui`): The way the Qt orbital camera moves, extracting the translation components made little sense.  The translation operations now only consider the zoom along the Z axis.
 
 
 ## [0.6.1] - 2025-02-18
