@@ -96,12 +96,12 @@ def build_dusch_K(Lmat: np.ndarray,
     Lmat
         Transfo. matrix from mass-weighted cart. to normal coord. (N,3 Na).
     at_mass
-        Atomic masses, as a 1D array.
+        Atomic masses in unified atomic mass, as a 1D array.
     at_deltaR
         Difference between equilibrium geometries (:math:`\Delta R`).
     """
     if at_deltaR is not None:
-        mass = np.sqrt(np.repeat(at_mass, 3))
+        mass = np.sqrt(np.repeat(at_mass/phys_fact('au2amu'), 3))
         Kvec = np.einsum('ij,j,j->i', Lmat, mass, np.reshape(at_deltaR, (-1,)))
     else:
         raise NotImplementedError('Vertical K not yet implemented.')

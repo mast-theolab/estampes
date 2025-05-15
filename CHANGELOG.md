@@ -45,6 +45,7 @@ Other blocks are:
 ### Changed
 - **VIZ**(`visual.molui`): `MolWin` shortcuts are set at the application level, so they work if the visualizer is embedded in a window or at the root.
 - **VIZ**(`visual.molui`): The way the Qt orbital camera moves, extracting the translation components made little sense.  The translation operations now only consider the zoom along the Z axis.
+- **LIB**(`toold.vib`): `build_dusch_K` now expects the atomic masses given in the unified atomic mass unit instead of atomic units, for consistency with the way masses are extracted.
 
 
 ## [0.6.1] - 2025-02-18

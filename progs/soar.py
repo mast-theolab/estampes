@@ -92,8 +92,10 @@ def main():
     dopts = parse_args()
 
     # Set defaults
-    if dopts.show_plots is None: dopts.show_plots = True
-    if dopts.show_mols is None: dopts.show_mols = False
+    if dopts.show_plots is None:
+        dopts.show_plots = True
+    if dopts.show_mols is None:
+        dopts.show_mols = False
     show_ui = dopts.show_plots or dopts.show_mols
 
     dfile_ref = DataFile(dopts.reffile)
@@ -161,18 +163,20 @@ def main():
             mols_atcrd = [c_ref*PHYSFACT.bohr2ang, c_new*PHYSFACT.bohr2ang]
             mols_atnum = [data_ref['num'].data, data_new['num'].data]
             mols_bonds = [list_bonds(mols_atnum[0], mols_atcrd[0], 1.2),
-                        list_bonds(mols_atnum[1], mols_atcrd[1], 1.2)]
+                          list_bonds(mols_atnum[1], mols_atcrd[1], 1.2)]
             mols_cols = MOLCOLS[:2]
             molwin = MolWin(2, mols_atnum, mols_atcrd, mols_bonds,
-                            'sticks', 'plastic', True, mols_cols, skip_guide=True)
+                            'sticks', 'plastic', True, mols_cols,
+                            skip_guide=True)
             view3D = QtWidgets.QWidget.createWindowContainer(molwin)
             main_layout.addWidget(view3D, 50)
-            # Force some minimum size of the window if only 3D view, otherwise minimized
+            # Force some minimum size of the window if only 3D view, otherwise
+            # it may end up being minimized.
             if not dopts.show_plots:
                 qwin.setGeometry(300, 200, 800, 600)
 
         qwin.show()
-    
+
         sys.exit(qapp.exec())
 
 
