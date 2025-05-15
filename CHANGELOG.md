@@ -40,6 +40,7 @@ Other blocks are:
 ### Fixed
 - **ESP**: _ESParser_ now uses `MolWin` to build the molecular viewer and does not anymore use an alternative version.
 - **ESP**: _ESParser_ could crash when trying to display molecules because of an error in the definition of the representation model.
+- **LIB**(`tools.math`): Fixed definition of weight in `superpose` when no atomic masses are provided.  The default could lead to an error with a sum applied on a `None` quantity.
 - **API**: Support of intermediate states in vibronic Gaussian log files.
 
 ### Changed

@@ -393,7 +393,7 @@ def superpose(c_ref: TypeAtCrd,
         com_ref = np.einsum('ij,i->j', c_ref, at_mass)
         com_new = np.einsum('ij,i->j', c_new, at_mass)
     else:
-        totwt = np.sum(at_mass)
+        totwt = 1.0
         com_ref = np.einsum('ij->j', c_ref)
         com_new = np.einsum('ij->j', c_new)
     c_new_ = c_new - com_new/totwt
