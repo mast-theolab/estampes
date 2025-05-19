@@ -581,21 +581,21 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                 if qlab.derord == 0:
                     if qlab.label == 101:
                         if qlab.kind == 'len':
-                            key_prp = 'electric'
+                            key_prp = 'electric dipole'
                         elif qlab.kind == 'vel':
-                            key_prp = 'velocity'
+                            key_prp = 'velocity dipole'
                         else:
                             raise NotImplementedError(
                                 'Unsupported dipolar formalism')
                         n_xyz = 3
                         n_extra = 2
                     elif qlab.label == 102:
-                        key_prp = 'magnetic'
+                        key_prp = 'magnetic dipole'
                         n_xyz = 3
                         n_extra = 0
                     elif qlab.label == 107:
                         key_prp = 'velocity quadrupole'
-                        n_xyz = 3
+                        n_xyz = 6
                         n_extra = 0
                     else:
                         raise NotImplementedError(
@@ -618,7 +618,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                     num = -1
                     if Si == 0:
                         key = ' Ground to excited state transition ' \
-                            + f'{key_prp} dipole moments (Au):'
+                            + f'{key_prp} moments (Au):'
                         if isinstance(Sf, int):
                             sub = Sf + 1
                             def end(_s): return True
@@ -630,7 +630,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                         fmt = rf'^\s+\d+(?P<val>{key_xyz}'
                     elif isinstance(Si, int):
                         key = ' Excited to excited state transition ' \
-                            + f'{key_prp} dipole moments (Au):'
+                            + f'{key_prp} moments (Au):'
                         sub = 1
                         def end(s): return s[2] != ' '
                         if isinstance(Sf, int):
@@ -642,7 +642,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                         fmt = key_state + key_xyz
                     elif Si == 'a':
                         key = ' Excited to excited state transition ' \
-                            + f'{key_prp} dipole moments (Au):'
+                            + f'{key_prp} moments (Au):'
                         sub = 1
                         def end(s): return s[2] != ' '
                         if isinstance(Sf, int):

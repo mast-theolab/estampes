@@ -38,6 +38,7 @@ Other blocks are:
 - **API**: Added support of third and fourth derivatives of energies in Gaussian log files.  Beware, the block currently supported is the VPT2 block, which may contain a sub-block of "hybrid" data.
 - **API**: Added extraction of electronic transition moments of electric dipole, magnetic dipole and electric quadrupole from Gaussian log file.
 - **API**: Added support of `'a->a'` transitions for excited-excited transition moments.
+- **API**(`parser.gaussian`): New function `g_elquad_LT_to_2D` to generate the proper electric quadrupolar tensor from Gaussian storage order.  The function is a public version of the function previously private to the `gaussian.fchk` submodule.
 
 ### Fixed
 - **ESP**: _ESParser_ now uses `MolWin` to build the molecular viewer and does not anymore use an alternative version.

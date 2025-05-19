@@ -25,6 +25,7 @@ from estampes.base import ArgumentError, ParseDataError, ParseKeyError, \
 from estampes.data import property as edpr
 from estampes.data.physics import phys_fact
 from estampes.parser.functions import parse_qlabels, reshape_dblock
+from estampes.parser.gaussian import g_elquad_LT_to_2D
 
 # ================
 # Module Constants
@@ -49,27 +50,6 @@ DFMT_FCHK = {  # Data format for each type
     'R': '{:16.8E}'
 }
 
-
-def __elquad_LT_to_2D(vec: tp.Sequence[float]) -> tp.List[tp.List[float]]:
-    """Convert electric quadrupole from LT form to 2D tensor.
-
-    Gaussian has a particular way to store internally the electric
-    quadrupole, with the following sequence:
-    XX, YY, ZZ, XY, XZ, YZ.
-    The function builds a list of lists with the correct order.
-
-    Parameters
-    ----------
-    vec
-        Vector of data corresponding to the sequence stored in memory.
-        Note that the list can have a longer size, only the first
-        elements are used.
-    """
-    return [
-        [vec[0], vec[3], vec[4]],
-        [vec[3], vec[1], vec[5]],
-        [vec[4], vec[5], vec[2]]
-    ]
 
 # ==============
 # Module Classes
@@ -839,7 +819,7 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
         if qlab.derord == 0:
             if final == 'a':
                 if qlab.label == 107:
-                    data = [__elquad_LT_to_2D(
+                    data = [g_elquad_LT_to_2D(
                             dblocks[kword][i*ndata*nlr+offset:
                                            i*ndata*nlr+offset+lqty])
                             for i in range(nstates)]
@@ -853,7 +833,7 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
                     raise IndexError('Missing electronic state')
                 i0 = (fstate-1)*ndata + offset
                 if qlab.label == 107:
-                    data = __elquad_LT_to_2D(dblocks[kword][i0:i0+lqty])
+                    data = g_elquad_LT_to_2D(dblocks[kword][i0:i0+lqty])
                 else:
                     data = dblocks[kword][i0:i0+lqty]
         elif qlab.derord == 1:
@@ -870,7 +850,7 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
             for i in range(3*natoms):
                 if qlab.label == 107:
                     data.append(
-                        __elquad_LT_to_2D(dblocks[kword][offset0+i*ndata:
+                        g_elquad_LT_to_2D(dblocks[kword][offset0+i*ndata:
                                                          offset0+i*ndata+lqty])
                     )
                 else:
@@ -997,9 +977,9 @@ def _parse_freqdep_data(qlab: QLabel, dblocks: TypeDFChk,
                 for ider in range(nder):
                     ioff = ioffF + ider*18
                     fdat.append([
-                        __elquad_LT_to_2D(d[ioff:ioff+6]),
-                        __elquad_LT_to_2D(d[ioff+6:ioff+12]),
-                        __elquad_LT_to_2D(d[ioff+12:ioff+18])
+                        g_elquad_LT_to_2D(d[ioff:ioff+6]),
+                        g_elquad_LT_to_2D(d[ioff+6:ioff+12]),
+                        g_elquad_LT_to_2D(d[ioff+12:ioff+18])
                     ])
                 if nder == 1:
                     data[incfrq] = fdat[0]
