@@ -656,7 +656,7 @@ class QLabel():
                     except ValueError as err:
                         raise ValueError('Incorrect final state definition') \
                             from err
-                if val2 == val1:
+                if val2 == val1 and val1 != 'a':
                     raise ValueError('Equivalent states in transition')
                 self.__rsta = (val1, val2)
         else:

@@ -150,7 +150,63 @@ def parse_1xx_dat(qlab: QLabel, dblock: tp.List[str]) -> QData:
     dobj = QData(qlab)
     if qlab.label == 101:
         if isinstance(qlab.rstate, tuple):
-            raise NotImplementedError('Electronic transition dip. moment NYI.')
+            Si, Sf = qlab.rstate
+            if qlab.derord == 0:
+                dobj.set(unit='e.a0')
+                if Si == 0:
+                    if isinstance(Sf, int):
+                        val = [float(item) for item in dblock[-1][0].split()]
+                    elif Sf == 'a':
+                        val = {}
+                        for i, line in enumerate(dblock[-1]):
+                            val[i+1] = [float(item) for item in line.split()]
+                    else:
+                        raise NotImplementedError(
+                            'Unsupported final state spec.')
+                elif isinstance(Si, int):
+                    if isinstance(Sf, int):
+                        val = [float(item)
+                               for item in dblock[-1][0].split()[2:]]
+                    elif Sf == 'a':
+                        val = {}
+                        for line in dblock[-1]:
+                            cols = line.split()
+                            j, i = int(cols[0]), int(cols[1])
+                            x, y, z = float(cols[2]), float(cols[3]), \
+                                float(cols[4])
+                            val[j] = [x, y, z]
+                    else:
+                        raise NotImplementedError(
+                            'Unsupported final state spec.')
+                elif Si == 'a':
+                    if isinstance(Sf, int):
+                        val = {}
+                        for line in dblock[-1]:
+                            cols = line.split()
+                            j, i = int(cols[0]), int(cols[1])
+                            x, y, z = float(cols[2]), float(cols[3]), \
+                                float(cols[4])
+                            val[i] = [x, y, z]
+                    elif Sf == 'a':
+                        val = {}
+                        for line in dblock[-1]:
+                            cols = line.split()
+                            j, i = int(cols[0]), int(cols[1])
+                            x, y, z = float(cols[2]), float(cols[3]), \
+                                float(cols[4])
+                            if i not in val:
+                                val[i] = {}
+                            val[i][j] = [x, y, z]
+                    else:
+                        raise NotImplementedError(
+                            'Unsupported final state spec.')
+                else:
+                    raise NotImplementedError(
+                        'Unsupported initial state spec.')
+                dobj.set(data=val)
+            else:
+                raise NotImplementedError(
+                    'Electronic transition dipole moments derivatives NYI')
         else:
             if qlab.rstate != 'c':
                 # we should check if the state is the right one.

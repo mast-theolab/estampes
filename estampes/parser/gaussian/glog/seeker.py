@@ -577,6 +577,86 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                         raise NotImplementedError()
                 else:
                     raise NotImplementedError()
+            elif qlab.label in (101, 102, 107):
+                if qlab.derord == 0:
+                    if qlab.label == 101:
+                        if qlab.kind == 'len':
+                            key_prp = 'electric'
+                        elif qlab.kind == 'vel':
+                            key_prp = 'velocity'
+                        else:
+                            raise NotImplementedError(
+                                'Unsupported dipolar formalism')
+                        n_xyz = 3
+                        n_extra = 2
+                    elif qlab.label == 102:
+                        key_prp = 'magnetic'
+                        n_xyz = 3
+                        n_extra = 0
+                    elif qlab.label == 107:
+                        key_prp = 'velocity quadrupole'
+                        n_xyz = 3
+                        n_extra = 0
+                    else:
+                        raise NotImplementedError(
+                            'Unsupported property for electronic transition '
+                            'moments')
+                    # To avoid duplicating the code, we construct a general
+                    # system where we build sequentially the string to
+                    # search.  The property-dependent part needs to account
+                    # for different cases:
+                    # for electric dipole: x, y, z, dip. str., osc. str.
+                    # for magnetic dipole: x, y, z
+                    # for quadrupole: xx, yy, zz, xy, xz, yz
+                    # Note: final ) in first block to close the (?:P<val>
+                    key_xyz = rf'(?:{KEY_FP}){{{n_xyz}}})'
+                    if n_extra > 0:
+                        key_xyz += rf'(?:{KEY_FP}){{{n_extra}}}\s*$'
+                    else:
+                        key_xyz += r'\s*$'
+                    lnk = 0
+                    num = -1
+                    if Si == 0:
+                        key = ' Ground to excited state transition ' \
+                            + f'{key_prp} dipole moments (Au):'
+                        if isinstance(Sf, int):
+                            sub = Sf + 1
+                            def end(_s): return True
+                        elif Sf == 'a':
+                            sub = 1
+                            def end(s): return s[2] != ' '
+                        else:
+                            raise ValueError('Unsupported final state')
+                        fmt = rf'^\s+\d+(?P<val>{key_xyz}'
+                    elif isinstance(Si, int):
+                        key = ' Excited to excited state transition ' \
+                            + f'{key_prp} dipole moments (Au):'
+                        sub = 1
+                        def end(s): return s[2] != ' '
+                        if isinstance(Sf, int):
+                            key_state = rf'^(?P<val>\s+{Sf}\s+{Si}'
+                        elif Sf == 'a':
+                            key_state = rf'^(?P<val>\s+\d+\s+{Si}'
+                        else:
+                            raise ValueError('Unsupported final state')
+                        fmt = key_state + key_xyz
+                    elif Si == 'a':
+                        key = ' Excited to excited state transition ' \
+                            + f'{key_prp} dipole moments (Au):'
+                        sub = 1
+                        def end(s): return s[2] != ' '
+                        if isinstance(Sf, int):
+                            key_state = rf'^(?P<val>\s+{Sf}\s+\d+'
+                        elif Sf == 'a':
+                            key_state = r'^(?P<val>\s+\d\s+\d+'
+                        else:
+                            raise ValueError('Unsupported final state')
+                        fmt = key_state + key_xyz
+                    else:
+                        raise NotImplementedError('Unsupported initial state')
+                else:
+                    raise NotImplementedError(
+                        'Electronic transition moments derivatives NYI')
             elif qlab.label == 'dipstr':
                 if Si == 0:
                     lnk = 0
