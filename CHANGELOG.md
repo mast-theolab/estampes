@@ -30,6 +30,7 @@ Other blocks are:
 - **OAR**: New option to show/hide the plots of J and K: `--show-plots`/`--no-plots`.
 - **OAR**: It is now possible to view the 3D representation of the structural overlap with the option `--show-mols`.
 - **OAR**: It is now possible to request that the structural overlapped be maximized before computing J and K.
+- **CRS**: The program now supports configuration files in addition to commandline arguments.
 - **LIB**(`tools.mol`): New function `eckart_orient` to rotate a molecule to one of the Eckart orientations.
 - **LIB**(`tools.anharm`): New module to store functions related to the anharmonic treatment.
 - **LIB**(`tools.anharm`): New function `variational_notation` to check if the vibrational states in a data file related to anharmonic calculations are expressed in an harmonic basis or as pure variational states, which can limit some analyses.
@@ -43,6 +44,7 @@ Other blocks are:
 ### Fixed
 - **ESP**: _ESParser_ now uses `MolWin` to build the molecular viewer and does not anymore use an alternative version.
 - **ESP**: _ESParser_ could crash when trying to display molecules because of an error in the definition of the representation model.
+- **CRS**: Updated code to latest version of the library.
 - **LIB**(`tools.math`): Fixed definition of weight in `superpose` when no atomic masses are provided.  The default could lead to an error with a sum applied on a `None` quantity.
 - **API**: Support of intermediate states in vibronic Gaussian log files.
 
