@@ -46,6 +46,7 @@ Other blocks are:
 - **ESP**: _ESParser_ could crash when trying to display molecules because of an error in the definition of the representation model.
 - **CRS**: Updated code to latest version of the library.
 - **LIB**(`tools.math`): Fixed definition of weight in `superpose` when no atomic masses are provided.  The default could lead to an error with a sum applied on a `None` quantity.
+- **LIB**(`base.aliases`): Fixed alias of `ROA` keyword, wrong associated to RS.
 - **API**: Support of intermediate states in vibronic Gaussian log files.
 
 ### Changed

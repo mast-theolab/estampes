@@ -18,7 +18,7 @@ spectroscopy = {
     'RS'.casefold(): 'RS',
     # ROA
     'RamanOpticalActivity'.casefold(): 'ROA',
-    'ROA'.casefold(): 'RS',
+    'ROA'.casefold(): 'ROA',
     # # Electronic/Resonances
     # OPA
     'OnePhotonAbsorption'.casefold(): 'OPA',
