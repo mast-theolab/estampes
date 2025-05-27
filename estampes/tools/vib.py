@@ -5,7 +5,7 @@ Module providing tools to manipulate data relative to vibrations.
 """
 
 import sys
-from math import sqrt, copysign
+from math import exp, sqrt, copysign
 import typing as tp
 
 import numpy as np
@@ -143,7 +143,7 @@ def build_vibrations(fc_cart: npt.ArrayLike,
     get_rmas
         Return the reduced masses.
     get_lweigh
-        Return the mass-weighted 
+        Return the mass-weighted eigenvectors matrix.
     nvib
         If provided, the system checks that the number of modes found
         matches the reference number.  Raises an error otherwise.
@@ -356,6 +356,58 @@ def convert_hess_evec(evec: npt.ArrayLike,
     return eigvec
 
 
+def get_vib_trans(trans_data: tp.Sequence[tp.Any]
+                  ) -> tp.Dict[int, int]:
+    """Return vibrational transition information.
+
+    Taking a vibrational transition information, returns the transition
+    specification.
+
+    Parameters
+    ----------
+    trans_data
+        Transition information as built by ESTAMPES' parsers.
+
+    Returns
+    -------
+    dict
+        Number of quanta for each excited mode/state.
+    """
+    state_i, state_f, *_ = trans_data
+    trans = {}
+    is_var = False
+    for i, ni in state_i:
+        if i > 0:
+            if ni == 0:
+                if is_var:
+                    raise ValueError(
+                        'Wrong variational state specifications for starting',
+                        ' state')
+                is_var = True
+                trans[i] = -1
+            else:
+                trans[i] = -ni
+    is_var = False
+    for i, ni in state_f:
+        if i > 0:
+            if ni == 0:
+                if is_var:
+                    raise ValueError(
+                        'Wrong variational state specifications for starting',
+                        ' state')
+                if i not in trans:
+                    trans[i] = 1
+                else:
+                    trans[i] += 1
+            else:
+                if i not in trans:
+                    trans[i] = ni
+                else:
+                    trans[i] += ni
+
+    return trans
+
+
 def norm_evec(evec: npt.ArrayLike) -> np.ndarray:
     """Normalize Hessian eigenvectors matrix.
 
@@ -438,3 +490,154 @@ def orient_modes(Lmat: np.ndarray) -> np.ndarray:
         raise IndexError('Lmat is expected to have dimension 2 or 3')
 
     return Lmat
+
+
+def weigh_trans_progress(trans_spec: tp.Dict[int, int],
+                         energy: tp.Union[tp.Sequence[float],
+                                          tp.Dict[int, float]],
+                         temp: float = 298.15,
+                         i_offset: int = 0) -> float:
+    r"""Weigh transition progressions considering all populations.
+
+    Weighs transitions considering all possible transitions involving
+    the same modes and the same difference in quanta.
+    Note that this method is only true for the harmonic approximation.
+    Considering the following:
+
+    .. math::
+        Z = \sum_s
+            e^{-\sum_{i=1}^N \frac{\hbar \omega_i}{k_B T}
+               (n^s_i + \frac{1}{2})}
+        = \sum_s \prod_{i=1}^N e^{-\frac{\hbar \omega_i}{k_B T}
+                                  (n^s_i + \frac{1}{2})}
+        = \sum_{n_1=0}^\infty \sum_{n_2=0}^\infty \ldots
+          \sum_{n_N=0}^\infty
+          \prod_{i=1}^N e^{-\frac{\hbar \omega_i}{k_B T}
+                           (n_i + \frac{1}{2})}
+
+        Z = \prod_{i=1}^N \sum_{n_i=0}^\infty
+            e^{-\frac{\hbar \omega_i}{k_B T}(n_i + \frac{1}{2})}
+        = \prod_{i=1}^N Z_i
+
+        Z_i = \sum_{n_i=0}^\infty
+            e^{-\frac{\hbar \omega_i}{k_B T}(n_i + \frac{1}{2})}
+        = \frac{e^{-\frac{\hbar \omega_i}{2 k_B T}}}
+               {1 - e^{-\frac{\hbar \omega_i}{k_B T}}}
+
+    Within the harmonic approximation, the probability
+    :math:`p_{n_i}` for a mode (:math:`i`) to be excited at a given
+    number of quanta :math:`n_i` can be generalized to:
+
+    .. math::
+        p_{n_i} = \frac{e^{-\frac{\hbar \omega_i}{k_B T}
+                           (n_i + \frac{1}{2})}
+                        \prod_{j \neq i}^N \sum_{n_i=0}^\infty
+                            e^{-\frac{\hbar \omega_j}{k_B T}
+                               (n_j + \frac{1}{2})}
+                        }{Z}
+        = \frac{e^{-\frac{\hbar \omega_i}{k_B T}(n_i + \frac{1}{2})}}
+               {Z_i}
+
+    Now considering all possible excitations from this mode, we would
+    have, for an arbitrary intensity, at the harmonic level,
+
+    .. math::
+        I = \sum_{n_i=0}^\infty p_{n_i}
+            \frac{\partial P_a}{\partial q_i}
+            \frac{\partial {P_b}^\ast}{\partial q_i}
+            | \langle n_i \mid q_i | n_i + \delta n \rangle |^2
+
+        I = e^{\frac{\hbar \omega_i}{2 k_B T}} \biggl(
+            1 - e^{-\frac{\hbar \omega_i}{k_B T}}
+        \biggr)
+        \frac{\partial P_a}{\partial q_i}
+        \frac{\partial {P_b}^\ast}{\partial q_i}
+        \sum_{n_i=0}^\infty
+            e^{-\frac{\hbar \omega_i}{k_B T}(n_i + \frac{1}{2})}
+            | \langle n_i \mid q_i | n_i + \delta n \rangle |^2
+
+        I = \biggl(
+            1 - e^{-\frac{\hbar \omega_i}{k_B T}}
+        \biggr)
+        \frac{\partial P_a}{\partial q_i}
+        \frac{\partial {P_b}^\ast}{\partial q_i}
+        \sum_{n_i=0}^\infty
+            e^{-\frac{\hbar n_i \omega_i}{k_B T}}
+            | \langle n_i \mid q_i | n_i + \delta n \rangle |^2
+
+    Standard case for harmonic level, :math:`\delta n = 1`,
+
+    .. math::
+        \sum_{n_i=0}^\infty
+            e^{-\frac{\hbar n_i \omega_i}{k_B T}}
+            (n_i + 1)
+        = \frac{e^{\frac{2 \omega_i}{k_B T}}}
+               {\biggl(e^{\frac{\omega_i}{k_B T}} - 1\biggr)^2}
+        = \frac{1}
+               {\biggl(1 - e^{-\frac{\omega_i}{k_B T}}\biggr)^2}
+
+    This can be extended to :math:`\delta n = 2`,
+
+    .. math::
+        \sum_{n_i=0}^\infty
+            e^{-\frac{\hbar n_i \omega_i}{k_B T}}
+            (n_i + 1)(n_i + 2)
+        = \frac{2 e^{\frac{3 \omega_i}{k_B T}}}
+               {\biggl(e^{\frac{\omega_i}{k_B T}} - 1\biggr)^3}
+        = \frac{2}
+               {\biggl(1 - e^{-\frac{\omega_i}{k_B T}}\biggr)^3}
+
+    and :math:`\delta n = 3`,
+
+    .. math::
+        \sum_{n_i=0}^\infty
+            e^{-\frac{\hbar n_i \omega_i}{k_B T}}
+            (n_i + 1)(n_i + 2)(n_i + 3)
+        = \frac{6 e^{\frac{4 \omega_i}{k_B T}}}
+               {\biggl(e^{\frac{\omega_i}{k_B T}} - 1\biggr)^4}
+        = \frac{6}
+               {\biggl(1 - e^{-\frac{\omega_i}{k_B T}}\biggr)^4}
+
+    Transitions involving multiple modes can be also included
+    considering the probability of each involved mode having a set
+    number of quanta.
+
+    Parameters
+    ----------
+    trans_spec
+        Transition specification, as: (mode, quanta difference).
+    energy
+        Mode energies, in cm\ :sup:`-1`.
+    temp
+        Temperature, in K.
+    i_offset
+        Offset to apply between mode index and index in `energy`.
+
+    Returns
+    -------
+    float
+        weigh to be applied to transition.
+    """
+    weight = 1.0
+    # kbTm1: 1/(k_B.T) in cm
+    kbTm1 = 2.0 * phys_fact('factb') / temp
+    for i, ni in trans_spec.items():
+        wi = energy[i + i_offset]
+        wikbT = wi * kbTm1
+        if ni == 1:
+            weight *= 1.0 / (1 - exp(-wikbT))
+        elif ni == 2:
+            weight *= 2.0 / (1 - exp(-wikbT))**2
+        elif ni == 3:
+            weight *= 6.0 / (1 - exp(-wikbT))**3
+        elif ni == -1:
+            weight *= exp(-wikbT) / (1 - exp(-wikbT))
+        elif ni == -2:
+            weight *= 2.0 * exp(-2*wikbT) / (1 - exp(-wikbT))**2
+        elif ni == 3:
+            weight *= 6.0 * exp(-3* wikbT) / (1 - exp(-wikbT))**3
+        else:
+            raise ValueError(
+                f'Unsupported quanta difference for mode {i}')
+
+    return weight

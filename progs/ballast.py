@@ -636,8 +636,7 @@ def parse_inifile(fname: str
                 files = [item[0] for item in file_specs]
                 weights = [item[1] for item in file_specs]
                 curves[key]['data'] = Spectrum(files, spc, lvl, yid,
-                                               weights=weights,
-                                               **params)
+                                               weigh_dbsets=weights, **params)
             except FileNotFoundError as err:
                 print(f'File(s) not found for the definition of curve {key}.')
                 print(err)

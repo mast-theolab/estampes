@@ -122,14 +122,33 @@ Alternatively, the broadening and axis parameters can be inverted:
 
     # Second argument: spectroscopic technique
     # - First check if format spec(opt):
+    spec_pars = {}
     try:
         key, subopts = parse_opt(sys.argv[2])
     except ArgumentError as err:
         print(f'Error found while parsing spectroscopy\n{err}')
         sys.exit(1)
     if subopts is not None:
-        print('Error: Spectroscopy-related options NYI.')
-        sys.exit(10)
+        if 'T' in subopts:
+            try:
+                spec_pars['temp'] = float(subopts['T'])
+            except ValueError:
+                print('Incorrect temperature specification')
+        elif 'temp' in subopts:
+            try:
+                spec_pars['temp'] = float(subopts['temp'])
+            except ValueError:
+                print('Incorrect temperature specification')
+        if 'w' in subopts:
+            try:
+                spec_pars['weigh_vtrans'] = subopts['w'].lower()
+            except ValueError:
+                print('Incorrect weigh specification')
+        elif 'weigh' in subopts:
+            try:
+                spec_pars['weigh_vtrans'] = subopts['weigh'].lower()
+            except ValueError:
+                print('Incorrect weigh specification')
     try:
         spec = spectroscopy[key.casefold()]
     except KeyError:
@@ -249,7 +268,7 @@ Alternatively, the broadening and axis parameters can be inverted:
         outfile = open(arg_fout, 'w', encoding='utf-8')
 
     # Now process data
-    spec = Spectrum(dfile, spec, level)
+    spec = Spectrum(dfile, spec, level, **spec_pars)
     spec.set_broadening(hwhm, func, yunit, xmin=xmin, xmax=xmax, xres=xres)
 
     fmt = '{:12.5f} {:15.6e}\n'

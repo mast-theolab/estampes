@@ -27,6 +27,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **2XY**: New sub-options `T`/`temp` and `w`/`weight` for the spectroscopy keyword to specify a weighing model to apply on vibrational transitions.
 - **OAR**: New option to show/hide the plots of J and K: `--show-plots`/`--no-plots`.
 - **OAR**: It is now possible to view the 3D representation of the structural overlap with the option `--show-mols`.
 - **OAR**: It is now possible to request that the structural overlapped be maximized before computing J and K.
@@ -34,6 +35,9 @@ Other blocks are:
 - **LIB**(`tools.mol`): New function `eckart_orient` to rotate a molecule to one of the Eckart orientations.
 - **LIB**(`tools.anharm`): New module to store functions related to the anharmonic treatment.
 - **LIB**(`tools.anharm`): New function `variational_notation` to check if the vibrational states in a data file related to anharmonic calculations are expressed in an harmonic basis or as pure variational states, which can limit some analyses.
+- **LIB**(`tools.vib`): New function `get_vib_trans` to build the transition data from a transition specification as list of initial- and final-state properties.
+- **LIB**(`tools.vib`): New function `weigh_trans_progress` to compute the weight for a transition progression considering all possible quanta of a given mode or set of modes within the harmonic or an harmonic-like approximation.
+- **LIB**(`base.spectrum`): Class `Spectrum` now supports a weighing model for the vibrational transitions where relevant.
 - **API**: Added extraction of normal-modes ordering (`VPTDat:NMOrder`), quadratic (`VPTDat:Freq`), cubic (`VPTDat:cubic`) and quartic (`VPTDat:quartic`) force constants from Gaussian log files containing VPT2 calculations.
 - **API**: Added support of derivatives with respect to dimensionless normal coordinates in the ***QLabel***, as `dercord=qred`.
 - **API**: Added support of third and fourth derivatives of energies in Gaussian log files.  Beware, the block currently supported is the VPT2 block, which may contain a sub-block of "hybrid" data.
@@ -52,7 +56,8 @@ Other blocks are:
 ### Changed
 - **VIZ**(`visual.molui`): `MolWin` shortcuts are set at the application level, so they work if the visualizer is embedded in a window or at the root.
 - **VIZ**(`visual.molui`): The way the Qt orbital camera moves, extracting the translation components made little sense.  The translation operations now only consider the zoom along the Z axis.
-- **LIB**(`toold.vib`): `build_dusch_K` now expects the atomic masses given in the unified atomic mass unit instead of atomic units, for consistency with the way masses are extracted.
+- **LIB**(`tools.vib`): `build_dusch_K` now expects the atomic masses given in the unified atomic mass unit instead of atomic units, for consistency with the way masses are extracted.
+- **LIB**(`base.spectrum`): Argument `weights` is replaced by `weigh_dbsets` in the constructor of class `Spectrum`.
 
 
 ## [0.6.1] - 2025-02-18

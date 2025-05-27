@@ -12,6 +12,7 @@ from estampes.base import QLabel, TypeColor
 from estampes.base.errors import ArgumentError
 from estampes.tools.char import unit_to_tex
 from estampes.tools.spec import broaden, convert_y
+from estampes.tools.vib import get_vib_trans, weigh_trans_progress
 
 
 # =================
@@ -176,14 +177,73 @@ class Spectrum():
     :"A[nh[arm]]": Anharmonic representation of nuclear vibrations
 
     To avoid any ambiguity, spectroscopies and levels of theory **must**
-      be provided.
+    be provided.
+
+    The class can take one or more filenames, and in the latter case
+    will combine them using the weights (or equal fractions if absent).
+
+    Parameters
+    ----------
+    fname
+        Filename from which data are to be extracted.
+    specabbr
+        Spectroscopy name (abbreviated version).
+    level
+        Level of theory:
+
+        * anharmonic: ``"Anharm"``, ``"Anh"``, ``"A"``
+        * harmonic (including Franck-Condon): ``"Harm"``, ``"H"``
+        * pure electronic: ``"Electronic"``, ``"Ele"``, ``"E"``
+    ylabel
+        If multiple spectra may be present, label for the Y axis.
+        Ex: TD OP spectra w/o temperature, Raman scattering setups.
+    load_data
+        If True, load spectral data in memory
+    ftype
+        File type (sent to `DataFile`).
+        If `ftype` is `CSV`, `specabbr` and `level` are ignored.
+    weigh_dsets
+        Weigh data sets included in spectrum.
+        The values can be provided as real numbers or with the keywords:
+
+        * use electronic energies to set Boltzmann population
+          weights: ``"bz"`` 
+        * use harmonic ZPVE to set Boltzmann population weights:
+          ``"bz_h"``
+        * use anharmonic ZPVE to set Boltzmann population weights:
+          ``"bz_a"``
+    weigh_vtrans
+        Weigh pure vibrational transitions, using one of the
+        following methods:
+
+        * use the harmonic probability of excitation of each mode,
+          weighed by the quanta difference: ``"pni_dn"``
+        * same as `"pni_dn"` but each transition is assumed to be a
+          fundamental: ``"pni_d1"``
+    params
+        Spectroscopy-specific parameters:
+
+        :"temp":
+            Temperature for population estimates.
+            By default, the temperature in first job is used.
+        :"incfrq":
+            (Raman/ROA) incident frequency.
+        :"setup":
+            (Raman/ROA) experimental setup (e.g., SCP(180))
+
+    Notes
+    -----
+    If `incfrq` is given as integer (no decimal point), the
+    incident frequencies are searched in data files truncated to
+    the decimal point.  If `incfrq` is provided as float, the
+    number are truncated to the lower integer.
 
     Raises
     ------
     KeyError
-        Unrecognized spectroscopy
+        Unrecognized spectroscopy.
     IndexError
-        Mismatch in normal modes
+        Mismatch in normal modes.
     """
 
     def __init__(self,
@@ -194,62 +254,12 @@ class Spectrum():
                  ylabel: tp.Optional[str] = None,
                  load_data: bool = True,
                  ftype: tp.Optional[str] = None,
-                 weights: tp.Optional[
+                 weigh_dbsets: tp.Optional[
                      tp.Union[str,
                               tp.Sequence[
                                 tp.Union[str, float]]]] = None,
+                 weigh_vtrans: tp.Optional[str] = None,
                  **params: tp.Dict[str, tp.Any]):
-        """Initialize Spectrum instance.
-
-        Initializes an instance of the class Spectrum.
-        The class can take one or more filenames, and in the latter case
-        will combine them using the weights (or equal fractions if
-        absent).
-
-        Parameters
-        ----------
-        fname
-            Filename from which data are to be extracted.
-        specabbr
-            Spectroscopy name (abbreviated version).
-        level
-            Level of theory:
-            - `Anharm`, `Anh`, `A`: anharmonic
-            - `Harm, `H`: harmonic (including Franck-Condon)
-            - `Electronic`, `Ele`, `E`: pure electronic
-        ylabel
-            If multiple spectra may be present, label for the Y axis.
-            Ex: TD OP spectra w/o temperature, Raman scattering setups.
-        load_data
-            If True, load spectral data in memory
-        ftype
-            File type (sent to `DataFile`).
-            If `ftype` is `CSV`, `specabbr` and `level` are ignored.
-        weights
-            Weights to be applied to each data set included in spectrum.
-            The values can be provided as real numbers or with the keywords:
-
-            * "bz": use electronic energies to set Boltzmann population weights
-            * "bz_h": use harmonic ZPVE to set Boltzmann population weights
-            * "bz_a": use anharmonic ZPVE to set Boltzmann population weights
-        params
-            Spectroscopy-specific parameters:
-
-            :"temp": temperature to use instead for Boltzmann populations.
-            By default, the temperature in first job is used.
-
-            Raman/ROA
-
-                :"incfrq": incident frequency.
-                :"setup": experimental setup (e.g., SCP(180))
-
-        Notes
-        -----
-        If `incfrq` is given as integer (no decimal point), the
-        incident frequencies are searched in data files truncated to
-        the decimal point.  If `incfrq` is provided as float, the
-        number are truncated to the lower integer.
-        """
         self.__num_dfiles = 1
         # Initialization internal parameters
         # -- Build data files
@@ -294,6 +304,8 @@ class Spectrum():
                 elif key.lower() == 'setup':
                     if val is not None:
                         self.__params['setup'] = val
+                elif key.lower() == 'temp':
+                    self.__params['temp'] = val
         # Initialize main data array
         self.__xaxes = []
         self.__yaxes = []
@@ -310,18 +322,32 @@ class Spectrum():
         self.__xunit = [None, None]
         self.__yunit = [None, None]
         self.__broad_info = [None, None]
+        self.__extras = []
         self.__spec_info = None
         self.__ytags = []
         self.__idref = 0
         self.__loaded = None
         self.__label = None
+                # -- Set transition weights
+        self.__weigh_vtrans = None
+        if self.__spec in VSPC2DATA or self.__spec in ('RR', 'RROA'):
+            if weigh_vtrans is not None:
+                if weigh_vtrans.lower() in ('pni_dn', 'pni_d1'):
+                    self.__weigh_vtrans = weigh_vtrans.lower()
+                else:
+                    raise ArgumentError(
+                        'weigh_vtrans',
+                        'Unrecognized weighing system for vibrational '
+                        + 'transitions')
+                if 'temp' not in self.__params:
+                    self.__params['temp'] = 298.15
         # Initialize basic data
         if load_data:
             self.load_data(ylabel)
         # -- Set weights for multiple files
         self.__weights = None
         self.__calc_weight = None
-        self.set_weights(weights)
+        self.set_weights(weigh_dbsets)
         # Create aliases
         self.reset()
         self.__linecol = None
@@ -368,6 +394,7 @@ class Spectrum():
             self.__yunits.append([None, None])
             self.__spec_infos.append(None)
             self.__ytags.append(None)
+            self.__extras.append(None)
             self.__broad_infos.append([{'func': None, 'hwhm': None},
                                        {'func': None, 'hwhm': None}])
             if 'spc' in qkeys:
@@ -381,7 +408,7 @@ class Spectrum():
                 (self.__xaxes[-1][0], self.__xlabels[-1][0],
                  self.__xunits[-1][0], self.__yaxes[-1][0],
                  self.__ylabels[-1][0], self.__yunits[-1][0],
-                 self.__broad_infos[-1][0]
+                 self.__broad_infos[-1][0], self.__extras[-1]
                  ) = _get_data_v_trans(dobjs, self.__spec, self.__params)
             elif 'ener' in qkeys:
                 (self.__xaxes[-1][0], self.__xlabels[-1][0],
@@ -393,6 +420,20 @@ class Spectrum():
                 raise NotImplementedError()
             if self.__label is None:
                 self.__label = self.__yunits[-1][0]
+            # Check if necessary to apply weighs to vib. transitions
+            if (self.__weigh_vtrans is not None
+                    and self.__extras[-1] is not None):
+                for i, trans in enumerate(self.__extras[-1]['assign']):
+                    if self.__weigh_vtrans == 'pni_dn':
+                        dtrans = get_vib_trans(trans)
+                    elif self.__weigh_vtrans == 'pni_d1':
+                        dtrans = {i+1: 1}
+                    else:
+                        raise NotImplementedError(
+                            'Unsupported weigh_vtrans model')
+                    scale = weigh_trans_progress(
+                        dtrans, self.__xaxes[-1][0], self.__params['temp'], -1)
+                    self.__yaxes[-1][0][i] *= scale
         if self.__num_dfiles == 1:
             self.__xaxis = self.__xaxes[0]
             self.__yaxis = self.__yaxes[0]
@@ -1080,6 +1121,7 @@ def _get_data_v_trans(dobj: QData,
                       params: tp.Dict[str, tp.Any]
                       ) -> tp.Tuple[tp.List[float], str, str,
                                     tp.List[float], str, str,
+                                    tp.Dict[str, tp.Any],
                                     tp.Dict[str, tp.Any]]:
     """Get data related to vibrational transitions from data object.
 
@@ -1111,6 +1153,8 @@ def _get_data_v_trans(dobj: QData,
         yunit: Unit of Y data.
     dict
         broadening: Broadening parameters.
+    dict
+        extra information, e.g., assignment data
     """
     modes = []
     for key in dobj['freq'].data:
@@ -1119,6 +1163,7 @@ def _get_data_v_trans(dobj: QData,
     modes.sort()
     xaxis = []
     yaxis = []
+    extra = {'assign': []}
     if spec in ('RS', 'ROA'):
         incfrq = params.get('incfrq')
         if incfrq is None:
@@ -1173,6 +1218,7 @@ Available: {dobj['int'].data[incfrq].keys()}''')
                     isinstance(ydata[mode], float)):
                 xaxis.append(dobj['freq'].data[mode])
                 yaxis.append(ydata[mode])
+                extra['assign'].append(dobj['assign'].data[mode])
         except KeyError as err:
             raise IndexError(f'''\
 Inconsistency in the list of states between energies and intensities.
@@ -1183,7 +1229,7 @@ State {mode} was not found in one of the lists.''') from err
     ylabel = SPEC2DATA[spec][yunit.split(':')[0]]
     broadening = {'func': 'stick', 'hwhm': None}
 
-    return xaxis, xlabel, xunit, yaxis, ylabel, yunit, broadening
+    return xaxis, xlabel, xunit, yaxis, ylabel, yunit, broadening, extra
 
 
 def _get_data_e_trans(dobj: QData,
