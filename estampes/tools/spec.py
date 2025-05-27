@@ -34,7 +34,7 @@ def broaden(xval: tp.Sequence[float],
             ycorr: tp.Optional[tp.Callable[[float], float]] = None,
             ynorm: bool = False,
             truncate: bool = False) -> tp.List[float]:
-    """Broadens a stick spectra with a given broadening function.
+    r"""Broadens a stick spectra with a given broadening function.
 
     Performs the broadening operation given a list of transitions stored in
     two separate arrays, `xval` and `yval`.
@@ -42,7 +42,8 @@ def broaden(xval: tp.Sequence[float],
 
     `yaxis` is computed as:
 
-    .. math:: y_a(i) = sum_j y_f*y_v(j)*f(x_a(i))*c(x_v(j)*g(x_a(i)-x_v(j))
+    .. math::
+        y_a(i) = \sum_j y_f*y_v(j)*f(x_a(i))*c(x_v(j)*g(x_a(i)-x_v(j))
 
     * :math:`y_a`: `yaxis`
     * :math:`y_f`: `yfactor`

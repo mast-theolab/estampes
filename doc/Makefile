@@ -42,7 +42,7 @@ api: $(api_ext)
 lib: $(lib_ext)
 
 autodoc :
-	python3 $$(which sphinx-apidoc) -f -o source/ ../../estampes/ ../../estampes/setup.py
+	python3 $$(which sphinx-apidoc) -f -o source/ ../../estampes/ ../../estampes/setup.py ../../estampes/to_del/*
 	python3 $$(which sphinx-build) -b html source/ build/
 
 %.pdf : %.adoc

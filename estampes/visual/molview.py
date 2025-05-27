@@ -30,17 +30,6 @@ class Molecule(Qt3DCore.QEntity):
     """The Molecule class for the visualization.
 
     Defines a molecule for the visualization.
-
-    Methods
-    -------
-    update_geom(at_lab, at_crd, bonds, render=True)
-        Updates geometry information, and renders the new molecule
-    set_display_setting(col_bond_as_atom, rad_atom_as_bond, molcol)
-        Sets display settings for the molecule, but does not re-render.
-    update_render
-        Renders the molecule, with up-to-date internal data
-    addMouse(cam)
-        Add mouse support.
     """
 
     click_molatom = QtCore.Signal(list)

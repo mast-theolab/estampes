@@ -26,8 +26,8 @@ For consistency with the interactive viewer, the camera is set
 along Y.
 
 .. warning
-The change of notation means that the Z axis is the "vertical", with
-X "on the right" and Y "toward the viewer".
+    The change of notation means that the Z axis is the "vertical", with
+    X "on the right" and Y "toward the viewer".
 """
 
 import os

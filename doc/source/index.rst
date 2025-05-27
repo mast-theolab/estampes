@@ -7,12 +7,12 @@ Welcome to ESTAMPES's documentation!
 ====================================
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 6
    :caption: Contents:
 
    modules
 
-Indices and tables
+Indexes and tables
 ==================
 
 * :ref:`genindex`

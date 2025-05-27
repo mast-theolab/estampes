@@ -25,17 +25,6 @@ class VibMode(Qt3DCore.QEntity):
     """The VibMode class for  visualization.
 
     Builds a representation of a molecular vibration.
-
-    Methods
-    -------
-    update_geom(at_lab, at_crd, bonds, render=True)
-        Updates geometry information, and renders the new molecule
-    set_display_setting(col_bond_as_atom, rad_atom_as_bond, molcol)
-        Sets display settings for the molecule, but does not re-render.
-    update_render
-        Renders the molecule, with up-to-date internal data
-    addMouse(cam)
-        Add mouse support.
     """
 
     def __init__(self,
@@ -451,6 +440,18 @@ class VibMode(Qt3DCore.QEntity):
 
         Builds atoms objects and data in the molecule.
         """
+        def fix_material():
+            if (self.__vib_objs[-1].components()[0].status()
+                    == Qt3DRender.QSceneLoader.Status.Ready):
+                for obj in self.__vib_objs:
+                    entity = obj.components()[0]
+                    comp = entity.entity('Sphere_Child0').components()[0]
+                    entity.entity('Sphere_Child0').removeComponent(comp)
+                    entity.entity('Sphere_Child0').addComponent(self.__vibmat)
+                    comp = entity.entity('Sphere_Child1').components()[0]
+                    entity.entity('Sphere_Child1').removeComponent(comp)
+                    entity.entity('Sphere_Child1').addComponent(self.__vibmat1)
+
         self.__vib_objs = []
         self.__vib_trro = []
         self.__vib_mesh = []
@@ -466,6 +467,7 @@ class VibMode(Qt3DCore.QEntity):
             if isclose(ldxyz, 0.0):
                 continue
             mesh.setSource(path_obj)
+            mesh.statusChanged.connect(fix_material)
             rot = vrotate_3D(np.array([0, 1, 0]), dxyz/ldxyz)
             rot3x3 = QtGui.QMatrix3x3(np.array(rot).reshape(9).tolist())
             trro.setScale(ldxyz*.5*scale_vib)

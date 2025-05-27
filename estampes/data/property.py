@@ -1,16 +1,6 @@
 """Module on atoms-related data.
 
 This module provides basic data related to atoms.
-
-Attributes
-----------
-
-Methods
--------
-property_data
-    Gets property data.
-property_units
-    Returns conversion factors and unit labels.
 """
 
 from math import pi
@@ -27,7 +17,7 @@ from estampes.data.physics import PHYSCNST, PHYSFACT
 def property_data(qtag: TypeQTag,
                   qopt: TypeQOpt = None
                   ) -> tp.NamedTuple:
-    """Generates property data.
+    """Generate property data.
 
     Generates a named tuple containing basic data for a given
     property in argument given in input.
@@ -214,7 +204,7 @@ def property_data(qtag: TypeQTag,
 
 
 def property_units(qtag: str, unit: str = 'SI') -> tp.Tuple[float, str]:
-    """Returns conversion factors and unit labels.
+    """Return conversion factors and unit labels.
 
     Returns the conversion factor from atomic unit to new unit, as well
     as the label.

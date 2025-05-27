@@ -31,8 +31,8 @@ def parse_qlabels(qlabs_list: tp.Sequence[_tp_QLab],
     dict
         Mapping for overlapping keys.
         User-given keys in `qlab_dict` can actually refer to the same
-          `qlabel` as another one.  The original key is given in this
-          dictionary.
+        `qlabel` as another one.
+        The original key is given in this dictionary.
     """
     def qlab2qlabel(qlab: _tp_QLab) -> tp.Tuple[str, QLabel]:
         """Convert a qlabel to the new QLabel format.

@@ -86,7 +86,7 @@ def parse_argval_options(argval: str,
     present.
     The structure of sub-options is expected as:
 
-    `argval`[<delim><option<end_delim>]
+    ``argval[<delim><option<end_delim>]``
 
     Options are separated by commas.
 

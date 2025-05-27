@@ -8,7 +8,7 @@ A prototypical program for spectral analysis, which stands for _Experimental Sup
 The toolkit is separated in 3 components:
 * Low-level modules for data parsing, which relies as much as possible on internal Python modules.
 * Intermediate-level variables, functions and classes providing basic data of physical-chemical interest: constants, conversion functions, quantity properties, parameters for display...
-* higher-level stand-along scripts
+* higher-level stand-alone scripts
 
 Some proof-of-concepts, working scripts are also provided in the package.
 
