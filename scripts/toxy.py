@@ -176,6 +176,17 @@ Alternatively, the broadening and axis parameters can be inverted:
         print(f'ERROR: Unrecognized level of theory, {key}')
         print(f'Available keys: {", ".join(level_theory)}')
         sys.exit(1)
+    # Set some parameters based on spectroscopic parameters and level
+    if level == 'H' and 'temp' in spec_pars:
+        if 'weigh_vtrans' not in spec_pars:
+            spec_pars['weigh_vtrans'] = 'pni_d1'
+    if 'weigh_vtrans' in spec_pars:
+        if spec_pars['weigh_vtrans'] == 'calc':
+            spec_pars['weigh_vtrans'] = 'pni_dn'
+        if level == 'A':
+            print('''\
+WARNING: Calculated temperature weight is an approximation at the anharmonic
+         level, and may give incorrect predictions.''')
 
     # Check layout after 3rd argument.
     # We can check by testing if the argument is a number of not
