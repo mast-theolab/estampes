@@ -50,6 +50,8 @@ Other blocks are:
 - **API**(`parser.gaussian`): New function `g_elquad_LT_to_2D` to generate the proper electric quadrupolar tensor from Gaussian storage order.  The function is a public version of the function previously private to the `gaussian.fchk` submodule.
 
 ### Fixed
+- **BLS**: Fixed example for `yscale`, which used a wrong variable (`x` instead of `y`).
+- **BLS**: Fixed support of mathematical functions in `?scale`.
 - **ESP**: _ESParser_ now uses `MolWin` to build the molecular viewer and does not anymore use an alternative version.
 - **ESP**: _ESParser_ could crash when trying to display molecules because of an error in the definition of the representation model.
 - **CRS**: Updated code to latest version of the library.

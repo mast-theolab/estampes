@@ -10,7 +10,8 @@ import os
 import argparse
 import typing as tp
 import configparser as cfg
-from math import ceil
+# We need to use * for the scaling functions
+from math import *
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -143,7 +144,7 @@ HWHM = 5
 # Override the default for HWHM
 Show = Yes
 # Show the curve; no to hide it
-YScale = (10-log(x))
+YScale = (10-log(abs(y)+1))
 # Yscale can be a constant or a function of x
 XScale = rel, 1
 # With rel, offsets are first removed, then scaled
