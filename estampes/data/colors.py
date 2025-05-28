@@ -1732,21 +1732,36 @@ XKCD_COLORS = {
 COLOR_NAMES = {**MPL_COLORS, **XKCD_COLORS, **X11_COLORS}
 
 
-def to_rgb_list(color: tp.Any) -> tp.Tuple[int, int, int]:
+def to_rgb_list(color: tp.Any,
+                normalize: bool = False,
+                to_rgba: bool = False,
+                alpha: tp.Optional[tp.Union[float, int]] = None,
+                ) -> tp.Union[
+                    tp.Tuple[int, ...],
+                    tp.Tuple[float, ...]]:
     """Convert a color specification to a RGB tuple.
 
-    Converts a color specification to a RGB tuple.
+    Converts a color specification to a RGB tuple or RGBA if requested.
+    The values can be normalized if needed.
     Different formats are supported.
 
     Parameters
     ----------
     color
         Color specification.
+    normalize
+        Normalize values from 0 to 1 instead of 0-255.
+    to_rgba
+        Add transparency information.
+        If not available and `alpha` is not given, set to 1.
+    alpha
+        Transparency specification to use as alpha specification.
+        This value overrides any existing specification in `color`.
 
     Returns
     -------
     tuple
-        RGB tuple of integers 0-255.
+        RGB(A) tuple of integers 0-255 or floats 0.0-1.0.
 
     Raises
     ------
@@ -1757,6 +1772,7 @@ def to_rgb_list(color: tp.Any) -> tp.Tuple[int, int, int]:
     err_float = 'Cannot convert float-type components'
     err_int = 'Cannot convert integer-type components'
     rgb = None
+    alpha_spec = None
     if isinstance(color, float):
         # Grayscale from 0 to 1.0
         if not 0.0 <= color <= 1.0:
@@ -1767,30 +1783,42 @@ def to_rgb_list(color: tp.Any) -> tp.Tuple[int, int, int]:
         # Check first color
         if color.startswith('#'):  # standard color specification as #RGB
             if len(color) in (7, 9):
-                # 7: format #RGB, 9: format #RGBA, alpha ignored
+                # 7: format #RGB, 9: format #RGBA, alpha keep in case
                 rgb = (int(color[1:3], base=16),
                        int(color[3:5], base=16),
                        int(color[5:7], base=16))
-            elif len(color) == 4:
-                # Assume a shortened case: #rrggbb
+                if len(color) == 9:
+                    alpha_spec = int(color[5:7], base=16)
+            elif len(color) in (4, 5):
+                # Assume a shortened case: #rrggbb(aa)
                 rgb = (int(2*color[1], base=16),
                        int(2*color[2], base=16),
                        int(2*color[3], base=16))
+                if len(color) == 5:
+                    alpha_spec = int(2*color[4], base=16)
             else:
                 raise ArgumentError('color', 'Unrecognized "#RGB(A)" format')
         elif ',' in color:
             colors = color.strip('()').split(',')
-            if len(colors) == 3:
+            if len(colors) in (3, 4):
                 if any('.' in item for item in colors):
+                    is_float = True
                     try:
-                        rgb = tuple(int(float(item)*255) for item in colors)
+                        rgb = tuple(int(float(item)*255)
+                                    for item in colors[:3])
                     except ValueError as err:
                         raise ArgumentError('color', err_float) from err
                 else:
+                    is_float = False
                     try:
-                        rgb = tuple(int(item) for item in colors)
+                        rgb = tuple(int(item) for item in colors[:3])
                     except ValueError as err:
                         raise ArgumentError('color', err_int) from err
+                if len(colors) == 4:
+                    if is_float:
+                        alpha_spec = int(float(colors[-1])*255)
+                    else:
+                        alpha_spec = int(colors[-1])
             else:
                 raise ArgumentError('color', err_len)
         elif color in COLOR_NAMES:
@@ -1827,4 +1855,31 @@ def to_rgb_list(color: tp.Any) -> tp.Tuple[int, int, int]:
     elif min(rgb) < 0 or max(rgb) > 255:
         raise ValueError('RGB parameters outside valid range.')
 
-    return rgb
+    if to_rgba:
+        if alpha is not None:
+            if isinstance(alpha, float):
+                if not 0.0 <= alpha <= 1.0:
+                    return ArgumentError('Incorrect value of alpha')
+                val = int(alpha * 255)
+            elif isinstance(alpha, int):
+                if not 0 <= alpha < 256:
+                    return ArgumentError('Incorrect value of alpha')
+                val = alpha
+            else:
+                return ArgumentError('Incorrect value of alpha')
+        elif alpha_spec is not None:
+            if not 0 <= alpha_spec < 256:
+                raise ValueError('alpha parameter outside valid range.')
+            val = alpha_spec
+        else:
+            val = 255
+        rgba = rgb + (val, )
+        if normalize:
+            return tuple(item/255 for item in rgba)
+        else:
+            return rgba
+    else:
+        if normalize:
+            return tuple(item/255 for item in rgb)
+        else:
+            return rgb
