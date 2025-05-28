@@ -166,6 +166,12 @@ yshift = +.5
 # shift final spectrum by .5 along y
 color = #D2A356
 # Color of the spectrum
+Fill = yes
+# Fill area between the curve and 0.
+FillColor = light blue
+# Filling color, only read if filling requested
+FillAlpha = 50%
+# Transparency of the filling area. Alias: FillTransparency
 
 [Region:1]
 SubPlot = 2,1
@@ -750,6 +756,48 @@ def parse_inifile(fname: str
                     vizdata[item] = optsec.get(item, False)
             if vizdata:
                 curves[key]['data'].set_display(**vizdata)
+            # Check if filling requested
+            curves[key]['fill'] = (optsec.getboolean('fill', False) or
+                                   optsec.getboolean('filling', False))
+            if curves[key]['fill']:
+                # Region transparency specification
+                val = False
+                val = optsec.get('fillalpha', fallback=False)
+                if not val:
+                    val = optsec.get('filltransparency', fallback=False)
+                if val:
+                    if '%' in val:
+                        try:
+                            curves[key]['fillalpha'] = \
+                                float(val.rstrip(' %'))/100.
+                        except ValueError:
+                            print('ERROR: Incorrect specification of ',
+                                  f'filling transparency for curve {key}')
+                            sys.exit(1)
+                    else:
+                        try:
+                            curves[key]['fillalpha'] = float(val.rstrip(' %'))
+                            # If value > 1, we assume given in base 256.
+                            if curves[key]['fillalpha'] > 1:
+                                curves[key]['fillalpha'] /= 255.
+                        except ValueError:
+                            print('ERROR: Incorrect specification of ',
+                                  f'filling transparency for curve {key}')
+                            sys.exit(1)
+                else:
+                    curves[key]['fillalpha'] = 1.0
+                # Region color specification
+                val = optsec.get('fillcolor')
+                if val is None:
+                    curves[key]['fillrgba'] = None
+                else:
+                    try:
+                        curves[key]['fillrgba'] = to_rgb_list(
+                            val, True, True, curves[key]['fillalpha'])
+                    except ValueError:
+                        print(f'ERROR: Unsupported color for curve "{key}"')
+                        sys.exit(1)
+
             if optsec.get('label', None) is not None:
                 curves[key]['data'].label = optsec.get('label')
             curves[key]['xshift'] = optsec.getfloat('xshift', fallback=None)
@@ -1051,7 +1099,17 @@ def main() -> tp.NoReturn:
                     zeros = np.zeros(len(yaxis))
                     sub.vlines(xaxis, zeros, yaxis, **data)
                 else:
-                    sub.plot(xaxis, yaxis, **data)
+                    pdata = sub.plot(xaxis, yaxis, **data)
+                    if curves[key]['fill']:
+                        if 'color' not in data:
+                            data['color'] = pdata[0].get_color()
+                        if curves[key]['fillrgba'] is None:
+                            curves[key]['fillrgba'] = to_rgb_list(
+                                data['color'], True, True,
+                                curves[key]['fillalpha'])
+                        sub.fill_between(xaxis, yaxis,
+                                         color=curves[key]['fillrgba'])
+
     # Now set the plot grid.
     for row in range(nrows):
         for col in range(ncols):
