@@ -67,6 +67,16 @@ NewXMin = 0
 # New lower bound for the broadened spectra
 NewXMax = 4000
 # New uppper bound for the broadened spectra
+Temperature = 300
+# Temperature, in K.  "Off" or "No" to deactivate it on a specific curve.
+VTrans_WeighModel = pni_dn
+# Weighing model for vibrational transitions.
+# Possible values:
+# pni_dn: consider the full progression and the type of transition
+#         (number of quanta)
+# pni_d1: consider the full progression but assume all transitions
+#         are like fundamentals.
+# calc: alias for default calculation, pni_dn
 
 [Figure]
 # Figure parameters
@@ -626,6 +636,26 @@ def parse_inifile(fname: str
                     optsec.get('RamanLaser', fallback=None)
                     or optsec.get('RamanWInc', fallback=None)
             }
+            # Vibrational transition weights
+            if (val := optsec.get('temperature', fallback=False)):
+                try:
+                    params['temp'] = float(val)
+                    if params['temp'] <= 0:
+                        params['temp'] = False
+                except ValueError:
+                    if val.lower() in ('no', 'off'):
+                        params['temp'] = False
+                if params['temp']:
+                    params['weigh_vtrans'] = optsec.get('vtrans_weighmodel',
+                                                        fallback=None)
+                    if params['weigh_vtrans'] is not None:
+                        if params['weigh_vtrans'].lower() == 'calc':
+                            params['weigh_vtrans'] = 'pni_dn'
+                        elif params['weigh_vtrans'].lower() == 'no':
+                            params['weigh_vtrans'] = None
+                        else:
+                            params['weigh_vtrans'] = \
+                                params['weigh_vtrans'].lower()
             lvl = optsec.get('level', fallback=None)
             if spc is None or lvl is None:
                 raise ValueError('Spectroscopy not defined')

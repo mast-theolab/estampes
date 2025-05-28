@@ -207,7 +207,7 @@ class Spectrum():
         The values can be provided as real numbers or with the keywords:
 
         * use electronic energies to set Boltzmann population
-          weights: ``"bz"`` 
+          weights: ``"bz"``
         * use harmonic ZPVE to set Boltzmann population weights:
           ``"bz_h"``
         * use anharmonic ZPVE to set Boltzmann population weights:
@@ -305,7 +305,8 @@ class Spectrum():
                     if val is not None:
                         self.__params['setup'] = val
                 elif key.lower() == 'temp':
-                    self.__params['temp'] = val
+                    if val:
+                        self.__params['temp'] = val if val > 0 else None
         # Initialize main data array
         self.__xaxes = []
         self.__yaxes = []
@@ -328,7 +329,7 @@ class Spectrum():
         self.__idref = 0
         self.__loaded = None
         self.__label = None
-                # -- Set transition weights
+        # -- Set transition weights
         self.__weigh_vtrans = None
         if self.__spec in VSPC2DATA or self.__spec in ('RR', 'RROA'):
             if weigh_vtrans is not None:

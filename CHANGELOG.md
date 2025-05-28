@@ -28,6 +28,7 @@ Other blocks are:
 
 ### Added
 - **2XY**: New sub-options `T`/`temp` and `w`/`weight` for the spectroscopy keyword to specify a weighing model to apply on vibrational transitions.
+- **BLS**: Added support of temperature weights based on harmonic approximation with keywords `Temperature` and `VTrans_WeighModel`.
 - **OAR**: New option to show/hide the plots of J and K: `--show-plots`/`--no-plots`.
 - **OAR**: It is now possible to view the 3D representation of the structural overlap with the option `--show-mols`.
 - **OAR**: It is now possible to request that the structural overlapped be maximized before computing J and K.
