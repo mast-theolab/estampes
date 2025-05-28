@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 
 from estampes.base.spectrum import Spectrum
 from estampes.base.errors import ArgumentError
+from estampes.data.colors import to_rgb_list
 from estampes.parser import DataFile
 from estampes.tools.char import convert_expr
 from estampes.visual.plotspec import SpecLayout
@@ -165,6 +166,21 @@ yshift = +.5
 # shift final spectrum by .5 along y
 color = #D2A356
 # Color of the spectrum
+
+[Region:1]
+SubPlot = 2,1
+AreaXLeft = 200
+# Leftmost boundary of the region
+AreaXRight = 400
+# Rightmost boundary of the region
+AreaYMin = auto
+# Lower Y value of the region (by default the lower region of the plot)
+AreaYMax = auto
+# Upper Y value of the region
+AreaColor = blue
+# Color of the area
+AreaAlpha = 50%
+# Transparency of the area (alias: transparency)
 """
 
 
@@ -197,6 +213,54 @@ def fscale(expr: str, var: str) -> tp.Callable[[float], float]:
         return NameError('Wrong mathematical functions detected.')
 
     return eval(f'lambda {var}: {_expr}')  # pylint: disable=eval-used
+
+
+def get_subp_spec(subp: str, max_rows: int,
+                  max_cols: int
+                  ) -> tp.Tuple[tp.Union[int, tp.List[int]],
+                                tp.Union[int, tp.List[int]]]:
+    """Get subplot specifications and check if valid.
+
+    Parses a subplot specifications and returns a valid definition
+    or a IndexError otherwise.
+
+    Parameters
+    ----------
+    subp
+        Subplot(s) specifications, as a string.
+    max_rows
+        Maximum number of rows.
+    max_cols
+        Maximum number of columns.
+
+    Returns
+    -------
+    tuple
+        Tuple with the subplot coordinates or ranges of subplots.
+
+    Raises
+    ------
+    IndexError
+        Subplot specification out of range.
+    """
+    base_spec = parse_subid(subp, max_cols)
+    range_pars = [[None, None], [None, None]]
+    for i, item in enumerate(base_spec):
+        if isinstance(item, int):
+            range_pars[i] = (item-1, item-1)
+        else:
+            range_pars[i][0] = item[0] - 1
+            if item[1] == -1:
+                if i == 0:
+                    range_pars[i][1] = max_rows - 1
+                else:
+                    range_pars[i][1] = max_cols - 1
+            else:
+                range_pars[i][1] = item[1] - 1
+    row, col = range_pars
+    if row[-1] >= max_rows or col[-1] >= max_cols:
+        raise IndexError('Subplot out of range')
+    return row, col
 
 
 def build_opts(parser: argparse.ArgumentParser):
@@ -503,7 +567,7 @@ def parse_inifile(fname: str
         'ylabel': ('ylabel', ),
         'legpos': ('legend', ),
         'legcol': ('legend_cols', ),
-        'plottag': ('panel', )
+        'plottag': ('panel', ),
     }
     spcbase = {
         'title': None,
@@ -517,7 +581,7 @@ def parse_inifile(fname: str
         'ylabel': None,
         'legpos': 'best',
         'legcol': 1,
-        'plottag': None
+        'plottag': None,
     }
     if 'layout' in secs:
         optsec = opts[secs['layout']]
@@ -583,24 +647,10 @@ def parse_inifile(fname: str
             # Subplot - check if subplot within range
             res = optsec.get('subplot', fallback=None)
             if res is not None:
-                val1 = parse_subid(res, ncols)
-                val = [[None, None], [None, None]]
-                for i, item in enumerate(val1):
-                    if isinstance(item, int):
-                        val[i] = (item-1, item-1)
-                    else:
-                        val[i][0] = item[0] - 1
-                        if item[1] == -1:
-                            if i == 0:
-                                val[i][1] = nrows - 1
-                            else:
-                                val[i][1] = ncols - 1
-                        else:
-                            val[i][1] = item[1] - 1
-                row, col = val
-                if row[-1] >= nrows or col[-1] >= ncols:
+                try:
+                    curves[key] = {'subplot': get_subp_spec(res, nrows, ncols)}
+                except IndexError:
                     continue
-                curves[key] = {'subplot': (row, col)}
             else:
                 curves[key] = {'subplot': ((0, nrows-1), (0, ncols-1))}
             if 'file' not in optsec and 'files' not in optsec:
@@ -764,7 +814,102 @@ def parse_inifile(fname: str
                 curves[key]['outfile'] = \
                     optsec.get('outputfile').format(curve=key)
 
-    return figdat, spcdat, curves
+    regions = {}
+    for sec in secs:
+        if sec.startswith('region') or sec.startswith('area'):
+            res = sec.split(':', maxsplit=1)
+            if len(res) != 2:
+                key = ' '
+            else:
+                key = secs[sec].split(':', maxsplit=1)[1].strip()
+            print(f'Parsing information on area: {key}')
+            optsec = opts[secs[sec]]
+            # Check if area to be shown
+            if not optsec.getboolean('show', fallback=True):
+                continue
+            # Get subplot specification
+            res = optsec.get('subplot', fallback=None)
+            if res is not None:
+                try:
+                    regions[key] = {
+                        'subplot': get_subp_spec(res, nrows, ncols)}
+                except IndexError:
+                    continue
+            else:
+                regions[key] = {'subplot': ((0, nrows-1), (0, ncols-1))}
+            # Region coordinates specification
+            regions[key]['xleft'] = None
+            regions[key]['xright'] = None
+            regions[key]['ymin'] = None
+            regions[key]['ymax'] = None
+            valset = {
+                'xleft': False,
+                'xright': False,
+                'ymin': False,
+                'ymax': False,
+            }
+            for opt in ('areaxleft', 'areaxright', 'areaymin', 'areaymax',
+                        'areaxmin', 'areaxmax'):
+                val = optsec.get(opt)
+                if opt == 'areaxmin':
+                    dkey = 'xleft'
+                elif opt == 'areaxmax':
+                    dkey = 'xright'
+                else:
+                    dkey = opt[4:]
+                if val is not None:
+                    if valset[dkey]:
+                        print(f'WARNING: "{dkey}" value for region {key}',
+                              'already set. Overridding.')
+                    valset[dkey] = True
+                    if val.lower() == 'auto':
+                        regions[key][dkey] = None
+                    else:
+                        try:
+                            regions[key][dkey] = float(val)
+                        except ValueError:
+                            print(f'ERROR: Incorrect definition of "{opt}"',
+                                  f'for region {key}')
+                            sys.exit(1)
+            # Region transparency specification
+            val = False
+            val = optsec.get('areaalpha', fallback=False)
+            if not val:
+                val = optsec.get('areatransparency', fallback=False)
+            if val:
+                if '%' in val:
+                    try:
+                        regions[key]['alpha'] = float(val.rstrip(' %'))/100.
+                    except ValueError:
+                        print('ERROR: Incorrect specification of ',
+                              f'transparency for region {key}')
+                        sys.exit(1)
+                else:
+                    try:
+                        regions[key]['alpha'] = float(val.rstrip(' %'))
+                        # If value > 1, we assume given in base 256.
+                        if regions[key]['alpha'] > 1:
+                            regions[key]['alpha'] /= 255.
+                    except ValueError:
+                        print('ERROR: Incorrect specification of ',
+                              f'transparency for region {key}')
+                        sys.exit(1)
+            else:
+                regions[key]['alpha'] = 0.5
+            # Region color specification
+            val = optsec.get('areacolor')
+            if val is None:
+                regions[key]['color'] = 'lightish blue'
+            else:
+                regions[key]['color'] = val
+            try:
+                regions[key]['rgba'] = to_rgb_list(
+                    regions[key]['color'], True, True, regions[key]['alpha'])
+            except ValueError:
+                print(f'ERROR: Unsupported color for region "{key}"')
+                sys.exit(1)
+
+    return figdat, spcdat, curves, regions
 
 
 def main() -> tp.NoReturn:
@@ -790,7 +935,7 @@ def main() -> tp.NoReturn:
         sys.exit(2)
     else:
         try:
-            figdata, spcdata, curves = parse_inifile(args.optfile)
+            figdata, spcdata, curves, regions = parse_inifile(args.optfile)
         except FileNotFoundError:
             print(f'ERROR: Option file "{args.optfile}" not found.')
             sys.exit(1)
@@ -954,6 +1099,47 @@ def main() -> tp.NoReturn:
             if y0lines[row, col]:
                 sub.axhline(0, c='.5', zorder=-10.0)
             spcdata[row][col].set_plot(sub)
+    # Now let us check if regions are present.
+    # We do it at the end so we have the subplot specifications
+    for num, key in enumerate(regions):
+        irow, icol = regions[key]['subplot']
+        x0 = regions[key]['xleft']
+        x1 = regions[key]['xright']
+        y0 = regions[key]['ymin']
+        y1 = regions[key]['ymax']
+        is_vzone = y0 is None and y1 is None
+        is_hzone = x0 is None and x1 is None
+        for row in range(irow[0], min(irow[1]+1, nrows)):
+            for col in range(icol[0], min(icol[1]+1, ncols)):
+                if nrows > 1 and ncols > 1:
+                    sub = subp[row, col]
+                elif nrows > 1:
+                    sub = subp[row]
+                elif ncols > 1:
+                    sub = subp[col]
+                else:
+                    sub = subp
+                if is_vzone and is_hzone:
+                    sub.set_facecolor(regions[key]['rgba'])
+                elif is_vzone:
+                    x0_ = sub.get_xlim()[0] if x0 is None else x0
+                    x1_ = sub.get_xlim()[1] if x1 is None else x1
+                    y = sub.get_ylim()
+                    sub.set_ylim(auto=False)
+                    sub.fill_betweenx(y, x0_, x1_, color=regions[key]['rgba'],
+                                      zorder=-20-num)
+                elif is_hzone:
+                    y0_ = sub.get_ylim()[0] if y0 is None else y0
+                    y1_ = sub.get_ylim()[1] if y1 is None else y1
+                    x = sub.get_xlim()
+                    sub.fill_between(x, y0_, y1_, color=regions[key]['rgba'],
+                                     zorder=-20-num)
+                else:
+                    sub.fill_between((x0, x1), y0, y1,
+                                     color=regions[key]['rgba'],
+                                     zorder=-20-num)
+
+    # Finalize figure
     if figdata['title'] is not None:
         fig.suptitle(figdata['title'], fontweight='bold')
     if figdata['fname'] is not None:
