@@ -129,26 +129,24 @@ Alternatively, the broadening and axis parameters can be inverted:
         print(f'Error found while parsing spectroscopy\n{err}')
         sys.exit(1)
     if subopts is not None:
-        if 'T' in subopts:
-            try:
-                spec_pars['temp'] = float(subopts['T'])
-            except ValueError:
-                print('Incorrect temperature specification')
-        elif 'temp' in subopts:
-            try:
-                spec_pars['temp'] = float(subopts['temp'])
-            except ValueError:
-                print('Incorrect temperature specification')
-        if 'w' in subopts:
-            try:
-                spec_pars['weigh_vtrans'] = subopts['w'].lower()
-            except ValueError:
-                print('Incorrect weigh specification')
-        elif 'weigh' in subopts:
-            try:
-                spec_pars['weigh_vtrans'] = subopts['weigh'].lower()
-            except ValueError:
-                print('Incorrect weigh specification')
+        keys = set(subopts)
+        if opt := sorted(list({'T', 'temp'} & keys)):
+            if len(opt) > 1:
+                print(f'WARNING: Multiple temp. definitions, using "{opt[0]}"')
+            if opt:
+                try:
+                    spec_pars['temp'] = float(subopts[opt[0]])
+                except ValueError:
+                    print('Incorrect temperature specification')
+        if opt := sorted(list({'w', 'weigh', 'weight'} & keys)):
+            if len(opt) > 1:
+                print('WARNING: Multiple weigh model definitions,',
+                      f'using "{opt[0]}"')
+            if opt:
+                try:
+                    spec_pars['weigh_vtrans'] = subopts[opt[0]].lower()
+                except ValueError:
+                    print('Incorrect weigh specification')
     try:
         spec = spectroscopy[key.casefold()]
     except KeyError:
