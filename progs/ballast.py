@@ -69,7 +69,7 @@ NewXMax = 4000
 # New uppper bound for the broadened spectra
 Temperature = 300
 # Temperature, in K.  "Off" or "No" to deactivate it on a specific curve.
-VTrans_WeighModel = pni_dn
+VTrans_WeightModel = pni_dn
 # Weighing model for vibrational transitions.
 # Possible values:
 # pni_dn: consider the full progression and the type of transition
@@ -646,8 +646,11 @@ def parse_inifile(fname: str
                     if val.lower() in ('no', 'off'):
                         params['temp'] = False
                 if params['temp']:
-                    params['weigh_vtrans'] = optsec.get('vtrans_weighmodel',
-                                                        fallback=None)
+                    # Support two aliases
+                    val = optsec.get('vtrans_weightmodel', fallback=None)
+                    if val is None:
+                        val = optsec.get('vtrans_weighmodel', fallback=None)
+                    params['weigh_vtrans'] = val
                     if params['weigh_vtrans'] is not None:
                         if params['weigh_vtrans'].lower() == 'calc':
                             params['weigh_vtrans'] = 'pni_dn'
