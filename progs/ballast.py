@@ -1098,7 +1098,13 @@ def main() -> tp.NoReturn:
             # sub.legend()
             if y0lines[row, col]:
                 sub.axhline(0, c='.5', zorder=-10.0)
+            # Block the boundaries so they cannot be modified afterwards.
+            # This is useful to add regions and prevent Matplotlib from
+            # extending the boundaries to accomodate the blocks.
+            sub.set_xlim(auto=False)
+            sub.set_ylim(auto=False)
             spcdata[row][col].set_plot(sub)
+
     # Now let us check if regions are present.
     # We do it at the end so we have the subplot specifications
     for num, key in enumerate(regions):
@@ -1125,7 +1131,6 @@ def main() -> tp.NoReturn:
                     x0_ = sub.get_xlim()[0] if x0 is None else x0
                     x1_ = sub.get_xlim()[1] if x1 is None else x1
                     y = sub.get_ylim()
-                    sub.set_ylim(auto=False)
                     sub.fill_betweenx(y, x0_, x1_, color=regions[key]['rgba'],
                                       zorder=-20-num)
                 elif is_hzone:
@@ -1135,7 +1140,11 @@ def main() -> tp.NoReturn:
                     sub.fill_between(x, y0_, y1_, color=regions[key]['rgba'],
                                      zorder=-20-num)
                 else:
-                    sub.fill_between((x0, x1), y0, y1,
+                    x0_ = sub.get_xlim()[0] if x0 is None else x0
+                    x1_ = sub.get_xlim()[1] if x1 is None else x1
+                    y0_ = sub.get_ylim()[0] if y0 is None else y0
+                    y1_ = sub.get_ylim()[1] if y1 is None else y1
+                    sub.fill_between((x0_, x1_), y0_, y1_,
                                      color=regions[key]['rgba'],
                                      zorder=-20-num)
 
