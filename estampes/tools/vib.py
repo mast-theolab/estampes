@@ -634,8 +634,8 @@ def weigh_trans_progress(trans_spec: tp.Dict[int, int],
             weight *= exp(-wikbT) / (1 - exp(-wikbT))
         elif ni == -2:
             weight *= 2.0 * exp(-2*wikbT) / (1 - exp(-wikbT))**2
-        elif ni == 3:
-            weight *= 6.0 * exp(-3* wikbT) / (1 - exp(-wikbT))**3
+        elif ni == -3:
+            weight *= 6.0 * exp(-3*wikbT) / (1 - exp(-wikbT))**3
         else:
             raise ValueError(
                 f'Unsupported quanta difference for mode {i}')
