@@ -173,6 +173,7 @@ FillColor = light blue
 # Filling color, only read if filling requested
 FillAlpha = 50%
 # Transparency of the filling area. Alias: FillTransparency
+# FillYBase to set directly the lower Y value of the filling.
 
 [Region:1]
 SubPlot = 2,1
@@ -798,6 +799,8 @@ def parse_inifile(fname: str
                     except ValueError:
                         print(f'ERROR: Unsupported color for curve "{key}"')
                         sys.exit(1)
+                curves[key]['fillybase'] = optsec.getfloat('fillybase',
+                                                           fallback=False)
 
             if optsec.get('label', None) is not None:
                 curves[key]['data'].label = optsec.get('label')
@@ -961,7 +964,7 @@ def parse_inifile(fname: str
     return figdat, spcdat, curves, regions
 
 
-def main() -> tp.NoReturn:
+def main():
     """Run the main program."""
     args = parse_args(sys.argv[1:])
     if args.gen_ini is not None or args.gen_longini is not None:
@@ -1108,7 +1111,19 @@ def main() -> tp.NoReturn:
                             curves[key]['fillrgba'] = to_rgb_list(
                                 data['color'], True, True,
                                 curves[key]['fillalpha'])
-                        sub.fill_between(xaxis, yaxis,
+                        if curves[key]['fillybase'] is not False:
+                            y0 = curves[key]['fillybase']
+                        elif curves[key]['yshift'] is not None:
+                            if curves[key]['yshift'] == 'base':
+                                y0 = 0.0
+                            else:
+                                if ymin*ymax >= 0:
+                                    y0 = ymin if ymin >= 0 else ymax
+                                else:
+                                    y0 = yshift
+                        else:
+                            y0 = 0.0
+                        sub.fill_between(xaxis, yaxis, y0,
                                          color=curves[key]['fillrgba'])
 
     # Now set the plot grid.
