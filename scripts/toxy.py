@@ -128,17 +128,22 @@ Alternatively, the broadening and axis parameters can be inverted:
     except ArgumentError as err:
         print(f'Error found while parsing spectroscopy\n{err}')
         sys.exit(1)
+    no_temp = None
     if subopts is not None:
         keys = set(subopts)
-        if opt := sorted(list({'T', 'temp'} & keys)):
+        if opt := sorted(list({'T', 'temp', 'temperature'} & keys)):
             if len(opt) > 1:
                 print(f'WARNING: Multiple temp. definitions, using "{opt[0]}"')
             if opt:
-                try:
-                    spec_pars['temp'] = float(subopts[opt[0]])
-                except ValueError:
-                    print('Incorrect temperature specification')
-        if opt := sorted(list({'w', 'weigh', 'weight'} & keys)):
+                if subopts[opt[0]].lower() in ('off', 'no'):
+                    no_temp = True
+                else:
+                    try:
+                        spec_pars['temp'] = float(subopts[opt[0]])
+                    except ValueError:
+                        print('Incorrect temperature specification')
+        if (opt := sorted(list({'w', 'weigh', 'weight'} & keys))
+                and not no_temp):
             if len(opt) > 1:
                 print('WARNING: Multiple weigh model definitions,',
                       f'using "{opt[0]}"')
