@@ -799,8 +799,8 @@ def parse_inifile(fname: str
                     except ValueError:
                         print(f'ERROR: Unsupported color for curve "{key}"')
                         sys.exit(1)
-                curves[key]['fillybase'] = optsec.getfloat('fillybase',
-                                                           fallback=False)
+                curves[key]['fillbase'] = optsec.getfloat('fillybase',
+                                                          fallback=False)
 
             if optsec.get('label', None) is not None:
                 curves[key]['data'].label = optsec.get('label')
@@ -1111,14 +1111,15 @@ def main():
                             curves[key]['fillrgba'] = to_rgb_list(
                                 data['color'], True, True,
                                 curves[key]['fillalpha'])
-                        if curves[key]['fillybase'] is not False:
-                            y0 = curves[key]['fillybase']
+                        if curves[key]['fillbase'] is not False:
+                            y0 = curves[key]['fillbase']
                         elif curves[key]['yshift'] is not None:
                             if curves[key]['yshift'] == 'base':
                                 y0 = 0.0
                             else:
                                 if ymin*ymax >= 0:
-                                    y0 = ymin if ymin >= 0 else ymax
+                                    y0 = np.min(yaxis) if ymin >= 0 \
+                                        else np.max(yaxis)
                                 else:
                                     y0 = yshift
                         else:
