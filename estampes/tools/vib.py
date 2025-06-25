@@ -496,8 +496,8 @@ def weigh_trans_progress(trans_spec: tp.Dict[int, int],
                          energy: tp.Union[tp.Sequence[float],
                                           tp.Dict[int, float]],
                          temp: float = 298.15,
-                         norm_coef: bool = True,
-                         i_offset: int = 0) -> float:
+                         i_offset: int = 0,
+                         norm_coef: bool = True) -> float:
     r"""Weigh transition progressions considering all populations.
 
     Weighs transitions considering all possible transitions involving
@@ -611,12 +611,12 @@ def weigh_trans_progress(trans_spec: tp.Dict[int, int],
         Mode energies, in cm\ :sup:`-1`.
     temp
         Temperature, in K.
+    i_offset
+        Offset to apply between mode index and index in `energy`.
     norm_coef
         If True, normalize coefficient assuming the 0K-term has not
         been normalized for the excitation quanta
         (e.g., 2 for 1st overtone).
-    i_offset
-        Offset to apply between mode index and index in `energy`.
 
     Returns
     -------
