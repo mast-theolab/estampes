@@ -28,6 +28,7 @@ Other blocks are:
 
 ### Added
 - **2XY**: New sub-options `T`/`temp` and `w`/`weight` for the spectroscopy keyword to specify a weighing model to apply on vibrational transitions.
+- **2XY**: `T=0|0K|no|off` deactivates the account of temperature effects.
 - **BLS**: Added support of temperature weights based on harmonic approximation with keywords `Temperature` and `VTrans_WeightModel`.
 - **BLS**: Users can now define regions of plots to be colored.  See `--gen-longini` for a documentation of the option.
 - **BLS**: It is now possible to fill the region between a curve and the origin line, with the option `Fill` (see `--gen-longini` for details).

@@ -137,6 +137,8 @@ Alternatively, the broadening and axis parameters can be inverted:
             if opt:
                 if subopts[opt[0]].lower() in ('off', 'no'):
                     no_temp = True
+                elif subopts[opt[0]].replace(' ', '') in ('0', '0K'):
+                    no_temp = True
                 else:
                     try:
                         spec_pars['temp'] = float(subopts[opt[0]])
