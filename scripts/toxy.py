@@ -144,7 +144,7 @@ Alternatively, the broadening and axis parameters can be inverted:
                         spec_pars['temp'] = float(subopts[opt[0]])
                     except ValueError:
                         print('Incorrect temperature specification')
-        if (opt := sorted(list({'w', 'weigh', 'weight'} & keys))
+        if ((opt := sorted(list({'w', 'weigh', 'weight'} & keys)))
                 and not no_temp):
             if len(opt) > 1:
                 print('WARNING: Multiple weigh model definitions,',
