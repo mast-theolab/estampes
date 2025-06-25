@@ -496,6 +496,7 @@ def weigh_trans_progress(trans_spec: tp.Dict[int, int],
                          energy: tp.Union[tp.Sequence[float],
                                           tp.Dict[int, float]],
                          temp: float = 298.15,
+                         norm_coef: bool = True,
                          i_offset: int = 0) -> float:
     r"""Weigh transition progressions considering all populations.
 
@@ -610,6 +611,10 @@ def weigh_trans_progress(trans_spec: tp.Dict[int, int],
         Mode energies, in cm\ :sup:`-1`.
     temp
         Temperature, in K.
+    norm_coef
+        If True, normalize coefficient assuming the 0K-term has not
+        been normalized for the excitation quanta
+        (e.g., 2 for 1st overtone).
     i_offset
         Offset to apply between mode index and index in `energy`.
 
@@ -627,15 +632,19 @@ def weigh_trans_progress(trans_spec: tp.Dict[int, int],
         if ni == 1:
             weight *= 1.0 / (1 - exp(-wikbT))
         elif ni == 2:
-            weight *= 2.0 / (1 - exp(-wikbT))**2
+            x = 1.0 if norm_coef else 2.0
+            weight *= x / (1 - exp(-wikbT))**2
         elif ni == 3:
-            weight *= 6.0 / (1 - exp(-wikbT))**3
+            x = 1.0 if norm_coef else 6.0
+            weight *= x / (1 - exp(-wikbT))**3
         elif ni == -1:
             weight *= exp(-wikbT) / (1 - exp(-wikbT))
         elif ni == -2:
-            weight *= 2.0 * exp(-2*wikbT) / (1 - exp(-wikbT))**2
+            x = 1.0 if norm_coef else 2.0
+            weight *= x * exp(-2*wikbT) / (1 - exp(-wikbT))**2
         elif ni == -3:
-            weight *= 6.0 * exp(-3*wikbT) / (1 - exp(-wikbT))**3
+            x = 1.0 if norm_coef else 6.0
+            weight *= x * exp(-3*wikbT) / (1 - exp(-wikbT))**3
         else:
             raise ValueError(
                 f'Unsupported quanta difference for mode {i}')
