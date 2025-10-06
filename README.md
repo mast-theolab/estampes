@@ -28,7 +28,7 @@ The version is not yet available on *PyPI* and must be installed manually in roo
 >
 > Run
 > ```
-> pip install -e git+https://github.com/jbloino/estampes.git#egg=estampes
+> pip install -e git+https://github.com/mast-theolab/estampes.git#egg=estampes
 > ```
 
 Requirements
