@@ -428,7 +428,7 @@ def convert_y(specabbr: str,
             if _dest_unit in UNIT_RDSG['cm3/mol/sr']:
                 if _src_type == 'ROA':
                     # (AA->cm)^6 * Na * (2 pi * Wscat)^4
-                    yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4 / 45
+                    yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4 / (4*45)
 
                     def xfunc(x):
                         return (incfrq-x)**4
@@ -449,7 +449,7 @@ def convert_y(specabbr: str,
             elif _dest_unit in UNIT_RDSG['m2.cm/mol/sr']:
                 if _src_type == 'ROA':
                     # 10^-4 * (AA->cm)^6 * Na * (2 pi * Wscat)^4
-                    yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4 / 45
+                    yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4 / (4*45)
 
                     def xfunc(x):
                         return (incfrq-x)**4
