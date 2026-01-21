@@ -257,6 +257,24 @@ def rotate(rotmat: npt.ArrayLike, array: npt.ArrayLike,
         return res
 
 
+def nint(x: float, /) -> int:
+    """Convert to nearest integer.
+
+    Converts float number to nearest integer.
+
+    Parameters
+    ----------
+    x
+        Value to convert.
+
+    Returns
+    -------
+    int
+        Nearest integer.
+    """
+    return int(x + 0.5)
+
+
 def square_ltmat(ltmat: tp.Union[tp.Sequence[float], np.ndarray],
                  what: str = 'symm') -> np.ndarray:
     """Square a lower-triangular matrix.
