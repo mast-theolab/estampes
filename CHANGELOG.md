@@ -37,6 +37,8 @@ Other blocks are:
 - **OAR**: It is now possible to request that the structural overlapped be maximized before computing J and K.
 - **CRS**: The program now supports configuration files in addition to commandline arguments.
 - **LIB**(`data.colors`): `to_rgb_list` now supports transparency specification and can return normalized values (0-1) instead of 0-255 int values.
+- **LIB**(`data.colors`): new function `rgba_item_to_scale` to convert RGBA specifications to specific scale (0-1 or 0-255).  The function can also combing RGB and alpha components.
+- **LIB**(`data.colors`): `MPL_COLORS` now include basic, one-letter color specifications.
 - **LIB**(`tools.mol`): New function `eckart_orient` to rotate a molecule to one of the Eckart orientations.
 - **LIB**(`tools.anharm`): New module to store functions related to the anharmonic treatment.
 - **LIB**(`tools.anharm`): New function `variational_notation` to check if the vibrational states in a data file related to anharmonic calculations are expressed in an harmonic basis or as pure variational states, which can limit some analyses.

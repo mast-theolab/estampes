@@ -6,7 +6,11 @@ The module provides several types of information like:
 
 import typing as tp
 
+from estampes.tools.math import nint
 from estampes.base.errors import ArgumentError
+
+__rgb256 = 256
+__rgb256_lim = __rgb256 - 1
 
 MPL_COLORS = {
     'C0'.casefold(): (0x1F, 0x77, 0xB4),
@@ -18,7 +22,15 @@ MPL_COLORS = {
     'C6'.casefold(): (0xE3, 0x77, 0xC2),
     'C7'.casefold(): (0x7F, 0x7F, 0x7F),
     'C8'.casefold(): (0xBC, 0xBD, 0x22),
-    'C9'.casefold(): (0x17, 0xBE, 0xCF)
+    'C9'.casefold(): (0x17, 0xBE, 0xCF),
+    'b'.casefold(): (0, 0, 255),  # blue
+    'g'.casefold(): (0, 128, 0),  # green
+    'r'.casefold(): (255, 0, 0),  # red
+    'c'.casefold(): (0, 191, 191),  # cyan
+    'm'.casefold(): (191, 0, 191),  # magenta
+    'y'.casefold(): (191, 191, 0),  # yellow
+    'k'.casefold(): (0, 0, 0),  # black
+    'w'.casefold(): (255, 255, 255),  # white
 }
 
 X11_COLORS = {  # X11 color names
@@ -1732,6 +1744,86 @@ XKCD_COLORS = {
 COLOR_NAMES = {**MPL_COLORS, **XKCD_COLORS, **X11_COLORS}
 
 
+def rgba_item_to_scale(element: tp.Union[str, int, float],
+                       normalize: bool = False,
+                       leading_sharp: bool = False) -> tp.Union[int, float]:
+    """Convert RGBA element to a specific scale.
+
+    Converts a RGBA element specification to a specific scale.
+    The RGBA element must be already isolated as input.
+
+    Parameter
+    ---------
+    element
+        Element specification to convert.
+    normalize
+        Use a normalized value 0-1 instead of 0-255 value.
+    leading_sharp
+        If `True`, accept leading `#` character in `element`.
+
+    Returns
+    -------
+    int, float
+        Converted value of the element.
+
+    Raises
+    ------
+    ValueError
+        Incorrect value for the element.
+    """
+    errmsg = f'Incorrect value of color element: {element}'
+    res = None
+    if isinstance(element, int):
+        if not 0 <= element < __rgb256:
+            raise ValueError(errmsg)
+        res = element/__rgb256_lim if normalize else element
+    elif isinstance(element, float):
+        if not 0 <= element <= 1.0:
+            raise ValueError(errmsg)
+        res = element if normalize else nint(element*__rgb256_lim)
+    elif isinstance(element, str):
+        item = element.strip()
+        if item.endswith('%'):
+            try:
+                val = float(item[:-1])
+            except ValueError as err:
+                raise ValueError(errmsg) from err
+            if not 0 <= val <= 100.0:
+                raise ValueError(errmsg)
+            res = val/100. if normalize else nint(val)
+        else:
+            dot_ok = True
+            if item.startswith('#'):
+                if not leading_sharp:
+                    raise ValueError(errmsg)
+                item = item[1:]
+                dot_ok = False
+            if '.' in item:
+                if not dot_ok:
+                    raise ValueError(errmsg)
+                try:
+                    val = float(item)
+                except ValueError as err:
+                    raise ValueError(errmsg) from err
+                if not 0 <= val <= 1.0:
+                    raise ValueError(errmsg)
+                else:
+                    res = val if normalize else nint(val*__rgb256_lim)
+            else:
+                if len(item) == 2:
+                    val = int(item, base=16)
+                    res = val/__rgb256_lim if normalize else val
+                elif len(item) == 1:
+                    val = int(2*item, base=16)
+                    res = val/__rgb256_lim if normalize else val
+                else:
+                    raise ValueError(errmsg)
+    else:
+        raise ValueError('Unknown color/alpha specification.')
+
+    return res
+
+
 def to_rgb_list(color: tp.Any,
                 normalize: bool = False,
                 to_rgba: bool = False,
@@ -1777,7 +1869,7 @@ def to_rgb_list(color: tp.Any,
         # Grayscale from 0 to 1.0
         if not 0.0 <= color <= 1.0:
             raise ArgumentError('color', 'Grayscale expected from 0 to 1')
-        rgb = [255*color for _ in range(3)]
+        rgb = [nint(__rgb256_lim*color) for _ in range(3)]
     elif isinstance(color, str):
         # String specification.  Several possible formats
         # Check first color
@@ -1804,7 +1896,7 @@ def to_rgb_list(color: tp.Any,
                 if any('.' in item for item in colors):
                     is_float = True
                     try:
-                        rgb = tuple(int(float(item)*255)
+                        rgb = tuple(nint(float(item)*__rgb256_lim)
                                     for item in colors[:3])
                     except ValueError as err:
                         raise ArgumentError('color', err_float) from err
@@ -1816,26 +1908,28 @@ def to_rgb_list(color: tp.Any,
                         raise ArgumentError('color', err_int) from err
                 if len(colors) == 4:
                     if is_float:
-                        alpha_spec = int(float(colors[-1])*255)
+                        alpha_spec = nint(float(colors[-1])*__rgb256_lim)
                     else:
                         alpha_spec = int(colors[-1])
             else:
                 raise ArgumentError('color', err_len)
-        elif color in COLOR_NAMES:
-            rgb = COLOR_NAMES[color]
+        elif color.casefold() in COLOR_NAMES:
+            rgb = COLOR_NAMES[color.casefold()]
         else:
             raise ArgumentError('color', 'Unknown color name/code.')
     elif isinstance(color, (tuple, list)):
         if len(color) in (3, 4):
             if all(isinstance(item, (float, int)) for item in color):
                 if any(isinstance(item, float) for item in color):
-                    rgb = tuple(int(item*255) for item in color[:3])
+                    rgb = tuple(nint(item*__rgb256_lim)
+                                for item in color[:3])
                 else:
                     rgb = tuple(color[:3])
             elif all(isinstance(item, str) for item in color):
                 if any('.' in item for item in color):
                     try:
-                        rgb = [int(float(item)*255) for item in color[:3]]
+                        rgb = [nint(float(item)*__rgb256_lim)
+                               for item in color[:3]]
                     except ValueError as err:
                         raise ArgumentError('color', err_float) from err
                 else:
@@ -1852,7 +1946,7 @@ def to_rgb_list(color: tp.Any,
 
     if rgb is None:
         raise ValueError('Unable to parse the RGB specifications.')
-    elif min(rgb) < 0 or max(rgb) > 255:
+    elif min(rgb) < 0 or max(rgb) > __rgb256_lim:
         raise ValueError('RGB parameters outside valid range.')
 
     if to_rgba:
@@ -1860,26 +1954,26 @@ def to_rgb_list(color: tp.Any,
             if isinstance(alpha, float):
                 if not 0.0 <= alpha <= 1.0:
                     return ArgumentError('Incorrect value of alpha')
-                val = int(alpha * 255)
+                val = nint(alpha * __rgb256_lim)
             elif isinstance(alpha, int):
-                if not 0 <= alpha < 256:
+                if not 0 <= alpha < __rgb256:
                     return ArgumentError('Incorrect value of alpha')
                 val = alpha
             else:
                 return ArgumentError('Incorrect value of alpha')
         elif alpha_spec is not None:
-            if not 0 <= alpha_spec < 256:
+            if not 0 <= alpha_spec < __rgb256:
                 raise ValueError('alpha parameter outside valid range.')
             val = alpha_spec
         else:
-            val = 255
+            val = __rgb256_lim
         rgba = rgb + (val, )
         if normalize:
-            return tuple(item/255 for item in rgba)
+            return tuple(item/__rgb256_lim for item in rgba)
         else:
             return rgba
     else:
         if normalize:
-            return tuple(item/255 for item in rgb)
+            return tuple(item/__rgb256_lim for item in rgb)
         else:
             return rgb
