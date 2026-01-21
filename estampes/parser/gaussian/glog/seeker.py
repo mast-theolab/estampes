@@ -163,7 +163,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
         fmt = (txt, txt)
         if qlab.kind == 'first':
             num = (0, 0)
-        elif qlab.kind == 'last':
+        elif qlab.kind in ('last', 'orient'):
             num = (-1, -1)
         else:
             num = (1, 1)
@@ -838,8 +838,8 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                                 r'^\s+(?P<val>(?:' + KEY_UINT + r'){4}(?:\s+'
                                 + KEY_FP + r'){3})\s*$')
                         else:
-                            msg = 'Quartic force constants only supported wrt ' \
-                                + 'normal coordinates'
+                            msg = 'Quartic force constants only supported ' \
+                                + 'wrt normal coordinates'
                             raise NotImplementedError(msg)
                         num1.append(0)
                     elif isinstance(qlab.rstate, int):

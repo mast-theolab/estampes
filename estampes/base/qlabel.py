@@ -302,6 +302,7 @@ class QLabel():
          AtCrd     last       (default) Last geometry in data file.
                    all        All available geometries in data file.
                    first      Consider nly the first geometry in file.
+                   orient     Provide specific orientation geometry
 
          DipStr    Len        (default) Length-gauge dipole strength
                    Vel        Velocity-gauge dipole strength
@@ -409,7 +410,8 @@ class QLabel():
             if descriptor is None:
                 self.__qdesc = 'last'
             else:
-                if descriptor.lower() in ('all', 'last', 'first', 'scan'):
+                if descriptor.lower() in ('all', 'last', 'first', 'scan',
+                                          'orient'):
                     self.__qdesc = descriptor.lower()
                 else:
                     raise ArgumentError(
