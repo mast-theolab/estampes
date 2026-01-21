@@ -10,6 +10,7 @@ from estampes.base.qdata import QData
 from estampes.parser import DataFile
 from estampes.base import QLabel, TypeColor
 from estampes.base.errors import ArgumentError
+from estampes.data.colors import rgba_item_to_scale, to_rgb_list
 from estampes.tools.char import unit_to_tex
 from estampes.tools.spec import broaden, convert_y
 from estampes.tools.vib import get_vib_trans, weigh_trans_progress
@@ -352,6 +353,8 @@ class Spectrum():
         # Create aliases
         self.reset()
         self.__linecol = None
+        self.__linealp = 1.0
+        self.__linergba = None
         self.__linesty = None
         self.__linewdt = None
 
@@ -1038,6 +1041,7 @@ class Spectrum():
         self.reset()
 
     def set_display(self, color: tp.Optional[TypeColor] = None,
+                    alpha: tp.Optional[tp.Union[int, float]] = None,
                     linestyle: tp.Optional[str] = None,
                     linewidth: tp.Optional[float] = None):
         """Set the display parameters.
@@ -1048,6 +1052,8 @@ class Spectrum():
         ----------
         color
             Color of the curve.
+        alpha
+            Opacity.
         linestyle
             Linestyle of the curve.
         linewidth
@@ -1059,7 +1065,9 @@ class Spectrum():
             Wrong type for input data.
         """
         if color is not None:
-            self.__linecol = color
+            self.__linecol = to_rgb_list(color, True)
+        if alpha is not None:
+            self.__linealp = rgba_item_to_scale(alpha, True)
         if linestyle is not None:
             self.__linesty = linestyle
         if linewidth is not None:
@@ -1076,6 +1084,15 @@ class Spectrum():
     @linecolor.setter
     def linecolor(self, val: TypeColor):
         self.set_display(color=val)
+
+    @property
+    def linealpha(self) -> float:
+        """Line color."""
+        return self.__linealp
+
+    @linealpha.setter
+    def linealpha(self, val: TypeColor):
+        self.set_display(alpha=val)
 
     @property
     def linestyle(self) -> tp.Optional[str]:

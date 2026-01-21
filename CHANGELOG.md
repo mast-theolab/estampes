@@ -45,6 +45,7 @@ Other blocks are:
 - **LIB**(`tools.vib`): New function `get_vib_trans` to build the transition data from a transition specification as list of initial- and final-state properties.
 - **LIB**(`tools.vib`): New function `weigh_trans_progress` to compute the weight for a transition progression considering all possible quanta of a given mode or set of modes within the harmonic or an harmonic-like approximation.
 - **LIB**(`base.spectrum`): Class `Spectrum` now supports a weighing model for the vibrational transitions where relevant.
+- **LIB**(`base.spectrum`): method `set_display` of class `Spectrum` now supports an alpha specification.
 - **API**: Added extraction of normal-modes ordering (`VPTDat:NMOrder`), quadratic (`VPTDat:Freq`), cubic (`VPTDat:cubic`) and quartic (`VPTDat:quartic`) force constants from Gaussian log files containing VPT2 calculations.
 - **API**: Added support of derivatives with respect to dimensionless normal coordinates in the ***QLabel***, as `dercord=qred`.
 - **API**: Added support of third and fourth derivatives of energies in Gaussian log files.  Beware, the block currently supported is the VPT2 block, which may contain a sub-block of "hybrid" data.

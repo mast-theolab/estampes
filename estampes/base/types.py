@@ -116,7 +116,7 @@ TypeQLab = tp.Tuple[TypeQTag, TypeQOpt, TypeDOrd, TypeDCrd, TypeRSta, TypeQLvl]
 
 TypeDFChk = tp.Dict[str, tp.List[tp.Union[str, int, float]]]
 TypeDGLog = tp.List[tp.Union[tp.List[str], str]]
-TypeColor = tp.Union[tp.Sequence[int], float, str]
+TypeColor = tp.Union[tp.Sequence[int], tp.Sequence[float], float, str]
 
 # Atoms-related data
 TypeAtData = tp.Dict[_tp_StrInt, tp.Dict[str, tp.List[tp.Any]]]
