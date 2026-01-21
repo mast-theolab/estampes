@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 from estampes.base.spectrum import Spectrum
 from estampes.base.errors import ArgumentError
-from estampes.data.colors import to_rgb_list
+from estampes.data.colors import rgba_item_to_scale, to_rgb_list
 from estampes.parser import DataFile
 from estampes.tools.char import convert_expr
 from estampes.visual.plotspec import SpecLayout
@@ -167,12 +167,14 @@ yshift = +.5
 # shift final spectrum by .5 along y
 color = #D2A356
 # Color of the spectrum
+alpha = 0.8
+# Opacity of the curve.  Alias: Opacity
 Fill = yes
 # Fill area between the curve and 0.
 FillColor = light blue
 # Filling color, only read if filling requested
 FillAlpha = 50%
-# Transparency of the filling area. Alias: FillTransparency
+# Opacity of the filling area. Alias: FillOpacity
 # FillYBase to set directly the lower Y value of the filling.
 
 [Region:1]
@@ -188,7 +190,7 @@ AreaYMax = auto
 AreaColor = blue
 # Color of the area
 AreaAlpha = 50%
-# Transparency of the area (alias: transparency)
+# Opacity of the area (alias: AreaOpacity)
 """
 
 
@@ -753,8 +755,16 @@ def parse_inifile(fname: str
                 curves[key]['data'].set_broadening(hwhm, func, 'default', xres,
                                                    xmin, xmax)
             vizdata = {}
-            for item in ('color', 'linestyle', 'linewidth'):
+            for item in ('color', 'linestyle', 'linewidth', 'alpha',
+                         'opacity'):
+                if item == 'opacity':
+                    dkey = 'alpha'
+                else:
+                    dkey = item
                 if optsec.get(item, False):
+                    if item in vizdata:
+                        print(f'WARNING: "{dkey}" value for curve {key}',
+                              'already set. Overridding.')
                     vizdata[item] = optsec.get(item, False)
             if vizdata:
                 curves[key]['data'].set_display(**vizdata)
@@ -766,28 +776,19 @@ def parse_inifile(fname: str
                 val = False
                 val = optsec.get('fillalpha', fallback=False)
                 if not val:
-                    val = optsec.get('filltransparency', fallback=False)
+                    val = optsec.get('fillopacity', fallback=False)
                 if val:
-                    if '%' in val:
-                        try:
-                            curves[key]['fillalpha'] = \
-                                float(val.rstrip(' %'))/100.
-                        except ValueError:
-                            print('ERROR: Incorrect specification of ',
-                                  f'filling transparency for curve {key}')
-                            sys.exit(1)
-                    else:
-                        try:
-                            curves[key]['fillalpha'] = float(val.rstrip(' %'))
-                            # If value > 1, we assume given in base 256.
-                            if curves[key]['fillalpha'] > 1:
-                                curves[key]['fillalpha'] /= 255.
-                        except ValueError:
-                            print('ERROR: Incorrect specification of ',
-                                  f'filling transparency for curve {key}')
-                            sys.exit(1)
+                    try:
+                        curves[key]['fillalpha'] = rgba_item_to_scale(val,
+                                                                      True)
+                    except ValueError:
+                        print('ERROR: Incorrect specification of filling',
+                              f'opacity for curve {key}')
+                        sys.exit(1)
                 else:
-                    curves[key]['fillalpha'] = 1.0
+                    # Use curve's opacity
+                    curves[key]['fillalpha'] = curves[key]['data'].linealpha
+
                 # Region color specification
                 val = optsec.get('fillcolor')
                 if val is None:
@@ -927,14 +928,14 @@ def parse_inifile(fname: str
             val = False
             val = optsec.get('areaalpha', fallback=False)
             if not val:
-                val = optsec.get('areatransparency', fallback=False)
+                val = optsec.get('areaopacity', fallback=False)
             if val:
                 if '%' in val:
                     try:
                         regions[key]['alpha'] = float(val.rstrip(' %'))/100.
                     except ValueError:
                         print('ERROR: Incorrect specification of ',
-                              f'transparency for region {key}')
+                              f'opacity for region {key}')
                         sys.exit(1)
                 else:
                     try:
@@ -944,7 +945,7 @@ def parse_inifile(fname: str
                             regions[key]['alpha'] /= 255.
                     except ValueError:
                         print('ERROR: Incorrect specification of ',
-                              f'transparency for region {key}')
+                              f'opacity for region {key}')
                         sys.exit(1)
             else:
                 regions[key]['alpha'] = 0.5
@@ -1076,6 +1077,7 @@ def main():
             data['linewidth'] = curves[key]['data'].linewidth
         if not stick and curves[key]['data'].linestyle is not None:
             data['linestyle'] = curves[key]['data'].linestyle
+        data['alpha'] = curves[key]['data'].linealpha
         irow, icol = curves[key]['subplot']
         for row in range(irow[0], min(irow[1]+1, nrows)):
             for col in range(icol[0], min(icol[1]+1, ncols)):

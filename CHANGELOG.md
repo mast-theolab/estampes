@@ -32,6 +32,7 @@ Other blocks are:
 - **BLS**: Added support of temperature weights based on harmonic approximation with keywords `Temperature` and `VTrans_WeightModel`.
 - **BLS**: Users can now define regions of plots to be colored.  See `--gen-longini` for a documentation of the option.
 - **BLS**: It is now possible to fill the region between a curve and the origin line, with the option `Fill` (see `--gen-longini` for details).
+- **BLS**: Added Opacity specification for lines.
 - **OAR**: New option to show/hide the plots of J and K: `--show-plots`/`--no-plots`.
 - **OAR**: It is now possible to view the 3D representation of the structural overlap with the option `--show-mols`.
 - **OAR**: It is now possible to request that the structural overlapped be maximized before computing J and K.
@@ -46,6 +47,7 @@ Other blocks are:
 - **LIB**(`tools.vib`): New function `weigh_trans_progress` to compute the weight for a transition progression considering all possible quanta of a given mode or set of modes within the harmonic or an harmonic-like approximation.
 - **LIB**(`base.spectrum`): Class `Spectrum` now supports a weighing model for the vibrational transitions where relevant.
 - **LIB**(`base.spectrum`): method `set_display` of class `Spectrum` now supports an alpha specification.
+- **LIB**(`visual.povrender`): added possibility to build an animation for a vibration.
 - **API**: Added extraction of normal-modes ordering (`VPTDat:NMOrder`), quadratic (`VPTDat:Freq`), cubic (`VPTDat:cubic`) and quartic (`VPTDat:quartic`) force constants from Gaussian log files containing VPT2 calculations.
 - **API**: Added support of derivatives with respect to dimensionless normal coordinates in the ***QLabel***, as `dercord=qred`.
 - **API**: Added support of third and fourth derivatives of energies in Gaussian log files.  Beware, the block currently supported is the VPT2 block, which may contain a sub-block of "hybrid" data.
