@@ -250,8 +250,8 @@ def mode_vibronic(dfile: DataFile,
     except IndexError:
         print('Data not available in file.')
         sys.exit()
-    except QuantityError:
-        print('Quantity not supported. Someone was lazy...')
+    except QuantityError as err:
+        print(f'Quantity not supported: {err}')
         sys.exit(1)
     if qty == 'mols':
         if dobjs['IniS'] is None:

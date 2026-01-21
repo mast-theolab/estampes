@@ -62,13 +62,14 @@ Other blocks are:
 - **ESP**: _ESParser_ now uses `MolWin` to build the molecular viewer and does not anymore use an alternative version.
 - **ESP**: _ESParser_ could crash when trying to display molecules because of an error in the definition of the representation model.
 - **CRS**: Updated code to latest version of the library.
+- **VIZ**(`visual.plotmat`): Fixed swapped indexes of J and C in the "information box" of the visualized J or C matrix.
 - **LIB**(`tools.math`): Fixed definition of weight in `superpose` when no atomic masses are provided.  The default could lead to an error with a sum applied on a `None` quantity.
 - **LIB**(`base.aliases`): Fixed alias of `ROA` keyword, wrong associated to RS.
 - **LIB**(`tools.spec`): Fixed ROA intensity (missing 1/4 factor).
-- **LIB**(`visual.plotmat`): Fixed swapped indexes of J and C in the "information box" of the visualized J or C matrix.
 - **API**: Support of intermediate states in vibronic Gaussian log files.
 
 ### Changed
+- **ESP**: Improved error message when data are not available.
 - **VIZ**(`visual.molui`): `MolWin` shortcuts are set at the application level, so they work if the visualizer is embedded in a window or at the root.
 - **VIZ**(`visual.molui`): The way the Qt orbital camera moves, extracting the translation components made little sense.  The translation operations now only consider the zoom along the Z axis.
 - **LIB**(`tools.vib`): `build_dusch_K` now expects the atomic masses given in the unified atomic mass unit instead of atomic units, for consistency with the way masses are extracted.
