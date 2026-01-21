@@ -36,6 +36,7 @@ import typing as tp
 from math import inf, isclose, radians, tan
 
 import numpy as np
+import numpy.typing as npt
 
 from estampes.base import QLabel
 from estampes.base.types import Type1Vib, TypeAtCrd, TypeAtCrdM, TypeAtLab, \
@@ -291,7 +292,7 @@ class POVBuilder():
         in_au
             Atomic coordinates are in atomic units.
         params
-            Additional parameters, transmitted to:
+            Additional parameters, transmitted to following routines:
 
             - load_data
         """
@@ -495,10 +496,18 @@ class POVBuilder():
                 self.__bonds.append(
                     list_bonds(self.__atlab[-1], self.__atcrd[-1], _tol_bonds))
                 if self.__load_vibs:
+                    n_at3 = self.__atcrd[0].size
                     try:
                         self.__vmodes.append(dfile.get_hess_data(True, False))
                     except QuantityError:
                         self.__vmodes.append(None)
+                    nvib = self.__vmodes[0].size // n_at3
+                    if self.__nvibs == 0:
+                        self.__nvibs = nvib
+                    else:
+                        if self.__nvibs != nvib:
+                            raise ValueError(
+                                'Inconsistency in number of normal modes')
             else:
                 self.__loaded[ifile] = True
                 self.__atcrd[ifile] = \
@@ -509,10 +518,18 @@ class POVBuilder():
                     list_bonds(self.__atlab[ifile],
                                self.__atcrd[ifile], _tol_bonds)
                 if self.__load_vibs:
+                    n_at3 = self.__atcrd[ifile].size
                     try:
                         self.__vmodes[ifile] = dfile.get_hess_data(True, False)
                     except QuantityError:
                         self.__vmodes[ifile] = None
+                    nvib = self.__vmodes[ifile].size // n_at3
+                    if self.__nvibs == 0:
+                        self.__nvibs = nvib
+                    else:
+                        if self.__nvibs != nvib:
+                            raise ValueError(
+                                'Inconsistency in number of normal modes')
         elif isinstance(infile, int):
             # Check if content already loaded:
             if self.__loaded[infile] and not force_reload:
@@ -528,10 +545,18 @@ class POVBuilder():
                 list_bonds(self.__atlab[infile],
                            self.__atcrd[infile], _tol_bonds)
             if self.__load_vibs:
+                n_at3 = self.__atcrd[infile].size
                 try:
                     self.__vmodes[infile] = dfile.get_hess_data(True, False)
                 except QuantityError:
                     self.__vmodes[infile] = None
+                nvib = self.__vmodes[infile].size // n_at3
+                if self.__nvibs == 0:
+                    self.__nvibs = nvib
+                else:
+                    if self.__nvibs != nvib:
+                        raise ValueError(
+                            'Inconsistency in number of normal modes')
         else:
             for ifile, fname in self.__infiles:
                 # Check if content already loaded:
@@ -548,10 +573,18 @@ class POVBuilder():
                     list_bonds(self.__atlab[ifile],
                                self.__atcrd[ifile], _tol_bonds)
                 if self.__load_vibs:
+                    n_at3 = self.__atcrd[ifile].size
                     try:
                         self.__vmodes[ifile] = dfile.get_hess_data(True, False)
                     except QuantityError:
                         self.__vmodes[ifile] = None
+                    nvib = self.__vmodes[ifile].size // n_at3
+                    if self.__nvibs == 0:
+                        self.__nvibs = nvib
+                    else:
+                        if self.__nvibs != nvib:
+                            raise ValueError(
+                                'Inconsistency in number of normal modes')
 
     def write_pov(self, *, povname: tp.Optional[str] = None,
                   id_mol: tp.Optional[int] = None,
@@ -562,6 +595,7 @@ class POVBuilder():
                   vib_model: str = 'arrows',
                   vib_mater: str = 'plastic',
                   verbose: bool = True,
+                  animate: bool = False,
                   **params):
         """Write POV-Ray file.
 
@@ -634,6 +668,19 @@ class POVBuilder():
             else:
                 raise ArgumentError(
                     f'Cannot find vibration with index {id_vib}')
+        # Set animation information
+        # anim_type:
+        # 0: no animation
+        # 1: oscillation
+        # 2: simple displacement
+        anim_type = int(animate)
+        anim_vec = None
+        if animate:
+            if vib is not None:
+                anim_type = 1
+                anim_vec = vib
+            else:
+                anim_type = 0
         # Build name template
         if povname:
             _povfile = povname
@@ -662,7 +709,7 @@ class POVBuilder():
             box = build_box(self.__atlab[mol], self.__atcrd[mol], mol_model,
                             **params)
             if vib is not None:
-                ivib = id_vib+1
+                ivib = id_vib + 1
             else:
                 ivib = 0
                 _povfile = re.sub(r'\{vib:?[^}]*\}', 'NA', _povfile)
@@ -671,12 +718,14 @@ class POVBuilder():
                 if verbose:
                     print(fmt_write_file.format(file=_file))
                 cam_depth = set_cam_depth(box)
-                write_pov_head(fobj, cam_depth, **params)
+                write_pov_head(fobj, cam_depth, anim_type=anim_type, **params)
                 write_pov_mol(fobj, 1, self.__atlab[mol], self.__atcrd[mol],
                               self.__bonds[mol],
                               col_bond_as_atom=True,
                               representation=mol_model, material=mol_mater,
                               show_mol=vib is None,
+                              anim_type=anim_type,
+                              anim_vec=anim_vec,
                               **params)
                 if vib is not None:
                     if 'vib_opts' in params:
@@ -687,7 +736,9 @@ class POVBuilder():
                         col1 = None
                     write_pov_vib(fobj, self.__atcrd[mol], vib,
                                   representation=vib_model, material=vib_mater,
-                                  color=col0, color2=col1, **params)
+                                  color=col0, color2=col1,
+                                  animate=anim_type == 1,
+                                  **params)
         else:
             if merge_mols:
                 box = build_box(self.__atlab[0], self.__atcrd[0], mol_model,
@@ -721,6 +772,8 @@ class POVBuilder():
                     write_pov_mol(fobj, self.__nmols, self.__atlab,
                                   self.__atcrd, self.__bonds,
                                   representation=mol_model, material=mol_mater,
+                                  anim_type=anim_type,
+                                  anim_vec=anim_vec,
                                   **params)
             else:
                 if '{mol' not in _povfile:
@@ -741,7 +794,9 @@ class POVBuilder():
                         write_pov_mol(fobj, 1, self.__atlab[i],
                                       self.__atcrd[i], self.__bonds[i],
                                       representation=mol_model,
-                                      material=mol_mater, **params)
+                                      material=mol_mater,
+                                      anim_type=anim_type,
+                                      anim_vec=anim_vec, **params)
         if verbose:
             print(MSG_POV_CMD.format(file=_file))
             if os.sys.platform == 'win32':
@@ -874,6 +929,7 @@ def set_cam_depth(box_mol: tp.Dict[str, float],
 def write_pov_head(fobj: tp.TextIO,
                    cam_depth: float = +8.0,
                    incl_material: str = 'all',
+                   anim_type: int = 0,
                    **extras):
     """Write the header for POV-Ray input file.
 
@@ -888,6 +944,11 @@ def write_pov_head(fobj: tp.TextIO,
     incl_material
         Include material definition.
         Possible values: glass, metal, plastic, all.
+    anim_type
+        Type of animation.
+        0: no animation
+        1: oscillation
+        2: simple displacement
     """
     try:
         if not fobj.writable():
@@ -899,6 +960,12 @@ def write_pov_head(fobj: tp.TextIO,
     if _mater not in set(CHOICES_MATER) | {'all'}:
         _mater = 'all'
 
+    if anim_type == 1:
+        step = '#declare step = -1/pi * asin(sin(2*pi*clock));\n'
+    elif anim_type == 2:
+        step = '#declare step = clock / 2;\n'
+    else:
+        step = '\n'
     fobj.write(f'''\
 global_settings {{
     ambient_light rgb <0.200, 0.200, 0.200>
@@ -907,7 +974,7 @@ global_settings {{
 
 #declare dist = 1.;
 #declare Trans = 0.0;
-
+{step}
 background {{ 1.0 }}
 
 camera {{
@@ -954,6 +1021,8 @@ def write_pov_mol(fobj: tp.TextIO,
                   scale_bonds: float = 1.0,
                   material: str = 'plastic',
                   show_mol: bool = True,
+                  anim_type: int = 0,
+                  anim_vec: tp.Optional[npt.ArrayLike] = None,
                   **extras):
     """Write molecular specifications in a POV-Ray file.
 
@@ -984,6 +1053,13 @@ def write_pov_mol(fobj: tp.TextIO,
         Material to use for the molecular representation.
     show_mol
         Add block to display the molecule.
+    anim_type
+        Type of animation.
+        0: no animation
+        1: oscillation
+        2: simple displacement
+    anim_vec
+        Displacement vector.
     extras
         Extra arguments:
 
@@ -1024,7 +1100,35 @@ def write_pov_mol(fobj: tp.TextIO,
     fmt_rad_at = '''
 #declare r_at_{at:2s} = {r:.6f}*scl_rat;'''
     if nmols == 1:
-        fmt_obj_bo = '''\
+        if anim_type > 0:
+            fmt_obj_bo = '''\
+    cylinder {{ // Bond {at1}({id1})- {at2}({id2})
+        <{xyz1[0]:14.6f},{xyz1[2]:14.6f},{xyz1[1]:14.6f}>
+        + step*<{dxyz1[0]:14.6f},{dxyz1[2]:14.6f},{dxyz1[1]:14.6f}>,
+        <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>
+        + step*<{dxyz[0]:14.6f},{dxyz[2]:14.6f},{dxyz[1]:14.6f}>,
+        r_bond
+        material {{ mat_bo_{at1} }}
+    }}
+    cylinder {{ // Bond {at1}({id1}) -{at2}({id2})
+        <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>
+        + step*<{dxyz[0]:14.6f},{dxyz[2]:14.6f},{dxyz[1]:14.6f}>,
+        <{xyz2[0]:14.6f},{xyz2[2]:14.6f},{xyz2[1]:14.6f}>
+        + step*<{dxyz2[0]:14.6f},{dxyz2[2]:14.6f},{dxyz2[1]:14.6f}>,
+        r_bond
+        material {{ mat_bo_{at2} }}
+    }}
+'''
+            fmt_obj_at = '''\
+    sphere {{ // Atom {at}({id})
+        <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>
+        + step*<{dxyz[0]:14.6f},{dxyz[2]:14.6f},{dxyz[1]:14.6f}>,
+        r_at_{at}
+        material {{ mat_at_{at} }}
+    }}
+'''
+        else:
+            fmt_obj_bo = '''\
     cylinder {{ // Bond {at1}({id1})- {at2}({id2})
         <{xyz1[0]:14.6f},{xyz1[2]:14.6f},{xyz1[1]:14.6f}>,
         <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>,
@@ -1038,14 +1142,42 @@ def write_pov_mol(fobj: tp.TextIO,
         material {{ mat_bo_{at2} }}
     }}
 '''
-        fmt_obj_at = '''\
+            fmt_obj_at = '''\
     sphere {{ // Atom {at}({id})
         <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>, r_at_{at}
         material {{ mat_at_{at} }}
     }}
 '''
     else:
-        fmt_obj_bo = '''\
+        if anim_type > 0:
+            fmt_obj_bo = '''\
+    cylinder {{ // Bond {at1}({id1})- {at2}({id2})
+        <{xyz1[0]:14.6f},{xyz1[2]:14.6f},{xyz1[1]:14.6f}>
+        + step*<{dxyz1[0]:14.6f},{dxyz1[2]:14.6f},{dxyz1[1]:14.6f}>,
+        <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>
+        + step*<{dxyz[0]:14.6f},{dxyz[2]:14.6f},{dxyz[1]:14.6f}>,
+        r_bond
+        material {{ mat_mol{idmol:02d} }}
+    }}
+    cylinder {{ // Bond {at1}({id1}) -{at2}({id2})
+        <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>
+        + step*<{dxyz1[0]:14.6f},{dxyz1[2]:14.6f},{dxyz1[1]:14.6f}>,
+        <{xyz2[0]:14.6f},{xyz2[2]:14.6f},{xyz2[1]:14.6f}>
+        + step*<{dxyz[0]:14.6f},{dxyz[2]:14.6f},{dxyz[1]:14.6f}>,
+        r_bond
+        material {{ mat_mol{idmol:02d} }}
+    }}
+'''
+            fmt_obj_at = '''\
+    sphere {{ // Atom {at}({id})
+        <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>
+        + step*<{dxyz[0]:14.6f},{dxyz[2]:14.6f},{dxyz[1]:14.6f}>,
+        r_at_{at}
+        material {{ mat_mol{idmol:02d} }}
+    }}
+'''
+        else:
+            fmt_obj_bo = '''\
     cylinder {{ // Bond {at1}({id1})- {at2}({id2})
         <{xyz1[0]:14.6f},{xyz1[2]:14.6f},{xyz1[1]:14.6f}>,
         <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>,
@@ -1059,7 +1191,7 @@ def write_pov_mol(fobj: tp.TextIO,
         material {{ mat_mol{idmol:02d} }}
     }}
 '''
-        fmt_obj_at = '''\
+            fmt_obj_at = '''\
     sphere {{ // Atom {at}({id})
         <{xyz[0]:14.6f},{xyz[2]:14.6f},{xyz[1]:14.6f}>, r_at_{at}
         material {{ mat_mol{idmol:02d} }}
@@ -1125,15 +1257,33 @@ def write_pov_mol(fobj: tp.TextIO,
                 xyz1 = at_crd[iat1]
                 xyz2 = at_crd[iat2]
                 xyzmid = (xyz1 + xyz2)/2.
-                fobj.write(fmt_obj_bo.format(
-                    xyz=xyzmid,
-                    at1=atdat[at_lab[iat1]]['symb'], id1=iat1+1, xyz1=xyz1,
-                    at2=atdat[at_lab[iat2]]['symb'], id2=iat2+1,
-                    xyz2=xyz2))
+                if anim_type > 0:
+                    dxyz1 = anim_vec[iat1]
+                    dxyz2 = anim_vec[iat2]
+                    dxyzmid = (dxyz1 + dxyz2) / 2
+                    fobj.write(fmt_obj_bo.format(
+                        xyz=xyzmid,
+                        at1=atdat[at_lab[iat1]]['symb'], id1=iat1+1, xyz1=xyz1,
+                        at2=atdat[at_lab[iat2]]['symb'], id2=iat2+1,
+                        xyz2=xyz2,
+                        dxyz=dxyzmid, dxyz1=dxyz1, dxyz2=dxyz2))
+                else:
+                    fobj.write(fmt_obj_bo.format(
+                        xyz=xyzmid,
+                        at1=atdat[at_lab[iat1]]['symb'], id1=iat1+1, xyz1=xyz1,
+                        at2=atdat[at_lab[iat2]]['symb'], id2=iat2+1,
+                        xyz2=xyz2))
         # -- Next build atoms
-        for iat, lab in enumerate(at_lab):
-            fobj.write(fmt_obj_at.format(
-                at=atdat[lab]['symb'], id=iat+1, xyz=at_crd[iat]))
+        if anim_type > 0:
+            for iat, lab in enumerate(at_lab):
+                dxyz = anim_vec[iat]
+                fobj.write(fmt_obj_at.format(
+                    at=atdat[lab]['symb'], id=iat+1, xyz=at_crd[iat],
+                    dxyz=dxyz))
+        else:
+            for iat, lab in enumerate(at_lab):
+                fobj.write(fmt_obj_at.format(
+                    at=atdat[lab]['symb'], id=iat+1, xyz=at_crd[iat]))
         # -- Close and add molecules
         fobj.write('}\n')
         if show_mol:
@@ -1166,18 +1316,38 @@ object {{
                     xyz1 = at_crd[imol][iat1]
                     xyz2 = at_crd[imol][iat2]
                     xyzmid = (xyz1 + xyz2)/2.
-                    fobj.write(fmt_obj_bo.format(
-                        xyz=xyzmid,
-                        at1=atdat[at_lab[imol][iat1]]['symb'],
-                        id1=iat1+1, xyz1=xyz1,
-                        at2=atdat[at_lab[imol][iat2]]['symb'],
-                        id2=iat2+1, xyz2=xyz2,
-                        idmol=imol+1))
+                    if anim_type > 0:
+                        dxyz1 = anim_vec[iat1]
+                        dxyz2 = anim_vec[iat2]
+                        dxyzmid = (dxyz1 + dxyz2) / 2
+                        fobj.write(fmt_obj_bo.format(
+                            xyz=xyzmid,
+                            at1=atdat[at_lab[imol][iat1]]['symb'],
+                            id1=iat1+1, xyz1=xyz1,
+                            at2=atdat[at_lab[imol][iat2]]['symb'],
+                            id2=iat2+1, xyz2=xyz2,
+                            idmol=imol+1,
+                            dxyz=dxyzmid, dxyz1=dxyz1, dxyz2=dxyz2))
+                    else:
+                        fobj.write(fmt_obj_bo.format(
+                            xyz=xyzmid,
+                            at1=atdat[at_lab[imol][iat1]]['symb'],
+                            id1=iat1+1, xyz1=xyz1,
+                            at2=atdat[at_lab[imol][iat2]]['symb'],
+                            id2=iat2+1, xyz2=xyz2,
+                            idmol=imol+1))
             # -- Next build atoms
-            for iat in range(len(at_lab[imol])):
-                fobj.write(fmt_obj_at.format(
-                    at=atdat[at_lab[imol][iat]]['symb'], id=iat+1,
-                    xyz=at_crd[imol][iat], idmol=imol+1))
+            if anim_type > 0:
+                for iat in range(len(at_lab[imol])):
+                    dxyz = anim_vec[iat]
+                    fobj.write(fmt_obj_at.format(
+                        at=atdat[at_lab[imol][iat]]['symb'], id=iat+1,
+                        xyz=at_crd[imol][iat], idmol=imol+1, dxyz=dxyz))
+            else:
+                for iat in range(len(at_lab[imol])):
+                    fobj.write(fmt_obj_at.format(
+                        at=atdat[at_lab[imol][iat]]['symb'], id=iat+1,
+                        xyz=at_crd[imol][iat], idmol=imol+1))
             # -- Close
             fobj.write('}\n')
         # Add block to visualize molecules
@@ -1205,6 +1375,7 @@ def write_pov_vib(fobj: tp.TextIO,
                   color: tp.Optional[tp.Any] = None,
                   color2: tp.Optional[tp.Any] = None,
                   scale_obj: float = 1.0,
+                  animate: bool = False,
                   **extras):
     """Write normal mode description in a POV-Ray file.
 
@@ -1235,6 +1406,8 @@ def write_pov_vib(fobj: tp.TextIO,
         If relevant, color of the "negative" displacement.
     scale_obj
         Scaling factor applied to each object describing the vibration.
+    animate
+        Displace the vibration object.
     extras
         Extra arguments:
 
@@ -1277,11 +1450,6 @@ def write_pov_vib(fobj: tp.TextIO,
     object {{
         Build_Arrow({lvib})
         scale scl_vib
-        matrix < {rot[0][0]:9.6f}, {rot[0][2]:9.6f}, {rot[0][1]:9.6f},
-                 {rot[1][0]:9.6f}, {rot[1][2]:9.6f}, {rot[1][1]:9.6f},
-                 {rot[2][0]:9.6f}, {rot[2][2]:9.6f}, {rot[2][1]:9.6f},
-                 {trans[0]:9.6f}, {trans[2]:9.6f}, {trans[1]:9.6f} >
-    }}
 '''
     elif representation in MODELS['vib']['midarrows']['alias']:
         scale_displ = 1.5  # we increase a bit the vector to be readable
@@ -1300,11 +1468,6 @@ def write_pov_vib(fobj: tp.TextIO,
     object {{
         Build_MidArrow({lvib})
         scale scl_vib
-        matrix < {rot[0][0]:9.6f}, {rot[0][2]:9.6f}, {rot[0][1]:9.6f},
-                 {rot[1][0]:9.6f}, {rot[1][2]:9.6f}, {rot[1][1]:9.6f},
-                 {rot[2][0]:9.6f}, {rot[2][2]:9.6f}, {rot[2][1]:9.6f},
-                 {trans[0]:9.6f}, {trans[2]:9.6f}, {trans[1]:9.6f} >
-    }}
 '''
     elif representation in MODELS['vib']['dualarrows']['alias']:
         if color is None:
@@ -1332,11 +1495,6 @@ def write_pov_vib(fobj: tp.TextIO,
     object {{
         Build_DualArrow({lvib})
         scale scl_vib
-        matrix < {rot[0][0]:9.6f}, {rot[0][2]:9.6f}, {rot[0][1]:9.6f},
-                 {rot[1][0]:9.6f}, {rot[1][2]:9.6f}, {rot[1][1]:9.6f},
-                 {rot[2][0]:9.6f}, {rot[2][2]:9.6f}, {rot[2][1]:9.6f},
-                 {trans[0]:9.6f}, {trans[2]:9.6f}, {trans[1]:9.6f} >
-    }}
 '''
 
     elif representation in MODELS['vib']['spheres']['alias']:
@@ -1364,14 +1522,21 @@ def write_pov_vib(fobj: tp.TextIO,
     object {{
         vib_sphere
         scale {lvib}*scl_vib
+'''
+    else:
+        raise ArgumentError('Unsupported representation of vibrations.')
+    
+    fmt_vib += '''
         matrix < {rot[0][0]:9.6f}, {rot[0][2]:9.6f}, {rot[0][1]:9.6f},
                  {rot[1][0]:9.6f}, {rot[1][2]:9.6f}, {rot[1][1]:9.6f},
                  {rot[2][0]:9.6f}, {rot[2][2]:9.6f}, {rot[2][1]:9.6f},
                  {trans[0]:9.6f}, {trans[2]:9.6f}, {trans[1]:9.6f} >
-    }}
 '''
-    else:
-        raise ArgumentError('Unsupported representation of vibrations.')
+    if animate:
+        fmt_vib += '''
+        translate step*<{dxyz[0]:9.6f}, {dxyz[2]:9.6f}, {dxyz[1]:9.6f}>
+'''
+    fmt_vib += '    }}\n'
 
     fobj.write('\n#declare vib = union{\n')
     for xyz, dxyz in zip(at_crd, evec):
@@ -1380,8 +1545,12 @@ def write_pov_vib(fobj: tp.TextIO,
             continue
         rot = np.transpose(vrotate_3D(np.array([0, 1, 0]), dxyz/ldxyz))
         ldxyz *= scale_displ*scale_vib
-        fobj.write(fmt_vib.format(rot=rot.tolist(), trans=xyz.tolist(),
-                                  lvib=ldxyz))
+        if animate:
+            fobj.write(fmt_vib.format(rot=rot.tolist(), trans=xyz.tolist(),
+                                      lvib=ldxyz, dxyz=dxyz))
+        else:
+            fobj.write(fmt_vib.format(rot=rot.tolist(), trans=xyz.tolist(),
+                                      lvib=ldxyz))
     fobj.write('}\n')
 
     # Conclude with options for showing
