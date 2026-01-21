@@ -458,8 +458,9 @@ def get_data(dfobj: GLogIO,
     except (QuantityError, NotImplementedError) as err:
         raise QuantityError('Unsupported quantities') from err
     except (ParseKeyError, IndexError) as err:
-        raise IndexError(f'Missing data in Gaussian log: {dfobj.filename}') \
-            from err
+        raise IndexError(
+            f'Missing data in Gaussian log: {dfobj.filename}.\n'
+            + f'=> {err}') from err
     # Fill redundant keys
     if dupl_keys:
         for item, key in dupl_keys.items():

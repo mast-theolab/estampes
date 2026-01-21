@@ -68,6 +68,7 @@ Other blocks are:
 - **VIZ**(`visual.molui`): The way the Qt orbital camera moves, extracting the translation components made little sense.  The translation operations now only consider the zoom along the Z axis.
 - **LIB**(`tools.vib`): `build_dusch_K` now expects the atomic masses given in the unified atomic mass unit instead of atomic units, for consistency with the way masses are extracted.
 - **LIB**(`base.spectrum`): Argument `weights` is replaced by `weigh_dbsets` in the constructor of class `Spectrum`.
+- **API**: Improved error message when data are missing from Gaussian log file.
 
 
 ## [0.6.1] - 2025-02-18
