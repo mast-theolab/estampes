@@ -16,6 +16,7 @@ import numpy as np
 
 from estampes.base import QLabel
 from estampes.parser import DataFile
+from estampes.data.colors import to_rgb_list
 from estampes.data.physics import PHYSFACT
 from estampes.data.visual import MODELS, MATERIALS
 from estampes.tools.char import parse_argval_options
@@ -57,6 +58,14 @@ def build_opts(parser: argparse.ArgumentParser):
     # msg = 'Display (Qt) instead of generating the Pov file.'
     # parser.add_argument('-D', '--display', action='store_true',
     #                     help=msg)
+    msg = '''Colorize molecules as a whole, colors are separated by \
+semi-colons (;).
+Supported formats are:
+- names
+- hexadecimal codes preceded by "#"
+Special keywords:
+- auto: the colors are chosen automatically
+'''
     msg = '''Material to be used (for now, only for rendering):
 - glass: glassy aspect
 - metal: metallic aspect
@@ -293,8 +302,10 @@ def main():
         else:
             if read_vib:
                 vib = opts.vib - 1
+                animate = True
             else:
                 vib = None
+                animate = False
             for fname in opts.infiles:
                 builder = POVBuilder(fname, load_vibs=read_vib,
                                      tol_bonds=opts.bond_tol)
@@ -306,7 +317,8 @@ def main():
                                   mol_model=mol_model, vib_model=vib_model,
                                   mol_mater=mol_mat, vib_mater=vib_mat,
                                   scale_atoms=scale_at, scale_bonds=scale_bo,
-                                  verbose=not opts.silent, vib_opts=vib_opts)
+                                  verbose=not opts.silent, vib_opts=vib_opts,
+                                  animate=animate)
     else:
         if num_mols > 1 and read_vib:
             txt = 'ERROR: Cannot visualize normal modes with multiple '\

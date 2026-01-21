@@ -33,6 +33,8 @@ Other blocks are:
 - **BLS**: Users can now define regions of plots to be colored.  See `--gen-longini` for a documentation of the option.
 - **BLS**: It is now possible to fill the region between a curve and the origin line, with the option `Fill` (see `--gen-longini` for details).
 - **BLS**: Added Opacity specification for lines.
+- **MRG**: Added color specification of molecules.
+- **MRG**: Animation with POV-Ray rendering is now supported.
 - **OAR**: New option to show/hide the plots of J and K: `--show-plots`/`--no-plots`.
 - **OAR**: It is now possible to view the 3D representation of the structural overlap with the option `--show-mols`.
 - **OAR**: It is now possible to request that the structural overlapped be maximized before computing J and K.
