@@ -63,6 +63,7 @@ Other blocks are:
 - **LIB**(`tools.math`): Fixed definition of weight in `superpose` when no atomic masses are provided.  The default could lead to an error with a sum applied on a `None` quantity.
 - **LIB**(`base.aliases`): Fixed alias of `ROA` keyword, wrong associated to RS.
 - **LIB**(`tools.spec`): Fixed ROA intensity (missing 1/4 factor).
+- **LIB**(`visual.plotmat`): Fixed swapped indexes of J and C in the "information box" of the visualized J or C matrix.
 - **API**: Support of intermediate states in vibronic Gaussian log files.
 
 ### Changed

@@ -79,10 +79,10 @@ def plot_jmat(mat: np.ndarray,
         row = int(y+.5)
         if col >= 0 and col < num_cols and row >= 0 and row < num_rows:
             z = _mat[row, col]
-            fmt = 'i={x:1.0f}, k={y:1.0f}, J^2(i,k)={z:1.4f}'
+            fmt = 'i={y:1.0f}, k={x:1.0f}, J^2(i,k)={z:1.4f}'
         else:
             z = 0.0
-            fmt = 'i={x:1.0f}, k={y:1.0f}'
+            fmt = 'i={y:1.0f}, k={x:1.0f}'
         return fmt.format(x=x+1, y=y+1, z=z)
 
     def vmode(x, _pos):
@@ -162,10 +162,10 @@ def plot_cmat(mat: np.ndarray,
         row = int(y+.5)
         if col >= 0 and col < num_cols and row >= 0 and row < num_rows:
             z = _mat[row, col]
-            fmt = 'i={x:1.0f}, k={y:1.0f}, C(i,k)={z:1.4f}'
+            fmt = 'i={y:1.0f}, k={x:1.0f}, C(i,k)={z:1.4f}'
         else:
             z = 0.0
-            fmt = 'i={x:1.0f}, k={y:1.0f}'
+            fmt = 'i={y:1.0f}, k={x:1.0f}'
         return fmt.format(x=x+1, y=y+1, z=z)
 
     def vmode(x, _pos):
