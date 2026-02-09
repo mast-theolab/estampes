@@ -55,6 +55,7 @@ def parse_en_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
             N = 2 if dblock[-1] else 1
             nblocks = len(dblock[iref])
             data = {}
+            tag = None
             for i in range(iref, iref+N):
                 if nblocks > 1:
                     txt = dblock[i][0][0]
@@ -63,11 +64,10 @@ def parse_en_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                     txt = dblock[i][0]
                     val = conv(txt)
                 res = fmt.search(txt)
-                try:
-                    tag = res.group(1)
-                except AttributeError:
+                if res is None:
                     msg = 'Unsupported energy format'
-                    raise ParseKeyError(msg) from None
+                    raise ParseKeyError(msg)
+                tag = res.group(1)
                 data[tag] = val
             dobj.set(data=data[tag])
             dobj.set(unit='Eh')
