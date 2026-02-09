@@ -56,6 +56,7 @@ Other blocks are:
 - **API**: Added extraction of electronic transition moments of electric dipole, magnetic dipole and electric quadrupole from Gaussian log file.
 - **API**: Added support of `'a->a'` transitions for excited-excited transition moments.
 - **API**(`parser.gaussian`): New function `g_elquad_LT_to_2D` to generate the proper electric quadrupolar tensor from Gaussian storage order.  The function is a public version of the function previously private to the `gaussian.fchk` submodule.
+- **API**(`parser.gaussian`): New function `gfloat` to convert numbers as string with Fortran double precision format to Python float.
 - **API**: QLabel now support `"orient"` as a specification for coordinates.
 
 ### Fixed

@@ -38,3 +38,21 @@ def g_elquad_LT_to_2D(vec: tp.Sequence[float]) -> tp.List[tp.List[float]]:
         [vec[3], vec[1], vec[5]],
         [vec[4], vec[5], vec[2]]
     ]
+
+
+def gfloat(number: str) -> float:
+    """Convert a string in Fortran notation to float.
+
+    Converts a string in number to float, taking care of D->E conversion.
+
+    Parameters
+    ----------
+    number
+        Number to convert.
+
+    Returns
+    -------
+    float
+        Converted number.
+    """
+    return float(number.replace('D', 'e'))
