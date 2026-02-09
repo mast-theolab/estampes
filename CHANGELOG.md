@@ -57,6 +57,7 @@ Other blocks are:
 - **API**: Added support of `'a->a'` transitions for excited-excited transition moments.
 - **API**(`parser.gaussian`): New function `g_elquad_LT_to_2D` to generate the proper electric quadrupolar tensor from Gaussian storage order.  The function is a public version of the function previously private to the `gaussian.fchk` submodule.
 - **API**(`parser.gaussian`): New function `gfloat` to convert numbers as string with Fortran double precision format to Python float.
+- **API**(`parser.glog`): Added support of first derivatives of frequency-dependent polarizability tensor alpha with respect to Cartesian coordinates.
 - **API**: QLabel now support `"orient"` as a specification for coordinates.
 
 ### Fixed

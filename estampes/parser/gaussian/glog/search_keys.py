@@ -9,9 +9,6 @@ from estampes.parser.gaussian.glog.logkeys import KEY_DP, KEY_FP, KEY_UINT
 from estampes.parser.gaussian.glog.types import TypeQKwrd
 
 
-FMT_F_DP = r'\s+-?\d\.\d+D?[+-]?\d{2,3}'
-
-
 def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
     """Provide extractor info for frequency-dependent properties."""
     # Get incident frequency information
@@ -63,7 +60,7 @@ def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
                 fmt.extend([
                     r'^\s+[xyz]{2}\s+(?P<val>-?\d+\.\d+D?[+-]\d+)\s.*$',
                     r'^\s+(?P<p>P0)?\s*\|\s+(?P<val>[^|]+\|'
-                    + r' +(?(p)Y|[XZ]) +\|(?:' + FMT_F_DP + r'){3})\s*$'
+                    + r' +(?(p)Y|[XZ]) +\|(?:\s+' + KEY_DP + r'){3})\s*$'
                 ])
             elif qlab.derord == 1:
                 if qlab.dercrd == 'Q':
@@ -75,10 +72,18 @@ def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
                     num.append(0)
                     fmt.append(
                         r'^\s+(?P<p>P1)?\s*\|\s+(?P<val>[^|]+\|'
-                        + r' +(?(p)Y|[XZ]) +\|(?:' + FMT_F_DP + r'){3})\s*$'
+                        + r' +(?(p)Y|[XZ]) +\|(?:\s+' + KEY_DP + r'){3})\s*$'
                     )
                 else:
-                    raise NotImplementedError('Support of derivatives NYI.')
+                    lnk.append(1110)
+                    key.append(' Property number 1 -- Derivative Alpha(-w,w)')
+                    sub.append(1)
+                    end.append(lambda s: s.startswith(' Property number')
+                               or s.lstrip()[0] not in '123456789')
+                    num.append(1)
+                    fmt.append(
+                        r'^\s+(?P<val>' + KEY_UINT
+                        + r'(?:\s+' + KEY_DP + r'|\s+' + KEY_UINT + r')*)\s*$')
             elif qlab.derord == 2:
                 if qlab.dercrd == 'Q':
                     lnk.append(717)
@@ -89,7 +94,7 @@ def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
                     num.append(0)
                     fmt.append(
                         r'^\s+(?P<p>P2)?\s*\|\s+(?P<val>[^|]+\|'
-                        + r' +(?(p)Y|[XZ]) +\|(?:' + FMT_F_DP + r'){3})\s*$'
+                        + r' +(?(p)Y|[XZ]) +\|(?:\s+' + KEY_DP + r'){3})\s*$'
                     )
                 else:
                     raise NotImplementedError('Support of derivatives NYI.')
@@ -103,7 +108,7 @@ def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
                     num.append(0)
                     fmt.append(
                         r'^\s+(?P<p>P3)?\s*\|\s+(?P<val>[^|]+\|'
-                        + r' +(?(p)Y|[XZ]) +\|(?:' + FMT_F_DP + r'){3})\s*$'
+                        + r' +(?(p)Y|[XZ]) +\|(?:\s+' + KEY_DP + r'){3})\s*$'
                     )
                 else:
                     raise NotImplementedError('Support of derivatives NYI.')
@@ -121,7 +126,7 @@ def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
                 num.append(0)
                 fmt.append(
                     r'^\s+(?P<p>P0)?\s*\|\s+(?P<val>[^|]+\|'
-                    + r' +(?(p)Y|[XZ]) +\|(?:' + FMT_F_DP + r'){3})\s*$'
+                    + r' +(?(p)Y|[XZ]) +\|(?:\s+' + KEY_DP + r'){3})\s*$'
                 )
             elif qlab.derord == 1:
                 if qlab.dercrd == 'Q':
@@ -133,7 +138,7 @@ def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
                     num.append(0)
                     fmt.append(
                         r'^\s+(?P<p>P1)?\s*\|\s+(?P<val>[^|]+\|'
-                        + r' +(?(p)Y|[XZ]) +\|(?:' + FMT_F_DP + r'){3})\s*$'
+                        + r' +(?(p)Y|[XZ]) +\|(?:\s+' + KEY_DP + r'){3})\s*$'
                     )
                 else:
                     raise NotImplementedError('Support of derivatives NYI.')
@@ -147,7 +152,7 @@ def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
                     num.append(0)
                     fmt.append(
                         r'^\s+(?P<p>P2)?\s*\|\s+(?P<val>[^|]+\|'
-                        + r' +(?(p)Y|[XZ]) +\|(?:' + FMT_F_DP + r'){3})\s*$'
+                        + r' +(?(p)Y|[XZ]) +\|(?:\s+' + KEY_DP + r'){3})\s*$'
                     )
                 else:
                     raise NotImplementedError('Support of derivatives NYI.')
@@ -161,7 +166,7 @@ def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
                     num.append(0)
                     fmt.append(
                         r'^\s+(?P<p>P3)?\s*\|\s+(?P<val>[^|]+\|'
-                        + r' +(?(p)Y|[XZ]) +\|(?:' + FMT_F_DP + r'){3})\s*$'
+                        + r' +(?(p)Y|[XZ]) +\|(?:\s+' + KEY_DP + r'){3})\s*$'
                     )
                 else:
                     raise NotImplementedError('Support of derivatives NYI.')
@@ -180,8 +185,8 @@ def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
                 num.append(0)
                 fmt.append(
                     r'^\s+(?P<p>P0)?\s*\|\s+(?P<val>[^|]+\|'
-                    + r' +(?(p)ZZ|(?:[XY][XYZ]|ZX|ZY)) +\|(?:'
-                    + FMT_F_DP + r'){3})\s*$'
+                    + r' +(?(p)ZZ|(?:[XY][XYZ]|ZX|ZY)) +\|(?:\s+'
+                    + KEY_DP + r'){3})\s*$'
                 )
             elif qlab.derord == 1:
                 if qlab.dercrd == 'Q':
@@ -194,8 +199,8 @@ def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
                     num.append(0)
                     fmt.append(
                         r'^\s+(?P<p>P1)?\s*\|\s+(?P<val>[^|]+\|'
-                        + r' +(?(p)ZZ|(?:[XY][XYZ]|ZX|ZY)) +\|(?:'
-                        + FMT_F_DP + r'){3})\s*$'
+                        + r' +(?(p)ZZ|(?:[XY][XYZ]|ZX|ZY)) +\|(?:\s+'
+                        + KEY_DP + r'){3})\s*$'
                     )
                 else:
                     raise NotImplementedError('Support of derivatives NYI.')
@@ -210,8 +215,8 @@ def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
                     num.append(0)
                     fmt.append(
                         r'^\s+(?P<p>P2)?\s*\|\s+(?P<val>[^|]+\|'
-                        + r' +(?(p)ZZ|(?:[XY][XYZ]|ZX|ZY)) +\|(?:'
-                        + FMT_F_DP + r'){3})\s*$'
+                        + r' +(?(p)ZZ|(?:[XY][XYZ]|ZX|ZY)) +\|(?:\s+'
+                        + KEY_DP + r'){3})\s*$'
                     )
                 else:
                     raise NotImplementedError('Support of derivatives NYI.')
@@ -226,8 +231,8 @@ def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
                     num.append(0)
                     fmt.append(
                         r'^\s+(?P<p>P3)?\s*\|\s+(?P<val>[^|]+\|'
-                        + r' +(?(p)ZZ|(?:[XY][XYZ]|ZX|ZY)) +\|(?:'
-                        + FMT_F_DP + r'){3})\s*$'
+                        + r' +(?(p)ZZ|(?:[XY][XYZ]|ZX|ZY)) +\|(?:\s+'
+                        + KEY_DP + r'){3})\s*$'
                     )
                 else:
                     raise NotImplementedError('Support of derivatives NYI.')

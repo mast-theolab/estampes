@@ -7,9 +7,9 @@ import re
 import typing as tp
 
 from estampes.base import QData, QLabel, \
-    ParseKeyError, QuantityError
+    ParseDataError, ParseKeyError, QuantityError
 from estampes.data.physics import phys_fact
-from estampes.parser.gaussian import g_elquad_LT_to_2D
+from estampes.parser.gaussian import g_elquad_LT_to_2D, gfloat
 
 xyz2id = {'X': 0, 'Y': 1, 'Z': 2}
 
@@ -49,7 +49,7 @@ def parse_en_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
 
         if qlab.derord == 0:
             def conv(s):
-                return float(s.split('=')[1].replace('D', 'e'))
+                return gfloat(s.split('=')[1])
 
             fmt = re.compile(r'E\(?(.*?)\)?\s+')
             N = 2 if dblock[-1] else 1
@@ -87,16 +87,14 @@ def parse_en_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                     cols = line.split()
                     i = int(cols[0])
                     if nbloc == 1:
-                        data.extend([float(item.replace('D', 'e'))
-                                        for item in cols[1:]])
+                        data.extend([gfloat(item) for item in cols[1:]])
                         if i > 5:
                             data.extend(0.0 for _ in range(maxcols, i))
                     else:
                         ioff = i*(i-1)//2 + (nbloc-1)*maxcols
                         ncols = len(cols) - 1
                         data[ioff:ioff+ncols] \
-                            = [float(item.replace('D', 'e'))
-                                for item in cols[1:]]
+                            = [gfloat(item) for item in cols[1:]]
             dobj.set(data=data)
         elif qlab.derord == 3:
             if qlab.dercrd == 'Q':
@@ -375,13 +373,18 @@ def parse_3xx_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
     """
     def list_incfrq(items):
         incfrqs = []
+        # Incident frequencies can be given in items as:
+        # 1 frequency at a time over multiple elements (anharm.)
+        # multiple frequencies stored in one (or more) items.
+        # We do a double loop on elements and content for this reason.
         for item in items:
-            if item not in incfrqs:
-                incfrqs.append(item)
+            for element in item.strip().split():
+                if element not in incfrqs:
+                    incfrqs.append(element)
         return incfrqs
 
     def split3(block):
-        return [float(item.replace('D', 'e')) for item in block.split()]
+        return [gfloat(item) for item in block.split()]
 
     dobj = QData(qlab)
     if qlab.label == 300:
@@ -421,7 +424,75 @@ def parse_3xx_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                         'Reference freq-dep. property tensor NYI.')
                 elif qlab.derord == 1:
                     if qlab.dercrd == 'X':
-                        raise NotImplementedError('d P/d X NYI.')
+                        data = {freq: [] for freq in incfrqs}
+                        n_incfrqs = len(incfrqs)
+                        if len(dblock[-1]) % n_incfrqs != 0:
+                            raise ParseDataError(
+                                'd alpha/d X',
+                                'Unknown data structure in Gaussian log file')
+                        # NOTE: we assume the data stored on max. 5 cols.
+                        for incfrq, block in zip(incfrqs,
+                                                 dblock[-1][-n_incfrqs:]):
+                            ioff = 0
+                            dalp_dx = []
+                            for iblk in range(0, len(block), 4):
+                                dax = [gfloat(item) for item in
+                                       block[iblk+1].strip().split()[1:]]
+                                day = [gfloat(item) for item in
+                                       block[iblk+2].strip().split()[1:]]
+                                daz = [gfloat(item) for item in
+                                       block[iblk+3].strip().split()[1:]]
+                                ncols = len(block[iblk].strip().split())
+                                if ioff == 0:
+                                    if ncols < 3:
+                                        raise ParseDataError(
+                                            'd alpha/d X',
+                                            'Incorrect number of columns in '
+                                            + f'block {iblk+1}')
+                                    data[incfrq].append([
+                                        dax[0:3], day[0:3], daz[0:3]
+                                    ])
+                                    if ncols > 3:
+                                        dalp_dx = [dax[3:], day[3:], daz[3:]]
+                                        ioff = ncols - 3
+                                else:
+                                    if ncols < 3 - ioff:
+                                        raise ParseDataError(
+                                            'd alpha/d X',
+                                            'Missing data to build tensor')
+                                    dalp_dx[0].extend(dax[:3-ioff])
+                                    dalp_dx[1].extend(day[:3-ioff])
+                                    dalp_dx[2].extend(daz[:3-ioff])
+                                    data[incfrq].append(dalp_dx)
+                                    nrest = ncols - (3 - ioff)
+                                    if nrest > 3:
+                                        # only possible case: 1 + 3 + 1
+                                        data[incfrq].append([
+                                            dax[-nrest:-nrest+3],
+                                            day[-nrest:-nrest+3],
+                                            daz[-nrest:-nrest+3],
+                                        ])
+                                        dalp_dx = [
+                                            dax[-nrest+3:],
+                                            day[-nrest+3:],
+                                            daz[-nrest+3:]]
+                                        ioff = nrest - 3
+                                    elif nrest == 3:
+                                        # exactly 3 columns remaining
+                                        data[incfrq].append([
+                                            dax[-nrest:],
+                                            day[-nrest:],
+                                            daz[-nrest:],
+                                        ])
+                                        ioff = 0
+                                    else:
+                                        dalp_dx = [
+                                            dax[-nrest:],
+                                            day[-nrest:],
+                                            daz[-nrest:]]
+                                        ioff = nrest
+                        dobj.set(data=data)
+                        dobj.set(unit='a0^2')
                     elif qlab.dercrd == 'Q':
                         data = {freq: {} for freq in incfrqs}
                         ioff = -1
@@ -431,8 +502,7 @@ def parse_3xx_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                                 i = int(cols[0])
                                 if i == 1:
                                     ioff += 1
-                                    dd = data[incfrqs[ioff]]
-                                dd[i] = [
+                                data[incfrqs[ioff]][i] = [
                                     split3(dblock[-1][ln-1].split('|')[-1]),
                                     split3(cols[-1]),
                                     split3(dblock[-1][ln+1].split('|')[-1])
@@ -459,10 +529,9 @@ def parse_3xx_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                                 i, j = (int(item) for item in cols[0].split())
                                 if i == 1 and j == 1:
                                     ioff += 1
-                                    dd = data[incfrqs[ioff]]
-                                if i not in dd:
-                                    dd[i] = {}
-                                dd[i][j] = [
+                                if i not in data[incfrqs[ioff]]:
+                                    data[incfrqs[ioff]][i] = {}
+                                data[incfrqs[ioff]][i][j] = [
                                     split3(dblock[-1][ln-1].split('|')[-1]),
                                     split3(cols[-1]),
                                     split3(dblock[-1][ln+1].split('|')[-1])
@@ -490,12 +559,11 @@ def parse_3xx_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                                     (int(item) for item in cols[0].split())
                                 if i == 1 and j == 1 and k == 1:
                                     ioff += 1
-                                    dd = data[incfrqs[ioff]]
-                                if i not in dd:
-                                    dd[i] = {}
-                                if j not in dd[i]:
-                                    dd[i][j] = {}
-                                dd[i][j][k] = [
+                                if i not in data[incfrqs[ioff]]:
+                                    data[incfrqs[ioff]][i] = {}
+                                if j not in data[incfrqs[ioff]][i]:
+                                    data[incfrqs[ioff]][i][j] = {}
+                                data[incfrqs[ioff]][i][j][k] = [
                                     split3(dblock[-1][ln-1].split('|')[-1]),
                                     split3(cols[-1]),
                                     split3(dblock[-1][ln+1].split('|')[-1])
@@ -541,14 +609,13 @@ def parse_3xx_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                                 i = int(cols[0])
                                 if i == 1:
                                     ioff += 1
-                                    dd = data[incfrqs[ioff]]
                                 xy = split3(dblock[-1][ln-5].split('|')[-1])
                                 xz = split3(dblock[-1][ln-4].split('|')[-1])
                                 yz = split3(dblock[-1][ln-3].split('|')[-1])
                                 xx = split3(dblock[-1][ln-2].split('|')[-1])
                                 yy = split3(dblock[-1][ln-1].split('|')[-1])
                                 zz = split3(cols[-1])
-                                dd[i] = [
+                                data[incfrqs[ioff]][i] = [
                                     [  # x, ...
                                         [xx[0], xy[0], xz[0]],
                                         [xy[0], yy[0], yz[0]],
@@ -584,16 +651,15 @@ def parse_3xx_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                                 i, j = (int(item) for item in cols[0].split())
                                 if i == 1 and j == 1:
                                     ioff += 1
-                                    dd = data[incfrqs[ioff]]
-                                if i not in dd:
-                                    dd[i] = {}
+                                if i not in data[incfrqs[ioff]]:
+                                    data[incfrqs[ioff]][i] = {}
                                 xy = split3(dblock[-1][ln-5].split('|')[-1])
                                 xz = split3(dblock[-1][ln-4].split('|')[-1])
                                 yz = split3(dblock[-1][ln-3].split('|')[-1])
                                 xx = split3(dblock[-1][ln-2].split('|')[-1])
                                 yy = split3(dblock[-1][ln-1].split('|')[-1])
                                 zz = split3(cols[-1])
-                                dd[i][j] = [
+                                data[incfrqs[ioff]][i][j] = [
                                     [  # x, ...
                                         [xx[0], xy[0], xz[0]],
                                         [xy[0], yy[0], yz[0]],
@@ -630,18 +696,17 @@ def parse_3xx_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                                     (int(item) for item in cols[0].split())
                                 if i == 1 and j == 1 and k == 1:
                                     ioff += 1
-                                    dd = data[incfrqs[ioff]]
                                 xy = split3(dblock[-1][ln-5].split('|')[-1])
                                 xz = split3(dblock[-1][ln-4].split('|')[-1])
                                 yz = split3(dblock[-1][ln-3].split('|')[-1])
                                 xx = split3(dblock[-1][ln-2].split('|')[-1])
                                 yy = split3(dblock[-1][ln-1].split('|')[-1])
                                 zz = split3(cols[-1])
-                                if i not in dd:
-                                    dd[i] = {}
-                                if j not in dd[i]:
-                                    dd[i][j] = {}
-                                dd[i][j][k] = [
+                                if i not in data[incfrqs[ioff]]:
+                                    data[incfrqs[ioff]][i] = {}
+                                if j not in data[incfrqs[ioff]][i]:
+                                    data[incfrqs[ioff]][i][j] = {}
+                                data[incfrqs[ioff]][i][j][k] = [
                                     [  # x, ...
                                         [xx[0], xy[0], xz[0]],
                                         [xy[0], yy[0], yz[0]],
