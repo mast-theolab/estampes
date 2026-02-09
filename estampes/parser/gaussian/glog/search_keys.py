@@ -5,6 +5,7 @@ Gaussian log file.
 """
 
 from estampes.base import QLabel
+from estampes.parser.gaussian.glog.logkeys import KEY_DP, KEY_FP, KEY_UINT
 from estampes.parser.gaussian.glog.types import TypeQKwrd
 
 
@@ -15,13 +16,16 @@ def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
     """Provide extractor info for frequency-dependent properties."""
     # Get incident frequency information
     if qlab.kind != 'static':
-        if qlab.level == 'H':
+        if qlab.level != 'A':
+            # Technically, level can be E or H for harmonic
+            # so we proceed by elimination, excluding the clear case, A.
             lnk = [716]
             key = [' and normal coordinates:']
             sub = [1]
             end = [lambda s: not s.startswith(' Incident light:')]
             num = [0]
-            fmt = [r'^\s+Incident light \(\S+\):\s+(?P<val>-?\d.*)\s*$']
+            fmt = [r'^\s+Incident light \(\S+\):\s*(?P<val>(?:\s+'
+                   + KEY_FP + r')+)\s*$']
         # -- Anharmonic level
         else:
             lnk = [-717]

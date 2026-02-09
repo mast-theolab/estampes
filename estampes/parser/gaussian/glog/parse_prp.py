@@ -385,17 +385,22 @@ def parse_3xx_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
 
     dobj = QData(qlab)
     if qlab.label == 300:
-        if qlab.level == 'H':
+        data = {'data': [], 'keys': []}
+        if qlab.level != 'A':
             unit = 'cm^-1'
+            for line in dblock[iref]:
+                for key in line.split():
+                    if key not in data['keys']:
+                        data['keys'].append(key)
+                        data['data'].append(float(key))
         else:
             unit = dblock[iref][0].split()[-1]
+            for line in dblock[iref]:
+                key, unit = line.split()
+                if key not in data['keys']:
+                    data['keys'].append(key)
+                    data['data'].append(float(key))
         dobj.set(unit=unit.lower())
-        data = {'data': [], 'keys': []}
-        for line in dblock[iref]:
-            key, unit = line.split()
-            if key not in data['keys']:
-                data['keys'].append(key)
-                data['data'].append(float(key))
         dobj.set(data=data['data'])
         dobj.add_field('keys', value=data['keys'])
     elif qlab.label in (301, 302, 303):

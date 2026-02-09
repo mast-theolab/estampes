@@ -69,6 +69,7 @@ Other blocks are:
 - **LIB**(`base.aliases`): Fixed alias of `ROA` keyword, wrong associated to RS.
 - **LIB**(`tools.spec`): Fixed ROA intensity (missing 1/4 factor).
 - **API**: Support of intermediate states in vibronic Gaussian log files.
+- **API**(`parser.glog`): Fixed parsing of incident frequencies for frequency-dependent properties outside of anharmonic block.
 
 ### Changed
 - **ESP**: Improved error message when data are not available.
