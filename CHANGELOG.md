@@ -50,6 +50,7 @@ Other blocks are:
 - **LIB**(`base.spectrum`): Class `Spectrum` now supports a weighing model for the vibrational transitions where relevant.
 - **LIB**(`base.spectrum`): method `set_display` of class `Spectrum` now supports an alpha specification.
 - **LIB**(`visual.povrender`): added possibility to build an animation for a vibration.
+- **LIB**(`tools.char`): new function `convert_range_spec` to parse a range specification into a list of integers.  The function supports ranges and single elements.
 - **API**: Added extraction of normal-modes ordering (`VPTDat:NMOrder`), quadratic (`VPTDat:Freq`), cubic (`VPTDat:cubic`) and quartic (`VPTDat:quartic`) force constants from Gaussian log files containing VPT2 calculations.
 - **API**: Added support of derivatives with respect to dimensionless normal coordinates in the ***QLabel***, as `dercord=qred`.
 - **API**: Added support of third and fourth derivatives of energies in Gaussian log files.  Beware, the block currently supported is the VPT2 block, which may contain a sub-block of "hybrid" data.

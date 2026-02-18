@@ -74,6 +74,83 @@ def convert_expr(expr: str,
     return _expr
 
 
+def convert_range_spec(spec: str,
+                       only_positive: bool = True,
+                       no_duplicates: bool = False,
+                       do_sort: bool = True,
+                       py_index: bool = False) -> tp.List[int]:
+    """Convert a range specification.
+
+    Converts a range specification of the form "i,j,k-m" and returns
+    the explicit list of elements.
+
+    Parameters
+    ----------
+    spec
+        Range specification, as a string.
+    only_positive
+        Check that only (strictly) positive numbers are provided.
+    no_duplicates
+        If `True`, the function raises an error if duplicate indexes
+        are present.
+    do_sort
+        Sort final list of indexes by increasing order.
+    py_index
+        Correct indexes for Python indexing.
+
+    Raises
+    ------
+    ValueError
+        Invalid specification: wrong specification, incorrect ranges..
+    IndexError
+        Unexpected value of indexes: negative, duplicate.
+    """
+    ioff = -1 if py_index else 0
+    items = []
+    for i, item in enumerate(spec.split(',')):
+        if '-' in item:
+            a, b = item.split('-', maxsplit=1)
+            try:
+                a = int(a.strip(' ()'))
+                b = int(b.strip(' ()'))
+                if a > b:
+                    raise ValueError(
+                        f'Incorrect range specification in position {i}')
+            except ValueError as err:
+                raise ValueError(
+                    f'Range of the form "i-j" expected in position {i}'
+                    ) from err
+            for j in range(a, b+1):
+                if j+ioff in items:
+                    if no_duplicates:
+                        raise IndexError(f'Index {j} is already present.')
+                else:
+                    if j <= 0 and only_positive:
+                        raise IndexError(f'Index {j} is not positive.')
+                    items.append(j+ioff)
+        else:
+            try:
+                j = int(item.strip(' ()'))
+            except ValueError as err:
+                raise ValueError(
+                    f'Item in position {i} is not a valid number.'
+                    ) from err
+            if j+ioff in items:
+                if no_duplicates:
+                    raise IndexError(
+                        f'Index {j} in position {i} is already present.')
+            else:
+                if j <= 0 and only_positive:
+                    raise IndexError(
+                        f'Index {j} in position {i} is not positive.')
+                items.append(j+ioff)
+
+    if do_sort:
+        items.sort()
+
+    return items
+
+
 def parse_argval_options(argval: str,
                          delim: str = '(',
                          choices: tp.Optional[tp.Sequence[str]] = None,
