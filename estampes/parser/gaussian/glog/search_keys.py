@@ -3,13 +3,15 @@
 Provides the keys necessary to delimit the data to extract from a
 Gaussian log file.
 """
+import typing as tp
 
 from estampes.base import QLabel
 from estampes.parser.gaussian.glog.logkeys import KEY_DP, KEY_FP, KEY_UINT
 from estampes.parser.gaussian.glog.types import TypeQKwrd
 
 
-def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
+def keys_prp_3xx(qlab: QLabel,
+                 gver: tp.Optional[tp.Sequence[str]] = None) -> TypeQKwrd:
     """Provide extractor info for frequency-dependent properties."""
     # Get incident frequency information
     if qlab.kind != 'static':
@@ -76,7 +78,13 @@ def keys_prp_3xx(qlab: QLabel) -> TypeQKwrd:
                     )
                 else:
                     lnk.append(1110)
-                    key.append(' Property number 1 -- Derivative Alpha(-w,w)')
+                    major = 'GDV' if gver is None else gver[0]
+                    if major == 'G16':
+                        key.append(
+                            ' Property number 1 -- Alpha(-w,w) derivatives')
+                    else:
+                        key.append(
+                            ' Property number 1 -- Derivative Alpha(-w,w)')
                     sub.append(1)
                     end.append(lambda s: s.startswith(' Property number')
                                or s.lstrip()[0] not in '123456789')

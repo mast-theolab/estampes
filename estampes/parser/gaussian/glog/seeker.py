@@ -15,7 +15,8 @@ from estampes.parser.gaussian.glog.logkeys import RR_OMEGA_LINE, \
     RR_OMEGA_UNIT, RR_OMEGA_VAL, KEY_FP, KEY_UINT
 
 
-def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
+def qlab_to_linkdata(qlab: QLabel,
+                     gver: tp.Optional[tp.Sequence[str]] = None) -> TypeQKwrd:
     """Return relevant keyword(s) for a given quantity.
 
     Returns the a tuple, containing:
@@ -49,7 +50,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
     qlab
         Quantity label
     gver
-        Gaussian version.
+        Gaussian version, as (major, minor).
 
     Returns
     -------
@@ -859,7 +860,7 @@ def qlab_to_linkdata(qlab: QLabel, gver: tp.Optional[str] = None) -> TypeQKwrd:
                                     + r'{3}).*$')
                         num1.append(0)
             elif qlab.label in range(300, 400):
-                lnk2, key2, sub2, fmt2, end2, num2 = keys_prp_3xx(qlab)
+                lnk2, key2, sub2, fmt2, end2, num2 = keys_prp_3xx(qlab, gver)
                 lnk1.extend(lnk2)
                 key1.extend(key2)
                 sub1.extend(sub2)

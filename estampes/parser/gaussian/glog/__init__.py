@@ -430,10 +430,11 @@ def get_data(dfobj: GLogIO,
     keydata = []
     key2blocks = {}
     idata = 0
+    gver = (dfobj.version['major'], dfobj.version['minor'])
     for qkey, qlabel in qty_dict.items():
         # Label parsing
         # ^^^^^^^^^^^^^
-        links, keys, skips, fmts, ends, nums = qlab_to_linkdata(qlabel)
+        links, keys, skips, fmts, ends, nums = qlab_to_linkdata(qlabel, gver)
         if isinstance(links, tuple):
             nblocks = len(links)
             key2blocks[qkey] = (idata, idata+nblocks-1)
@@ -451,7 +452,6 @@ def get_data(dfobj: GLogIO,
     ndata, datablocks = dfobj.read_data(*keydata)
     # Data Parsing
     # ------------
-    gver = (dfobj.version['major'], dfobj.version['minor'])
     try:
         data = parse_data(qty_dict, key2blocks, ndata, datablocks, gver,
                           error_noqty)
