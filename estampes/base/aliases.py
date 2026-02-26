@@ -12,10 +12,14 @@ spectroscopy = {
     # VCD
     'VibrationalCircularDichroism'.casefold(): 'VCD',
     'VCD'.casefold(): 'VCD',
-    # RS
+    # RS (dynamic)
     'Raman'.casefold(): 'RS',
     'RamanScattering'.casefold(): 'RS',
     'RS'.casefold(): 'RS',
+    # RS0 (static)
+    'StaticRaman'.casefold(): 'RS0',
+    'StaticRamanScattering'.casefold(): 'RS0',
+    'RS0'.casefold(): 'RS0',
     # ROA
     'RamanOpticalActivity'.casefold(): 'ROA',
     'ROA'.casefold(): 'ROA',
