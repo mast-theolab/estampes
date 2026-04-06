@@ -27,6 +27,14 @@ Other blocks are:
 ## Unreleased
 
 
+## [0.7.0] - 2026-04-07
+
+This version introduces several major changes for ESTAMPES:
+- the directory structure adopts the "src" layout for easier maintenance with pyproject and builders.
+- `scripts` and `progs` are now included into `estampes`, as hidden directories, to facilitate package deployment.
+- minimum version of Python has been raised to 3.10, as the code will be refactored to use the more recent typing hints recommendations in Python.
+- ESTAMPES formally leaves the alpha stage to enter beta.
+
 ## [0.6.2] - 2026-04-06
 
 ### Added

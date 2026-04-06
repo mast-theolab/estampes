@@ -9,6 +9,8 @@ opts_html = -a stylesheet=$(css_style) -a toc="left" -a toclevels="3"
 opts_epub = -a toc="left" -a toclevels="3"
 
 EXT = html
+SPHINX_APIDOC:=$(shell which sphinx-apidoc)
+SPHINX_BUILD:=$(shell which sphinx-build)
 
 prog := $(wildcard prog_*.adoc)
 prog_ext := $(prog:.adoc=.$(EXT))
@@ -42,8 +44,16 @@ api: $(api_ext)
 lib: $(lib_ext)
 
 autodoc :
-	python3 $$(which sphinx-apidoc) -f -o source/ ../../estampes/ ../../estampes/setup.py ../../estampes/to_del/*
-	python3 $$(which sphinx-build) -b html source/ build/
+ifneq ($(SPHINX_APIDOC), )
+	python3 $(SPHINX_APIDOC) -f -o source/ ../src/estampes/
+ifneq ($(SPHINX_BUILD), )
+	python3 $(SPHINX_BUILD) -b html source/ build/
+else
+	@echo "Could not find 'sphinx-build'. Only API doc source files have been generated."
+endif
+else
+	@echo "Missing Sphinx build tools.  Check that 'sphinx-apidoc' and 'sphinx-build' are properly installed."
+endif
 
 %.pdf : %.adoc
 	asciidoctor-pdf $< $(opts_pdf) -o build/pdf/$@

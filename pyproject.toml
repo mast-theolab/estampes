@@ -1,38 +1,45 @@
 [build-system]
-requires = ["setuptools >= 50.0"]
+requires = ["setuptools >= 77.0"]
 build-backend = "setuptools.build_meta"
-
-[tool.setuptools]
-packages = ["estampes", "progs", "scripts"]
 
 # [tool.setuptools.package-data]
 # "visual.objs" = ["*.obj", "*.mtl"]
 
 [project]
 name = "estampes"
-version = "0.6.2"
-requires-python = ">= 3.8"
+version = "0.7.0"
+requires-python = ">= 3.10"
 authors = [
     {name = "Julien Bloino", email = "julien.bloino@gmail.com"}
 ]
 description = "A simple API to parse and process data for computational spectroscopy"
 readme = "README.md"
-license = {file = "LICENSE"}
+license = "MIT"
 keywords = ["Spectroscopy", "Computational Chemistry", "Visualization"]
 classifiers = [
-    'Development Status :: 3 - Alpha',
+    'Development Status :: 4 - Beta',
     'Programming Language :: Python :: 3',
-    'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Topic :: Scientific/Engineering :: Chemistry',
     'Topic :: Scientific/Engineering :: Visualization'
 ]
 
+[project.optional-dependencies]
+base = ["numpy", "matplotlib"]
+docs = ["sphinx", "sphinx_rtd_theme"]
+gui = ["pyside6"]
+full = ["estampes[base,gui,docs]"]
+
 [project.scripts]
-esparser = "progs.esparser:main"
-esballast = "progs.ballast:main"
-esbars = "progs.bars:main"
-esmirage = "progs.mirage:main"
-essoar = "progs.soar:main"
-escorsairs = "progs.corsairs:main"
-estoxy = "scripts.toxy:main"
+esballast = "estampes._progs.ballast:main"
+esbars = "estampes._progs.bars:main"
+escorsairs = "estampes._progs.corsairs:main"
+esderiveur = "estampes._progs.deriveur:main"
+esllama = "estampes._progs.llama:main"
+esmirage = "estampes._progs.mirage:main"
+esparser = "estampes._progs.esparser:main"
+essoar = "estampes._progs.soar:main"
+estoxy = "estampes._scripts.toxy:main"
+
+[project.gui-scripts]
+escapt = "estampes._progs.capt:main"
