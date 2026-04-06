@@ -8,9 +8,9 @@
 import sphinx_rtd_theme
 
 project = 'ESTAMPES'
-copyright = '2025, Julien Bloino, Marco Fusè, Qin Yang'
+copyright = '2026, Julien Bloino, Marco Fusè, Qin Yang'
 author = 'Julien Bloino'
-release = '0.6.1'
+release = '0.6.2'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

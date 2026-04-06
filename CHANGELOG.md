@@ -26,6 +26,9 @@ Other blocks are:
 
 ## Unreleased
 
+
+## [0.6.2] - 2026-04-06
+
 ### Added
 - **2XY**: New sub-options `T`/`temp` and `w`/`weight` for the spectroscopy keyword to specify a weighing model to apply on vibrational transitions.
 - **2XY**: `T=0|0K|no|off` deactivates the account of temperature effects.
