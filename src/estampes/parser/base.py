@@ -280,7 +280,7 @@ class DataFile(object):
                             redmas = (eigvec**2).sum(axis=1)
                             eigvec /= np.sqrt(redmas[:, np.newaxis])
                         if get_lweigh:
-                            lmweig = np.array(hessvec)
+                            lmweig = np.reshape(hessvec, (-1, 3*natoms))
                     else:
                         do_calc = True
                 if calc_eval:

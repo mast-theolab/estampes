@@ -8,7 +8,7 @@ ESTAMPES API is divided in 3 components:
 - **VIZ**: visualization API.  It depends on visualization library, like `Qt` or `Matplotlib`
 
 Tools have each one their own trigram
-- **APP**: Estampes Suite Program (new program)\
+- **APP**: Estampes Suite Program (new program)
 - **2XY**: _ToXY_
 - **BLS**: _Ballast_
 - **BRS**: _Bars_
@@ -26,6 +26,8 @@ Other blocks are:
 
 ## Unreleased
 
+### Fixed
+- **API**: Fixed shape of the mass-weighted normal-coordinates matrix when directly read from data file to be consistent to the one generated from force constants matrix in method `DataFile.get_hess_data` (2D arrays systematically generated).
 
 ## [0.7.0] - 2026-04-07
 
