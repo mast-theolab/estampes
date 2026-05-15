@@ -505,7 +505,7 @@ class QLabel():
                     self.__qdesc = 'cubic'
                 elif key in ('QUARTIC', 'FIJKL'):
                     self.__qdesc = 'quartic'
-                if key in ('Y', 'YMAT', 'UPSILON'):
+                elif key in ('Y', 'YMAT', 'UPSILON'):
                     self.__qdesc = 'YMat'
                 else:
                     raise ArgumentError(
