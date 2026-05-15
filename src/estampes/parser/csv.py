@@ -11,7 +11,7 @@ import re
 import typing as tp
 
 from estampes.parser.functions import parse_qlabels
-from estampes.base import TypeQData, ParseKeyError, QuantityError, QData
+from estampes.base import QDataType, ParseKeyError, QuantityError, QData
 
 # ================
 # Module Constants
@@ -251,7 +251,7 @@ class FileCSV(object):
 def get_data(dfobj: FileCSV,
              *qlabels: str,
              error_noqty: bool = True,
-             **keys4qlab) -> TypeQData:
+             **keys4qlab) -> QDataType:
     """Get data from a CSV file for each quantity label.
 
     Reads one or more full quantity labels from `qlabels` and returns

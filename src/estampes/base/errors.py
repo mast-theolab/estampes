@@ -7,7 +7,9 @@ Classes
 ArgumentError
     Generates an error for inconsistency/errors in arguments.
 DataError
-    Generic error related to data
+    Generic error related to data.
+InternalError
+    Generic error related to some internal inconsistency.
 ParsingError
     Basic container for parsing-specific errors.
 ParseDataError
@@ -17,8 +19,6 @@ ParseKeyError
 QuantityError
     Generates an error if quantity is not supported.
 """
-
-import typing as tp
 
 
 # ==============
@@ -38,7 +38,7 @@ class ArgumentError(Exception):
     msg : str, optional
         Message to be printed instead of default one
     """
-    def __init__(self, name: str, msg: tp.Optional[str] = None) -> None:
+    def __init__(self, name: str, msg: str | None = None) -> None:
         if msg is None:
             msg = f'Error in argument: {name}'
         super(ArgumentError, self).__init__(msg)
@@ -57,8 +57,8 @@ class DataError(Exception):
     msg : str, optional
         Message to be printed instead of default one.
     """
-    def __init__(self, name: tp.Optional[str] = None,
-                 msg: tp.Optional[str] = None) -> None:
+    def __init__(self, name: str | None = None,
+                 msg: str | None = None) -> None:
         if msg is None:
             if name is None:
                 msg = 'Error while processing data.'
@@ -67,8 +67,16 @@ class DataError(Exception):
         super(DataError, self).__init__(msg)
 
 
+class InternalError(Exception):
+    """Alerts on some internal error."""
+    def __init__(self, msg: str) -> None:
+        super(InternalError, self).__init__(msg)
+
+
 class ParsingError(Exception):
     """Basic container for parsing-specific errors."""
+    def __init__(self, msg: str) -> None:
+        super(ParsingError, self).__init__(msg)
 
 
 class ParseDataError(ParsingError):
@@ -85,7 +93,7 @@ class ParseDataError(ParsingError):
     msg : str, optional
         Message to be printed instead of default one
     """
-    def __init__(self, name: str, msg: tp.Optional[str] = None,
+    def __init__(self, name: str, msg: str | None = None,
                  prog: str = 'Gaussian') -> None:
         if msg is None:
             msg = f'Unsupported quantity in {prog} file: {name}'
@@ -106,7 +114,7 @@ class ParseKeyError(ParsingError):
     prog : str, optional
         Name of the program
     """
-    def __init__(self, key: str, msg: tp.Optional[str] = None,
+    def __init__(self, key: str, msg: str | None = None,
                  prog: str = 'Gaussian') -> None:
         if msg is None:
             msg = f'Keyword not found in {prog} file: {key}'
@@ -126,7 +134,7 @@ class QuantityError(Exception):
     msg : str, optional
         Message to be printed instead of default one.
     """
-    def __init__(self, name: str, msg: tp.Optional[str] = None) -> None:
+    def __init__(self, name: str, msg: str | None = None) -> None:
         if msg is None:
             msg = f'Unsupported quantity: {name}'
         super(QuantityError, self).__init__(msg)

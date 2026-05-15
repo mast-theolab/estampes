@@ -12,7 +12,7 @@ Notes
 import os
 import typing as tp
 
-from estampes.base import QLabel, TypeQData
+from estampes.base import QLabel, QDataType
 from estampes.base.errors import ArgumentError, QuantityError
 from estampes.parser import csv, xyz
 from estampes.parser.gaussian import glog, fchk
@@ -30,8 +30,7 @@ class DataFile(object):
     Acts as a wrapper to the format-/program-specific wrappers.
     """
 
-    def __init__(self, filename: str,
-                 filetype: tp.Optional[str] = None):
+    def __init__(self, filename: str, filetype: str | None = None):
         """Build the DataFile instance.
 
         Builds the DataFile instance.
@@ -71,7 +70,7 @@ class DataFile(object):
         return self._dfile.filename
 
     @property
-    def version(self) -> tp.Tuple[str, tp.Any]:
+    def version(self) -> tuple[str, tp.Any]:
         """Version of the program used to generate the file.
 
         The version is a tuple with:
@@ -84,7 +83,7 @@ class DataFile(object):
     def get_data(self,
                  *qlabels,
                  error_noqty: bool = True,
-                 **keys4qlabels) -> TypeQData:
+                 **keys4qlabels) -> QDataType:
         """Get data from Data File object.
 
         Wrapper to internal get_data functions.
@@ -98,9 +97,9 @@ class DataFile(object):
                       get_eval: bool = True,
                       get_rmas: bool = False,
                       get_lweigh: bool = False,
-                      pre_data: tp.Optional[TypeQData] = None,
-                      force_calc: tp.Optional[bool] = None
-                      ) -> tp.Union[tp.Any, tp.List[tp.Any]]:
+                      pre_data: QDataType | None = None,
+                      force_calc: bool | None = None
+                      ) -> tp.Any | list[tp.Any]:
         """Get or build Hessian data (eigenvectors and values).
 
         This function retrieves or builds the eigenvectors and

@@ -1,24 +1,33 @@
 """Provide types specific to the glog module."""
 
 import typing as tp
+from collections.abc import Callable, Sequence
 
-_tp_StrInt = tp.TypeVar('_tp_StrInt', str, int)
+from estampes.base.types import TypeStrInt
 
-TypeQKwrd = tp.Tuple[
-    tp.Union[int, tp.List[int]],  # Link
-    tp.Union[str, tp.List[str]],  # Keyword
-    tp.Union[_tp_StrInt, tp.List[_tp_StrInt]],  # Jump/Skip function
-    tp.Union[str, tp.List[str]],  # Matching pattern for data to extract
-    #  Block end condition
-    tp.Union[tp.Callable[[str], bool], tp.List[tp.Callable[[str], bool]]],
-    tp.Union[int, tp.List[int]]  # Number of occurrences
+TypeQKwrdItem = tuple[
+    int,  # Link
+    str,  # Keyword
+    TypeStrInt,  # Jump/Skip function
+    str,  # Matching pattern for data to extract
+    Callable[[str], bool],  # end condition
+    int  # Number of occurrences
 ]
+TypeQKwrdList = tuple[
+    Sequence[int],
+    Sequence[str],
+    Sequence[TypeStrInt],
+    Sequence[str],
+    Sequence[Callable[[str], bool]],
+    Sequence[int]
+]
+TypeQKwrd = TypeQKwrdItem | TypeQKwrdList
 
-TypeKData = tp.Tuple[
+TypeKData = tuple[
     str,  # Keyword
     int,  # Link
-    _tp_StrInt,  # Information on lines to skip after keyword
+    TypeStrInt,  # Information on lines to skip after keyword
     tp.Pattern,  # Data extraction matching pattern (compiled)
     int,  # which occurrences to extract
-    tp.Callable[[str], bool]
+    Callable[[str], bool]
 ]

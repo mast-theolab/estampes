@@ -26,8 +26,15 @@ Other blocks are:
 
 ## Unreleased
 
+### Added
+- **API**: Added parsing of Y (Upsilon) matrix in VPT2 calculations from Gaussian log files.
+
 ### Fixed
 - **API**: Fixed shape of the mass-weighted normal-coordinates matrix when directly read from data file to be consistent to the one generated from force constants matrix in method `DataFile.get_hess_data` (2D arrays systematically generated).
+
+### Changed
+- **DEV**: Some parts of the code have been cleaned up considering more modern typing hints recommendations in Python and to reduce warnings produced by syntax analyzers.
+
 
 ## [0.7.0] - 2026-04-07
 

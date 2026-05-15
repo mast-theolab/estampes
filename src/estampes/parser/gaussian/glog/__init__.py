@@ -7,10 +7,11 @@ output files.
 import os
 import re
 import typing as tp
+from collections.abc import Callable
 
 from estampes.base import QLabel, \
     ParseKeyError, QuantityError, \
-    TypeDGLog, TypeQData
+    TypeDBlocGLog, QDataType
 
 from estampes.parser.functions import parse_qlabels
 from estampes.parser.gaussian.glog.seeker import qlab_to_linkdata
@@ -64,7 +65,7 @@ class GLogIO(object):
         self.__fname = name
 
     @property
-    def version(self) -> tp.Dict[str, str]:
+    def version(self) -> dict[str, str]:
         """Version of Gaussian used to generate the log file.
 
         Returns the version as a dictionary with two keys:
@@ -74,10 +75,13 @@ class GLogIO(object):
         minor
             Minor revision.
         """
-        return {key: self.__gversion[key] for key in ('major', 'minor')}
+        if self.__gversion is None:
+            return {'major': 'N/A', 'minor': 'N/A'}
+        else:
+            return {key: self.__gversion[key] for key in ('major', 'minor')}
 
     @property
-    def full_version(self) -> tp.Tuple[str, tp.Any]:
+    def full_version(self) -> tuple[str, tp.Any]:
         """Full version of Gaussian, for the parser interface.
 
         Returns the full version of Gaussian used to generate the log file.
@@ -106,14 +110,14 @@ class GLogIO(object):
             if isinstance(links, tuple):
                 nblocks = len(links)
                 key2blk[item] = (i, i+nblocks-1)
-                for link, key, skip, fmt, end, num in zip(links, keys, skips,
-                                                          fmts, ends, nums):
+                for link, key, skip, fmt, end, num in zip(
+                        links, keys, skips, fmts, ends, nums):  # type: ignore
                     keydata.append((key, link, skip, re.compile(fmt), num,
                                     end))
                 i += nblocks
             else:
-                keydata.append((keys, links, skips, re.compile(fmts), nums,
-                                ends))
+                keydata.append((keys, links, skips,
+                                re.compile(fmts), nums, ends))  # type: ignore
                 key2blk[item] = (i, i)
                 i += 1
             qtydata[item] = qlab
@@ -141,7 +145,7 @@ class GLogIO(object):
                 self.__verb = 0
 
     def read_data(self,
-                  *to_find: TypeKData) -> TypeDGLog:
+                  *to_find: TypeKData) -> tuple[list[int], TypeDBlocGLog]:
         """Extract data corresponding to the keys to find.
 
         Parameters
@@ -176,12 +180,12 @@ class GLogIO(object):
           Post-processing routines should take care of aliases.
         """
         def del_block(iblock: int,
-                      block2id: tp.Sequence[tp.Sequence[int]],
-                      nocc: tp.Sequence[int],
-                      dataid: tp.Sequence[int],
-                      blockskp: tp.Sequence[tp.Union[str, int]],
-                      blockfmt: tp.Sequence[tp.Pattern],
-                      blockend: tp.Callable[[str], bool]) -> int:
+                      block2id: list[list[int]],
+                      nocc: list[int],
+                      dataid: list[int],
+                      blockskp: list[str | int],
+                      blockfmt: list[tp.Pattern],
+                      blockend: list[Callable[[str], bool]]) -> int:
             """Delete a block in the lookup tables.
 
             Returns
@@ -378,9 +382,9 @@ class GLogIO(object):
 
 
 def get_data(dfobj: GLogIO,
-             *qlabels: tp.Union[str, QLabel],
+             *qlabels: str | QLabel,
              error_noqty: bool = True,
-             **keys4qlab) -> TypeQData:
+             **keys4qlab) -> QDataType | None:
     """Get data from a GLog file for each quantity label.
 
     Reads one or more full quantity labels from `qlab` and returns the
@@ -439,12 +443,14 @@ def get_data(dfobj: GLogIO,
             nblocks = len(links)
             key2blocks[qkey] = (idata, idata+nblocks-1)
             for i in range(nblocks):
-                keydata.append((keys[i], links[i], skips[i],
-                                re.compile(fmts[i]), nums[i], ends[i]))
+                keydata.append((keys[i], links[i], skips[i],  # type: ignore
+                                re.compile(fmts[i]),
+                                nums[i], ends[i]))  # type: ignore
             idata += nblocks
         else:
             key2blocks[qkey] = (idata, idata)
-            keydata.append((keys, links, skips, re.compile(fmts), nums, ends))
+            keydata.append((keys, links, skips,
+                            re.compile(fmts), nums, ends))  # type: ignore
             idata += 1
     # Data Extraction
     # ---------------

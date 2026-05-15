@@ -18,7 +18,7 @@ class QData():
     ESTAMPES parsers.
     """
 
-    def __init__(self, qlabel: tp.Union[QLabel, str]) -> None:
+    def __init__(self, qlabel: QLabel | str) -> None:
         """Initialize QData instance.
 
         Initializes the QData instance.
@@ -60,17 +60,17 @@ class QData():
         return self.__data
 
     @property
-    def dtype(self) -> tp.Optional[str]:
+    def dtype(self) -> str | None:
         """Return the data type."""
         return self.__dtype
 
     @property
-    def unit(self) -> tp.Optional[str]:
+    def unit(self) -> str | None:
         """Return the unit of the stored data."""
         return self.__unit
 
     @property
-    def shape(self) -> tp.Optional[str]:
+    def shape(self) -> str | None:
         """Return the shape of the stored data."""
         return self.__shape
 
@@ -95,11 +95,11 @@ class QData():
             delattr(self, field)
         self.__extrafields = {}
 
-    def set(self, *, data: tp.Optional[tp.Any] = None,
-            dtype: tp.Optional[str] = None,
-            unit: tp.Optional[str] = None,
-            shape: tp.Optional[str] = None,
-            **fields: tp.Dict[str, tp.Any]) -> None:
+    def set(self, *, data: tp.Any | None = None,
+            dtype: str | None = None,
+            unit: str | None = None,
+            shape: str | None = None,
+            **fields: tp.Any) -> None:
         """Set content of field(s).
 
         Sets the content of one or more fields.
@@ -145,8 +145,8 @@ class QData():
                 setattr(self, field_, content)
 
     def add_field(self, field: str, *,
-                  value: tp.Optional[tp.Any] = None,
-                  desc: tp.Optional[str] = None) -> None:
+                  value: tp.Any | None = None,
+                  desc: str | None = None) -> None:
         """Add non-standard field to QData.
 
         Adds a non-standard field to the QData object.
@@ -172,24 +172,24 @@ class QData():
 
     def get(self,
             field: str, *,
-            default: tp.Optional[tp.Any] = None) -> tp.Any:
+            default: tp.Any | None = None) -> tp.Any:
         """Return the content of any non-standard field."""
         if default is None:
             return getattr(self, f'__{field}', None)
         else:
             return getattr(self, f'__{field}', default)
 
-    def list_fields(self) -> tp.List[str]:
+    def list_fields(self) -> dict[str, str]:
         """Return the list of all fields."""
         return self.__basefields | self.__extrafields
 
-    def extra_fields(self) -> tp.List[str]:
+    def extra_fields(self) -> dict[str, tp.Any]:
         """Return the extra fields."""
         return {field: getattr(self, f'__{field}')
                 for field in self.__extrafields}
 
-    def copy(self, *, only: tp.Optional[Sequence[str]] = None,
-             exclude: tp.Optional[Sequence[str]] = None) -> 'QData':
+    def copy(self, *, only: Sequence[str] | None = None,
+             exclude: Sequence[str] | None = None) -> 'QData':
         """Return a copy of the QData object.
 
         Returns a complete or partial copy of the QData object.
@@ -245,4 +245,4 @@ class QData():
         return new
 
 
-TypeQData = tp.Dict[str, QData]
+QDataType = dict[str, QData]

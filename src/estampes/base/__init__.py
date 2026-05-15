@@ -22,12 +22,12 @@ TypeBondsM
     Static type for bonds information (multiple molecules).
 TypeColor : float, str, list
     Static type for colors.
+TypeDBlocGLog : str, list, optional
+    Static type for data blocks extracted from Gaussian log file.
 TypeDCrd : str, optional
     Static type for derivative coordinate.
 TypeDFChk : dict
     Static type for data from Gaussian fchk file.
-TypeDGLog : str, list, optional
-    Static type for data from Gaussian log file.
 TypeDOrd : int, optional
     Static type for derivative order (0: property).
 TypeQData : dict
@@ -51,6 +51,10 @@ Classes
 -------
 ArgumentError
     Generates an error for inconsistency/errors in arguments.
+DataError
+    Generic error related to data.
+InternalError
+    Generic error related to some internal inconsistency.
 ParsingError
     Basic container for parsing-specific errors
 ParseDataError
@@ -65,11 +69,11 @@ QuantityError
 
 from estampes.base.types import Type1Vib, TypeAtCrd, TypeAtCrdM, TypeAtData, \
     TypeAtLab, TypeAtLabM, TypeAtMas, TypeBonds, TypeBondsM, TypeColor, \
-    TypeDCrd, TypeDFChk, TypeDGLog, TypeDOrd, TypeQLab, TypeQLvl, TypeQOpt, \
-    TypeQTag, TypeRSta, TypeVibs, ConstDict
+    TypeDCrd, TypeDFChk, TypeDBlocGLog, TypeDOrd, TypeQLab, TypeQLvl, \
+    TypeQOpt, TypeQTag, TypeRSta, TypeVibs, ConstDict
 
-from estampes.base.errors import ArgumentError, DataError, ParseDataError, \
-    ParseKeyError, ParsingError, QuantityError
+from estampes.base.errors import ArgumentError, DataError, InternalError,\
+    ParseDataError, ParseKeyError, ParsingError, QuantityError
 
 from estampes.base.qlabel import QLabel, TypeQInfo
-from estampes.base.qdata import QData, TypeQData
+from estampes.base.qdata import QData, QDataType

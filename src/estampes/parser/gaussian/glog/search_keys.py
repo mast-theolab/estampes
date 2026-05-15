@@ -7,11 +7,11 @@ import typing as tp
 
 from estampes.base import QLabel
 from estampes.parser.gaussian.glog.logkeys import KEY_DP, KEY_FP, KEY_UINT
-from estampes.parser.gaussian.glog.types import TypeQKwrd
+from estampes.parser.gaussian.glog.types import TypeQKwrdList
 
 
 def keys_prp_3xx(qlab: QLabel,
-                 gver: tp.Optional[tp.Sequence[str]] = None) -> TypeQKwrd:
+                 gver: tp.Optional[tp.Sequence[str]] = None) -> TypeQKwrdList:
     """Provide extractor info for frequency-dependent properties."""
     # Get incident frequency information
     if qlab.kind != 'static':

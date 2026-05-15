@@ -3,18 +3,22 @@
 Provides specialized functions to extract data for specific properties.
 """
 
-import re
 import typing as tp
+import re
 
 from estampes.base import QData, QLabel, \
-    ParseDataError, ParseKeyError, QuantityError
+    ParseDataError, ParseKeyError, ParsingError, QuantityError, \
+    TypeDBlocGLog
 from estampes.data.physics import phys_fact
 from estampes.parser.gaussian import g_elquad_LT_to_2D, gfloat
 
 xyz2id = {'X': 0, 'Y': 1, 'Z': 2}
 
+TensorType: tp.TypeAlias = list[list[float | complex | None]] \
+    | list[list[list[float | complex | None]]]
 
-def parse_en_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
+
+def parse_en_dat(qlab: QLabel, dblock: TypeDBlocGLog, iref: int = 0) -> QData:
     """Parse extracted data related to the energy.
 
     Parses the energy from the extracted data.
@@ -30,7 +34,12 @@ def parse_en_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
             if qlab.derord == 0:
                 if Si == 0:
                     if isinstance(Sf, int):
-                        dobj.set(data=float(dblock[iref]))
+                        try:
+                            dobj.set(data=float(dblock[iref]))  # type: ignore
+                        except TypeError as err:
+                            raise ParsingError(
+                                'Wrong data structure for tge energy'
+                            ) from err
                         dobj.set(unit='eV')
                     else:
                         dobj.set(unit='eV')
@@ -144,7 +153,7 @@ def parse_en_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
     return dobj
 
 
-def parse_1xx_dat(qlab: QLabel, dblock: tp.List[str]) -> QData:
+def parse_1xx_dat(qlab: QLabel, dblock: TypeDBlocGLog) -> QData:
     """Parse extracted data related to 1xx properties/quantities."""
     dobj = QData(qlab)
     if qlab.label == 101:
@@ -363,7 +372,7 @@ def parse_1xx_dat(qlab: QLabel, dblock: tp.List[str]) -> QData:
     return dobj
 
 
-def parse_3xx_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
+def parse_3xx_dat(qlab: QLabel, dblock: TypeDBlocGLog, iref: int = 0) -> QData:
     """Parse extracted data related to 3xx properties/quantities.
 
     Notes
@@ -738,7 +747,8 @@ def parse_3xx_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
     return dobj
 
 
-def parse_13xx_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
+def parse_13xx_dat(qlab: QLabel, dblock: TypeDBlocGLog, iref: int = 0
+                   ) -> QData:
     """Parse extracted data related to 13xx properties/quantities."""
     if isinstance(qlab.rstate, tuple):
         raise NotImplementedError('Transition moment of 13xx NYI.')
@@ -773,14 +783,27 @@ def parse_13xx_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
         else:
             counts[incfrq] += 1
         if qlab.label in (1301, 1302, 1303):
-            tensor = [
+            tensor: TensorType = [
                 [None, None, None],
                 [None, None, None],
                 [None, None, None]
             ]
+            for line in dtens:
+                cols = line.strip().split()
+                if len(cols) == 3:
+                    val = complex(float(cols[-2]), float(cols[-1]))
+                else:
+                    val = float(cols[-1])
+                crds = cols[0].split('-')
+                ixyz = [xyz2id[xyz] for crd in crds for xyz in crd]
+                if len(ixyz) != 2:
+                    msg = f'Wrong data structure found for {qlab.label}.' \
+                        + '2 components were expected'
+                    raise ParsingError(msg)
+                tensor[ixyz[0]][ixyz[1]] = val
         elif qlab.label in (1304, 1305):
             dosym = len(dtens) == 18
-            tensor = [
+            tensor: TensorType = [
                 [[None, None, None],
                  [None, None, None],
                  [None, None, None]],
@@ -791,25 +814,26 @@ def parse_13xx_dat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                  [None, None, None],
                  [None, None, None]]
             ]
-        else:
-            raise NotImplementedError()
-        for line in dtens:
-            cols = line.strip().split()
-            if len(cols) == 3:
-                val = complex(float(cols[-2]), float(cols[-1]))
-            else:
-                val = float(cols[-1])
-            crds = cols[0].split('-')
-            ixyz = [xyz2id[xyz] for crd in crds for xyz in crd]
-            if len(ixyz) == 3:
+            for line in dtens:
+                cols = line.strip().split()
+                if len(cols) == 3:
+                    val = complex(float(cols[-2]), float(cols[-1]))
+                else:
+                    val = float(cols[-1])
+                crds = cols[0].split('-')
+                ixyz = [xyz2id[xyz] for crd in crds for xyz in crd]
+                if len(ixyz) != 3:
+                    msg = f'Wrong data structure found for {qlab.label}.' \
+                        + '3 components were expected'
+                    raise ParsingError(msg)
                 tensor[ixyz[0]][ixyz[1]][ixyz[2]] = val
                 if dosym:
                     if len(crds[0]) == 2:
                         tensor[ixyz[1]][ixyz[0]][ixyz[2]] = val
                     else:
                         tensor[ixyz[0]][ixyz[2]][ixyz[1]] = val
-            else:
-                tensor[ixyz[0]][ixyz[1]] = val
+        else:
+            raise NotImplementedError()
         data[incfrq][counts[incfrq]] = tensor
 
     dobj.set(data=data)

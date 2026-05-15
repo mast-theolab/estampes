@@ -21,7 +21,7 @@ import typing as tp
 from math import ceil
 
 from estampes.base import ArgumentError, ParseDataError, ParseKeyError, \
-    QuantityError, TypeDFChk, TypeQData, TypeQInfo, QData, QLabel
+    QuantityError, TypeDFChk, QDataType, TypeQInfo, QData, QLabel
 from estampes.data import property as edpr
 from estampes.data.physics import phys_fact
 from estampes.parser.functions import parse_qlabels, reshape_dblock
@@ -146,8 +146,8 @@ class FChkIO(object):
         return "Gaussian", self.__gversion
 
     def read_data(self,
-                  *to_find: tp.Tuple[str],
-                  raise_error: bool = True) -> TypeQData:
+                  *to_find: str,
+                  raise_error: bool = True) -> TypeDFChk:
         """Extract data corresponding to the keys to find.
 
         Parameters
@@ -163,7 +163,7 @@ class FChkIO(object):
             Key not found.
         """
         keylist = []  # List of keywords to search
-        datlist = {}  # type: TypeQData # List of data
+        datlist = {}  # type: QDataType # List of data
 
         # Fast Search
         # -----------
@@ -731,7 +731,7 @@ def qlab_to_kword(qlab: QLabel) -> TypeQKwrd:
 
 
 def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
-                          kword: str) -> TypeQData:
+                          kword: str) -> QDataType:
     """Sub-function to parse electronic-transition related data.
 
     Parses and returns data for a given quantity related to an
@@ -867,7 +867,7 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
 
 
 def _parse_freqdep_data(qlab: QLabel, dblocks: TypeDFChk,
-                        kword: str) -> TypeQData:
+                        kword: str) -> QDataType:
     """Parse data on frequency-dependent properties.
 
     Parses and returns data on a specific property for one or more
@@ -995,8 +995,8 @@ def _parse_freqdep_data(qlab: QLabel, dblocks: TypeDFChk,
 def parse_data(qdict: TypeQInfo,
                qlab2kword: tp.Dict[str, str],
                datablocks: TypeDFChk,
-               gver: tp.Optional[tp.Tuple[str, str]] = None,
-               raise_error: bool = True) -> TypeQData:
+               gver: tuple[str, str] | None = None,
+               raise_error: bool = True) -> QDataType:
     """Parse data arrays to extract specific quantities.
 
     Parses data array to extract relevant information for each quantity.
@@ -1240,7 +1240,7 @@ def parse_data(qdict: TypeQInfo,
 def get_data(dfobj: FChkIO,
              *qlabels: str,
              error_noqty: bool = True,
-             **keys4qlab) -> TypeQData:
+             **keys4qlab) -> QDataType | None:
     """Get data from a FChk file for each quantity label.
 
     Reads one or more full quantity labels from `qlabels` and returns

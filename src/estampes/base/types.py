@@ -28,10 +28,10 @@ TypeColor : float, str, list
     Static type for colors.
 TypeDCrd : str, optional
     Static type for derivative coordinate.
+TypeDBlocGLog : str, list, optional
+    Static type for data blocks extracted from Gaussian log file.
 TypeDFChk : dict
     Static type for data from Gaussian fchk file.
-TypeDGLog : str, list, optional
-    Static type for data from Gaussian log file.
 TypeDOrd : int, optional
     Static type for derivative order (0: property).
 TypeQData : dict
@@ -54,12 +54,7 @@ TypeVibsM : list, np.ndarray
     Static type for vibrational modes (multiple molecules).
 """
 import typing as tp
-
-try:
-    import numpy.typing as npt
-    has_np = True
-except ImportError:
-    has_np = False
+from collections.abc import Sequence
 
 
 # ==============
@@ -100,42 +95,38 @@ class ConstDict(dict):
 # Module Attributes
 # =================
 
-# _tp_StrInt = tp.TypeVar('_tp_StrInt', str, int)
-_tp_StrInt = tp.Union[str, int]
-
-TypeRlCx = tp.TypeVar('TypeRlCx', float, complex)
+TypeStrInt = str | int
+TypeRlCx = float | complex
 
 # Label-related types
-TypeQTag = _tp_StrInt
-TypeQOpt = tp.Optional[_tp_StrInt]
-TypeDOrd = tp.Optional[int]
-TypeDCrd = tp.Optional[str]
-TypeRSta = tp.Optional[tp.Union[str, int, tp.Tuple[_tp_StrInt, _tp_StrInt]]]
-TypeQLvl = tp.Optional[str]
-TypeQLab = tp.Tuple[TypeQTag, TypeQOpt, TypeDOrd, TypeDCrd, TypeRSta, TypeQLvl]
+TypeQTag = TypeStrInt
+TypeQOpt = TypeStrInt | None
+TypeDOrd = int
+TypeDCrd = str | None
+TypeRSta = str | int | tuple[TypeStrInt, TypeStrInt] | None
+TypeQLvl = str | None
+TypeQLab = tuple[TypeQTag, TypeQOpt, TypeDOrd, TypeDCrd, TypeRSta,
+                 TypeQLvl]
 
-TypeDFChk = tp.Dict[str, tp.List[tp.Union[str, int, float]]]
-TypeDGLog = tp.List[tp.Union[tp.List[str], str]]
-TypeColor = tp.Union[tp.Sequence[int], tp.Sequence[float], float, str]
+TypeDFChk = dict[str, list[str] | list[int] | list[float]]
+TypeDBlocGLog = Sequence[Sequence[str] | str]
+TypeColor = Sequence[int] | Sequence[float] | float | str
 
 # Atoms-related data
-TypeAtData = tp.Dict[_tp_StrInt, tp.Dict[str, tp.List[tp.Any]]]
-if has_np:
-    TypeAtCrd = npt.ArrayLike
-    TypeAtLab = npt.ArrayLike
-    TypeAtMas = npt.ArrayLike
-    Type1Vib = npt.ArrayLike
-    TypeVibs = npt.ArrayLike
-else:
-    TypeAtCrd = tp.Sequence[tp.Sequence[float]]
-    TypeAtLab = tp.Sequence[_tp_StrInt]
-    TypeAtMas = tp.Sequence[float]
-    Type1Vib = tp.Sequence[tp.Sequence[float]]
-    TypeVibs = tp.Sequence[tp.Sequence[float]]
-TypeBonds = tp.List[tp.Tuple[int, int]]
+TypeAtData = dict[TypeStrInt, dict[str, list[tp.Any]]]
+TypeBonds = list[tuple[int, int]]
+TypeBondsM = TypeBonds | Sequence[TypeBonds]
 
-# Basic types extended to support multiple molecules
-TypeAtLabM = tp.Union[TypeAtLab, tp.Sequence[TypeAtLab]]
-TypeAtCrdM = tp.Union[TypeAtCrd, tp.Sequence[TypeAtCrd]]
-TypeBondsM = tp.Union[TypeBonds, tp.Sequence[TypeBonds]]
-TypeVibsM = tp.Union[TypeVibs, tp.Sequence[TypeVibs]]
+# pylint: disable=W0611
+# flake8: noqa: F401
+
+try:
+    import numpy.typing
+    from estampes.base.types_npt import (
+        TypeAtCrd, TypeAtLab, TypeAtMas, Type1Vib, TypeVibs,
+        TypeAtLabM, TypeAtMasM, TypeAtCrdM, TypeVibsM, 
+        TypeVib1M)
+except ImportError:
+    from estampes.base.types_base import (
+        TypeAtCrd, TypeAtLab, TypeAtMas, Type1Vib, TypeVibs,
+        TypeAtLabM, TypeAtMasM, TypeAtCrdM, TypeVibsM, TypeVib1M)

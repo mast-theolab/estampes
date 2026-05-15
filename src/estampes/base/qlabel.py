@@ -16,14 +16,14 @@ class QLabel():
     Stores and manages information on a quantity.
     """
 
-    def __init__(self, qstring: tp.Optional[str] = None,
+    def __init__(self, qstring: str | None = None,
                  *,
-                 quantity: tp.Optional[tp.Union[str, int]] = None,
-                 descriptor: tp.Optional[str] = None,
-                 derorder: tp.Optional[tp.Union[str, int]] = None,
-                 dercoord: tp.Optional[str] = None,
-                 refstate: tp.Optional[TypeRSta] = None,
-                 level: tp.Optional[str] = None) -> None:
+                 quantity: int | str | None = None,
+                 descriptor: str | None = None,
+                 derorder: int | str | None = None,
+                 dercoord: str | None = None,
+                 refstate: TypeRSta | None = None,
+                 level: str | None = None):
         """Build QLabel instance.
 
         Builds components of QLabel instance.
@@ -52,12 +52,16 @@ class QLabel():
         If it is specified, the rest is simply ignored.
         """
         qkeys = ('tag', 'opt', 'ord', 'crd', 'sta', 'lvl')
-        qdata = {key: None for key in qkeys}
+        # qdata = {key: None for key in qkeys}
+        qdata = {}
         if qstring is not None:
             for i, item in enumerate(qstring.split(':')):
                 if i > len(qkeys):
                     raise ArgumentError('Too many parameters in qstring')
                 qdata[qkeys[i]] = item
+            for key in qkeys:
+                qdata.setdefault(key)
+
         else:
             qdata['tag'] = quantity
             qdata['opt'] = descriptor
@@ -70,7 +74,7 @@ class QLabel():
             raise ArgumentError('Missing quantity information to build QLabel')
         self.__qtype = None  # Quantity type
         self.__qdesc = None  # Quantity sub-description
-        self.__dord = None  # Derivative order
+        self.__dord = -1  # Derivative order
         self.__dcrd = None  # Derivation coordinates
         self.__rsta = None  # Reference state(s) (incl. transition)
         self.__qlvl = None  # Level of theory used to generate quantity
@@ -80,32 +84,32 @@ class QLabel():
                  refstate=qdata['sta'], level=qdata['lvl'])
 
     @property
-    def label(self) -> tp.Optional[str]:
+    def label(self) -> str | int | None:
         """Return quantity label."""
         return self.__qtype
 
     @property
-    def kind(self) -> tp.Optional[tp.Union[str, int]]:
+    def kind(self) -> str | int | None:
         """Return quantity descriptor (sub-reference to label)."""
         return self.__qdesc
 
     @property
-    def derord(self) -> tp.Optional[int]:
+    def derord(self) -> int:
         """Return derivative order."""
         return self.__dord
 
     @property
-    def dercrd(self) -> tp.Optional[str]:
+    def dercrd(self) -> str | None:
         """Return derivation coordinates."""
         return self.__dcrd
 
     @property
-    def rstate(self) -> tp.Optional[TypeRSta]:
+    def rstate(self) -> TypeRSta | None:
         """Return reference state or transition."""
         return self.__rsta
 
     @property
-    def level(self) -> tp.Optional[str]:
+    def level(self) -> str | None:
         """Return reference level."""
         return self.__qlvl
 
@@ -113,12 +117,12 @@ class QLabel():
         """Return the string representation of the QLabel object."""
         return self.build_qstring()
 
-    def set(self, *, quantity: tp.Optional[tp.Union[str, int]] = None,
-            descriptor: tp.Optional[str] = None,
-            derorder: tp.Optional[tp.Union[str, int]] = None,
-            dercoord: tp.Optional[str] = None,
-            refstate: tp.Optional[TypeRSta] = None,
-            level: tp.Optional[str] = None) -> None:
+    def set(self, *, quantity: str | int | None = None,
+            descriptor: str | None = None,
+            derorder: str | int | None = None,
+            dercoord: str | None = None,
+            refstate: TypeRSta | None = None,
+            level: str | None = None) -> None:
         """Set QLabel information.
 
         Sets the QLabel information by calling specific procedures after
@@ -157,7 +161,7 @@ class QLabel():
         tags = []
         tags.append(str(self.__qtype))
         tags.append(self.__qdesc or '')
-        tags.append(str(self.__dord) if self.__dord is not None else '')
+        tags.append(str(self.__dord) if self.__dord >= 0 else '')
         tags.append(self.__dcrd or '')
         if isinstance(self.__rsta, tuple):
             tags.append(f'{self.__rsta[0]}->{self.__rsta[1]}')
@@ -170,13 +174,12 @@ class QLabel():
         """Reset all quantity information in QLabel."""
         self.__qtype = None  # Quantity type
         self.__qdesc = None  # Quantity sub-description
-        self.__dord = None  # Derivative order
+        self.__dord = -1  # Derivative order
         self.__dcrd = None  # Derivation coordinates
         self.__rsta = None  # Reference state(s) (incl. transition)
         self.__qlvl = None  # Level of theory used to generate quantity
 
-    def __set_quantity(self,
-                       quantity: tp.Union[str, int]) -> None:
+    def __set_quantity(self, quantity: str | int):
         """Set quantity type.
 
         Supported quantity types:
@@ -273,10 +276,12 @@ class QLabel():
         """
         try:
             self.__qtype = int(quantity)
-        except ValueError:
+        except ValueError as err:
+            if not isinstance(quantity, str):
+                raise ArgumentError('Unrecognized format of quantity') from err
             self.__qtype = quantity.lower()
 
-    def __set_descriptor(self, descriptor: tp.Optional[str]) -> None:
+    def __set_descriptor(self, descriptor: str | None) -> None:
         """Set quantity descriptor.
 
         Sets the quantity descriptor, for instance a specific version of
@@ -349,6 +354,7 @@ class QLabel():
                    GMat       Wilson G matrix
                    NMOrder    Order of normal modes in VPT block
                    quartic    Quartic force constants (in cm-1)
+                   YMat       VPT Upsilon matrix
 
          vtrans    RR         Transition information for resonance Raman
         =========  ========  ===========================================
@@ -499,6 +505,8 @@ class QLabel():
                     self.__qdesc = 'cubic'
                 elif key in ('QUARTIC', 'FIJKL'):
                     self.__qdesc = 'quartic'
+                if key in ('Y', 'YMAT', 'UPSILON'):
+                    self.__qdesc = 'YMat'
                 else:
                     raise ArgumentError(
                         f'Incorrect/Unrecognized sup-opt for {self.__qtype}')
@@ -546,8 +554,8 @@ class QLabel():
         else:
             self.__qdesc = descriptor
 
-    def __set_deriv_info(self, derorder: tp.Optional[tp.Union[str, int]],
-                         dercoord: tp.Optional[str]) -> None:
+    def __set_deriv_info(self, derorder: str | int | None,
+                         dercoord: str | None):
         """Set derivation information.
 
         Sets the derivation information:
@@ -576,16 +584,16 @@ class QLabel():
         """
         # Derivative order
         if derorder is None:
-            if isinstance(self.__qtype, int):
-                self.__dord = 0
-            else:
-                self.__dord = None
+            self.__dord = -1
         elif isinstance(derorder, int):
-            self.__dord = derorder
+            if self.__dord >= 0:
+                self.__dord = derorder
+            else:
+                raise ArgumentError('Derivative order cannot be negative')
         else:
             if not derorder.strip():
                 if isinstance(self.__qtype, int):
-                    self.__dord = None
+                    self.__dord = -1
                 else:
                     self.__dord = 0
             else:

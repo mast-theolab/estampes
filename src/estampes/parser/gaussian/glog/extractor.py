@@ -5,11 +5,11 @@ a Gaussian log file.
 """
 
 import re
-import typing as tp
+from collections.abc import Sequence
 
 from estampes.base import QData, \
-    ParseKeyError, \
-    TypeDGLog, TypeQData, TypeQInfo
+    ParseKeyError, ParsingError, \
+    TypeDBlocGLog, QDataType, TypeQInfo
 from estampes.data.physics import PHYSFACT
 from estampes.parser.gaussian.glog.parse_prp import parse_1xx_dat, \
     parse_3xx_dat, parse_13xx_dat, parse_en_dat
@@ -20,11 +20,11 @@ __ang2au = 1.0 / PHYSFACT.bohr2ang
 
 
 def parse_data(qdict: TypeQInfo,
-               key2blocks: tp.Dict[str, tp.Tuple[int, int]],
-               ndatablock: tp.Sequence[int],
-               datablocks: TypeDGLog,
-               gver: tp.Optional[tp.Tuple[str, str]] = None,
-               raise_error: bool = True) -> TypeQData:
+               key2blocks: dict[str, tuple[int, int]],
+               ndatablock: Sequence[int],
+               datablocks: TypeDBlocGLog,
+               gver: tuple[str, str] | None = None,
+               raise_error: bool = True) -> QDataType:
     """Parse data arrays to extract specific quantity.
 
     Parses data array to extract relevant information for each quantity.
@@ -115,10 +115,11 @@ def parse_data(qdict: TypeQInfo,
             # Now let us check if more than one job
             # Since we look for Normal termination, we may have an extra blank
             # block last.  We check this:
+            end_last = len(datablocks[last])
             if len(datablocks[last]) > 0:
-                if not datablocks[last][-1]:
-                    del datablocks[last][-1]
-            for block in datablocks[last]:
+                if not datablocks[last][end_last-1]:
+                    end_last -= 1
+            for block in datablocks[last][:end_last]:
                 data.append([])
                 for num, line in enumerate(block):
                     ov, iops, links = line.split('/')
@@ -195,7 +196,10 @@ def parse_data(qdict: TypeQInfo,
             txt = r'\s*Gaussian (\w+):\s+(\w+)-(\w{3})Rev([\w.+]+) {1,2}' \
                 + r'(\d+-\w{3}-\d{4})\s*'
             pattern = re.compile(txt)
-            res = re.match(pattern, ''.join(datablocks[iref])).groups()
+            found = re.match(pattern, ''.join(datablocks[iref]))
+            if not found:
+                raise ParsingError('Unable to parse Gaussian version')
+            res = found.groups()
             dobjs[qkey].set(data={'major': res[2], 'minor': res[3],
                                   'system': res[1], 'release': res[4]})
         # Vibrational Information
@@ -329,7 +333,7 @@ def parse_data(qdict: TypeQInfo,
             dobjs[qkey] = parse_ramact_data(qlabel, datablocks[first:last+1])
         elif qlabel.label == 'roaact':
             dobjs[qkey] = parse_ramact_data(qlabel, datablocks[first:last+1],
-                                            ROA=True)
+                                            do_roa=True)
         # Energy
         # ------
         elif qlabel.label == 1:

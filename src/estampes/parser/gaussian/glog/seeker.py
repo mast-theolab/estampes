@@ -5,10 +5,10 @@ which acts as a wrapper.
 """
 
 import re
-import typing as tp
+from collections.abc import Sequence
 
 from estampes.base import QLabel, \
-    ParseKeyError
+    InternalError, ParseKeyError
 from estampes.parser.gaussian.glog.search_keys import keys_prp_3xx
 from estampes.parser.gaussian.glog.types import TypeQKwrd
 from estampes.parser.gaussian.glog.logkeys import RR_OMEGA_LINE, \
@@ -16,7 +16,7 @@ from estampes.parser.gaussian.glog.logkeys import RR_OMEGA_LINE, \
 
 
 def qlab_to_linkdata(qlab: QLabel,
-                     gver: tp.Optional[tp.Sequence[str]] = None) -> TypeQKwrd:
+                     gver: Sequence[str] | None = None) -> TypeQKwrd:
     """Return relevant keyword(s) for a given quantity.
 
     Returns the a tuple, containing:
@@ -91,489 +91,512 @@ def qlab_to_linkdata(qlab: QLabel,
     -----
     - `n` refers to all available states.
     """
-    lnk = None
-    key = None
-    sub = None
-    fmt = None
-    num = None
+    lnk1 = []
+    key1 = []
+    sub1 = []
+    end1 = []
+    fmt1 = []
+    num1 = []
     if qlab.label == 'route':  # Log specific extraction, not provided in base
-        lnk = (1, 1)
+        lnk1.extend((1, 1))
         # key = (' Cite this work as:', ' Link1:  Proceeding to internal job')
-        key = (' Cite this work as:', ' Normal termination of Gaussian')
-        sub = (' -', ' ---')
-        end = (
+        key1.extend((' Cite this work as:', ' Normal termination of Gaussian'))
+        sub1.extend((' -', ' ---'))
+        end1.extend((
             lambda s: s.startswith(' Charge ='),
-            lambda s: s.startswith(' Charge ='))
-        fmt = (
+            lambda s: s.startswith(' Charge =')))
+        fmt1.extend((
             r'^ (?P<val>\d+\/(?:,?\d+=-?\d+)*\/(?:,?\d+)+(?:\(-\d\))?);\s*$',
-            r'^ (?P<val>\d+\/(?:,?\d+=-?\d+)*\/(?:,?\d+)+(?:\(-\d\))?);\s*$')
-        num = (0, 1)
+            r'^ (?P<val>\d+\/(?:,?\d+=-?\d+)*\/(?:,?\d+)+(?:\(-\d\))?);\s*$'))
+        num1.extend((0, 1))
     elif qlab.label == 'natoms':
-        lnk = 101
-        key = ' NAtoms='
-        sub = 0
-        def end(_s): return True
-        fmt = r'^ NAtoms=\s+(?P<val>\d+)\s+N\w+=\s+.*$'
-        num = 0
+        lnk1.append(101)
+        key1.append(' NAtoms=')
+        sub1.append(0)
+        end1.append(lambda _s: True)
+        fmt1.append(r'^ NAtoms=\s+(?P<val>\d+)\s+N\w+=\s+.*$')
+        num1.append(0)
     elif qlab.label == 'nvib':
         # We load anyway the frequencies to count them.
         # This is a bit of an absurd way to proceed but only way to be
         #   sure that we have the correct number since Gaussian does not
         #   list it explicitly in the output
-        lnk = 716
-        key = ' and normal coordinates:'
-        sub = 1
-        def end(s): return s.startswith(' - Thermochemistry')
-        fmt = r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$'
-        num = -1
+        lnk1.append(716)
+        key1.append(' and normal coordinates:')
+        sub1.append(1)
+        end1.append(lambda s: s.startswith(' - Thermochemistry'))
+        fmt1.append(r'^\s+Frequencies -- \s*(?P<val>\d.*)\s*$')
+        num1.append(-1)
     elif qlab.label == 'atmas':
-        lnk = (-101, 716)
-        key = (' NAtoms= ', ' - Thermochemistry -')
-        sub = (0, 3)
-        end = (lambda s: s.startswith(' Leave Link'),
-               lambda s: s.startswith(' Molecular Mass:'))
-        fmt = (r'^ AtmWgt=\s+(?P<val>(\s+\d+\.\d+)+)\s*$',
-               r'^ Atom\s+\d+ has atomic number\s+\d+ and '
-               + r'mass\s+(?P<val>\d+\.\d+)\s*$')
-        num = (0, 0)
+        lnk1.extend((-101, 716))
+        key1.extend((' NAtoms= ', ' - Thermochemistry -'))
+        sub1.extend((0, 3))
+        end1.extend((lambda s: s.startswith(' Leave Link'),
+                     lambda s: s.startswith(' Molecular Mass:')))
+        fmt1.extend((r'^ AtmWgt=\s+(?P<val>(\s+\d+\.\d+)+)\s*$',
+                     r'^ Atom\s+\d+ has atomic number\s+\d+ and '
+                     + r'mass\s+(?P<val>\d+\.\d+)\s*$'))
+        num1.extend((0, 0))
     elif qlab.label == 'atnum':
-        lnk = (0, 0)
-        key = ('                         Standard orientation:',
-               '                          Input orientation:')
-        sub = (5, 5)
-        end = (lambda s: s.startswith(' ------'),
-               lambda s: s.startswith(' ------'))
+        lnk1.extend((0, 0))
+        key1.extend(('                         Standard orientation:',
+                     '                          Input orientation:'))
+        sub1.extend((5, 5))
+        end1.extend((lambda s: s.startswith(' ------'),
+                     lambda s: s.startswith(' ------')))
         txt = r'^\s+\d+\s+(?P<val>\d+)\s+\d+(?:\s+-?\d+\.\d+){3}\s*$'
-        fmt = (txt, txt)
-        num = (0, 0)
+        fmt1.extend((txt, txt))
+        num1.extend((0, 0))
     elif qlab.label == 'molsym':
-        lnk = 101
-        key = ' Framework group '
-        sub = 0
-        def end(_s): return True
-        fmt = r'^ Framework group \s+(?P<val>[^ ]+)\s*$'
-        num = 0
+        lnk1.append(101)
+        key1.append(' Framework group ')
+        sub1.append(0)
+        end1.append(lambda _s: True)
+        fmt1.append(r'^ Framework group \s+(?P<val>[^ ]+)\s*$')
+        num1.append(0)
     elif qlab.label == 'atcrd' or qlab.label == 2:
-        lnk = (0, 0)
-        key = ('                         Standard orientation:',
-               '                          Input orientation:')
-        sub = (5, 5)
-        end = (lambda s: s.startswith(' ------'),
-               lambda s: s.startswith(' ------'))
+        lnk1.extend((0, 0))
+        key1.extend(('                         Standard orientation:',
+                     '                          Input orientation:'))
+        sub1.extend((5, 5))
+        end1.extend((lambda s: s.startswith(' ------'),
+                     lambda s: s.startswith(' ------')))
         txt = r'^(?:\s+\d+){3}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$'
-        fmt = (txt, txt)
+        fmt1.extend((txt, txt))
         if qlab.kind == 'first':
-            num = (0, 0)
+            num1.extend((0, 0))
         elif qlab.kind in ('last', 'orient'):
-            num = (-1, -1)
+            num1.extend((-1, -1))
         else:
-            num = (1, 1)
+            num1.extend((1, 1))
     elif qlab.label == 'hessvec':
-        lnk = (-716, 716)
-        key = (' and normal coordinates:',
-               ' and normal coordinates:')
-        sub = (1, 1)
-        end = (lambda s: s.startswith(' - Thermochemistry'),
-               lambda s: s.startswith(' - Thermochemistry'))
-        fmt = (r'^\s+(?P<val>(?:\d+\s+){3}(?:\s+-?\d\.\d+){1,5})\s*$',
-               r'^\s+(?P<val>(?:\d+\s+){2}(?:\s+-?\d\.\d+){1,9})\s*$')
-        num = (0, -1)
+        lnk1.extend((-716, 716))
+        key1.extend((' and normal coordinates:',
+                     ' and normal coordinates:'))
+        sub1.extend((1, 1))
+        end1.extend((lambda s: s.startswith(' - Thermochemistry'),
+                     lambda s: s.startswith(' - Thermochemistry')))
+        fmt1.extend((r'^\s+(?P<val>(?:\d+\s+){3}(?:\s+-?\d\.\d+){1,5})\s*$',
+                     r'^\s+(?P<val>(?:\d+\s+){2}(?:\s+-?\d\.\d+){1,9})\s*$'))
+        num1.extend((0, -1))
     elif qlab.label == 'hessdat':
-        lnk = (-716, 716)
-        key = (' and normal coordinates:',
-               ' and normal coordinates:')
-        sub = (1, 1)
-        end = (lambda s: s.startswith(' - Thermochemistry'),
-               lambda s: s.startswith(' - Thermochemistry'))
+        lnk1.extend((-716, 716))
+        key1.extend((' and normal coordinates:',
+                     ' and normal coordinates:'))
+        sub1.extend((1, 1))
+        end1.extend((lambda s: s.startswith(' - Thermochemistry'),
+                     lambda s: s.startswith(' - Thermochemistry')))
         if qlab.kind == 'freq':
-            fmt = (r'^\s+Frequencies --- \s*(?P<val>-?\d.*)\s*$',
-                   r'^\s+Frequencies -- \s*(?P<val>-?\d.*)\s*$')
+            fmt1.extend((r'^\s+Frequencies --- \s*(?P<val>-?\d.*)\s*$',
+                         r'^\s+Frequencies -- \s*(?P<val>-?\d.*)\s*$'))
         elif qlab.kind == 'redmas':
-            fmt = (r'^\s+Reduced masses --- \s*(?P<val>\d.*)\s*$',
-                   r'^\s+Red. masses -- \s*(?P<val>\d.*)\s*$')
+            fmt1.extend((r'^\s+Reduced masses --- \s*(?P<val>\d.*)\s*$',
+                         r'^\s+Red. masses -- \s*(?P<val>\d.*)\s*$'))
         else:
             raise NotImplementedError('Unknown subopt for HessDat')
-        num = (0, -1)
+        num1.extend((0, -1))
     elif qlab.label == 'swopt':
-        lnk = 1
-        key = ' Cite this work as:'
-        sub = ' #'
-        def end(s): return s.startswith(' -')
-        fmt = r'^ (?P<val>.*)$'
-        num = 0
+        lnk1.append(1)
+        key1.append(' Cite this work as:')
+        sub1.append(' #')
+        end1.append(lambda s: s.startswith(' -'))
+        fmt1.append(r'^ (?P<val>.*)$')
+        num1.append(0)
     elif qlab.label == 'swver':
-        lnk = 1
-        key = ' ****'
-        sub = 1
-        def end(_s): return True
-        fmt = r'^ (?P<val>Gaussian (?:\d\d|DV):\s.*)$'
-        num = 0
+        lnk1.append(1)
+        key1.append(' ****')
+        sub1.append(1)
+        end1.append(lambda _s: True)
+        fmt1.append(r'^ (?P<val>Gaussian (?:\d\d|DV):\s.*)$')
+        num1.append(0)
     elif qlab.label == 'intens':
         if qlab.kind == 'IR':
             if qlab.level == 'H':
-                lnk = (-716, 716, -717)
-                key = (' and normal coordinates:',
-                       ' and normal coordinates:',
-                       '        Integrated intensity (I)')
-                sub = (1, 1, 4)
-                end = (lambda s: s.startswith(' - Thermochemistry'),
-                       lambda s: s.startswith(' - Thermochemistry'),
-                       lambda s: s.startswith(' -----'))
-                fmt = (r'^\s+IR Intensities --- \s*(?P<val>\d.*)\s*$',
-                       r'^\s+IR Inten    -- \s*(?P<val>\d.*)\s*$',
-                       r'^\s+\d+\(\d+\)\s+(?:-?\d+\.\d+\s+|\*+\s+){2}'
-                       + r'(?P<val>-?\d+\.\d+|\*+)\s+'
-                       + r'(?:-?\d+\.\d+|\*+)\s*$')
-                num = (0, -1, 0)
+                lnk1.extend((-716, 716, -717))
+                key1.extend((' and normal coordinates:',
+                             ' and normal coordinates:',
+                             '        Integrated intensity (I)'))
+                sub1.extend((1, 1, 4))
+                end1.extend((lambda s: s.startswith(' - Thermochemistry'),
+                             lambda s: s.startswith(' - Thermochemistry'),
+                             lambda s: s.startswith(' -----')))
+                fmt1.extend((r'^\s+IR Intensities --- \s*(?P<val>\d.*)\s*$',
+                             r'^\s+IR Inten    -- \s*(?P<val>\d.*)\s*$',
+                             r'^\s+\d+\(\d+\)\s+(?:-?\d+\.\d+\s+|\*+\s+){2}'
+                             + r'(?P<val>-?\d+\.\d+|\*+)\s+'
+                             + r'(?:-?\d+\.\d+|\*+)\s*$'))
+                num1.extend((0, -1, 0))
             elif qlab.level == 'A':
-                lnk = 717
-                key = '        Integrated intensity (I)'
-                sub = 3
-                def end(s): return s.startswith(' Units:')
-                fmt = r'^\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+' \
-                      + r' .*\s+(?P<val>-?\d+\.\d+|\*+)\s*$'
-                num = 0
+                lnk1.append(717)
+                key1.append('        Integrated intensity (I)')
+                sub1.append(3)
+                end1.append(lambda s: s.startswith(' Units:'))
+                fmt1.append(r'^\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'
+                            + r' .*\s+(?P<val>-?\d+\.\d+|\*+)\s*$')
+                num1.append(0)
             else:
                 raise NotImplementedError()
         else:
             raise NotImplementedError()
     elif qlab.label == 'fcdat':
         if qlab.kind == 'SimInf':
-            lnk = -718
-            key = '               Information on the Simulation'
-            sub = 2
-            def end(s): return s.startswith('     ====')
-            fmt = r'^\s+(?P<val>.*\w.*)\s*$'
-            num = 0
+            lnk1.append(-718)
+            key1.append('               Information on the Simulation')
+            sub1.append(2)
+            end1.append(lambda s: s.startswith('     ===='))
+            fmt1.append(r'^\s+(?P<val>.*\w.*)\s*$')
+            num1.append(0)
         elif qlab.kind == 'ExcState':
-            lnk = -718
-            key = '                  Treatment of Input Data'
-            sub = 2
-            def end(s): return s.startswith('     ====')
-            fmt = r'^\s+(?P<val>No electronic transition.*$|' \
-                + r'NOTE: Using excited electronic state number.*)$'
-            num = 0
+            lnk1.append(-718)
+            key1.append('                  Treatment of Input Data')
+            sub1.append(2)
+            end1.append(lambda s: s.startswith('     ===='))
+            fmt1.append(r'^\s+(?P<val>No electronic transition.*$|'
+                        + r'NOTE: Using excited electronic state number.*)$')
+            num1.append(0)
         elif qlab.kind == 'JMat':
-            lnk = (-718, -718)
-            key = (' Duschinsky matrix', ' Final Duschinsky matrix')
-            sub = (2, 2)
-            end = (lambda s: not s.strip(),
-                   lambda s: not s.strip())
+            lnk1.extend((-718, -718))
+            key1.extend((' Duschinsky matrix', ' Final Duschinsky matrix'))
+            sub1.extend((2, 2))
+            end1.extend((lambda s: not s.strip(),
+                         lambda s: not s.strip()))
             txt = r'^\s+(?P<val>(?:\d+)' \
                 + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$'
-            fmt = (txt, txt)
-            num = (-1, -1)
+            fmt1.extend((txt, txt))
+            num1.extend((-1, -1))
         elif qlab.kind == 'JMatF':
-            lnk = -718
-            key = ' Full Duschinsky matrix'
-            sub = 2
-            def end(s): return not s.strip()
-            fmt = r'^\s+(?P<val>(?:\d+)' \
-                + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$'
-            num = 0
+            lnk1.append(-718)
+            key1.append(' Full Duschinsky matrix')
+            sub1.append(2)
+            end1.append(lambda s: not s.strip())
+            fmt1.append(r'^\s+(?P<val>(?:\d+)'
+                        + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$')
+            num1.append(0)
         elif qlab.kind == 'KVec':
-            lnk = -718
-            key = ' Shift Vector'
-            sub = 2
-            def end(s): return not s.strip()
-            fmt = r'^\s+(?:\d+)\s+(?P<val>-?\d\.\d+D?[\+-]\d{2,3})\s*$'
-            num = 0
+            lnk1.append(-718)
+            key1.append(' Shift Vector')
+            sub1.append(2)
+            end1.append(lambda s: not s.strip())
+            fmt1.append(r'^\s+(?:\d+)\s+(?P<val>-?\d\.\d+D?[\+-]\d{2,3})\s*$')
+            num1.append(0)
         elif qlab.kind == 'SRAMat':
-            lnk = -718
-            key = ' A Matrix'
-            sub = 2
-            def end(s): return not s.strip()
-            fmt = r'^\s+(?P<val>(?:\d+)' \
-                + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$'
-            num = 0
+            lnk1.append(-718)
+            key1.append(' A Matrix')
+            sub1.append(2)
+            end1.append(lambda s: not s.strip())
+            fmt1.append(r'^\s+(?P<val>(?:\d+)'
+                        + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$')
+            num1.append(0)
         elif qlab.kind == 'SRBVec':
-            lnk = -718
-            key = ' B Vector'
-            sub = 2
-            def end(s): return not s.strip()
-            fmt = r'^\s+(?:\d+)\s+(?P<val>-?\d\.\d+D?[\+-]\d{2,3})\s*$'
-            num = 0
+            lnk1.append(-718)
+            key1.append(' B Vector')
+            sub1.append(2)
+            end1.append(lambda s: not s.strip())
+            fmt1.append(r'^\s+(?:\d+)\s+(?P<val>-?\d\.\d+D?[\+-]\d{2,3})\s*$')
+            num1.append(0)
         elif qlab.kind == 'SRCMat':
-            lnk = -718
-            key = ' C Matrix'
-            sub = 2
-            def end(s): return not s.strip()
-            fmt = r'^\s+(?P<val>(?:\d+)' \
-                + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$'
-            num = 0
+            lnk1.append(-718)
+            key1.append(' C Matrix')
+            sub1.append(2)
+            end1.append(lambda s: not s.strip())
+            fmt1.append(r'^\s+(?P<val>(?:\d+)'
+                        + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$')
+            num1.append(0)
         elif qlab.kind == 'SRDVec':
-            lnk = -718
-            key = ' D Vector'
-            sub = 2
-            def end(s): return not s.strip()
-            fmt = r'^\s+(?:\d+)\s+(?P<val>-?\d\.\d+D?[\+-]\d{2,3})\s*$'
-            num = 0
+            lnk1.append(-718)
+            key1.append(' D Vector')
+            sub1.append(2)
+            end1.append(lambda s: not s.strip())
+            fmt1.append(r'^\s+(?:\d+)\s+(?P<val>-?\d\.\d+D?[\+-]\d{2,3})\s*$')
+            num1.append(0)
         elif qlab.kind == 'SREMat':
-            lnk = -718
-            key = ' E Matrix'
-            sub = 2
-            def end(s): return not s.strip()
-            fmt = r'^\s+(?P<val>(?:\d+)' \
-                + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$'
-            num = 0
+            lnk1.append(-718)
+            key1.append(' E Matrix')
+            sub1.append(2)
+            end1.append(lambda s: not s.strip())
+            fmt1.append(r'^\s+(?P<val>(?:\d+)'
+                        + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$')
+            num1.append(0)
         elif qlab.kind == 'Spec':
-            lnk = (-718, -718)
-            key = ('                       Final Spectrum',
-                   ' Legend:')
-            sub = (' -----------', ' -----------')
-            end = (lambda s: not s.strip(),
-                   lambda s: 'Legend:' in s or not s.strip())
-            fmt = (r'^\s+(?P<val>(?:-?\d+.\d+)'
-                   + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3})+)\s*$',
-                   r'^\s+(?P<val>(?:-?\d+.\d+)'
-                   + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3})+)\s*$')
-            num = (0, 1)
+            lnk1.extend((-718, -718))
+            key1.extend(('                       Final Spectrum',
+                         ' Legend:'))
+            sub1.extend((' -----------', ' -----------'))
+            end1.extend((lambda s: not s.strip(),
+                         lambda s: 'Legend:' in s or not s.strip()))
+            fmt1.extend((r'^\s+(?P<val>(?:-?\d+.\d+)'
+                         + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3})+)\s*$',
+                         r'^\s+(?P<val>(?:-?\d+.\d+)'
+                         + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3})+)\s*$'))
+            num1.extend((0, 1))
         elif qlab.kind == 'SpcPar':
-            lnk = (718, 718)
-            key = ('                       Final Spectrum',
-                   ' Legend:')
-            sub = (3, 0)
-            end = (lambda s: s.startswith(' -----------'),
-                   lambda s: s.startswith(' -----------'))
-            fmt = (r'^\s+(?P<val>.*\w.*)\s*$',  # \w to exclude empty lines
-                   r'^\s+(?P<val>.*\w.*)\s*$')
-            num = (0, 1)
+            lnk1.extend((718, 718))
+            key1.extend(('                       Final Spectrum',
+                        ' Legend:'))
+            sub1.extend((3, 0))
+            end1.extend((lambda s: s.startswith(' -----------'),
+                         lambda s: s.startswith(' -----------')))
+            # In format, \w is used to exclude empty lines
+            fmt1.extend((r'^\s+(?P<val>.*\w.*)\s*$',
+                         r'^\s+(?P<val>.*\w.*)\s*$'))
+            num1.extend((0, 1))
         elif qlab.kind == 'Conv':
             # 2 sets, one for the main one, one to extract the FCF (HT)
-            lnk = (-718, -718)
-            key = ('              Calculations of Band Intensities',
-                   '              Calculations of Band Intensities')
-            sub = (2, 2)
-            end = (lambda s: s.startswith('     ===='),
-                   lambda s: s.startswith('     ===='))
-            fmt = (r'^\s+Spectrum progression:\s+(?P<val>-?\d+\.\d+)%\s*$',
-                   r'^\s+.+Franck-Condon Factors:\s+(?P<val>-?\d+\.\d+)%)\s*$')
-            num = (0, 0)
+            lnk1.extend((-718, -718))
+            key1.extend(('              Calculations of Band Intensities',
+                         '              Calculations of Band Intensities'))
+            sub1.extend((2, 2))
+            end1.extend((lambda s: s.startswith('     ===='),
+                         lambda s: s.startswith('     ====')))
+            fmt1.extend((
+                r'^\s+Spectrum progression:\s+(?P<val>-?\d+\.\d+)%\s*$',
+                r'^\s+.+Franck-Condon Factors:\s+(?P<val>-?\d+\.\d+)%)\s*$'))
+            num1.extend((0, 0))
         elif qlab.kind == 'Assign':
-            lnk = (-718, -718)
-            key = ('                 Information on Transitions',
-                   '                 Information on Transitions')
-            sub = (2, 2)
-            end = (lambda s: s.startswith('     ===='),
-                   lambda s: s.startswith('     ===='))
-            fmt = (r'^\s+Energy =\s+(?P<val>-?\d+\.\d+ cm.-1: .*)\s*$',
-                   r'^\s+-. Intensity =\s+(?P<val>.*)\s*$')
-            num = (0, 0)
+            lnk1.extend((-718, -718))
+            key1.extend(('                 Information on Transitions',
+                         '                 Information on Transitions'))
+            sub1.extend((2, 2))
+            end1.extend((lambda s: s.startswith('     ===='),
+                         lambda s: s.startswith('     ====')))
+            fmt1.extend((r'^\s+Energy =\s+(?P<val>-?\d+\.\d+ cm.-1: .*)\s*$',
+                         r'^\s+-. Intensity =\s+(?P<val>.*)\s*$'))
+            num1.extend((0, 0))
         elif qlab.kind == 'RedDim':
-            lnk = -718
-            key = ' Reduced system'
-            sub = 2
-            def end(s): return not s.strip()
-            fmt = r'^\s+(?P<val>\d+\s+=\s+\d+\s+\d+\s+=\s+\d+)\s*$'
-            num = 0
+            lnk1.append(-718)
+            key1.append(' Reduced system')
+            sub1.append(2)
+            end1.append(lambda s: not s.strip())
+            fmt1.append(r'^\s+(?P<val>\d+\s+=\s+\d+\s+\d+\s+=\s+\d+)\s*$')
+            num1.append(0)
         elif qlab.kind == 'E(0-0)':
-            lnk = 718
-            key = '                 Information on Transitions'
-            sub = 2
-            def end(s): return s.startswith('     ====')
-            fmt = r'^\s+Energy of the 0-0 transition:\s+' \
-                + r'(?P<val>-?\d+\.\d+ cm\S+)\s*$'
-            num = 0
+            lnk1.append(718)
+            key1.append('                 Information on Transitions')
+            sub1.append(2)
+            end1.append(lambda s: s.startswith('     ===='))
+            fmt1.append(r'^\s+Energy of the 0-0 transition:\s+'
+                        + r'(?P<val>-?\d+\.\d+ cm\S+)\s*$')
+            num1.append(0)
         elif qlab.kind == 'GeomIS':
-            lnk = 718
-            key = '              New orientation in initial state'
-            sub = 5
-            def end(s): return s.startswith(' ------')
-            fmt = r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$'
-            num = 0
+            lnk1.append(718)
+            key1.append('              New orientation in initial state')
+            sub1.append(5)
+            end1.append(lambda s: s.startswith(' ------'))
+            fmt1.append(r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$')
+            num1.append(0)
         elif qlab.kind == 'GeomFS':
-            # The second block is for my working
-            lnk = (718, 718)
-            key = ('              New orientation in final state',
-                   '               New orientation in final state')
-            sub = (5, 5)
-            end = (lambda s: s.startswith(' ------'),
-                   lambda s: s.startswith(' ------'))
-            fmt = (r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$',
-                   r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$')
-            num = (0, 0)
+            # The second block is for post G16 versions
+            lnk1.extend((718, 718))
+            key1.extend(('              New orientation in final state',
+                         '               New orientation in final state'))
+            sub1.extend((5, 5))
+            end1.extend((lambda s: s.startswith(' ------'),
+                         lambda s: s.startswith(' ------')))
+            fmt1.extend((
+                r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$',
+                r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$'))
+            num1.extend((0, 0))
         elif qlab.kind == 'GeomMS':
-            # The second block is for my working
-            lnk = (718, 718)
-            key = ('              New orientation in intermediate state',
-                   '           New orientation in intermediate state')
-            sub = (5, 5)
-            end = (lambda s: s.startswith(' ------'),
-                   lambda s: s.startswith(' ------'))
-            fmt = (r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$',
-                   r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$')
-            num = (0, 0)
+            # The second block is for post G16 versions
+            lnk1.extend((718, 718))
+            key1.extend(('              New orientation in intermediate state',
+                         '           New orientation in intermediate state'))
+            sub1.extend((5, 5))
+            end1.extend((lambda s: s.startswith(' ------'),
+                         lambda s: s.startswith(' ------')))
+            fmt1.extend((
+                r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$',
+                r'^(?:\s+\d+){2}(?P<val>(?:\s+-?\d+\.\d+){3})\s*$'))
+            num1.extend((0, 0))
         elif qlab.kind == 'ExGeom':
-            lnk = -718
-            key = ' Extrapolated geometry'
-            sub = 4
-            def end(s): return s.startswith(' ------')
-            fmt = r'^\s+\w+(?P<val>(?:\s+-?\d+\.\d+){3})\s*$'
-            num = 0
+            lnk1.append(-718)
+            key1.append(' Extrapolated geometry')
+            sub1.append(4)
+            end1.append(lambda s: s.startswith(' ------'))
+            fmt1.append(r'^\s+\w+(?P<val>(?:\s+-?\d+\.\d+){3})\s*$')
+            num1.append(0)
     elif qlab.label == 'vptdat':
         if qlab.kind == 'CICoef':
             # The second group is to correct the numbering if passive modes
             #     present.
-            lnk = (717, 717)
-            key = (' Definition of New States w.r.t. Deperturbed States',
-                   ' Reduced-Dimensionality on Variational States')
-            sub = (4, 3)
-            end = (lambda s: not s.strip(),
-                   lambda s: not s.strip())
-            fmt = (r'^\s*(?P<val>(\d+\s+:|)\s+[+-]?\d\.\d+\s+x\s+'
-                   + r'\|[0-9();]+>)\s*$',
-                   r'^\s*(?P<val>\d+\s+\|\s+\d+)\s*$')
-            num = (0, 0)
+            lnk1.extend((717, 717))
+            key1.extend((' Definition of New States w.r.t. Deperturbed States',
+                         ' Reduced-Dimensionality on Variational States'))
+            sub1.extend((4, 3))
+            end1.extend((lambda s: not s.strip(),
+                         lambda s: not s.strip()))
+            fmt1.extend((r'^\s*(?P<val>(\d+\s+:|)\s+[+-]?\d\.\d+\s+x\s+'
+                         + r'\|[0-9();]+>)\s*$',
+                         r'^\s*(?P<val>\d+\s+\|\s+\d+)\s*$'))
+            num1.extend((0, 0))
         elif qlab.kind == 'NMOrder':
-            lnk = 717
-            key = '        Vibro-Rotational Analysis Based on Symmetry'
-            sub = 2
-            def end(s): return '=====' in s
-            fmt = r'^\s*(?P<val>\([HA]\)\s+\|(?:\s+\d+\|)+)\s*$'
-            num = 0
+            lnk1.append(717)
+            key1.append('        Vibro-Rotational Analysis Based on Symmetry')
+            sub1.append(2)
+            end1.append(lambda s: '=====' in s)
+            fmt1.append(r'^\s*(?P<val>\([HA]\)\s+\|(?:\s+\d+\|)+)\s*$')
+            num1.append(0)
         elif qlab.kind == 'XMat':
             # The second group is to correct the numbering if passive modes
             #     present.
-            lnk = 717
-            key = ' Total Anharmonic X Matrix (in cm^-1)'
-            sub = 1
-            def end(s): return not s.strip()
-            fmt = r'^\s+(?P<val>\d+(?:\s+\d+|' \
-                + r'\s+-?\d+\.\d+D?[-+]\d+){1,5})\s*$'
-            num = 0
+            lnk1.append(717)
+            key1.append(' Total Anharmonic X Matrix (in cm^-1)')
+            sub1.append(1)
+            end1.append(lambda s: not s.strip())
+            fmt1.append(r'^\s+(?P<val>\d+(?:\s+\d+|'
+                        + r'\s+-?\d+\.\d+D?[-+]\d+){1,5})\s*$')
+            num1.append(0)
+        elif qlab.kind == 'YMat':
+            # The code is very similar to XMat except the matrix is not
+            # necessarily symmetric anymore.
+            # Hence, we also need to check for passive modes present.
+            lnk1.append(717)
+            key1.append('                    Anharmonic Y Matrix')
+            sub1.append(1)
+            end1.append(lambda s: not s.strip())
+            fmt1.append(r'^\s+(?P<val>(?:\d+)'
+                        + r'(?:\s+-?\d\.\d+D?[\+-]\d{2,3}){1,5})\s*$')
+            num1.append(0)
         elif qlab.kind == 'freq':
-            lnk = 717
-            key = ' :      QUADRATIC FORCE CONSTANTS IN NORMAL MODES'
-            sub = 6
-            def end(s): return '...........' in s
-            fmt = r'^\s+(?P<val>(?:' + KEY_UINT + r'){2}\s+' \
-                + KEY_FP + r')(?:\s+' + KEY_FP + r'){2}\s*$'
-            num = 0
+            lnk1.append(717)
+            key1.append(' :      QUADRATIC FORCE CONSTANTS IN NORMAL MODES')
+            sub1.append(6)
+            end1.append(lambda s: '...........' in s)
+            fmt1.append(r'^\s+(?P<val>(?:' + KEY_UINT + r'){2}\s+'
+                        + KEY_FP + r')(?:\s+' + KEY_FP + r'){2}\s*$')
+            num1.append(0)
         elif qlab.kind == 'cubic':
-            lnk = 717
-            key = ' :        CUBIC FORCE CONSTANTS IN NORMAL MODES'
-            sub = 6
-            def end(s): return '...........' in s
-            fmt = r'^\s+(?P<val>(?:' + KEY_UINT + r'){3}\s+' \
-                + KEY_FP + r')(?:\s+' + KEY_FP + r'){2}\s*$'
-            num = 0
+            lnk1.append(717)
+            key1.append(' :        CUBIC FORCE CONSTANTS IN NORMAL MODES')
+            sub1.append(6)
+            end1.append(lambda s: '...........' in s)
+            fmt1.append(r'^\s+(?P<val>(?:' + KEY_UINT + r'){3}\s+'
+                        + KEY_FP + r')(?:\s+' + KEY_FP + r'){2}\s*$')
+            num1.append(0)
         elif qlab.kind == 'quartic':
-            lnk = 717
-            key = ' :       QUARTIC FORCE CONSTANTS IN NORMAL MODES'
-            sub = 6
-            def end(s): return '=====' in s
-            fmt = r'^\s+(?P<val>(?:' + KEY_UINT + r'){4}\s+' \
-                + KEY_FP + r')(?:\s+' + KEY_FP + r'){2}\s*$'
-            num = 0
+            lnk1.append(717)
+            key1.append(' :       QUARTIC FORCE CONSTANTS IN NORMAL MODES')
+            sub1.append(6)
+            end1.append(lambda s: '=====' in s)
+            fmt1.append(r'^\s+(?P<val>(?:' + KEY_UINT + r'){4}\s+'
+                        + KEY_FP + r')(?:\s+' + KEY_FP + r'){2}\s*$')
+            num1.append(0)
         else:
             raise NotImplementedError()
     elif qlab.label == 'vtrans':
         if qlab.kind == 'RR':
-            lnk = (718, 718)
-            key = ('                 Information on Transitions',
-                   '                 Information on Transitions')
-            sub = (2, 2)
-            end = (lambda s: s.startswith('     ====='),
-                   lambda s: s.startswith('     ====='))
-            fmt = (r'^\s+Energy = \s*-?\d+\.\d+ cm.-1:\s+'
-                   + r'(?P<val>\|.+ ->\s+\|.+)\s*$',
-                   RR_OMEGA_LINE)
-            num = (0, 0)
+            lnk1.extend((718, 718))
+            key1.extend(('                 Information on Transitions',
+                         '                 Information on Transitions'))
+            sub1.extend((2, 2))
+            end1.extend((lambda s: s.startswith('     ====='),
+                         lambda s: s.startswith('     =====')))
+            fmt1.extend((r'^\s+Energy = \s*-?\d+\.\d+ cm.-1:\s+'
+                         + r'(?P<val>\|.+ ->\s+\|.+)\s*$',
+                         RR_OMEGA_LINE))
+            num1.extend((0, 0))
         elif qlab.kind == 'SOS':
             raise NotImplementedError()
         else:
             if qlab.level == 'H':
-                lnk = (-716, 716, -717)
-                key = (' and normal coordinates:',
-                       ' and normal coordinates:',
-                       ' NOTE: Transition energies are given with')
-                sub = (1, 1, 8)
-                end = (lambda s: s.startswith(' - Thermochemistry'),
-                       lambda s: s.startswith(' - Thermochemistry'),
-                       lambda s: s.startswith('     ====='))
-                fmt = (r'^\s{16}(?P<val>(?:\s+\d+){1,5})\s*$',
-                       r'^\s{16}(?P<val>(?:\s+\d+){1,3})\s*$',
-                       r'^\s+\w?\s+(?P<val>\s*\d+\(\d+\))\s+\w+\s+'
-                       + r'(?:\s+-?\d+\.\d+|\*+){4}.*\s*$')
-                num = (0, -1, 0)
+                lnk1.extend((-716, 716, -717))
+                key1.extend((' and normal coordinates:',
+                             ' and normal coordinates:',
+                             ' NOTE: Transition energies are given with'))
+                sub1.extend((1, 1, 8))
+                end1.extend((lambda s: s.startswith(' - Thermochemistry'),
+                             lambda s: s.startswith(' - Thermochemistry'),
+                             lambda s: s.startswith('     =====')))
+                fmt1.extend((r'^\s{16}(?P<val>(?:\s+\d+){1,5})\s*$',
+                             r'^\s{16}(?P<val>(?:\s+\d+){1,3})\s*$',
+                             r'^\s+\w?\s+(?P<val>\s*\d+\(\d+\))\s+\w+\s+'
+                             + r'(?:\s+-?\d+\.\d+|\*+){4}.*\s*$'))
+                num1.extend((0, -1, 0))
             elif qlab.level == 'A':
-                lnk = 717
-                key = ' NOTE: Transition energies are given with'
-                sub = 8
-                def end(s): return s.startswith('     =====')
+                lnk1.append(717)
+                key1.append(' NOTE: Transition energies are given with')
+                sub1.append(8)
+                end1.append(lambda s: s.startswith('     ====='))
                 # fmt = r'^\s+\w?\s+(?P<val>(?:\s*\d+\(\d+\)){1,3}|\d+)\s+'\
                 #       + r'(?:\w+)?\s+(?:\s*-?\d+\.\d+|\*+\s+){4,5}.*\s*$'
-                fmt = r'^\s+\w?\s+(?P<val>(?:\s*\d+\(\d+\)\s+(?:\w+)?)' \
-                    + r'{1,3}|\d+)\s+(?:\s*-?\d+\.\d+|\*+\s+){4,5}.*\s*$'
-                num = 0
+                fmt1.append(
+                    r'^\s+\w?\s+(?P<val>(?:\s*\d+\(\d+\)\s+(?:\w+)?)'
+                    + r'{1,3}|\d+)\s+(?:\s*-?\d+\.\d+|\*+\s+){4,5}.*\s*$')
+                num1.append(0)
             else:
                 raise NotImplementedError()
     elif qlab.label == 'vlevel':
         if qlab.kind == 'RR':
-            lnk = (718, 718)
-            key = ('                 Information on Transitions',
-                   '                 Information on Transitions')
-            sub = (2, 2)
-            end = (lambda s: s.startswith('     ====='),
-                   lambda s: s.startswith('     ====='))
-            fmt = (r'^\s+Energy = \s*(?P<val>-?\d+\.\d+) cm.-1:\s+\|.+$',
-                   RR_OMEGA_LINE)
-            num = (0, 0)
+            lnk1.extend((718, 718))
+            key1.extend(('                 Information on Transitions',
+                         '                 Information on Transitions'))
+            sub1.extend((2, 2))
+            end1.extend((lambda s: s.startswith('     ====='),
+                         lambda s: s.startswith('     =====')))
+            fmt1.extend((r'^\s+Energy = \s*(?P<val>-?\d+\.\d+) cm.-1:\s+\|.+$',
+                         RR_OMEGA_LINE))
+            num1.extend((0, 0))
         elif qlab.kind == 'SOS':
             raise NotImplementedError()
         else:
             if qlab.level == 'H':
-                lnk = (-716, 716, -717)
-                key = (' and normal coordinates:',
-                       ' and normal coordinates:',
-                       ' NOTE: Transition energies are given with')
-                sub = (1, 1, 8)
-                end = (lambda s: s.startswith(' - Thermochemistry'),
-                       lambda s: s.startswith(' - Thermochemistry'),
-                       lambda s: s.startswith('     ====='))
-                fmt = (r'^\s+Frequencies --- \s*(?P<val>-?\d.*)\s*$',
-                       r'^\s+Frequencies -- \s*(?P<val>-?\d.*)\s*$',
-                       r'^\s+\w?\s+(?:\s*\d+\(\d+\))\s+\w+\s+'
-                       + r'(?P<val>-?\d+\.\d+|\*+)(?:\s+-?\d+\.\d+|\*+){4}'
-                       + r'.*\s*$')
-                num = (0, -1, 0)
+                lnk1.extend((-716, 716, -717))
+                key1.extend((' and normal coordinates:',
+                             ' and normal coordinates:',
+                             ' NOTE: Transition energies are given with'))
+                sub1.extend((1, 1, 8))
+                end1.extend((lambda s: s.startswith(' - Thermochemistry'),
+                             lambda s: s.startswith(' - Thermochemistry'),
+                             lambda s: s.startswith('     =====')))
+                fmt1.extend((
+                    r'^\s+Frequencies --- \s*(?P<val>-?\d.*)\s*$',
+                    r'^\s+Frequencies -- \s*(?P<val>-?\d.*)\s*$',
+                    r'^\s+\w?\s+(?:\s*\d+\(\d+\))\s+\w+\s+'
+                    + r'(?P<val>-?\d+\.\d+|\*+)(?:\s+-?\d+\.\d+|\*+){4}.*\s*$'
+                    ))
+                num1.extend((0, -1, 0))
             elif qlab.level == 'A':
-                lnk = 717
-                key = ' NOTE: Transition energies are given with'
-                sub = 8
-                def end(s): return s.startswith('     =====')
-                fmt = r'^\s+\w?\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+(?:\w+)?' \
-                    + r'\s+(?:-?\d+\.\d+|\*+)?\s+(?P<val>-?\d+\.\d+|\*+)' \
-                    + r'(?:\s*-?\d+\.\d+|\*+){3}.*\s*$'
-                num = 0
+                lnk1.append(717)
+                key1.append(' NOTE: Transition energies are given with')
+                sub1.append(8)
+                end1.append(lambda s: s.startswith('     ====='))
+                fmt1.append(
+                    r'^\s+\w?\s+(?:(?:\s*\d+\(\d+\)){1,3}|\d+)\s+(?:\w+)?'
+                    + r'\s+(?:-?\d+\.\d+|\*+)?\s+(?P<val>-?\d+\.\d+|\*+)'
+                    + r'(?:\s*-?\d+\.\d+|\*+){3}.*\s*$')
+                num1.append(0)
             else:
                 raise NotImplementedError()
     else:
         lnk0 = -914
         key0 = ' Excitation energies and oscillator strengths:'
         sub0 = 2
-        def end0(s): return s.startswith(' End of Minotr F.D. properties file')
+
+        def end0(s):
+            return s.startswith(' End of Minotr F.D. properties file')
         fmt0 = r'^\s+(?P<val>Excited State\s+\d+: .*|' +\
             r'This state for optimization.*)\s*$'
         num0 = 0
         if isinstance(qlab.rstate, tuple):
-            Si, Sf = qlab.rstate
+            state_i, state_f = qlab.rstate
             if qlab.label == 1:
                 if qlab.derord == 0:
-                    if Si == 0:
-                        lnk = 0
-                        key = ' Excitation energies and oscillator strengths:'
-                        sub = 1
-                        def end(s): return s.startswith(' ****')
-                        if isinstance(Sf, int):
-                            txt = str(Sf)
-                        elif Sf == 'a':
+                    if state_i == 0:
+                        lnk1.append(0)
+                        key1.append(
+                            ' Excitation energies and oscillator strengths:')
+                        sub1.append(1)
+                        end1.append(lambda s: s.startswith(' ****'))
+                        if isinstance(state_f, int):
+                            txt = str(state_f)
+                        elif state_f == 'a':
                             txt = r'\d+'
                         else:
                             raise ValueError('Unsupported final state')
-                        fmt = r'^ Excited State\s+' + txt \
-                            + r':\s+\S+\s+(?P<val>\d+\.\d+)\b\s+eV.*$'
-                        num = -1
+                        fmt1.append(
+                            r'^ Excited State\s+' + txt
+                            + r':\s+\S+\s+(?P<val>\d+\.\d+)\b\s+eV.*$')
+                        num1.append(-1)
                     else:
                         raise NotImplementedError()
                 else:
@@ -615,110 +638,103 @@ def qlab_to_linkdata(qlab: QLabel,
                         key_xyz += rf'(?:{KEY_FP}){{{n_extra}}}\s*$'
                     else:
                         key_xyz += r'\s*$'
-                    lnk = 0
-                    num = -1
-                    if Si == 0:
-                        key = ' Ground to excited state transition ' \
-                            + f'{key_prp} moments (Au):'
-                        if isinstance(Sf, int):
-                            sub = Sf + 1
-                            def end(_s): return True
-                        elif Sf == 'a':
-                            sub = 1
-                            def end(s): return s[2] != ' '
+                    lnk1.append(0)
+                    num1.append(-1)
+                    if state_i == 0:
+                        key1.append(' Ground to excited state transition '
+                                    + f'{key_prp} moments (Au):')
+                        if isinstance(state_f, int):
+                            sub1.append(state_f + 1)
+                            end1.append(lambda _s: True)
+                        elif state_f == 'a':
+                            sub1.append(1)
+                            end1.append(lambda s: s[2] != ' ')
                         else:
                             raise ValueError('Unsupported final state')
-                        fmt = rf'^\s+\d+(?P<val>{key_xyz}'
-                    elif isinstance(Si, int):
-                        key = ' Excited to excited state transition ' \
-                            + f'{key_prp} moments (Au):'
-                        sub = 1
-                        def end(s): return s[2] != ' '
-                        if isinstance(Sf, int):
-                            key_state = rf'^(?P<val>\s+{Sf}\s+{Si}'
-                        elif Sf == 'a':
-                            key_state = rf'^(?P<val>\s+\d+\s+{Si}'
+                        fmt1.append(rf'^\s+\d+(?P<val>{key_xyz}')
+                    elif isinstance(state_i, int):
+                        key1.append(' Excited to excited state transition '
+                                    + f'{key_prp} moments (Au):')
+                        sub1.append(1)
+                        end1.append(lambda s: s[2] != ' ')
+                        if isinstance(state_f, int):
+                            key_state = rf'^(?P<val>\s+{state_f}\s+{state_i}'
+                        elif state_f == 'a':
+                            key_state = rf'^(?P<val>\s+\d+\s+{state_i}'
                         else:
                             raise ValueError('Unsupported final state')
-                        fmt = key_state + key_xyz
-                    elif Si == 'a':
-                        key = ' Excited to excited state transition ' \
-                            + f'{key_prp} moments (Au):'
-                        sub = 1
-                        def end(s): return s[2] != ' '
-                        if isinstance(Sf, int):
-                            key_state = rf'^(?P<val>\s+{Sf}\s+\d+'
-                        elif Sf == 'a':
+                        fmt1.append(key_state + key_xyz)
+                    elif state_i == 'a':
+                        key1.append(' Excited to excited state transition '
+                                    + f'{key_prp} moments (Au):')
+                        sub1.append(1)
+                        end1.append(lambda s: s[2] != ' ')
+                        if isinstance(state_f, int):
+                            key_state = rf'^(?P<val>\s+{state_f}\s+\d+'
+                        elif state_f == 'a':
                             key_state = r'^(?P<val>\s+\d\s+\d+'
                         else:
                             raise ValueError('Unsupported final state')
-                        fmt = key_state + key_xyz
+                        fmt1.append(key_state + key_xyz)
                     else:
                         raise NotImplementedError('Unsupported initial state')
                 else:
                     raise NotImplementedError(
                         'Electronic transition moments derivatives NYI')
             elif qlab.label == 'dipstr':
-                if Si == 0:
-                    lnk = 0
-                    key = ' Ground to excited state transition electric ' \
-                        + 'dipole moments (Au):'
-                    if isinstance(Sf, int):
-                        sub = Sf + 1
-                        def end(_s): return True
-                    elif Sf == 'a':
-                        sub = 1
-                        def end(s): return s[2] != ' '
+                if state_i == 0:
+                    lnk1.append(0)
+                    key1.append(
+                        ' Ground to excited state transition electric '
+                        + 'dipole moments (Au):')
+                    if isinstance(state_f, int):
+                        sub1.append(state_f + 1)
+                        end1.append(lambda _s: True)
+                    elif state_f == 'a':
+                        sub1.append(1)
+                        end1.append(lambda s: s[2] != ' ')
                     else:
                         raise ValueError('Unsupported final state')
-                    fmt = r'^\s+\d+(?:\s+-?\d+\.\d+){3}\s+' \
-                        + r'(?P<val>-?\d+\.\d+)\s+-?\d+\.\d+\s*$'
-                    num = -1
+                    fmt1.append(r'^\s+\d+(?:\s+-?\d+\.\d+){3}\s+'
+                                + r'(?P<val>-?\d+\.\d+)\s+-?\d+\.\d+\s*$')
+                    num1.append(-1)
                 else:
                     raise NotImplementedError()
             elif qlab.label == 'rotstr':
-                if Si == 0:
-                    lnk = 0
-                    key = ' Rotatory Strengths (R) in cgs (10**-40 erg-esu-cm'\
-                        + '/Gauss)'
-                    if isinstance(Sf, int):
-                        sub = Sf+1
-                        def end(_s): return True
-                    elif Sf == 'a':
-                        sub = 1
-                        def end(s): return s[2] != ' '
+                if state_i == 0:
+                    lnk1.append(0)
+                    key1.append(
+                        ' Rotatory Strengths (R) in cgs (10**-40 erg-esu-cm'
+                        + '/Gauss)')
+                    if isinstance(state_f, int):
+                        sub1.append(state_f+1)
+                        end1.append(lambda _s: True)
+                    elif state_f == 'a':
+                        sub1.append(1)
+                        end1.append(lambda s: s[2] != ' ')
                     else:
                         raise ValueError('Unsupported final state')
                     if qlab.kind == 'vel':
-                        num = 0
-                        fmt = r'^\s+\d+(?:\s+-?\d+\.\d+){3}\s+' \
-                            + r'(?P<val>-?\d+\.\d+)\s+-?\d+\.\d+\s*$'
+                        num1.append(0)
+                        fmt1.append(r'^\s+\d+(?:\s+-?\d+\.\d+){3}\s+'
+                                    + r'(?P<val>-?\d+\.\d+)\s+-?\d+\.\d+\s*$')
                     else:
-                        num = -1
-                        fmt = r'^\s+\d+(?:\s+-?\d+\.\d+){3}\s+' \
-                            + r'(?P<val>-?\d+\.\d+)\s*$'
+                        num1.append(-1)
+                        fmt1.append(r'^\s+\d+(?:\s+-?\d+\.\d+){3}\s+'
+                                    + r'(?P<val>-?\d+\.\d+)\s*$')
                 else:
                     raise NotImplementedError()
             else:
                 raise NotImplementedError()
-            #     if qlab.label == 1 and dord == 0:
-            #         keywords = ['ETran scalars', 'SCF Energy']
         else:
             if qlab.rstate == 'c':
-                lnk1 = [lnk0]
-                key1 = [key0]
-                sub1 = [sub0]
-                end1 = [end0]
-                fmt1 = [fmt0]
-                num1 = [num0]
-            elif isinstance(qlab.rstate, int):
-                lnk1 = []
-                key1 = []
-                sub1 = []
-                end1 = []
-                fmt1 = []
-                num1 = []
-            else:
+                lnk1.append(lnk0)
+                key1.append(key0)
+                sub1.append(sub0)
+                end1.append(end0)
+                fmt1.append(fmt0)
+                num1.append(num0)
+            elif not isinstance(qlab.rstate, int):
                 raise NotImplementedError()
             # Add quantity specific subgroups
             if qlab.label in ('ramact', 'roaact') and qlab.kind != 'static':
@@ -739,9 +755,8 @@ def qlab_to_linkdata(qlab: QLabel,
                         end1.append(
                             lambda s: not s.startswith(' Incident light:'))
                         num1.append(0)
-                        fmt1.append(
-                            r'^\s+Incident light \(\S+\):'
-                            + r'\s+(?P<val>-?\d.*)\s*$')
+                        fmt1.append(r'^\s+Incident light \(\S+\):'
+                                    + r'\s+(?P<val>-?\d.*)\s*$')
                     # -- Anharmonic level
                     lnk1.append(-717)
                     if qlab.kind == 'dynamic':
@@ -1118,7 +1133,7 @@ def qlab_to_linkdata(qlab: QLabel,
                         if qlab.kind in ('static', 'dynamic'):
                             fmt = 'Anharmonic Raman Spectroscopy ({})'
                             txt = fmt.format(qlab.kind.capitalize())
-                            key1.append('{:>49s}'.format(txt))
+                            key1.append(f'{txt:>49s}')
                             end1.append(
                                 lambda s: s.startswith('     =====')
                                 or s.startswith(' GradGrad'))
@@ -1210,11 +1225,25 @@ def qlab_to_linkdata(qlab: QLabel,
                     num1.append(0)
                 else:
                     raise NotImplementedError()
-            lnk = tuple(lnk1)
-            key = tuple(key1)
-            sub = tuple(sub1)
-            end = tuple(end1)
-            fmt = tuple(fmt1)
-            num = tuple(num1)
+    # Check that the DB has been correctly built with all arrays having the
+    # same size.
+    if not (len(lnk1) == len(key1) == len(sub1) == len(end1) == len(fmt1)
+            == len(num1)):
+        msg = 'Inconsistency in the construction of parsing data for GLog.'
+        raise InternalError(msg)
+    if len(lnk1) == 1:
+        lnk = lnk1[0]
+        key = key1[0]
+        sub = sub1[0]
+        end = end1[0]
+        fmt = fmt1[0]
+        num = num1[0]
+    else:
+        lnk = tuple(lnk1)
+        key = tuple(key1)
+        sub = tuple(sub1)
+        end = tuple(end1)
+        fmt = tuple(fmt1)
+        num = tuple(num1)
 
     return lnk, key, sub, fmt, end, num

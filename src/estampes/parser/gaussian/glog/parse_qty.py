@@ -4,10 +4,10 @@ Provides specialized functions to extract data for specific quantities.
 """
 
 import re
-import typing as tp
 
 from estampes.base import QData, QLabel, \
-    ParseKeyError, QuantityError
+    ParseKeyError, ParsingError, QuantityError, \
+    TypeDBlocGLog
 from estampes.data.physics import PHYSFACT
 
 __ang2au = 1.0 / PHYSFACT.bohr2ang
@@ -15,7 +15,9 @@ __ang2au = 1.0 / PHYSFACT.bohr2ang
 xyz2id = {'X': 0, 'Y': 1, 'Z': 2}
 
 
-def parse_fcdat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
+def parse_fcdat(qlab: QLabel,
+                dblock: TypeDBlocGLog,
+                iref: int = 0) -> QData:
     """Parse extracted data related to Franck-Condon spectroscopy.
 
     This functions parses the different quantities produced through
@@ -142,11 +144,11 @@ def parse_fcdat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                                for item in cols[1:]])
         dobj.set(data=data)
     elif qlab.kind == 'Spec':
-        # Look for last blocks first, which should contain all blocks:
+        # Look for last block first, which should contain all spectral data.
         # Note: For the vibronic spectrum, X is necessarily the same
         #       over multiple blocks.  We take this for granted to
         #       simplify the processing and the output.
-        discard = []
+        ignore = []
         if len(dblock) > 1:
             nblocks = 0
             nyaxes = 0
@@ -158,17 +160,13 @@ def parse_fcdat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                     nyaxes += len(bloc[0].split()) - 1
                 else:
                     # Incorrect bloc
-                    discard.append(i)
+                    ignore.append(i)
         else:
             nblocks = 1
             nyaxes = 0
         if nblocks == 0:
             msg = 'Inconsistency in spectral data. This should not happen!'
             raise IndexError(msg)
-        if discard:
-            discard.reverse()
-            for i in discard:
-                del dblock[-1][i]
         data = {}
         # First block contains the full initial legend block
         # Necessary for the different parameters
@@ -189,7 +187,9 @@ def parse_fcdat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
         #   always right.
         iref = -1
         yoffset = 0
-        for bloc in range(nblocks):
+        for bloc, content in enumerate(dblock[iref]):
+            if bloc in ignore:
+                continue
             yax = {}
             if nblocks > 1:
                 data['x'].append([])
@@ -203,19 +203,21 @@ def parse_fcdat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                 for i in range(nyaxes):
                     y = yfmt.format(idy=i+1)
                     yax[y] = data[y]
-            for line in dblock[iref][bloc]:
+            cols = None
+            for line in content:
                 cols = [float(item.replace('D', 'e'))
                         for item in line.split()]
                 if bloc == 0:
                     xax.append(cols[0])
                 for i, item in enumerate(cols[1:]):
                     yax[yfmt.format(idy=yoffset+i+1)].append(item)
-            yoffset += len(cols) - 1
+            if cols is not None:
+                yoffset += len(cols) - 1
         for key, val in data.items():
             dobj.add_field(key, value=val)
     elif qlab.kind == 'SpcPar':
-        # Look for last blocks first, which should contain all blocks:
-        discard = []
+        # Look for last block first, which should contain all spectral data.
+        ignore = []
         if len(dblock) > 1:
             nblocks = 0
             nyaxes = 0
@@ -227,16 +229,12 @@ def parse_fcdat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                     nyaxes += lbloc - 3
                 else:
                     # Incorrect bloc
-                    discard.append(i)
+                    ignore.append(i)
         else:
             nblocks = 1
             nyaxes = 0
         if nblocks == 0:
             nblocks = 1
-        if discard:
-            discard.reverse()
-            for i in discard:
-                del dblock[-1][i]
         # First block contains the full initial legend block
         # Necessary for the different parameters
         iref = 0
@@ -310,9 +308,12 @@ def parse_fcdat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
                 else:
                     dobj.add_field(_key, value=title.strip())
         # More than 1 block, read the new ones
-        for bloc in range(1, nblocks):
+        iref = -1
+        for bloc, content in enumerate(dblock[iref][1:], start=1):
+            if bloc in ignore:
+                continue
             nyi = 0
-            for line in dblock[-1][bloc][1:]:
+            for line in content[1:]:
                 res = line.split(':', 1)
                 if len(res) == 2:
                     key, title = res
@@ -399,11 +400,11 @@ def parse_fcdat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
         nstates = len(dblock[iref][0].split())//3
         data = {}
         for i in range(nstates):
-            data['state{}'.format(i+1)] = {}
+            data[f'state{i+1}'] = {}
         for line in dblock[iref]:
             cols = line.split()
             for i in range(nstates):
-                data['state{}'.format(i+1)][int(cols[i*3])] = int(cols[i*3+2])
+                data[f'state{i+1}'][int(cols[i*3])] = int(cols[i*3+2])
         for key, val in data.items():
             dobj.add_field(key, value=val)
     else:
@@ -412,7 +413,7 @@ def parse_fcdat(qlab: QLabel, dblock: tp.List[str], iref: int = 0) -> QData:
     return dobj
 
 
-def parse_vptdat(qlab: QLabel, dblock: tp.List[str]) -> QData:
+def parse_vptdat(qlab: QLabel, dblock: TypeDBlocGLog) -> QData:
     """Parse extracted data related to VPTx.
 
     Parses data related to calculations within the vibrational
@@ -488,6 +489,20 @@ def parse_vptdat(qlab: QLabel, dblock: tp.List[str]) -> QData:
                     data[ioff:ioff+ncols] = [float(item.replace('D', 'e'))
                                              for item in cols[1:]]
         dobj.set(data=data)
+    elif qlab.kind == 'YMat':
+        dobj.set(unit='cm^{-1}')
+        dobj.set(shape='Nv,Nv')
+        data = []
+        N = 0
+        for line in dblock[-1]:
+            cols = line.split()
+            irow = int(cols[0]) - 1
+            if irow == N:
+                data.append([])
+                N += 1
+            data[irow].extend([float(item.replace('D', 'e'))
+                               for item in cols[1:]])
+        dobj.set(data=data)
     elif qlab.kind == 'NMOrder':
         data = {'H->A': {}, 'A->H': {}}
         for line_H, line_A in zip(dblock[-1][::2], dblock[-1][1::2]):
@@ -545,7 +560,7 @@ def parse_vptdat(qlab: QLabel, dblock: tp.List[str]) -> QData:
     return dobj
 
 
-def parse_vtrans_data(qlab: QLabel, dblock: tp.List[str],
+def parse_vtrans_data(qlab: QLabel, dblock: TypeDBlocGLog,
                       iref: int = 0) -> QData:
     """Parse extracted data related to vibrational transitions.
 
@@ -695,7 +710,7 @@ def parse_vtrans_data(qlab: QLabel, dblock: tp.List[str],
     return dobj
 
 
-def parse_trans_str(qlab: QLabel, dblock: tp.List[str],
+def parse_trans_str(qlab: QLabel, dblock: TypeDBlocGLog,
                     iref: int = 0) -> QData:
     """Parse extracted data related to transition strengths.
 
@@ -711,7 +726,11 @@ def parse_trans_str(qlab: QLabel, dblock: tp.List[str],
             Si, Sf = qlab.rstate
             if Si == 0:
                 if isinstance(Sf, int):
-                    dobj.set(data=float(dblock[iref]))
+                    try:
+                        dobj.set(data=float(dblock[iref]))  # type: ignore
+                    except TypeError as err:
+                        raise ParsingError(
+                            'Wrong data structure of dipole strength') from err
                     dobj.set(unit='DS:au')
                 else:
                     dobj.set(unit='DS:au')
@@ -759,8 +778,13 @@ def parse_trans_str(qlab: QLabel, dblock: tp.List[str],
             Si, Sf = qlab.rstate
             if Si == 0:
                 if isinstance(Sf, int):
-                    dobj.set(
-                        data=float(dblock[iref])*1.0e-40)
+                    try:
+                        dobj.set(
+                            data=float(dblock[iref])*1.0e-40)  # type: ignore
+                    except TypeError as err:
+                        raise ParsingError(
+                            'Wrong data structure of rotatory strength'
+                        ) from err
                     dobj.set(unit='RS:esu^2.cm^2')
                 else:
                     dobj.set(unit='RS:esu^2.cm^2')
@@ -811,13 +835,13 @@ def parse_trans_str(qlab: QLabel, dblock: tp.List[str],
     return dobj
 
 
-def parse_ramact_data(qlab: QLabel, dblock: tp.List[str],
-                      ROA: bool = False) -> QData:
+def parse_ramact_data(qlab: QLabel, dblock: TypeDBlocGLog,
+                      do_roa: bool = False) -> QData:
     """Parse extracted data related to Raman/ROA activity.
 
     Parses data related to the Raman/Raman optical activity.
 
-    If ROA true, data are related to ROA.
+    If do_roa true, data are related to ROA.
     """
     if isinstance(qlab.rstate, tuple):
         raise QuantityError('Electronic Raman/ROA not available.')
@@ -832,8 +856,12 @@ def parse_ramact_data(qlab: QLabel, dblock: tp.List[str],
             txt += r'Gamma =\s*(?P<gamma>\d+\.\d+) cm.-1\s*,\s+'
         txt += r'Sigma =\s*(?P<sigma>[-+]?\d\.\d+E?[+-]\d{2,3})'
         pattern = re.compile(txt)
+        gamma = None
         for line in dblock[-1]:
-            res = pattern.match(line).groupdict()
+            found = pattern.match(line)
+            if found is None:
+                raise ParsingError('Unable to parse RR parameters in GLog')
+            res = found.groupdict()
             incfrq = res['incfrq']
             gamma = res.get('gamma')
             sigma = res['sigma']
@@ -880,13 +908,13 @@ def parse_ramact_data(qlab: QLabel, dblock: tp.List[str],
             raise ParseKeyError('Missing data for Raman/ROA activity in file')
         # Data in Gaussian log are multiplied by 10^4 for ROA, so we need to
         #   take this into account
-        yfactor = 1.0e-4 if ROA else 1.0
+        yfactor = 1.0e-4 if do_roa else 1.0
         if qlab.level == 'H':
             if iref == -1:
-                dobj.set(unit='ROA:Ang^6' if ROA else 'RA:Ang^6')
+                dobj.set(unit='ROA:Ang^6' if do_roa else 'RA:Ang^6')
                 an_blk = True
             else:
-                dobj.set(unit='ROA:amu.Ang^4' if ROA else 'RA:amu.Ang^4')
+                dobj.set(unit='ROA:amu.Ang^4' if do_roa else 'RA:amu.Ang^4')
                 an_blk = False
             # We create the database based on the quantity
             if qlab.kind == 'static':
@@ -920,6 +948,8 @@ def parse_ramact_data(qlab: QLabel, dblock: tp.List[str],
                 nlines = len(dblock[iref])/len(setups)
                 block = 0
                 iline = 0
+                i = 0
+                d = {}
                 for line in dblock[iref]:
                     iline += 1
                     if iline % nlines == 1:
@@ -947,6 +977,7 @@ def parse_ramact_data(qlab: QLabel, dblock: tp.List[str],
                     for line in dblock[iref]:
                         iline += 1
                         block = iline % 3  # 3: number of setups
+                        dfreq = {}
                         if block == 1:
                             if ifreq == len(incfreqs):
                                 ifreq = 0
@@ -970,6 +1001,7 @@ def parse_ramact_data(qlab: QLabel, dblock: tp.List[str],
                         ifreq = 0
                         iref = 0
                         i = 0
+                        dfreq = {}
                         for line in dblock[iref]:
                             iline += 1
                             block = iline % 3
@@ -990,7 +1022,7 @@ def parse_ramact_data(qlab: QLabel, dblock: tp.List[str],
                     else:
                         raise ParseKeyError('Missing incident frequency')
         elif qlab.level == 'A':
-            dobj.set(unit='ROA:Ang^6' if ROA else 'RA:Ang^6')
+            dobj.set(unit='ROA:Ang^6' if do_roa else 'RA:Ang^6')
             if qlab.kind == 'static':
                 i = 0
                 for line in dblock[iref]:
@@ -1022,6 +1054,7 @@ def parse_ramact_data(qlab: QLabel, dblock: tp.List[str],
                 nlines = len(dblock[iref])/len(setups)
                 block = 0
                 iline = 0
+                d = {}
                 for line in dblock[iref]:
                     iline += 1
                     if iline % nlines == 1:
