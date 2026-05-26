@@ -7,7 +7,7 @@ import re
 import typing as tp
 
 from estampes.base.errors import ArgumentError
-from estampes.base.types import TypeRSta
+from estampes.base.types import QLabStaType
 
 
 class QLabel():
@@ -22,7 +22,7 @@ class QLabel():
                  descriptor: str | None = None,
                  derorder: int | str | None = None,
                  dercoord: str | None = None,
-                 refstate: TypeRSta | None = None,
+                 refstate: QLabStaType | None = None,
                  level: str | None = None):
         """Build QLabel instance.
 
@@ -104,7 +104,7 @@ class QLabel():
         return self.__dcrd
 
     @property
-    def rstate(self) -> TypeRSta | None:
+    def rstate(self) -> QLabStaType | None:
         """Return reference state or transition."""
         return self.__rsta
 
@@ -121,7 +121,7 @@ class QLabel():
             descriptor: str | None = None,
             derorder: str | int | None = None,
             dercoord: str | None = None,
-            refstate: TypeRSta | None = None,
+            refstate: QLabStaType | None = None,
             level: str | None = None) -> None:
         """Set QLabel information.
 
@@ -586,9 +586,9 @@ class QLabel():
         if derorder is None:
             self.__dord = -1
         elif isinstance(derorder, int):
-            if self.__dord >= 0:
+            if derorder >= 0:
                 self.__dord = derorder
-            else:
+            elif derorder != -1:
                 raise ArgumentError('Derivative order cannot be negative')
         else:
             if not derorder.strip():
@@ -612,7 +612,7 @@ class QLabel():
             if self.__dcrd not in ['X', 'Q', 'QX', 'I', 'QRED']:
                 raise ValueError('Incorrect derivatives coordinates')
 
-    def __set_state_trans(self, refstate: tp.Optional[TypeRSta]) -> None:
+    def __set_state_trans(self, refstate: tp.Optional[QLabStaType]) -> None:
         """Set reference electronic state or transition.
 
         Sets the reference electronic state or transition for which the
@@ -711,4 +711,4 @@ class QLabel():
             self.__qlvl = lvl
 
 
-TypeQInfo = tp.Dict[str, QLabel]
+QInfoType = tp.Dict[str, QLabel]

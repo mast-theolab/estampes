@@ -61,6 +61,7 @@ def convert_storage(label: str) -> int:
             offset = -1
         str_num = _label[:offset]
     else:
+        metric = 1
         magnitude = None
         str_num = _label
     try:
@@ -110,7 +111,8 @@ def bytes_units(num_bytes: int,
         end_unit = 'B'
     if prec < 0:
         raise ValueError('Precision must be positive or null')
-    fmt = '{{:.{:d}f}}{{}}'.format(prec)
+    fmt = f'{{:.{prec:d}f}}{{}}'
+    value = None
     if power is None:
         magnitude = len(__BIT_POWERS)
         while magnitude > 0:
@@ -124,6 +126,9 @@ def bytes_units(num_bytes: int,
             value = num_bytes/metric**magnitude
         except ValueError as err:
             raise ValueError('Unknown byte power.') from err
+    if value is None:
+        raise ValueError('Failed to determine the size.')
+
     return fmt.format(value, __BIT_POWERS[magnitude].upper()+end_unit)
 
 

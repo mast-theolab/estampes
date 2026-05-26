@@ -2,49 +2,67 @@
 
 Attributes
 ----------
-Type1Vib : list, np.ndarray
-    Static type for 1 vibrational mode, expected in form (NAt, 3).
-TypeAtCrd : list, np.ndarray
-    Static type for atomic coordinates.
-TypeAtCrdM
-    Static type for atomic coordinates (multiple molecules).
-TypeAtData : dict
+AtCrdType
+    Static type for 1 atomic coordinate.
+AtDatType
     Static type for atom data.
-TypeAtLab : list
+AtLabType
+    Static type for 1 atomic label.
+AtMasType
+    Static type for a single atomic mass.
+AtsCrdType
+    Static type for a set of atomic coordinates.
+AtsLabType
     Static type for atomic labels.
-TypeAtLabM
-    Static type for atomic labels (multiple molecules).
-TypeAtMas : list, np.ndarray
-    Static type for atomic masses.
-TypeBonds : list
-    Static type for bond list, as (atom1, atom2).
-TypeBondsM
-    Static type for bonds information (multiple molecules).
-TypeColor : float, str, list
+AtsMasType
+    Static type for a set of atomic mass.
+BondType
+    Static type for a single bond, as (atom1, atom2).
+BondsType
+    Static type for a list of bonds.
+ColorType
     Static type for colors.
-TypeDBlocGLog : str, list, optional
+DBlocGLogType
     Static type for data blocks extracted from Gaussian log file.
-TypeDCrd : str, optional
-    Static type for derivative coordinate.
-TypeDFChk : dict
+DBlocFChkType
     Static type for data from Gaussian fchk file.
-TypeDOrd : int, optional
-    Static type for derivative order (0: property).
-TypeQData : dict
+MAtsCrdType
+    Static type for multiple sets of atomic coordinates.
+MAtsLabType
+    Static type for multiple sets of atomic labels.
+MAtsMasType
+    Static type for multiple sets of atomic masses.
+MBondsType
+    Static type for multiple sets of bonds lists.
+MVibType
+    Static type for multiple sets of a single vibrations.
+MVibsType
+    Static type for multiple sets of vibrations.
+QDataType : dict
     Static type for data returned by parsers.
-TypeQInfo : dict
-    Static type for dictionary of quantity full labels.
-TypeQLab : tuple
+QInfoType : dict
+    Static type for dictionary of full quantity labels.
+QLabCrdType
+    Static type for derivative coordinate.
+QLabDerType
+    Static type for derivative order (0: property).
+QLabelType
     Static type for quantity label.
-TypeQLvl : str, optional
+QLabLvlType
     Static type for level of theory used to compute quantity.
-TypeQOpt : str, int, optional
-    Static type for quantity option.
-TypeQTag : str, int
-    Static type for quantity tag.
-TypeRSta : str, int, tuple, optional
+QLabStaType
     Static type for reference state/transition.
-TypeVibs : list, np.ndarray
+QLabSubType
+    Static type for quantity option.
+QLabTagType
+    Static type for quantity tag.
+RealCplxType
+    Type variable designated either float or complex.
+StrIntType
+    Type for string or integer format.
+VibType
+    Static type for 1 vibrational mode, expected in form (NAt, 3).
+VibsType
     Static type for vibrational modes, expected in form (Nib, NAt3).
 
 Classes
@@ -56,24 +74,30 @@ DataError
 InternalError
     Generic error related to some internal inconsistency.
 ParsingError
-    Basic container for parsing-specific errors
+    Basic container for parsing-specific errors.
 ParseDataError
-    Generates an error if quantity/property not available/supported
+    Generates an error if quantity/property not available/supported.
 ParseKeyError
-    Generates an error if keyword not found
+    Generates an error if keyword not found.
 QuantityError
-    Generates an error if quantity is not supported
+    Generates an error if quantity is not supported.
 """
 
 # flake8: noqa: F401
 
-from estampes.base.types import Type1Vib, TypeAtCrd, TypeAtCrdM, TypeAtData, \
-    TypeAtLab, TypeAtLabM, TypeAtMas, TypeBonds, TypeBondsM, TypeColor, \
-    TypeDCrd, TypeDFChk, TypeDBlocGLog, TypeDOrd, TypeQLab, TypeQLvl, \
-    TypeQOpt, TypeQTag, TypeRSta, TypeVibs, ConstDict
+from estampes.base.types import (
+    AtCrdType, AtDatType, AtLabType, AtMasType,
+    AtsCrdType, AtsLabType, AtsMasType,
+    BondType, BondsType, ColorType,
+    ConstDict, DBlocFChkType, DBlocGLogType,
+    MAtsCrdType, MAtsLabType, MAtsMasType,
+    MBondsType, MVibType, MVibsType,
+    QLabCrdType, QLabDerType, QLabelType, QLabLvlType,
+    QLabStaType, QLabSubType, QLabTagType, VibsType, VibType)
 
-from estampes.base.errors import ArgumentError, DataError, InternalError,\
-    ParseDataError, ParseKeyError, ParsingError, QuantityError
+from estampes.base.errors import (
+    ArgumentError, DataError, InternalError, ParseDataError, ParseKeyError,
+    ParsingError, QuantityError)
 
-from estampes.base.qlabel import QLabel, TypeQInfo
+from estampes.base.qlabel import QLabel, QInfoType
 from estampes.base.qdata import QData, QDataType

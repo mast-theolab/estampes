@@ -12,8 +12,9 @@ with a unit.
 
 from math import ceil, log, pi
 import typing as tp
+from collections.abc import Callable, Sequence
 
-from estampes.base import ArgumentError
+from estampes.base import ArgumentError, InternalError
 from estampes.tools.char import convert_expr
 from estampes.tools.math import f_gauss, f_lorentz
 # from estampes.data.property import property_units as punits
@@ -24,16 +25,16 @@ from estampes.data.physics import PHYSFACT, PHYSCNST, phys_fact
 # Module Methods
 # ==============
 
-def broaden(xval: tp.Sequence[float],
-            yval: tp.Sequence[float],
-            xaxis: tp.Sequence[float],
+def broaden(xval: Sequence[float],
+            yval: Sequence[float],
+            xaxis: Sequence[float],
             funcname: str,
             hwhm: float,
             yfactor: float = 1.0,
-            xfunc: tp.Optional[tp.Callable[[float], float]] = None,
-            ycorr: tp.Optional[tp.Callable[[float], float]] = None,
+            xfunc: Callable[[float], float] | None = None,
+            ycorr: Callable[[float], float] | None = None,
             ynorm: bool = False,
-            truncate: bool = False) -> tp.List[float]:
+            truncate: bool = False) -> list[float]:
     r"""Broadens a stick spectra with a given broadening function.
 
     Performs the broadening operation given a list of transitions stored in
@@ -150,8 +151,8 @@ def broaden(xval: tp.Sequence[float],
 
 def convert_x(unit_to: str,
               unit_from: str,
-              xaxis: tp.Sequence[float],
-              ) -> tp.List[float]:
+              xaxis: Sequence[float],
+              ) -> list[float]:
     """Returns the converted X unit
 
     Returns the converted X axis from `unit_from` to `unit_to`.
@@ -183,10 +184,10 @@ def convert_x(unit_to: str,
 def convert_y(specabbr: str,
               unit_to: str,
               unit_from: str,
-              **subopts: tp.Dict[str, tp.Any]
-              ) -> tp.Tuple[float,
-                            tp.Optional[tp.Callable[[float], float]],
-                            tp.Optional[tp.Callable[[float], float]]]:
+              **subopts: dict[str, tp.Any]
+              ) -> tuple[float,
+                         Callable[[float], float] | None,
+                         Callable[[float], float] | None]:
     """Returns parameters for the conversion of Y units.
 
     Returns the scaling factor and the power of X needed to convert the
@@ -294,6 +295,10 @@ def convert_y(specabbr: str,
     res = unit_to.split(':')
     dfact = 1.0
     sfact = 1.0
+
+    xfuncs = []
+    ycorrs = []
+
     if len(res) == 1:
         _dest_unit = ''
     else:
@@ -303,7 +308,7 @@ def convert_y(specabbr: str,
             dfact = 1.0
         else:
             _dest_unit = dunit[1].strip().replace('^', '')
-            dfact = eval(convert_expr(dunit[0], None))
+            dfact = eval(convert_expr(dunit[0], None))  # pylint: disable=W0123
     _dest_type = res[0].upper()
     res = unit_from.split(':')
     if len(res) == 1:
@@ -315,7 +320,7 @@ def convert_y(specabbr: str,
             sfact = 1.0
         else:
             _src_unit = sunit[1].strip().replace('^', '')
-            sfact = eval(convert_expr(sunit[0], None))
+            sfact = eval(convert_expr(sunit[0], None))  # pylint: disable=W0123
     _src_type = res[0].upper()
     yfactor = 1.0
     # Test
@@ -326,17 +331,12 @@ def convert_y(specabbr: str,
                     if _src_unit in UNIT_DS['esu2.cm2']:
                         yfactor = 8*pi**3*PHYSCNST.avogadro * 1.0e-7 / \
                             (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
-
-                        def xfunc(x): return x
-                        ycorr = None
+                        xfuncs.append(lambda x: x)
                     else:
                         raise NotImplementedError(msgNYI)
                 elif _src_type == 'II':
                     if _src_unit in UNIT_II['km/M']:
                         yfactor = 100/log(10)
-
-                        xfunc = None
-                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -352,9 +352,7 @@ def convert_y(specabbr: str,
                     if _src_unit in UNIT_RS['esu2.cm2']:
                         yfactor = 32*pi**3*PHYSCNST.avogadro * 1.0e-7 / \
                             (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
-
-                        def xfunc(x): return x
-                        ycorr = None
+                        xfuncs.append(lambda x: x)
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -368,26 +366,25 @@ def convert_y(specabbr: str,
         if incfrq is None:
             incfrq = 1.0e7/532.0
         elif not isinstance(incfrq, (int, float)):
-            raise ArgumentError(msgVal.format(subkey='incfreq',
-                                              specabbr=specabbr))
+            raise ArgumentError(msgVal.format(
+                subkey='incfreq', specabbr=specabbr))
         if _dest_type == 'I':
             if _dest_unit in UNIT_RDSG['cm3/mol/sr']:
                 if _src_type == 'RA':
                     # (AA->cm)^6 * Na * (2 pi * Wscat)^4
                     yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4 / 45
-
-                    def xfunc(x):
-                        return (incfrq-x)**4
+                    xfuncs.append(lambda x: (incfrq-x)**4)
                     if _src_unit in UNIT_RA['amu.Ang4']:
-                        def ycorr(x):  # (Q->q)^2
-                            return phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2 \
-                                / (2.0*x)
+                        # (Q->q)^2
+                        ycorrs.append(
+                            lambda x:
+                                phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2
+                                / (2.0*x))
                     elif _src_unit in UNIT_RA['Ang6']:
-                        ycorr = None
+                        pass
                     elif _src_unit in UNIT_RA['bohr6']:
                         # (bohr->AA)^6 * yfactor
                         yfactor *= PHYSFACT.bohr2ang**6
-                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -396,19 +393,18 @@ def convert_y(specabbr: str,
                 if _src_type == 'RA':
                     # 10^-4 * (AA->cm)^6 * Na * (2 pi * Wscat)^4
                     yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4 / 45
-
-                    def xfunc(x):
-                        return (incfrq-x)**4
+                    xfuncs.append(lambda x: (incfrq-x)**4)
                     if _src_unit in UNIT_RA['amu.Ang4']:
-                        def ycorr(x):  # (Q->q)^2
-                            return phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2 \
-                                / (2.0*x)
+                        # (Q->q)^2
+                        ycorrs.append(
+                            lambda x:
+                                phys_fact('mwq2q')**2 * PHYSFACT.bohr2ang**2
+                                / (2.0*x))
                     elif _src_unit in UNIT_RA['Ang6']:
-                        ycorr = None
+                        pass
                     elif _src_unit in UNIT_RA['bohr6']:
                         # (bohr->AA)^6 * yfactor
                         yfactor *= PHYSFACT.bohr2ang**6
-                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -422,26 +418,25 @@ def convert_y(specabbr: str,
         if incfrq is None:
             incfrq = 1.0e7/532.0
         elif not isinstance(incfrq, (int, float)):
-            raise ArgumentError(msgVal.format(subkey='incfreq',
-                                              specabbr=specabbr))
+            raise ArgumentError(msgVal.format(
+                subkey='incfreq', specabbr=specabbr))
         if _dest_type == 'I':
             if _dest_unit in UNIT_RDSG['cm3/mol/sr']:
                 if _src_type == 'ROA':
                     # (AA->cm)^6 * Na * (2 pi * Wscat)^4
                     yfactor = 1.0e-48*PHYSCNST.avogadro*(2*pi)**4 / (4*45)
-
-                    def xfunc(x):
-                        return (incfrq-x)**4
+                    xfuncs.append(lambda x: (incfrq-x)**4)
                     if _src_unit in UNIT_ROA['amu.Ang4']:
-                        def ycorr(x):  # (Q->q)^2
-                            return phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2 \
-                                / (2.0*x)
+                        # (Q->q)^2
+                        ycorrs.append(
+                            lambda x:
+                                phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2
+                                / (2.0*x))
                     elif _src_unit in UNIT_ROA['Ang6']:
-                        ycorr = None
+                        pass
                     elif _src_unit in UNIT_ROA['bohr6']:
                         # (bohr->AA)^6 * yfactor
                         yfactor *= PHYSFACT.bohr2ang**6
-                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -450,19 +445,17 @@ def convert_y(specabbr: str,
                 if _src_type == 'ROA':
                     # 10^-4 * (AA->cm)^6 * Na * (2 pi * Wscat)^4
                     yfactor = 1.0e-52*PHYSCNST.avogadro*(2*pi)**4 / (4*45)
-
-                    def xfunc(x):
-                        return (incfrq-x)**4
+                    xfuncs.append(lambda x: (incfrq-x)**4)
                     if _src_unit in UNIT_ROA['amu.Ang4']:
-                        def ycorr(x):  # (Q->q)^2
-                            return phys_fact('mwq2q')**2*PHYSFACT.bohr2ang**2 \
-                                / (2.0*x)
+                        ycorrs.append(
+                            lambda x:
+                                phys_fact('mwq2q')**2 * PHYSFACT.bohr2ang**2
+                                / (2.0*x))
                     elif _src_unit in UNIT_ROA['Ang6']:
-                        ycorr = None
+                        pass
                     elif _src_unit in UNIT_ROA['bohr6']:
                         # (bohr->AA)^6 * yfactor
                         yfactor *= PHYSFACT.bohr2ang**6
-                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -477,25 +470,21 @@ def convert_y(specabbr: str,
                 if _src_type == 'DS':
                     if _src_unit in UNIT_DS['esu2.cm2']:
                         yfactor = 8*pi**3*PHYSCNST.avogadro * 1.0e-7 \
-                            / (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
-
-                        def xfunc(x): return x
-                        ycorr = None
+                            / (3000.*PHYSCNST.planck
+                                * PHYSCNST.slight*log(10))
+                        xfuncs.append(lambda x: x)
                     elif _src_unit in UNIT_DS['au']:
                         yfactor = 8*pi**3*PHYSCNST.avogadro * 1.0e-7 \
                             * (phys_fact('au2esu')*PHYSFACT.bohr2ang
-                               * 1.0e-8)**2 \
-                            / (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
-
-                        def xfunc(x): return x
-                        ycorr = None
+                                * 1.0e-8)**2 \
+                            / (3000.*PHYSCNST.planck
+                                * PHYSCNST.slight*log(10))
+                        xfuncs.append(lambda x: x)
                     else:
                         raise NotImplementedError(msgNYI)
                 elif _src_type == 'II':
                     if _src_unit in UNIT_II['/M/cm2']:
                         yfactor = 1.0
-                        xfunc = None
-                        ycorr = None
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -511,9 +500,7 @@ def convert_y(specabbr: str,
                     if _src_unit in UNIT_RS['esu2.cm2']:
                         yfactor = 32*pi**3*PHYSCNST.avogadro * 1.0e-7 / \
                             (3000.*PHYSCNST.planck*PHYSCNST.slight*log(10))
-
-                        def xfunc(x): return x
-                        ycorr = None
+                        xfuncs.append(lambda x: x)
                     else:
                         raise NotImplementedError(msgNYI)
                 else:
@@ -524,5 +511,18 @@ def convert_y(specabbr: str,
             raise IndexError(msgNA)
     else:
         raise NotImplementedError(msgNYI)
+
+    if len(xfuncs) > 1:
+        raise InternalError('Too many definitions for xfunc')
+    elif xfuncs:
+        xfunc = xfuncs[0]
+    else:
+        xfunc = None
+    if len(ycorrs) > 1:
+        raise InternalError('Too many definitions for ycorr')
+    elif ycorrs:
+        ycorr = ycorrs[0]
+    else:
+        ycorr = None
 
     return yfactor*sfact/dfact, xfunc, ycorr

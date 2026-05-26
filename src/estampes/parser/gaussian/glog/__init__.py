@@ -9,14 +9,15 @@ import re
 import typing as tp
 from collections.abc import Callable
 
-from estampes.base import QLabel, \
-    ParseKeyError, QuantityError, \
-    TypeDBlocGLog, QDataType
+from estampes.base import (
+    QLabel, QDataType,
+    ParseKeyError, QuantityError,
+    DBlocGLogType)
 
 from estampes.parser.functions import parse_qlabels
 from estampes.parser.gaussian.glog.seeker import qlab_to_linkdata
 from estampes.parser.gaussian.glog.extractor import parse_data
-from estampes.parser.gaussian.glog.types import TypeKData
+from estampes.parser.gaussian.glog.types import KDataType
 
 
 class GLogIO(object):
@@ -145,7 +146,7 @@ class GLogIO(object):
                 self.__verb = 0
 
     def read_data(self,
-                  *to_find: TypeKData) -> tuple[list[int], TypeDBlocGLog]:
+                  *to_find: KDataType) -> tuple[list[int], DBlocGLogType]:
         """Extract data corresponding to the keys to find.
 
         Parameters
@@ -344,6 +345,95 @@ class GLogIO(object):
             raise NotImplementedError('Fast search not yet ready')
 
         return ndatblk, datlist
+    
+    def get_data(self,
+                 *qlabels: str | QLabel,
+                 error_noqty: bool = True,
+                 **keys4qlab) -> QDataType | None:
+        """Get data from a GLog file for each quantity label.
+
+        Reads one or more full quantity labels from `qlab` and returns the
+        corresponding data.
+
+        Parameters
+        ----------
+        *qlabels
+            List of quantity labels, as strings to parse or QLabel objects.
+        error_noqty
+            If True, error is raised if the quantity is not found.
+        **keys4qlab
+            Aliases for the qlabels to be used in returned data object.
+
+        Returns
+        -------
+        dict
+            Data for each quantity.
+
+        Raises
+        ------
+        ArgumentError
+            Unrecognized qlabel structure.
+        TypeError
+            Wrong type of data file object.
+        ParseKeyError
+            Missing required quantity in data block.
+        IndexError
+            State definition inconsistent with available data.
+        QuantityError
+            Unsupported quantity.
+        """
+        # Check if anything to do
+        if len(qlabels) == 0 and len(keys4qlab) == 0:
+            return None
+        # Build Keyword List
+        # ------------------
+        # Build full list of qlabels
+        qty_dict, dupl_keys = parse_qlabels(qlabels, keys4qlab)
+        # List of keywords
+        keydata = []
+        key2blocks = {}
+        idata = 0
+        gver = (self.version['major'], self.version['minor'])
+        for qkey, qlabel in qty_dict.items():
+            # Label parsing
+            # ^^^^^^^^^^^^^
+            links, keys, skips, fmts, ends, nums = qlab_to_linkdata(qlabel,
+                                                                    gver)
+            if isinstance(links, tuple):
+                nblocks = len(links)
+                key2blocks[qkey] = (idata, idata+nblocks-1)
+                for i in range(nblocks):
+                    keydata.append((keys[i], links[i],
+                                    skips[i],  # type: ignore
+                                    re.compile(fmts[i]),
+                                    nums[i], ends[i]))  # type: ignore
+                idata += nblocks
+            else:
+                key2blocks[qkey] = (idata, idata)
+                keydata.append((keys, links, skips,
+                                re.compile(fmts), nums, ends))  # type: ignore
+                idata += 1
+        # Data Extraction
+        # ---------------
+        # Use of set to remove redundant keywords
+        ndata, datablocks = self.read_data(*keydata)
+        # Data Parsing
+        # ------------
+        try:
+            data = parse_data(qty_dict, key2blocks, ndata, datablocks, gver,
+                              error_noqty)
+        except (QuantityError, NotImplementedError) as err:
+            raise QuantityError('Unsupported quantities') from err
+        except (ParseKeyError, IndexError) as err:
+            raise IndexError(
+                f'Missing data in Gaussian log: {self.filename}.\n'
+                + f'=> {err}') from err
+        # Fill redundant keys
+        if dupl_keys:
+            for item, key in dupl_keys.items():
+                data[item] = data[key]
+
+        return data
 
     def __store_linkpos(self):
         """Store link header positions in the file if available.
@@ -379,97 +469,3 @@ class GLogIO(object):
         #                 fpos)
         #         fpos += len(line)
         # return keys
-
-
-def get_data(dfobj: GLogIO,
-             *qlabels: str | QLabel,
-             error_noqty: bool = True,
-             **keys4qlab) -> QDataType | None:
-    """Get data from a GLog file for each quantity label.
-
-    Reads one or more full quantity labels from `qlab` and returns the
-    corresponding data.
-
-    Parameters
-    ----------
-    dfobj
-        Gaussian output file as `GLogIO` object.
-
-    *qlabels
-        List of quantity labels, as strings to parse or QLabel objects.
-    error_noqty
-        If True, error is raised if the quantity is not found.
-    **keys4qlab
-        Aliases for the qlabels to be used in returned data object.
-
-    Returns
-    -------
-    dict
-        Data for each quantity.
-
-    Raises
-    ------
-    ArgumentError
-        Unrecognized qlabel structure.
-    TypeError
-        Wrong type of data file object.
-    ParseKeyError
-        Missing required quantity in data block.
-    IndexError
-        State definition inconsistent with available data.
-    QuantityError
-        Unsupported quantity.
-    """
-    # First, check that the file is a correct instance
-    if not isinstance(dfobj, GLogIO):
-        raise TypeError('GLogIO instance expected')
-    # Check if anything to do
-    if len(qlabels) == 0 and len(keys4qlab) == 0:
-        return None
-    # Build Keyword List
-    # ------------------
-    # Build full list of qlabels
-    qty_dict, dupl_keys = parse_qlabels(qlabels, keys4qlab)
-    # List of keywords
-    keydata = []
-    key2blocks = {}
-    idata = 0
-    gver = (dfobj.version['major'], dfobj.version['minor'])
-    for qkey, qlabel in qty_dict.items():
-        # Label parsing
-        # ^^^^^^^^^^^^^
-        links, keys, skips, fmts, ends, nums = qlab_to_linkdata(qlabel, gver)
-        if isinstance(links, tuple):
-            nblocks = len(links)
-            key2blocks[qkey] = (idata, idata+nblocks-1)
-            for i in range(nblocks):
-                keydata.append((keys[i], links[i], skips[i],  # type: ignore
-                                re.compile(fmts[i]),
-                                nums[i], ends[i]))  # type: ignore
-            idata += nblocks
-        else:
-            key2blocks[qkey] = (idata, idata)
-            keydata.append((keys, links, skips,
-                            re.compile(fmts), nums, ends))  # type: ignore
-            idata += 1
-    # Data Extraction
-    # ---------------
-    # Use of set to remove redundant keywords
-    ndata, datablocks = dfobj.read_data(*keydata)
-    # Data Parsing
-    # ------------
-    try:
-        data = parse_data(qty_dict, key2blocks, ndata, datablocks, gver,
-                          error_noqty)
-    except (QuantityError, NotImplementedError) as err:
-        raise QuantityError('Unsupported quantities') from err
-    except (ParseKeyError, IndexError) as err:
-        raise IndexError(
-            f'Missing data in Gaussian log: {dfobj.filename}.\n'
-            + f'=> {err}') from err
-    # Fill redundant keys
-    if dupl_keys:
-        for item, key in dupl_keys.items():
-            data[item] = data[key]
-
-    return data

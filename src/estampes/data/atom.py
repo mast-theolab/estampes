@@ -9,7 +9,7 @@ ELEMENTS : list
 
 """
 
-from estampes.base import TypeAtData, TypeAtLab
+from estampes.base import AtDatType, AtLabType, InternalError
 
 
 # ================
@@ -32,7 +32,7 @@ ELEMENTS = ('',  # NOQA
 # Module Functions
 # ================
 
-def atomic_data(*atoms: TypeAtLab) -> TypeAtData:
+def atomic_data(*atoms: AtLabType) -> AtDatType:
     """Generates atomic data.
 
     Generates a dictionary containing atomic data for each atom given in
@@ -78,12 +78,14 @@ def atomic_data(*atoms: TypeAtLab) -> TypeAtData:
     """
     at_data = {}
     for atom in set(atoms):
-        try:
+        if isinstance(atom, str):
             at_symb = atom.title()
             at_idx = at_symb
-        except AttributeError:
+        elif isinstance(atom, int):
             at_symb = ELEMENTS[atom]
             at_idx = atom
+        else:
+            raise InternalError('Unsupported format for atom specifications')
         if at_symb == 'H':
             at_data[at_idx] = {
                 'symb': 'H',

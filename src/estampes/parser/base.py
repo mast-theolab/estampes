@@ -13,7 +13,8 @@ import os
 import typing as tp
 
 from estampes.base import QLabel, QDataType
-from estampes.base.errors import ArgumentError, QuantityError
+from estampes.base.errors import (
+    ArgumentError, InternalError, ParsingError, QuantityError)
 from estampes.parser import csv, xyz
 from estampes.parser.gaussian import glog, fchk
 
@@ -49,18 +50,19 @@ class DataFile(object):
             ftype = os.path.splitext(filename)[1][1:].lower()
         else:
             ftype = filetype.lower()
+        self._ftype = None
         if ftype in ('fchk', 'fch'):
             self._dfile = fchk.FChkIO(filename)
-            self._parser = fchk
+            self._ftype = 'fchk'
         elif ftype in ('glog', 'log', 'out'):
             self._dfile = glog.GLogIO(filename)
-            self._parser = glog
+            self._ftype = 'glog'
         elif ftype in ('csv', 'txt'):
             self._dfile = csv.FileCSV(filename)
-            self._parser = csv
+            self._ftype = 'csv'
         elif ftype == 'xyz':
             self._dfile = xyz.FileXYZ(filename)
-            self._parser = xyz
+            self._ftype = 'xyz'
         else:
             raise NotImplementedError('Unsupported filetype')
 
@@ -81,16 +83,15 @@ class DataFile(object):
         return self._dfile.full_version
 
     def get_data(self,
-                 *qlabels,
+                 *qlabels: str | QLabel,
                  error_noqty: bool = True,
-                 **keys4qlabels) -> QDataType:
+                 **keys4qlabels) -> QDataType | None:
         """Get data from Data File object.
 
         Wrapper to internal get_data functions.
         """
-        return self._parser.get_data(self._dfile, *qlabels,
-                                     error_noqty=error_noqty,
-                                     **keys4qlabels)
+        return self._dfile.get_data(*qlabels, error_noqty=error_noqty,
+                                    **keys4qlabels)
 
     def get_hess_data(self,
                       get_evec: bool = True,
@@ -184,7 +185,7 @@ class DataFile(object):
         redmas = None
         lmweig = None
         if force_calc is None:
-            force_calc = False if self._parser is fchk else True
+            force_calc = False if self._ftype == 'fchk' else True
         # force_calc = True
         do_calc = force_calc
         if pre_data is not None:
@@ -193,7 +194,7 @@ class DataFile(object):
                 if qlabel.label == 'natoms':
                     natoms = pre_data['natoms'].data
                 elif qlabel.label == 'nvib':
-                    natoms = pre_data['nvib'].data
+                    nvib = pre_data['nvib'].data
                 elif qlabel.label == 'atmas':
                     atmas = np.array(pre_data[key].data)
                 elif qlabel.label == 'atcrd':
@@ -212,8 +213,13 @@ class DataFile(object):
                 fccart is not None and
                 atcrd is not None and
                 atmas is not None):
-            if (len(fccart.shape) == 1
-                    or pre_data[key_ffx].shape.lower() == 'lt'):
+            if key_ffx is None or pre_data is None:
+                raise InternalError('pre_data should have been properly set.')
+            if isinstance(pre_data[key_ffx].shape, str):
+                shape = pre_data[key_ffx].shape.lower()  # type: ignore
+            else:
+                raise InternalError('Undetermined shape of FFX data.')
+            if (len(fccart.shape) == 1 or shape == 'lt'):
                 res = build_vibrations(
                     square_ltmat(pre_data[key_ffx].data),
                     atmas, atcrd, True, get_evec, get_eval, get_rmas,
@@ -229,12 +235,15 @@ class DataFile(object):
 
         elif not force_calc:
             if get_evec and hessvec is not None:
+                if key_evec is None or pre_data is None:
+                    raise InternalError('pre_data[key_evec] should be set')
                 # Check if eigenvectors need to be corrected
                 calc_rmas = (get_rmas and
-                             pre_data['hessvec'].dtype == 'L.M^{-1/2}')
-                eigvec = convert_hess_evec(hessvec, atmas, natoms,
-                                           pre_data[key_evec].dtype,
-                                           do_norm=not calc_rmas)
+                             pre_data[key_evec].dtype == 'L.M^{-1/2}')
+                eigvec = convert_hess_evec(
+                    hessvec, atmas, natoms,
+                    pre_data[key_evec].dtype,  # type: ignore
+                    do_norm=not calc_rmas)
                 if calc_rmas:
                     redmas = (eigvec**2).sum(axis=1)
                     eigvec /= np.sqrt(redmas[:, np.newaxis])
@@ -261,20 +270,24 @@ class DataFile(object):
                 read_data['hessval'] = QLabel(quantity='hessdat',
                                               descriptor='freq', level='H')
             tmp_data = self.get_data(error_noqty=False, **read_data)
-
+            if tmp_data is None:
+                msg = 'Failed to extract data necessary to build normal ' \
+                    + 'modes-related quantities'
+                raise ParsingError(msg)
             do_calc = force_calc and tmp_data['d2EdX2'] is not None
             if not do_calc:
                 if calc_evec:
                     if (tmp_data['hessvec'] is not None
                             and tmp_data['atmas'] is not None):
                         hessvec = tmp_data['hessvec'].data
-                        atmas = np.repeat(np.array(tmp_data['atmas'].data), 3)
+                        atmas = np.array(tmp_data['atmas'].data)
                         natoms = tmp_data['natoms'].data
                         calc_rmas = (get_rmas and
                                      tmp_data['hessvec'].dtype == 'L.M^{-1/2}')
-                        eigvec = convert_hess_evec(hessvec, atmas, natoms,
-                                                   tmp_data['hessvec'].dtype,
-                                                   do_norm=not calc_rmas)
+                        eigvec = convert_hess_evec(
+                            hessvec, atmas, natoms,
+                            tmp_data['hessvec'].dtype,  # type: ignore
+                            do_norm=not calc_rmas)
                         if calc_rmas:
                             redmas = (eigvec**2).sum(axis=1)
                             eigvec /= np.sqrt(redmas[:, np.newaxis])

@@ -4,54 +4,64 @@ A basic module providing types specifications and new types for ESTAMPES.
 
 Attributes
 ----------
-TypeRlCx : float, complex
-    Type variable designated either float or complex.
-Type1Vib : list, np.ndarray
-    Static type for 1 vibrational mode, expected in form (NAt, 3).
-TypeAtCrd : list, np.ndarray
-    Static type for atomic coordinates.
-TypeAtCrdM
-    Static type for atomic coordinates (multiple molecules).
-TypeAtData : dict
+AtCrdType
+    Static type for 1 atomic coordinate.
+AtDatType
     Static type for atom data.
-TypeAtLab : list
+AtLabType
+    Static type for 1 atomic label.
+AtMasType
+    Static type for a single atomic mass.
+AtsCrdType
+    Static type for a set of atomic coordinates.
+AtsLabType
     Static type for atomic labels.
-TypeAtLabM
-    Static type for atomic labels (multiple molecules).
-TypeAtMas : list, np.ndarray
-    Static type for atomic masses.
-TypeBonds : list
-    Static type for bond list, as (atom1, atom2).
-TypeBondsM
-    Static type for bonds information (multiple molecules).
-TypeColor : float, str, list
+AtsMasType
+    Static type for a set of atomic mass.
+BondType
+    Static type for a single bond, as (atom1, atom2).
+BondsType
+    Static type for a list of bonds.
+ColorType
     Static type for colors.
-TypeDCrd : str, optional
-    Static type for derivative coordinate.
-TypeDBlocGLog : str, list, optional
+DBlocGLogType
     Static type for data blocks extracted from Gaussian log file.
-TypeDFChk : dict
+DBlocFChkType
     Static type for data from Gaussian fchk file.
-TypeDOrd : int, optional
+MAtsCrdType
+    Static type for multiple sets of atomic coordinates.
+MAtsLabType
+    Static type for multiple sets of atomic labels.
+MAtsMasType
+    Static type for multiple sets of atomic masses.
+MBondsType
+    Static type for multiple sets of bonds lists.
+MVibType
+    Static type for multiple sets of a single vibrations.
+MVibsType
+    Static type for multiple sets of vibrations.
+QLabCrdType
+    Static type for derivative coordinate.
+QLabDerType
     Static type for derivative order (0: property).
-TypeQData : dict
-    Static type for data returned by parsers.
-TypeQInfo : dict
-    Static type for dictionary of quantity full labels.
-TypeQLab : tuple
+QLabelType
     Static type for quantity label.
-TypeQLvl : str, optional
+QLabLvlType
     Static type for level of theory used to compute quantity.
-TypeQOpt : str, int, optional
-    Static type for quantity option.
-TypeQTag : str, int
-    Static type for quantity tag.
-TypeRSta : str, int, tuple, optional
+QLabStaType
     Static type for reference state/transition.
-TypeVibs : list, np.ndarray
+QLabSubType
+    Static type for quantity option.
+QLabTagType
+    Static type for quantity tag.
+RealCplxType
+    Type variable designated either float or complex.
+StrIntType
+    Type for string or integer format.
+VibType
+    Static type for 1 vibrational mode, expected in form (NAt, 3).
+VibsType
     Static type for vibrational modes, expected in form (Nib, NAt3).
-TypeVibsM : list, np.ndarray
-    Static type for vibrational modes (multiple molecules).
 """
 import typing as tp
 from collections.abc import Sequence
@@ -91,42 +101,60 @@ class ConstDict(dict):
             raise AttributeError(f'No such attribute: {name}')
 
 
+
+# Atoms-related data
+class TypeAtDat(tp.TypedDict):
+    """Type for Atomic Data structure."""
+    symb: str
+    name: str
+    num: int
+    mass: float
+    rcov: tuple[int | None, ...]
+    rvdw: float | None
+    rvis: float | None
+    rgb: tuple[int, ...] | None
+
 # =================
 # Module Attributes
 # =================
 
-TypeStrInt = str | int
-TypeRlCx = float | complex
+StrIntType = str | int
+RealCplxType = float | complex
 
 # Label-related types
-TypeQTag = TypeStrInt
-TypeQOpt = TypeStrInt | None
-TypeDOrd = int
-TypeDCrd = str | None
-TypeRSta = str | int | tuple[TypeStrInt, TypeStrInt] | None
-TypeQLvl = str | None
-TypeQLab = tuple[TypeQTag, TypeQOpt, TypeDOrd, TypeDCrd, TypeRSta,
-                 TypeQLvl]
+QLabTagType = StrIntType
+QLabSubType = StrIntType | None
+QLabDerType = int
+QLabCrdType = str | None
+QLabStaType = str | int | tuple[StrIntType, StrIntType] | None
+QLabLvlType = str | None
+QLabelType = tuple[QLabTagType, QLabSubType, QLabDerType, QLabCrdType,
+                   QLabStaType, QLabLvlType]
 
-TypeDFChk = dict[str, list[str] | list[int] | list[float]]
-TypeDBlocGLog = Sequence[Sequence[str] | str]
-TypeColor = Sequence[int] | Sequence[float] | float | str
+DBlocFChkType = dict[str, list[str] | list[int] | list[float]]
+DBlocGLogType = Sequence[Sequence[str] | str]
+ColorType = Sequence[int] | Sequence[float] | float | str
 
-# Atoms-related data
-TypeAtData = dict[TypeStrInt, dict[str, list[tp.Any]]]
-TypeBonds = list[tuple[int, int]]
-TypeBondsM = TypeBonds | Sequence[TypeBonds]
+AtLabType = str | int
+AtDatType = dict[AtLabType, TypeAtDat]
+AtsLabType = Sequence[AtLabType]
+MAtsLabType = AtsLabType | Sequence[AtsLabType]
+BondType = tuple[int, int]
+BondsType = Sequence[BondType]
+MBondsType = BondsType | Sequence[BondsType]
+
 
 # pylint: disable=W0611
 # flake8: noqa: F401
 
 try:
-    import numpy.typing
     from estampes.base.types_npt import (
-        TypeAtCrd, TypeAtLab, TypeAtMas, Type1Vib, TypeVibs,
-        TypeAtLabM, TypeAtMasM, TypeAtCrdM, TypeVibsM, 
-        TypeVib1M)
-except ImportError:
+        AtCrdType, AtsCrdType, AtMasType, AtsMasType, VibType, VibsType)
+except (ImportError, ModuleNotFoundError):
     from estampes.base.types_base import (
-        TypeAtCrd, TypeAtLab, TypeAtMas, Type1Vib, TypeVibs,
-        TypeAtLabM, TypeAtMasM, TypeAtCrdM, TypeVibsM, TypeVib1M)
+        AtCrdType, AtsCrdType, AtMasType, AtsMasType, VibType, VibsType)
+
+MAtsMasType = AtsMasType | Sequence[AtsMasType]
+MAtsCrdType = AtsCrdType | Sequence[AtsCrdType]
+MVibsType = VibsType | Sequence[VibsType]
+MVibType = VibType | Sequence[VibType]

@@ -10,8 +10,10 @@ import os
 import re
 import typing as tp
 
+from estampes.base import (
+    QLabel, QData, QDataType,
+    InternalError, ParseKeyError, QuantityError)
 from estampes.parser.functions import parse_qlabels
-from estampes.base import QDataType, ParseKeyError, QuantityError, QData
 
 # ================
 # Module Constants
@@ -71,7 +73,7 @@ class FileCSV(object):
         self.__fname = name
 
     @property
-    def full_version(self) -> tp.Tuple[str, tp.Any]:
+    def full_version(self) -> tuple[str, tp.Any]:
         """Return the full version, for the parser interface."""
         return "CSV", None
 
@@ -179,8 +181,8 @@ class FileCSV(object):
             self.__labels = {self.__fields[i]: cols[i].strip()
                              for i in range(self.__ncols)}
 
-    def read_data(self, *to_find: tp.Sequence[str],
-                  raise_error: bool = True) -> tp.Dict[str, tp.Any]:
+    def read_data(self, *to_find: str,
+                  raise_error: bool = True) -> dict[str, tp.Any]:
         """Extract data corresponding to the keys to find.
 
         Parameters
@@ -196,7 +198,8 @@ class FileCSV(object):
         """
         rest = set(to_find) - {'spcpar', 'spec'}
         if len(rest) > 0 and raise_error:
-            raise ParseKeyError(rest[0])
+            msg = f'Unsupported keywords: {", ".join(rest)}'
+            raise ParseKeyError(msg)
         # Debugging flag
         FIX_FORT = True
         FIX_DEC = True
@@ -210,6 +213,8 @@ class FileCSV(object):
                 'unity': None
             })
         if 'spec' in to_find:
+            if self.__fields is None:
+                raise InternalError('File parsing failed to identify fields')
             datlist['spec'] = {key: [] for key in self.__fields}
             ccom = self.__pars['com']
             csep = self.__pars['sep']
@@ -218,6 +223,7 @@ class FileCSV(object):
                 offset += 1
             with open(self.__fname, 'r', encoding="utf-8") as fobj:
                 fobj.seek(0)
+                line = ' '
                 for _ in range(offset+1):
                     line = fobj.readline()
                 while line:
@@ -243,79 +249,72 @@ class FileCSV(object):
 
         return datlist
 
+    def get_data(self,
+                 *qlabels: str | QLabel,
+                 error_noqty: bool = True,
+                 **keys4qlab) -> QDataType | None:
+        """Get data from a CSV file for each quantity label.
 
-# ================
-# Module Functions
-# ================
+        Reads one or more full quantity labels from `qlabels` and returns
+        the corresponding data.
 
-def get_data(dfobj: FileCSV,
-             *qlabels: str,
-             error_noqty: bool = True,
-             **keys4qlab) -> QDataType:
-    """Get data from a CSV file for each quantity label.
+        Parameters
+        ----------
+        *qlabels
+            List of full quantity labels to parse.
+        error_noqty
+            If True, error is raised if the quantity is not found.
+        **keys4qlab
+            Aliases for the qlabels to be used in returned data object.
 
-    Reads one or more full quantity labels from `qlabels` and returns
-    the corresponding data.
+        Returns
+        -------
+        dict
+            For each `qlabel`, returns the corresponding data block.
 
-    Parameters
-    ----------
-    dfobj
-        Data file object.
-    *qlabels
-        List of full quantity labels to parse.
-    error_noqty
-        If True, error is raised if the quantity is not found.
-    **keys4qlab
-        Aliases for the qlabels to be used in returned data object.
+        Raises
+        ------
+        TypeError
+            Wrong type of data file object.
+        ParseKeyError
+            Missing required quantity in data block.
+        IndexError
+            State definition inconsistent with available data.
+        QuantityError
+            Unsupported quantity.
+        """
+        # Check if anything to do
+        if len(qlabels) == 0 and len(keys4qlab) == 0:
+            return None
+        # Build Keyword List
+        # ------------------
+        # Build full list of qlabels
+        qty_dict, dupl_keys = parse_qlabels(qlabels, keys4qlab)
+        # List of keywords
+        keydata = {}
+        for qkey, qlabel in qty_dict.items():
+            # Label parsing
+            # ^^^^^^^^^^^^^
+            if qlabel.label != 'anyspc':
+                raise QuantityError('Only spectroscopic data supported.')
+            if isinstance(qlabel.kind, str):
+                keydata[qkey] = qlabel.kind.lower()
+            else:
+                keydata[qkey] = qlabel.kind
 
-    Returns
-    -------
-    dict
-        For each `qlabel`, returns the corresponding data block.
+        # Data Extraction
+        # ---------------
+        # Use of set to remove redundant keywords
+        datablocks = self.read_data(*list(set(keydata.values())),
+                                    raise_error=error_noqty)
+        dobjs = {}
+        for qkey, qlabel in qty_dict.items():
+            dobjs[qkey] = QData(qlabel)
+            dobjs[qkey].set(data=datablocks[keydata[qkey]])
 
-    Raises
-    ------
-    TypeError
-        Wrong type of data file object.
-    ParseKeyError
-        Missing required quantity in data block.
-    IndexError
-        State definition inconsistent with available data.
-    QuantityError
-        Unsupported quantity.
-    """
-    # First, check that the file is a correct instance
-    if not isinstance(dfobj, FileCSV):
-        raise TypeError('FileXYZ instance expected')
-    # Check if anything to do
-    if len(qlabels) == 0 and len(keys4qlab) == 0:
-        return None
-    # Build Keyword List
-    # ------------------
-    # Build full list of qlabels
-    qty_dict, dupl_keys = parse_qlabels(qlabels, keys4qlab)
-    # List of keywords
-    keydata = {}
-    for qkey, qlabel in qty_dict.items():
-        # Label parsing
-        # ^^^^^^^^^^^^^
-        if qlabel.label != 'anyspc':
-            raise QuantityError('Only spectroscopic data supported.')
-        keydata[qkey] = qlabel.kind.lower()
+        # Handle possible duplicate keys
+        if dupl_keys:
+            for item, key in dupl_keys.items():
+                dobjs[item] = dobjs[key]
 
-    # Data Extraction
-    # ---------------
-    # Use of set to remove redundant keywords
-    datablocks = dfobj.read_data(*list(set(keydata.values())),
-                                 raise_error=error_noqty)
-    dobjs = {}
-    for qkey, qlabel in qty_dict.items():
-        dobjs[qkey] = QData(qlabel)
-        dobjs[qkey].set(data=datablocks[keydata[qkey]])
-
-    # Handle possible duplicate keys
-    if dupl_keys:
-        for item, key in dupl_keys.items():
-            dobjs[item] = dobjs[key]
-
-    return dobjs
+        return dobjs

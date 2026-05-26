@@ -5,11 +5,12 @@ A basic module providing the main class for manipulating spectral data.
 
 from math import ceil
 import typing as tp
+from collections.abc import Sequence
 
-from estampes.base.qdata import QData
+from estampes.base.qdata import QData, QDataType
 from estampes.parser import DataFile
-from estampes.base import QLabel, TypeColor
-from estampes.base.errors import ArgumentError
+from estampes.base import QLabel, ColorType
+from estampes.base.errors import ArgumentError, InternalError, ParsingError
 from estampes.data.colors import rgba_item_to_scale, to_rgb_list
 from estampes.tools.char import unit_to_tex
 from estampes.tools.spec import broaden, convert_y
@@ -145,7 +146,7 @@ ESPC2DATA = {
     },
 }
 
-SPEC2DATA = {**VSPC2DATA, **ESPC2DATA}
+SPEC2DATA = VSPC2DATA | ESPC2DATA
 
 
 # ==============
@@ -248,19 +249,15 @@ class Spectrum():
     """
 
     def __init__(self,
-                 fname: tp.Union[str, DataFile,
-                                 tp.Sequence[tp.Union[str, DataFile]]],
+                 fname: str | DataFile | Sequence[str | DataFile],
                  specabbr: str,
                  level: str,
-                 ylabel: tp.Optional[str] = None,
+                 ylabel: str | None = None,
                  load_data: bool = True,
-                 ftype: tp.Optional[str] = None,
-                 weigh_dbsets: tp.Optional[
-                     tp.Union[str,
-                              tp.Sequence[
-                                tp.Union[str, float]]]] = None,
-                 weigh_vtrans: tp.Optional[str] = None,
-                 **params: tp.Dict[str, tp.Any]):
+                 ftype: str | None = None,
+                 weigh_dbsets: str | Sequence[str | float] | None = None,
+                 weigh_vtrans: str | None = None,
+                 **params: tp.Any):
         self.__num_dfiles = 1
         # Initialization internal parameters
         # -- Build data files
@@ -275,7 +272,7 @@ class Spectrum():
                 if isinstance(name, DataFile):
                     self.__dfiles.append(name)
                 elif isinstance(name, str):
-                    self.__dfiles.append(DataFile(fname, ftype))
+                    self.__dfiles.append(DataFile(name, ftype))
                 else:
                     raise TypeError(
                         f'Unsupported filename specification for {name}')
@@ -358,7 +355,7 @@ class Spectrum():
         self.__linesty = None
         self.__linewdt = None
 
-    def load_data(self, ylabel: tp.Optional[str] = None):
+    def load_data(self, ylabel: str | None = None):
         """Load data from data file.
 
         Parameters
@@ -389,7 +386,9 @@ class Spectrum():
                 qkeys = SPEC2DATA[self.__spec][self.__theory]
                 if not qkeys:
                     raise NotImplementedError('Keywords not available')
-            dobjs = dfile.get_data(**qkeys)
+            dobjs = dfile.get_data(error_noqty=True, **qkeys)
+            if dobjs is None:
+                raise ParsingError('Failed to extract spectral data.')
             self.__xaxes.append([None, None])
             self.__yaxes.append([None, None])
             self.__xlabels.append([None, None])
@@ -450,7 +449,7 @@ class Spectrum():
         self.__loaded = True
 
     def get_yaxes(self, dataset: int = 0
-                  ) -> tp.Union[tp.Dict[str, str], tp.List[tp.Dict[str, str]]]:
+                  ) -> dict[str, str] | list[dict[str, str]]:
         """Return all available Y axes in data file(s).
 
         If multiple datasets are stored, dataset can be provided to
@@ -479,7 +478,7 @@ class Spectrum():
         else:
             if dataset == 0:
                 return self.__ytags
-            elif 1 < dataset <= len(self.__num_dfiles):
+            elif 1 < dataset <= self.__num_dfiles:
                 return self.__ytags[dataset-1]
             else:
                 raise ArgumentError('dataset',
@@ -508,7 +507,7 @@ class Spectrum():
             self.__broad_info = [None, None]
             self.__spec_info = None
 
-    def overwrite_axis(self, data: tp.Sequence[tp.Union[float, int]],
+    def overwrite_axis(self, data: Sequence[float | int],
                        axis: str = 'x', dataset: int = 1):
         """Overwrite one of the original axes.
 
@@ -544,7 +543,7 @@ class Spectrum():
         self.reset()
 
     def get_xaxis(self, origin: bool = False,
-                  dataset: int = 0) -> tp.List[float]:
+                  dataset: int = 0) -> list[float] | None:
         """Show the X axis.
 
         Returns the X axis.
@@ -579,7 +578,7 @@ class Spectrum():
     xaxis = property(get_xaxis)
 
     def get_yaxis(self, origin: bool = False,
-                  dataset: int = 0) -> tp.List[float]:
+                  dataset: int = 0) -> list[float] | None:
         """Show the Y axis.
 
         Returns the Y axis.
@@ -623,7 +622,7 @@ class Spectrum():
                   only_dot: bool = True,
                   use_cdot: bool = True,
                   origin: bool = False,
-                  dataset: int = 0) -> str:
+                  dataset: int = 0) -> str | None:
         """Get the X unit.
 
         Returns the X unit.
@@ -660,11 +659,14 @@ class Spectrum():
             raise ArgumentError('dataset',
                                 f'Dataset {dataset} not available.')
         if unit[iaxis] is not None:
+            if label is None or not isinstance(unit[iaxis], str):
+                raise InternalError('Missing data to get the xunit')
             if tex_format:
-                unit = unit_to_tex(unit[iaxis].split(':')[-1], only_dot,
-                                   use_cdot)
+                unit = unit_to_tex(
+                    unit[iaxis].split(':')[-1], only_dot,  # type: ignore
+                    use_cdot)
             else:
-                unit = unit[iaxis].split(':')[-1]
+                unit = unit[iaxis].split(':')[-1]  # type: ignore
             return f'{label[iaxis]} / {unit}'
         else:
             return None
@@ -675,7 +677,7 @@ class Spectrum():
                   only_dot: bool = True,
                   use_cdot: bool = True,
                   origin: bool = False,
-                  dataset: int = 0) -> str:
+                  dataset: int = 0) -> str | None:
         """Get the Y unit.
 
         Returns the Y unit.
@@ -712,18 +714,21 @@ class Spectrum():
             raise ArgumentError('dataset',
                                 f'Dataset {dataset} not available.')
         if unit[iaxis] is not None:
+            if label is None or not isinstance(unit[iaxis], str):
+                raise InternalError('Missing data to get the yunit')
             if tex_format:
-                unit = unit_to_tex(unit[iaxis].split(':')[-1], only_dot,
-                                   use_cdot)
+                unit = unit_to_tex(
+                    unit[iaxis].split(':')[-1], only_dot,  # type: ignore
+                    use_cdot)
             else:
-                unit = unit[iaxis].split(':')[-1]
+                unit = unit[iaxis].split(':')[-1]  # type: ignore
             return f'{label[iaxis]} / {unit}'
         else:
             return None
     yunit = property(get_yunit)
 
     @property
-    def label(self) -> str:
+    def label(self) -> str | None:
         """Get or set the label for the spectrum."""
         return self.__label
 
@@ -731,7 +736,7 @@ class Spectrum():
     def label(self, val: str):
         self.__label = val
 
-    def get_info(self, dataset: int = 0) -> tp.Optional[str]:
+    def get_info(self, dataset: int = 0) -> str | None:
         """Get spectral information.
 
         Prints spectral information if available.
@@ -752,13 +757,14 @@ class Spectrum():
             res = self.__spec_infos[dataset-1]
         else:
             raise KeyError('Unrecognized broadening parameter.')
+        if isinstance(res, dict):
+            raise InternalError('Spectral info should not be a dictionary')
         return res
 
-    def get_broadening(self, info: tp.Optional[str] = None,
+    def get_broadening(self, info: str | None = None,
                        origin: bool = False,
                        dataset: int = 0
-                       ) -> tp.Union[tp.Dict[str, tp.Union[str, float]], str,
-                                     float]:
+                       ) -> dict[str, str | float] | str | float | None:
         """Get the broadening data.
 
         Returns the broadening information.
@@ -787,29 +793,36 @@ class Spectrum():
             if self.__xaxis[iaxis] is None:
                 self.__combine_datasets(iaxis)
         if self.__num_dfiles == 1 or dataset == 0:
-            broad_info = self.__broad_info
+            broad_info: list[tp.Any] = self.__broad_info
         elif 0 < dataset <= self.__num_dfiles:
-            broad_info = self.__broad_infos[dataset-1]
+            broad_info: list[tp.Any] = self.__broad_infos[dataset-1]
         else:
             raise ArgumentError('dataset',
                                 f'Dataset {dataset} not available.')
+        if broad_info is None:
+            raise ParsingError('Missing broadening information.')
         if info is None:
             res = broad_info[iaxis]
         else:
+            if broad_info[iaxis] is None:
+                raise ParsingError('Missing broadening information.')
+            if isinstance(broad_info[iaxis], dict):
+                raise ParsingError(
+                    'Incorrect format of broadening information.')
             if info.lower() in ('f', 'func', 'function'):
-                res = broad_info[iaxis]['func']
+                res = broad_info[iaxis].get('func')
             elif info.lower() in ('hw', 'hwhm'):
-                res = broad_info[iaxis]['hwhm']
+                res = broad_info[iaxis].get('hwhm')
             else:
                 raise KeyError('Unrecognized broadening parameter.')
         return res
 
-    def set_broadening(self, hwhm: tp.Optional[float] = None,
-                       func: tp.Optional[str] = None,
+    def set_broadening(self, hwhm: float | None = None,
+                       func: str | None = None,
                        yunit: str = 'normalized',
                        xres: float = 10.0,
-                       xmin: tp.Optional[float] = None,
-                       xmax: tp.Optional[float] = None,
+                       xmin: float | None = None,
+                       xmax: float | None = None,
                        origin: bool = False):
         """Set the broadening parameters and broaden the bands.
 
@@ -864,8 +877,8 @@ class Spectrum():
             if self.__num_dfiles == 1:
                 bfun = self.__broad_infos[0][iaxis]['func']
             else:
-                funcs = filter(lambda x: x[iaxis]['func'] is not None,
-                               self.__broad_infos)
+                funcs = list(filter(lambda x: x[iaxis]['func'] is not None,
+                                    self.__broad_infos))
                 if any(funcs):
                     bfun = funcs[0]
                     for fun in funcs[1:]:
@@ -877,8 +890,8 @@ class Spectrum():
             if self.__num_dfiles == 1:
                 bhw = self.__broad_infos[0][iaxis]['hwhm']
             else:
-                hwhms = filter(lambda x: x[iaxis]['hwhm'] is not None,
-                               self.__broad_infos)
+                hwhms = list(filter(lambda x: x[iaxis]['hwhm'] is not None,
+                                    self.__broad_infos))
                 if any(hwhms):
                     bhw = hwhms[0]
                     for hw in hwhms[1:]:
@@ -935,6 +948,8 @@ class Spectrum():
         if 'incfrq' in self.__params:
             y_params['incfrq'] = float(self.__params['incfrq'])
         # Now build the axes
+        if bfun is None:
+            raise InternalError('Undefined broadening function')
         for ifile in range(self.__num_dfiles):
             self.__xaxes[ifile][iaxis] = x_axis[:]
             y_fac, x_fun, y_corr = convert_y(self.__spec, y_unit_dest,
@@ -950,28 +965,25 @@ class Spectrum():
             self.__ylabels[ifile][self.__idref] = self.__ylabels[ifile][0]
 
     @property
-    def hwhm(self) -> tp.Optional[float]:
+    def hwhm(self) -> float | None:
         """Get or set the HWHM for the broadening."""
-        return self.get_broadening(info='hwhm')
+        return self.get_broadening(info='hwhm')  # type: ignore
 
     @hwhm.setter
     def hwhm(self, val: float):
         self.set_broadening(hwhm=val)
 
     @property
-    def func(self) -> tp.Optional[str]:
+    def func(self) -> str | None:
         """Get or set the broadening function."""
-        return self.get_broadening(info='func')
+        return self.get_broadening(info='func')  # type: ignore
 
     @func.setter
     def func(self, val: str):
         self.set_broadening(func=val)
 
     def set_weights(self,
-                    weights: tp.Optional[
-                        tp.Union[str,
-                                 tp.Sequence[
-                                     tp.Union[str, float]]]] = None):
+                    weights: str | Sequence[str | float] | None = None):
         """Set weights for multiple spectra.
 
         Sets weights to apply to each dataset.
@@ -1040,10 +1052,10 @@ class Spectrum():
         # all computed elements.
         self.reset()
 
-    def set_display(self, color: tp.Optional[TypeColor] = None,
-                    alpha: tp.Optional[tp.Union[int, float]] = None,
-                    linestyle: tp.Optional[str] = None,
-                    linewidth: tp.Optional[float] = None):
+    def set_display(self, color: ColorType | None = None,
+                    alpha: int | float | None = None,
+                    linestyle: str | None = None,
+                    linewidth: float | None = None):
         """Set the display parameters.
 
         Sets options related to display.
@@ -1077,12 +1089,12 @@ class Spectrum():
                 raise TypeError('Incorrect type for linewidth') from err
 
     @property
-    def linecolor(self) -> tp.Optional[TypeColor]:
+    def linecolor(self) -> ColorType | None:
         """Line color."""
         return self.__linecol
 
     @linecolor.setter
-    def linecolor(self, val: TypeColor):
+    def linecolor(self, val: ColorType):
         self.set_display(color=val)
 
     @property
@@ -1091,11 +1103,11 @@ class Spectrum():
         return self.__linealp
 
     @linealpha.setter
-    def linealpha(self, val: TypeColor):
+    def linealpha(self, val: int | float):
         self.set_display(alpha=val)
 
     @property
-    def linestyle(self) -> tp.Optional[str]:
+    def linestyle(self) -> str | None:
         """Line style."""
         return self.__linesty
 
@@ -1104,12 +1116,12 @@ class Spectrum():
         self.set_display(linestyle=val)
 
     @property
-    def linewidth(self) -> tp.Optional[str]:
+    def linewidth(self) -> float | None:
         """Line width."""
         return self.__linewdt
 
     @linewidth.setter
-    def linewidth(self, val: str):
+    def linewidth(self, val: float | int):
         self.set_display(linewidth=val)
 
     def __combine_datasets(self, iaxis: int = 0):
@@ -1134,13 +1146,11 @@ class Spectrum():
                  self.__yunits, self.__xlabels, self.__ylabels)
 
 
-def _get_data_v_trans(dobj: QData,
+def _get_data_v_trans(dobj: QDataType,
                       spec: str,
-                      params: tp.Dict[str, tp.Any]
-                      ) -> tp.Tuple[tp.List[float], str, str,
-                                    tp.List[float], str, str,
-                                    tp.Dict[str, tp.Any],
-                                    tp.Dict[str, tp.Any]]:
+                      params: dict[str, tp.Any]
+                      ) -> tuple[list[float], str, str, list[float], str, str,
+                                 dict[str, tp.Any], dict[str, tp.Any]]:
     """Get data related to vibrational transitions from data object.
 
     Given a data object, extract information from vibrational transitions.
@@ -1250,11 +1260,10 @@ State {mode} was not found in one of the lists.''') from err
     return xaxis, xlabel, xunit, yaxis, ylabel, yunit, broadening, extra
 
 
-def _get_data_e_trans(dobj: QData,
+def _get_data_e_trans(dobj: QDataType,
                       spec: str
-                      ) -> tp.Tuple[tp.List[float], str, str,
-                                    tp.List[float], str, str,
-                                    tp.Dict[str, tp.Any]]:
+                      ) -> tuple[list[float], str, str, list[float], str, str,
+                                 dict[str, tp.Any]]:
     """Get data related to electronic transitions from data object.
 
     Given a data object, extract information from electronic transitions.
@@ -1297,13 +1306,11 @@ def _get_data_e_trans(dobj: QData,
     return xaxis, xlabel, xunit, yaxis, ylabel, yunit, broadening
 
 
-def _get_data_spectrum(dobj: QData,
-                       ylabel: tp.Optional[str] = None
-                       ) -> tp.Tuple[tp.List[float], str, str,
-                                     tp.List[float], str, str,
-                                     tp.Dict[str, tp.Any],
-                                     tp.Dict[str, tp.Any],
-                                     tp.Optional[tp.Dict[str, tp.Any]]]:
+def _get_data_spectrum(dobj: QDataType,
+                       ylabel: str | None = None
+                       ) -> tuple[list[float], str, str, list[float], str, str,
+                                  dict[str, tp.Any], dict[str, tp.Any],
+                                  dict[str, tp.Any] | None]:
     """Get data related to general spectral calc. from data object.
 
     Given a data object, extract information from spectral calculations,
@@ -1340,7 +1347,7 @@ def _get_data_spectrum(dobj: QData,
         info: Information on spectral simulation.
     """
     def dobj_to_ydat(dobj: QData, ykey: str,
-                     yidx: tp.Optional[int] = None) -> tp.Any:
+                     yidx: int | None = None) -> tp.Any:
         if yidx is not None:
             return dobj.data.get(ykey)[yidx]
         else:
@@ -1401,12 +1408,12 @@ def _get_data_spectrum(dobj: QData,
     return xaxis, xlabel, xunit, yaxis, ylabel, yunit, broadening, ytags, info
 
 
-def _combine_axes(xaxes: tp.Sequence[tp.Sequence[float]],
-                  yaxes: tp.Sequence[tp.Sequence[float]],
-                  weights: tp.Sequence[float],
-                  broad_infos: tp.Sequence[tp.Sequence[tp.Dict[str, tp.Any]]],
+def _combine_axes(xaxes: Sequence[Sequence[Sequence[float]]],
+                  yaxes: Sequence[Sequence[Sequence[float]]],
+                  weights: Sequence[float],
+                  broad_infos: Sequence[Sequence[dict[str, tp.Any]]],
                   axis: int = 0
-                  ) -> tp.Tuple[tp.List[float], tp.List[float]]:
+                  ) -> tuple[list[float], list[float]]:
     """Combine multiple axes and return the resulting X and Y axes.
 
     Takes a list of X and Y axes and return their combinations with the
@@ -1443,7 +1450,7 @@ def _combine_axes(xaxes: tp.Sequence[tp.Sequence[float]],
     n_yaxes = len(yaxes)
     n_weights = len(weights)
     n_b_info = len(broad_infos)
-    if not (n_xaxes == n_yaxes == n_weights == n_b_info):
+    if not n_xaxes == n_yaxes == n_weights == n_b_info:
         raise ArgumentError('arguments', 'Arguments sizes do not match.')
     if axis > min(n_xaxes, n_yaxes, n_weights, n_b_info) or axis < 0:
         raise IndexError('Wrong axis to combine')
@@ -1512,18 +1519,16 @@ def _combine_axes(xaxes: tp.Sequence[tp.Sequence[float]],
     return axes[0], axes[1]
 
 
-def _set_combined_params(broad_infos: tp.Sequence[tp.Sequence[
-                                          tp.Dict[str, tp.Any]]],
-                         spec_infos: tp.Optional[tp.Dict[str, tp.Any]],
-                         xunits: tp.Sequence[tp.Sequence[str]],
-                         yunits: tp.Sequence[tp.Sequence[str]],
-                         xlabels: tp.Sequence[tp.Sequence[str]],
-                         ylabels: tp.Sequence[tp.Sequence[str]],
+def _set_combined_params(broad_infos: Sequence[Sequence[dict[str, tp.Any]]],
+                         spec_infos: dict[str, tp.Any] | None,
+                         xunits: Sequence[Sequence[str]],
+                         yunits: Sequence[Sequence[str]],
+                         xlabels: Sequence[Sequence[str]],
+                         ylabels: Sequence[Sequence[str]],
                          axis: int = 0
-                         ) -> tp.Tuple[
-                             tp.Sequence[tp.Dict[str, tp.Any]],
-                             str, str, str, str,
-                             tp.Optional[tp.Dict[str, tp.Any]]]:
+                         ) -> tuple[Sequence[dict[str, tp.Any]],
+                                    str, str, str, str,
+                                    dict[str, tp.Any] | None]:
     """Set parameters for the combined spectra.
 
     Set the broadening information, units and labels for the combined spectra.
@@ -1548,7 +1553,7 @@ def _set_combined_params(broad_infos: tp.Sequence[tp.Sequence[
     n_yunits = len(yunits)
     n_xlabels = len(xlabels)
     n_ylabels = len(ylabels)
-    if not (n_b_info == n_xunits == n_yunits == n_xlabels == n_ylabels):
+    if not n_b_info == n_xunits == n_yunits == n_xlabels == n_ylabels:
         raise ArgumentError('arguments', 'Arguments sizes do not match.')
     # initialize
     broad_info = broad_infos[0][axis]

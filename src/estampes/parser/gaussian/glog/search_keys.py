@@ -3,15 +3,15 @@
 Provides the keys necessary to delimit the data to extract from a
 Gaussian log file.
 """
-import typing as tp
+from collections.abc import Sequence
 
 from estampes.base import QLabel
 from estampes.parser.gaussian.glog.logkeys import KEY_DP, KEY_FP, KEY_UINT
-from estampes.parser.gaussian.glog.types import TypeQKwrdList
+from estampes.parser.gaussian.glog.types import QKwrdListType
 
 
 def keys_prp_3xx(qlab: QLabel,
-                 gver: tp.Optional[tp.Sequence[str]] = None) -> TypeQKwrdList:
+                 gver: Sequence[str] | None = None) -> QKwrdListType:
     """Provide extractor info for frequency-dependent properties."""
     # Get incident frequency information
     if qlab.kind != 'static':

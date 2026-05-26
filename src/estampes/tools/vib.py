@@ -7,11 +7,12 @@ Module providing tools to manipulate data relative to vibrations.
 import sys
 from math import exp, sqrt, copysign
 import typing as tp
+from collections.abc import Sequence
 
 import numpy as np
 import numpy.typing as npt
 
-from estampes.base import TypeAtCrd, TypeAtMas
+from estampes.base import AtsCrdType, AtsMasType
 from estampes.base.errors import ArgumentError, QuantityError
 from estampes.data.physics import phys_fact
 from estampes.tools.mol import eckart_orient
@@ -21,11 +22,12 @@ from estampes.tools.mol import eckart_orient
 # Module Methods
 # ==============
 
-def build_dusch_J(Lmat_A: np.ndarray,
-                  Lmat_B: np.ndarray,
+def build_dusch_J(Lmat_A: npt.NDArray,
+                  Lmat_B: npt.NDArray,
                   orth_L: bool = True,
-                  at_mass_A: tp.Optional[np.ndarray] = None,
-                  at_mass_B: tp.Optional[np.ndarray] = None) -> np.ndarray:
+                  at_mass_A: npt.NDArray | None = None,
+                  at_mass_B: npt.NDArray | None = None
+                  ) -> npt.NDArray[np.float64]:
     """Build Duschinsky matrix J.
 
     Build the Duschinsky matrix J corresponding to:
@@ -78,9 +80,10 @@ def build_dusch_J(Lmat_A: np.ndarray,
     return Jmat
 
 
-def build_dusch_K(Lmat: np.ndarray,
-                  at_mass: TypeAtMas,
-                  at_deltaR: tp.Optional[TypeAtCrd] = None) -> np.ndarray:
+def build_dusch_K(Lmat: npt.NDArray,
+                  at_mass: AtsMasType,
+                  at_deltaR: AtsCrdType | None = None
+                  ) -> npt.NDArray[np.float64]:
     r"""Build Duschinsky-transformation shift vector K.
 
     Build the shift vector associated to the Duschinsky transformation,
@@ -101,24 +104,25 @@ def build_dusch_K(Lmat: np.ndarray,
         Difference between equilibrium geometries (:math:`\Delta R`).
     """
     if at_deltaR is not None:
-        mass = np.sqrt(np.repeat(at_mass/phys_fact('au2amu'), 3))
-        Kvec = np.einsum('ij,j,j->i', Lmat, mass, np.reshape(at_deltaR, (-1,)))
+        mass = np.sqrt(np.repeat(np.asarray(at_mass)/phys_fact('au2amu'), 3))
+        Kvec = np.einsum('ij,j,j->i', Lmat, mass,
+                         np.reshape(np.asarray(at_deltaR), (-1,)))
     else:
         raise NotImplementedError('Vertical K not yet implemented.')
     return Kvec
 
 
 def build_vibrations(fc_cart: npt.ArrayLike,
-                     at_mass: npt.ArrayLike,
-                     at_crd: npt.ArrayLike,
+                     at_mass: AtsMasType,
+                     at_crd: AtsCrdType,
                      fc_not_weighted: bool = True,
                      get_evec: bool = True,
                      get_eval: bool = True,
                      get_rmas: bool = True,
                      get_lweigh: bool = True,
-                     nvib: bool = None,
+                     nvib: int | None = None,
                      remove_rottrans: bool = True
-                     ) -> tp.Dict[str, tp.Optional[npt.NDArray]]:
+                     ) -> dict[str, npt.NDArray[np.float64] | None]:
     """Build vibrational data from force constants matrix.
 
     Diagonalizes the force constants matrix and build the frequencies
@@ -164,7 +168,7 @@ def build_vibrations(fc_cart: npt.ArrayLike,
         """
         return copysign(sqrt(abs(hessval)*phys_fact('fac2au')), hessval)
 
-    result = {'evec': None, 'freq': None, 'redmas': None, 'lmweigh': None}
+    result = {}
     # First, quick size check
     n_at = len(at_mass)
     if not isinstance(at_mass, np.ndarray):
@@ -213,21 +217,19 @@ def build_vibrations(fc_cart: npt.ArrayLike,
                     break
             elif np.count_nonzero(vibs) in (5, 6):
                 break
-        if get_eval:
-            result['freq'] = freqs
-        if get_evec:
-            result['evec'] = np.transpose(hessvec[:, vibs])
-        if get_lweigh:
-            result['lmweigh'] = np.transpose(
-                lmweig[:, vibs]*np.sqrt(red_mas[vibs]))
-        if get_rmas:
-            result['redmas'] = red_mas[vibs]
+        result['freq'] = freqs if get_eval else None
+        result['evec'] = np.transpose(hessvec[:, vibs]) if get_evec else None
+        result['lmweigh'] = np.transpose(
+            lmweig[:, vibs]*np.sqrt(red_mas[vibs])) if get_lweigh else None
+        result['redmas'] = red_mas[vibs] if get_rmas else None
     else:
         # Let us build the internal coordinates FC matrix
         # following the white paper from Gaussian
         # First, we build the reference rotations and translations
         # Compute the center of mass and translates the molecule
-        c_eck, p_evec = eckart_orient(at_crd, at_mass, True).values()
+        dat = eckart_orient(at_crd, at_mass, get_rotation=True)
+        c_eck = dat['coords']
+        p_evec = dat['rotmat']
         # Second, build the rotation and translations
         new_evec = np.zeros((n_at3, n_at3))
         # Note: the matrix will be built putting eigenvectors as columns
@@ -283,23 +285,20 @@ def build_vibrations(fc_cart: npt.ArrayLike,
         freqs = []
         for i, val in enumerate(hessval):
             freqs.append(hessval_to_freq(val))
-        if get_eval:
-            result['freq'] = freqs
-        if get_evec:
-            result['evec'] = np.transpose(lmat)
-        if get_lweigh:
-            result['lmweigh'] = np.transpose(lmweig*np.sqrt(red_mas))
-        if get_rmas:
-            result['redmas'] = red_mas
+        result['freq'] = freqs if get_eval else None
+        result['evec'] = np.transpose(lmat) if get_evec else None
+        result['lmweigh'] = np.transpose(
+            lmweig*np.sqrt(red_mas)) if get_lweigh else None
+        result['redmas'] = red_mas if get_rmas else None
 
     return result
 
 
 def convert_hess_evec(evec: npt.ArrayLike,
-                      at_mass: tp.Optional[npt.ArrayLike] = None,
-                      natoms: tp.Optional[int] = None,
+                      at_mass: AtsMasType | None = None,
+                      natoms: int | None = None,
                       form: str = 'L.M^{-1/2}',
-                      do_norm: bool = True) -> np.ndarray:
+                      do_norm: bool = True) -> npt.NDArray[np.float64]:
     """Convert Hessian eigenvectors matrix.
 
     Converts the eigenvectors matrix from the diagonalization of the
@@ -325,8 +324,10 @@ def convert_hess_evec(evec: npt.ArrayLike,
         L matrix.
     """
     eigvec = None
+    evec = np.asarray(evec)
     if form in ('L.M^-1/2', 'L/M^1/2', 'L.M^{-1/2}', 'L/M^{1/2}'):
         if at_mass is not None:
+            at_mass = np.repeat(np.asarray(at_mass), 3)
             nat3 = at_mass.size
             eigvec = np.einsum(
                 'ij,j->ij',
@@ -356,8 +357,7 @@ def convert_hess_evec(evec: npt.ArrayLike,
     return eigvec
 
 
-def get_vib_trans(trans_data: tp.Sequence[tp.Any]
-                  ) -> tp.Dict[int, int]:
+def get_vib_trans(trans_data: Sequence[tp.Any]) -> dict[int, int]:
     """Return vibrational transition information.
 
     Taking a vibrational transition information, returns the transition
@@ -408,7 +408,7 @@ def get_vib_trans(trans_data: tp.Sequence[tp.Any]
     return trans
 
 
-def norm_evec(evec: npt.ArrayLike) -> np.ndarray:
+def norm_evec(evec: npt.ArrayLike) -> npt.NDArray[np.float64]:
     """Normalize Hessian eigenvectors matrix.
 
     Normalizes the matrix of eigenvectors from the Hessian/force
@@ -424,6 +424,7 @@ def norm_evec(evec: npt.ArrayLike) -> np.ndarray:
     np.ndarray
         Matrix of normalized eigenvectors.
     """
+    evec = np.asarray(evec)
     res = np.empty(evec.shape)
     norms = np.sum(evec**2, axis=1)
     for i in range(evec.shape[0]):
@@ -434,7 +435,7 @@ def norm_evec(evec: npt.ArrayLike) -> np.ndarray:
     return res
 
 
-def orient_modes(Lmat: np.ndarray) -> np.ndarray:
+def orient_modes(Lmat: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
     """Sets a unique orientation for normal coordinates.
 
     Sets the sign for each column of `Lmat` so that the highest element
@@ -492,9 +493,8 @@ def orient_modes(Lmat: np.ndarray) -> np.ndarray:
     return Lmat
 
 
-def weigh_trans_progress(trans_spec: tp.Dict[int, int],
-                         energy: tp.Union[tp.Sequence[float],
-                                          tp.Dict[int, float]],
+def weigh_trans_progress(trans_spec: dict[int, int],
+                         energy: Sequence[float] | dict[int, float],
                          temp: float = 298.15,
                          i_offset: int = 0,
                          norm_coef: bool = True) -> float:

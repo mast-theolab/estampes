@@ -10,13 +10,13 @@ from collections.abc import Sequence
 from estampes.base import QLabel, \
     InternalError, ParseKeyError
 from estampes.parser.gaussian.glog.search_keys import keys_prp_3xx
-from estampes.parser.gaussian.glog.types import TypeQKwrd
+from estampes.parser.gaussian.glog.types import QKwrdType
 from estampes.parser.gaussian.glog.logkeys import RR_OMEGA_LINE, \
     RR_OMEGA_UNIT, RR_OMEGA_VAL, KEY_FP, KEY_UINT
 
 
 def qlab_to_linkdata(qlab: QLabel,
-                     gver: Sequence[str] | None = None) -> TypeQKwrd:
+                     gver: Sequence[str] | None = None) -> QKwrdType:
     """Return relevant keyword(s) for a given quantity.
 
     Returns the a tuple, containing:

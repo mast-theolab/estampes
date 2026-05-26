@@ -10,6 +10,7 @@ import os
 import argparse
 import configparser as cfg
 import typing as tp
+from collections.abc import Sequence
 
 import numpy as np
 # import matplotlib as mpl
@@ -203,8 +204,8 @@ of vibrational states:
 
 
 def parse_cmdargs(opts: argparse.Namespace
-                  ) -> tp.Tuple[tp.Dict[str, tp.Dict[str, tp.Any]],
-                                tp.List[tp.Dict[str, tp.Any]]]:
+                  ) -> tuple[dict[str, dict[str, tp.Any]],
+                             list[dict[str, tp.Any]]]:
     """Parse command line arguments.
 
     Parses command line arguments and returns the processed options in
@@ -249,8 +250,8 @@ def parse_cmdargs(opts: argparse.Namespace
 
 
 def parse_inifile(inifile: str
-                  ) -> tp.Tuple[tp.Dict[str, tp.Dict[str, tp.Any]],
-                                tp.List[tp.Dict[str, tp.Any]]]:
+                  ) -> tuple[dict[str, dict[str, tp.Any]],
+                             list[dict[str, tp.Any]]]:
     """Parse option file with INI structure.
 
     Parses options stored in option file with INI-style structure and
@@ -347,10 +348,10 @@ def parse_inifile(inifile: str
 
 
 def get_RR_transinfo(ref_file: str,
-                     rr_data: tp.Dict[str, tp.Dict[str, DataFile]],
-                     rd_data: tp.Dict[str, DataFile],
-                     rd_behavior: tp.Optional[str] = None
-                     ) -> tp.Dict[str, tp.Dict[str, tp.Any]]:
+                     rr_data: dict[str, dict[str, DataFile]],
+                     rd_data: dict[str, DataFile],
+                     rd_behavior: str | None = None
+                     ) -> dict[str, dict[str, tp.Any]]:
     """Get transition information from RR data.
 
     Extracts the information on the transitions stored in the data files
@@ -480,9 +481,9 @@ All states will be included, even if only partially treated.'''
 
 
 def set_RR_incfreq(ref_file: str,
-                   rr_data: tp.Dict[str, tp.Dict[str, DataFile]],
-                   list_omegas: tp.Sequence[tp.Sequence[str]],
-                   user_omega: tp.Optional[tp.Union[str, int]] = None
+                   rr_data: dict[str, dict[str, DataFile]],
+                   list_omegas: Sequence[Sequence[str]],
+                   user_omega: str | int | None = None
                    ) -> str:
     """Set the incident frequency based on resonance Raman data.
 

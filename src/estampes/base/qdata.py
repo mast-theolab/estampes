@@ -75,7 +75,12 @@ class QData():
         return self.__shape
 
     @property
-    def qlabel(self) -> str:
+    def qlabel(self) -> QLabel:
+        """Return the object representation of QLabel."""
+        return self.__qlabel
+
+    @property
+    def qstring(self) -> str:
         """Return the string representation of QLabel."""
         return str(self.__qlabel)
 

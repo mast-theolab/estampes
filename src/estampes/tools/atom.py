@@ -4,9 +4,7 @@ Module providing tools to manipulate data relative to atoms.
 
 """
 
-import typing as tp
-
-from estampes.base import TypeAtLab
+from estampes.base import AtLabType, AtsLabType
 from estampes.data.atom import ELEMENTS
 
 
@@ -15,8 +13,8 @@ from estampes.data.atom import ELEMENTS
 # ==============
 
 def convert_labsymb(to_symb: bool,
-                    *atoms: TypeAtLab
-                    ) -> tp.Union[tp.List[str], tp.List[int]]:
+                    *atoms: AtLabType
+                    ) -> list[str] | list[int]:
     """Converts between atomic symbols and labels.
 
     Converts to atomic symbols (``to_symb`` = True) or labels (False).
@@ -80,9 +78,9 @@ def convert_labsymb(to_symb: bool,
         return new_list
 
 
-def convert_atoms_id(list_atoms: TypeAtLab,
-                     to: tp.Optional[str] = 'atnum'
-                     ) -> tp.List[tp.Union[int, str]]:
+def convert_atoms_id(list_atoms: AtsLabType,
+                     to: str = 'atnum'
+                     ) -> list[int | str]:
     """Converts between atoms identifiers.
 
     Converts between atoms numbers (``atnum``) and labels (``atlab``).
@@ -117,3 +115,5 @@ def convert_atoms_id(list_atoms: TypeAtLab,
             else:
                 fmt = 'Unrecognized atomic identifier {}'
                 raise KeyError(fmt.format(atom))
+
+    return atoms

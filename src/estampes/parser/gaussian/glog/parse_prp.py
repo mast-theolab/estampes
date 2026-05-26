@@ -3,22 +3,22 @@
 Provides specialized functions to extract data for specific properties.
 """
 
-import typing as tp
 import re
 
-from estampes.base import QData, QLabel, \
-    ParseDataError, ParseKeyError, ParsingError, QuantityError, \
-    TypeDBlocGLog
+from estampes.base import (
+    QData, QLabel,
+    ParseDataError, ParseKeyError, ParsingError, QuantityError,
+    DBlocGLogType)
 from estampes.data.physics import phys_fact
 from estampes.parser.gaussian import g_elquad_LT_to_2D, gfloat
 
 xyz2id = {'X': 0, 'Y': 1, 'Z': 2}
 
-TensorType: tp.TypeAlias = list[list[float | complex | None]] \
+TensorType = list[list[float | complex | None]] \
     | list[list[list[float | complex | None]]]
 
 
-def parse_en_dat(qlab: QLabel, dblock: TypeDBlocGLog, iref: int = 0) -> QData:
+def parse_en_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
     """Parse extracted data related to the energy.
 
     Parses the energy from the extracted data.
@@ -153,7 +153,7 @@ def parse_en_dat(qlab: QLabel, dblock: TypeDBlocGLog, iref: int = 0) -> QData:
     return dobj
 
 
-def parse_1xx_dat(qlab: QLabel, dblock: TypeDBlocGLog) -> QData:
+def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
     """Parse extracted data related to 1xx properties/quantities."""
     dobj = QData(qlab)
     if qlab.label == 101:
@@ -372,7 +372,7 @@ def parse_1xx_dat(qlab: QLabel, dblock: TypeDBlocGLog) -> QData:
     return dobj
 
 
-def parse_3xx_dat(qlab: QLabel, dblock: TypeDBlocGLog, iref: int = 0) -> QData:
+def parse_3xx_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
     """Parse extracted data related to 3xx properties/quantities.
 
     Notes
@@ -747,7 +747,7 @@ def parse_3xx_dat(qlab: QLabel, dblock: TypeDBlocGLog, iref: int = 0) -> QData:
     return dobj
 
 
-def parse_13xx_dat(qlab: QLabel, dblock: TypeDBlocGLog, iref: int = 0
+def parse_13xx_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0
                    ) -> QData:
     """Parse extracted data related to 13xx properties/quantities."""
     if isinstance(qlab.rstate, tuple):

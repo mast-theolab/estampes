@@ -5,6 +5,7 @@ This module provides basic methods for the molecular visualization.
 
 from math import sqrt
 import typing as tp
+from collections.abc import Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -14,12 +15,24 @@ from PySide6.Qt3DCore import Qt3DCore
 from PySide6.Qt3DRender import Qt3DRender
 from PySide6.Qt3DExtras import Qt3DExtras
 
-from estampes.base.types import TypeAtCrd, TypeAtLab, \
-    TypeBonds, TypeColor
-from estampes.base.errors import ArgumentError
+from estampes.base.types import (
+    AtDatType, AtLabType, AtsCrdType, AtsLabType, BondsType, ColorType)
+from estampes.base.errors import ArgumentError, InternalError
 from estampes.data.atom import atomic_data
+from estampes.data.colors import to_rgb_list
 from estampes.data.visual import BONDDATA, MATERIALS, MODELS, RAD_VIS_SCL
 from estampes.tools.math import vrotate_3D
+
+
+# ============
+# Module Types
+# ============
+
+class TypeOptView(tp.TypedDict):
+    model: str | None
+    material: str | None
+    col_bond: bool | None
+    molcol: list[int] | list[float] | None
 
 
 # ==============
@@ -36,14 +49,14 @@ class Molecule(Qt3DCore.QEntity):
     __mol_count = 0
 
     def __init__(self,
-                 at_lab: TypeAtLab,
-                 at_crd: TypeAtCrd,
-                 bonds: TypeBonds,
-                 model: tp.Optional[str] = None,
-                 material: tp.Optional[str] = None,
-                 col_bond_as_atom: tp.Optional[bool] = None,
-                 molcol: tp.Optional[TypeColor] = None,
-                 rootEntity: tp.Optional[Qt3DCore.QEntity] = None):
+                 at_lab: AtsLabType,
+                 at_crd: AtsCrdType,
+                 bonds: BondsType,
+                 model: str | None = None,
+                 material: str | None = None,
+                 col_bond_as_atom: bool | None = None,
+                 molcol: ColorType | None = None,
+                 rootEntity: Qt3DCore.QEntity | None = None):
         """Initialize a Molecule instance.
 
         Initializes an instance of the Molecule class.
@@ -73,7 +86,7 @@ class Molecule(Qt3DCore.QEntity):
         self.__mol_id = type(self).__mol_count
 
         # Initialize dictionary of options for visualization
-        self.__optview = {
+        self.__optview: TypeOptView = {
             'model': None,
             'material': None,
             'col_bond': None,
@@ -81,13 +94,25 @@ class Molecule(Qt3DCore.QEntity):
         }
         # The initialization below should be properly handled through
         # functions.  Just making sure everything declared.
-        self.__atlist = self.__atdata = self.__at_mat = self.__at_rad = None
-        self.__cam = None
-        self.__bo_obj = self.__bo_mesh = self.__bo_trro = None
-        self.__at_obj = self.__at_pick = self.__at_mesh = self.__at_tvec = None
+        self.__atlist: list[AtLabType] | None = None
+        self.__atdata: AtDatType | None = None
+        self.__at_rad: dict[AtLabType, float] | None = None
+        self.__at_mat: dict[AtLabType,
+                            Qt3DExtras.QDiffuseSpecularMaterial] | None = None
+        self.__bo_rad: float | None = None
+        self.__bo_mat: Qt3DExtras.QDiffuseSpecularMaterial | None = None
+        self.__cam: Qt3DRender.QCamera | None = None
+        self.__bo_obj: list[Qt3DCore.QEntity] | None = None
+        self.__bo_mesh: list[Qt3DExtras.QCylinderMesh] | None = None
+        self.__bo_trro: list[Qt3DCore.QTransform] | None = None
+        self.__at_obj: list[Qt3DCore.QEntity] | None = None
+        self.__at_pick: list[Qt3DRender.QObjectPicker] | None = None
+        self.__at_mesh: list[Qt3DExtras.QSphereMesh] | None = None
+        self.__at_tvec: list[Qt3DCore.QTransform] | None = None
         # Atomic displacement for animation
-        self.__at_displ = self.__at_displ_step = None
-        self.vibrate = None
+        self.__at_displ: npt.NDArray[np.float64] | None = None
+        self.__at_displ_step: float | None = None
+        self.vibrate: QtCore.QPropertyAnimation | None = None
 
         self.set_display_settings(
             model=model,
@@ -96,7 +121,7 @@ class Molecule(Qt3DCore.QEntity):
             molcol=molcol)
         self.update_geom(at_lab, at_crd, bonds)
 
-    def get_at_crd(self, actual: bool = False) -> TypeAtCrd:
+    def get_at_crd(self, actual: bool = False) -> npt.NDArray:
         """Return atomic coordinates.
 
         Returns atomic coordinates in the Cartesian space.
@@ -107,7 +132,8 @@ class Molecule(Qt3DCore.QEntity):
             Print the actual coordinates, including atomic shift if set.
         """
         if actual:
-            if self.__at_displ_step is not None:
+            if (self.__at_displ_step is not None
+                    and self.__at_displ is not None):
                 return self.__atcrd + self.__at_displ_step*self.__at_displ
             return self.__atcrd
         return self.__atcrd
@@ -115,14 +141,14 @@ class Molecule(Qt3DCore.QEntity):
     at_crd = property(get_at_crd)
 
     @property
-    def at_lab(self) -> TypeAtLab:
+    def at_lab(self) -> AtsLabType:
         """Return atomic labels.
 
         Returns atomic labels.
         """
         return self.__atlab
 
-    def viz_options(self, key: tp.Optional[str] = None) -> tp.Optional[tp.Any]:
+    def viz_options(self, key: str | None = None) -> tp.Any | None:
         """Return one or more visual-centric options
 
         Returns information specific to a given key or the whole array.
@@ -142,9 +168,9 @@ class Molecule(Qt3DCore.QEntity):
                 return None
 
     def update_geom(self,
-                    at_lab: TypeAtLab,
-                    at_crd: TypeAtCrd,
-                    bonds: TypeBonds,
+                    at_lab: AtsLabType,
+                    at_crd: AtsCrdType,
+                    bonds: BondsType,
                     render: bool = True):
         """Update geometry information.
 
@@ -169,17 +195,17 @@ class Molecule(Qt3DCore.QEntity):
         if len(at_lab) != len(at_crd):
             raise IndexError('Coordinates do not match atomic labels.')
         self.__atlab = at_lab
-        self.__atcrd = at_crd
+        self.__atcrd = np.array(at_crd)
         self.__bonds = bonds
         self.__upd_atdat()
         if render:
             self.update_render()
 
     def set_display_settings(self, *,
-                             model: tp.Optional[str] = None,
-                             material: tp.Optional[str] = None,
-                             col_bond_as_atom: tp.Optional[bool] = None,
-                             molcol: tp.Optional[TypeColor] = None):
+                             model: str | None = None,
+                             material: str | None = None,
+                             col_bond_as_atom: bool | None = None,
+                             molcol: ColorType | None = None):
         """Set display settings for the molecule.
 
         Sets color information and rendering.
@@ -232,12 +258,8 @@ class Molecule(Qt3DCore.QEntity):
             # If there is no overall color molecule, then check how to handle
             # bond colors.
             self.__optview['col_bond'] = col_bond_as_atom
-        elif isinstance(molcol, str):
-            if not molcol.startswith('#'):
-                raise ArgumentError('Wrong color for molecule.')
-            _molcol = [int(molcol[i:i+2], 16) for i in range(1, 6, 2)]
         else:
-            _molcol = list(molcol)
+            _molcol = to_rgb_list(molcol)
         self.__optview['molcol'] = _molcol
         if not col_bond_as_atom:
             self.__bo_mat = self.__set_material(BONDDATA['rgb'],
@@ -267,8 +289,9 @@ class Molecule(Qt3DCore.QEntity):
             A Qt3Render.QCamera method.
         """
         self.__cam = cam
-        for at in self.__at_pick:
-            at.pressed.connect(self.__clickAtom)
+        if self.__at_pick is not None:
+            for at in self.__at_pick:
+                at.pressed.connect(self.__clickAtom)
 
     def __upd_atdat(self):
         """Update internal atomic data information.
@@ -283,27 +306,37 @@ class Molecule(Qt3DCore.QEntity):
         ArgumentError
             Error in colors.
         """
-        self.__atlist = sorted(set(self.__atlab))
+        self.__atlist = list(sorted(set(self.__atlab)))
         self.__atdata = atomic_data(*self.__atlist)
         self.__at_mat = {}
         self.__at_rad = {}
 
         for atom in self.__atlist:
             if self.__optview['molcol'] is None:
-                r, g, b, a = *self.__atdata[atom]['rgb'], \
-                              self.__opacity
+                if self.__atdata[atom]['rgb'] is None:
+                    raise ValueError(
+                        f'Missing color specification for atom {atom}')
+                r, g, b = self.__atdata[atom]['rgb']  # type: ignore
+                a = self.__opacity
             else:
                 r, g, b, a = *self.__optview['molcol'], self.__opacity
             self.__at_mat[atom] = self.__set_material([r, g, b], a)
             if self.__optview['model'] == 'balls':
-                rval = self.__atdata[atom]['rvis']*RAD_VIS_SCL
+                if self.__atdata[atom]['rvis'] is None:
+                    raise ValueError(f'Missing visible radius for atom {atom}')
+                rval = self.__atdata[atom]['rvis']*RAD_VIS_SCL  # type: ignore
             elif self.__optview['model'] == 'sticks':
+                if self.__bo_rad is None:
+                    raise ValueError('Bond radius is not set')
                 rval = self.__bo_rad
             elif self.__optview['model'] == 'spheres':
+                if self.__atdata[atom]['rvdw'] is None:
+                    raise ValueError(
+                        f'Van der Waals radius unset for atom {atom}')
                 rval = self.__atdata[atom]['rvdw']
             else:
                 raise KeyError('Unsupported model for the radius setup')
-            self.__at_rad[atom] = rval
+            self.__at_rad[atom] = float(rval)  # type: ignore
 
     def __build_bonds(self):
         """Build bonds objects and associated properties.
@@ -313,6 +346,10 @@ class Molecule(Qt3DCore.QEntity):
         self.__bo_obj = []
         self.__bo_mesh = []
         self.__bo_trro = []
+        if self.__bo_rad is None:
+            raise ValueError('Bond radius is not set')
+        if self.__bo_mat is None and self.__at_mat is None:
+            raise ValueError('Atomic material must be set for bonds')
         for bond in self.__bonds:
             iat1, iat2 = bond
             xyzat1 = np.array(self.__atcrd[iat1])
@@ -336,7 +373,8 @@ class Molecule(Qt3DCore.QEntity):
             bo_obj.addComponent(bo_mesh)
             bo_obj.addComponent(bo_trro)
             if self.__bo_mat is None:
-                bo_obj.addComponent(self.__at_mat[self.__atlab[iat1]])
+                bo_obj.addComponent(
+                    self.__at_mat[self.__atlab[iat1]])  # type: ignore
             else:
                 bo_obj.addComponent(self.__bo_mat)
             # Update DB
@@ -362,7 +400,8 @@ class Molecule(Qt3DCore.QEntity):
             bo_obj.addComponent(bo_mesh)
             bo_obj.addComponent(bo_trro)
             if self.__bo_mat is None:
-                bo_obj.addComponent(self.__at_mat[self.__atlab[iat2]])
+                bo_obj.addComponent(
+                    self.__at_mat[self.__atlab[iat2]])  # type: ignore
             else:
                 bo_obj.addComponent(self.__bo_mat)
             # Update DB
@@ -371,7 +410,7 @@ class Molecule(Qt3DCore.QEntity):
             self.__bo_mesh.append(bo_mesh)
 
     def animate(self,
-                displ: tp.Optional[npt.ArrayLike] = None,
+                displ: npt.ArrayLike | None = None,
                 vibrate: bool = True,
                 amplitude: float = 1.0,
                 duration: int = 1000):
@@ -392,10 +431,11 @@ class Molecule(Qt3DCore.QEntity):
             Duration of a 1 period (in ms).
         """
         if self.vibrate is not None:
-            if self.vibrate.state() == QtCore.QAbstractAnimation.Running:
+            if self.vibrate.state() == QtCore.QAbstractAnimation.State.Running:
                 self.vibrate.pause()
                 return
-            elif (self.vibrate.state() == QtCore.QAbstractAnimation.Paused
+            elif (self.vibrate.state()
+                    == QtCore.QAbstractAnimation.State.Paused
                     and displ is None):
                 self.vibrate.resume()
                 return
@@ -403,13 +443,15 @@ class Molecule(Qt3DCore.QEntity):
             displ = np.asarray(displ)
             shape = displ.shape
             if len(shape) == 1:
-                self.__at_displ.reshape(-1, 3)
+                self.__at_displ = displ.reshape(-1, 3)
             elif len(shape) != 2:
                 raise ArgumentError(
                     'displ',
                     'Too many dimension in displacement parameters')
             else:
                 self.__at_displ = displ.copy()
+            if self.__at_obj is None:
+                raise InternalError('Missing atom object for displacement')
             if self.__at_displ.shape[0] != len(self.__at_obj):
                 raise IndexError(
                     'Number of displacements inconsistent with molecule')
@@ -433,11 +475,13 @@ class Molecule(Qt3DCore.QEntity):
         if self.vibrate is None:
             status = 'unknown'
         else:
-            if self.vibrate.state() == QtCore.QAbstractAnimation.Running:
+            if self.vibrate.state() == QtCore.QAbstractAnimation.State.Running:
                 status = 'running'
-            elif self.vibrate.state() == QtCore.QAbstractAnimation.Paused:
+            elif (self.vibrate.state()
+                    == QtCore.QAbstractAnimation.State.Paused):
                 status = 'paused'
-            elif self.vibrate.state() == QtCore.QAbstractAnimation.Stopped:
+            elif (self.vibrate.state()
+                    == QtCore.QAbstractAnimation.State.Stopped):
                 status = 'stopped'
             else:
                 raise ValueError('Unknown animation state.')
@@ -448,9 +492,11 @@ class Molecule(Qt3DCore.QEntity):
         """Set the animation status."""
         if self.vibrate is not None:
             if status.lower() == 'running':
-                if self.vibrate.state() == QtCore.QAbstractAnimation.Paused:
+                if (self.vibrate.state()
+                        == QtCore.QAbstractAnimation.State.Paused):
                     self.vibrate.resume()
-                elif self.vibrate.state() == QtCore.QAbstractAnimation.Stopped:
+                elif (self.vibrate.state()
+                        == QtCore.QAbstractAnimation.State.Stopped):
                     self.vibrate.start()
             elif status.lower() == 'stopped':
                 self.vibrate.stop()
@@ -462,9 +508,13 @@ class Molecule(Qt3DCore.QEntity):
 
     def redraw(self):
         """Simply redraw the molecule with the default positions."""
+        if self.__atcrd is None or self.__at_tvec is None:
+            raise InternalError('Atomic coordinates not set for redrawing.')
         for atvec, atxyz in zip(self.__at_tvec, self.__atcrd):
             atvec.setTranslation(QtGui.QVector3D(*atxyz))
 
+        if self.__bo_mesh is None or self.__bo_trro is None:
+            raise InternalError('Missing bond objects for redrawing')
         for i, bond in enumerate(self.__bonds):
             iat1, iat2 = bond
             xyzat1 = self.__atcrd[iat1]
@@ -511,12 +561,16 @@ class Molecule(Qt3DCore.QEntity):
         if self.__at_displ is None:
             return
         self.__at_displ_step = step
+        if self.__atcrd is None or self.__at_tvec is None:
+            raise InternalError('Atomic coordinates not set to build shift.')
         new_crds = []
         for atvec, atxyz, displ in zip(self.__at_tvec, self.__atcrd,
                                        self.__at_displ):
             new_crds.append(atxyz+step*displ)
             atvec.setTranslation(QtGui.QVector3D(*new_crds[-1]))
 
+        if self.__bo_mesh is None or self.__bo_trro is None:
+            raise InternalError('Missing bond objects to build shift')
         for i, bond in enumerate(self.__bonds):
             iat1, iat2 = bond
             xyzat1 = new_crds[iat1]
@@ -562,6 +616,8 @@ class Molecule(Qt3DCore.QEntity):
         self.__at_pick = []
         self.__at_mesh = []
         self.__at_tvec = []
+        if self.__at_rad is None or self.__at_mat is None:
+            raise InternalError('Missing atom specification for building.')
         for atlab, atxyz in zip(self.__atlab, self.__atcrd):
             # Initialization
             at_obj = Qt3DCore.QEntity(self)
@@ -591,20 +647,24 @@ class Molecule(Qt3DCore.QEntity):
         clickEvent
             Qt QPickEvent.
         """
-        if clickEvent.button() == Qt3DRender.QPickEvent.RightButton:
+        if clickEvent.button() == QtCore.Qt.MouseButton.RightButton:
             # abs_pos: absolute position of the clicked point
             abs_pos = clickEvent.worldIntersection()
             # loc_pos: local position of the clicked point in the object
             loc_pos = clickEvent.localIntersection()
             # Subtracting them give us the origin of the sphere
+            if self.__cam is None:
+                raise InternalError('Camera not set at click time')
             self.__cam.setViewCenter(abs_pos-loc_pos)
-        elif clickEvent.button() == Qt3DRender.QPickEvent.LeftButton:
+        elif clickEvent.button() == QtCore.Qt.MouseButton.LeftButton:
+            if self.__at_obj is None:
+                raise InternalError('Atomic objects not set to receive clicks')
             self.click_molatom.emit(
                 [self.__mol_id,
                  self.__at_obj.index(clickEvent.entity())+1])
 
     def __set_material(self,
-                       color: tp.Sequence[int],
+                       color: Sequence[int | float],
                        opacity: int = 255
                        ) -> Qt3DExtras.QDiffuseSpecularMaterial:
         """Set material for a given object.
@@ -619,22 +679,27 @@ class Molecule(Qt3DCore.QEntity):
         opacity
             Opacity (alpha).
         """
+        if isinstance(color[0], float):
+            r, g, b = [int(item*255) for item in color]
+        else:
+            r, g, b = [int(item) for item in color]
         if self.__optview['material'] == 'plastic':
             matter = Qt3DExtras.QDiffuseSpecularMaterial(self)
             matter.setShininess(100)
-            matter.setAmbient(QtGui.QColor(*color))
+            matter.setAmbient(QtGui.QColor(r, g, b))
         elif self.__optview['material'] == 'metal':
             matter = Qt3DExtras.QDiffuseSpecularMaterial(self)
-            matter.setSpecular(QtGui.QColor(*[min(1.5*i, 255) for i in color]))
+            matter.setSpecular(QtGui.QColor(
+                *[min(1.5*i, 255) for i in (r, g, b)]))
             matter.setDiffuse(QtGui.QColor(100, 100, 100))
-            matter.setAmbient(QtGui.QColor(*color))
+            matter.setAmbient(QtGui.QColor(r, g, b))
             matter.setShininess(2000)
         elif self.__optview['material'] == 'glass':
             matter = Qt3DExtras.QDiffuseSpecularMaterial(self)
             matter.setDiffuse(QtGui.QColor(255, 255, 255, 150))
             matter.setAlphaBlendingEnabled(True)
             matter.setShininess(300)
-            matter.setAmbient(QtGui.QColor(*color, opacity))
+            matter.setAmbient(QtGui.QColor(r, g, b, opacity))
         else:
             raise KeyError('Unspecified material')
         return matter

@@ -3,15 +3,16 @@
 This modules provides some functions redundant between parsers.
 """
 import typing as tp
+from collections.abc import Mapping, Sequence
 
 from estampes.base import ArgumentError, QLabel
 
-_tp_QLab = tp.Union[str, QLabel]
+type _tp_QLab = str | QLabel
 
 
-def parse_qlabels(qlabs_list: tp.Sequence[_tp_QLab],
-                  qlabs_dict: tp.Mapping[str, _tp_QLab]
-                  ) -> tp.Union[tp.Dict[str, QLabel], tp.Dict[str, str]]:
+def parse_qlabels(qlabs_list: Sequence[_tp_QLab],
+                  qlabs_dict: Mapping[str, _tp_QLab]
+                  ) -> tuple[dict[str, QLabel], dict[str, str]]:
     """Parse lists of qlabels and generate unique mapping.
 
     Parses lists of qlabels, as sequences or mappings, and generates a
@@ -34,7 +35,7 @@ def parse_qlabels(qlabs_list: tp.Sequence[_tp_QLab],
         `qlabel` as another one.
         The original key is given in this dictionary.
     """
-    def qlab2qlabel(qlab: _tp_QLab) -> tp.Tuple[str, QLabel]:
+    def qlab2qlabel(qlab: _tp_QLab) -> tuple[str, QLabel]:
         """Convert a qlabel to the new QLabel format.
 
         Checks if qlab is in the old string format or the new QLabel
@@ -75,9 +76,9 @@ def parse_qlabels(qlabs_list: tp.Sequence[_tp_QLab],
     return qty_dict, dupl_key
 
 
-def reshape_dblock(dblock: tp.Sequence[tp.Any],
-                   dshape: tp.Sequence[int]
-                   ) -> tp.List[tp.Any]:
+def reshape_dblock(dblock: Sequence[tp.Any],
+                   dshape: Sequence[int]
+                   ) -> list[tp.Any]:
     """Reshapes a data block.
 
     Reshapes a data block, normally extracted from fchk,
@@ -134,7 +135,7 @@ def reshape_dblock(dblock: tp.Sequence[tp.Any],
             raise ValueError('Shape inconsistent with data block size')
     # Reshape data block
     if lshape == 1:
-        data = dblock
+        data = list(dblock)
     elif lshape == 2:
         dim1 = _dshape[0]
         data = []

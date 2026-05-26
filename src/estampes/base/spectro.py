@@ -17,14 +17,14 @@ Notes
 from math import pi
 import sys
 import re
-import typing as tp
+from collections.abc import Sequence
 
 import numpy as np
 
 from estampes.tools.math import levi_civita_tens
 from estampes.data.physics import PHYSCNST, PHYSFACT
-from estampes.base.types import TypeRlCx
-
+from estampes.base.types import RealCplxType
+from estampes.base import InternalError
 
 # =================
 # Module Attributes
@@ -33,9 +33,8 @@ from estampes.base.types import TypeRlCx
 # Speed of light, in atomic units
 _c_au = 1.0/PHYSCNST.finestruct
 
-TypeTensor2D = tp.Union[np.ndarray, tp.Sequence[tp.Sequence[TypeRlCx]]]
-TypeTensor3D = tp.Union[np.ndarray,
-                        tp.Sequence[tp.Sequence[tp.Sequence[TypeRlCx]]]]
+TypeTensor2D = np.ndarray | Sequence[Sequence[RealCplxType]]
+TypeTensor3D = np.ndarray | Sequence[Sequence[Sequence[RealCplxType]]]
 
 RAMAN_SETUPS = {
     'full': (  # full version
@@ -135,15 +134,15 @@ class RamanInvariants():
     def __init__(self,
                  alpha: TypeTensor2D,
                  *,
-                 indedip_mdip: tp.Optional[TypeTensor2D] = None,
-                 G_tensor: tp.Optional[TypeTensor2D] = None,
-                 indedip_equa: tp.Optional[TypeTensor3D] = None,
-                 A_tensor: tp.Optional[TypeTensor3D] = None,
-                 edip_indmdip: tp.Optional[TypeTensor2D] = None,
-                 edip_indequa: tp.Optional[TypeTensor3D] = None,
-                 E_inc: tp.Optional[TypeRlCx] = None,
-                 E_scat: tp.Optional[TypeRlCx] = None,
-                 is_complex: tp.Optional[bool] = None):
+                 indedip_mdip: TypeTensor2D | None = None,
+                 G_tensor: TypeTensor2D | None = None,
+                 indedip_equa: TypeTensor3D | None = None,
+                 A_tensor: TypeTensor3D | None = None,
+                 edip_indmdip: TypeTensor2D | None = None,
+                 edip_indequa: TypeTensor3D | None = None,
+                 E_inc: RealCplxType | None = None,
+                 E_scat: RealCplxType | None = None,
+                 is_complex: bool | None = None):
         self.__Winc = self.__Wscat = None
         self.__alpha = self.__alph_s = self.__alph_a = None
         self.__romG_s = self.__romG_a = None
@@ -196,6 +195,8 @@ class RamanInvariants():
     def alpha2(self):
         """Compute/return invariant alpha^2"""
         if self.__alpha2 is None:
+            if self.__alph_s is None:
+                raise ValueError('Missing alpha to compute alpha2')
             self.__alpha2 = np.real(
                 np.einsum('ii,jj->', self.__alph_s, self.__alph_s.conj())
             )/9.0
@@ -205,6 +206,8 @@ class RamanInvariants():
     def b_s_alph(self):
         """Compute/return invariant beta_s(alpha)^2"""
         if self.__b_s_alph is None:
+            if self.__alph_s is None:
+                raise ValueError('Missing alpha_s to compute b_s_alph')
             self.__b_s_alph = np.real(
                 3*np.einsum('ij,ij->', self.__alph_s, self.__alph_s.conj())
                 - np.einsum('ii,jj->', self.__alph_s, self.__alph_s.conj())
@@ -215,6 +218,8 @@ class RamanInvariants():
     def b_a_alph(self):
         """Compute/return invariant beta_a(alpha)^2"""
         if self.__b_a_alph is None:
+            if self.__alph_a is None:
+                raise ValueError('Missing alpha_a to compute b_a_alph')
             self.__b_a_alph = 3.0*np.real(
                 np.einsum('ij,ij->', self.__alph_a, self.__alph_a.conj())
             )/2.0
@@ -226,6 +231,8 @@ class RamanInvariants():
         if self.__alp_romG is None:
             if self.__G_indED is None:
                 raise InvariantNA('alpha.romG')
+            if self.__alph_s is None or self.__romG_s is None:
+                raise ValueError('Missing data to compute alpha.romG')
             self.__alp_romG = np.imag(
                 np.einsum('ii,jj->', self.__alph_s, self.__romG_s.conj())
             )/(9.0*_c_au)
@@ -237,6 +244,8 @@ class RamanInvariants():
         if self.__b_s_romG is None:
             if self.__G_indED is None:
                 raise InvariantNA('beta_s(romG)')
+            if self.__alph_s is None or self.__romG_s is None:
+                raise ValueError('Missing data to compute beta_s(romG)')
             self.__b_s_romG = np.imag(
                 3*np.einsum('ij,ij->', self.__alph_s, self.__romG_s.conj())
                 - np.einsum('ii,jj->', self.__alph_s, self.__romG_s.conj())
@@ -249,6 +258,8 @@ class RamanInvariants():
         if self.__b_a_romG is None:
             if self.__G_indED is None:
                 raise InvariantNA('beta_a(romG)')
+            if self.__alph_a is None or self.__romG_a is None:
+                raise ValueError('Missing data to compute beta_a(romG)')
             self.__b_a_romG = 3.0*np.imag(
                     np.einsum('ij,ij->', self.__alph_a, self.__romG_a.conj())
                 )/(2.0*_c_au)
@@ -260,6 +271,8 @@ class RamanInvariants():
         if self.__alp_calG is None:
             if self.__G_indMD is None:
                 raise InvariantNA('alpha.calG')
+            if self.__alph_s is None or self.__calG_s is None:
+                raise ValueError('Missing data to compute alpha.calG')
             self.__alp_calG = np.imag(
                 np.einsum('ii,jj->', self.__alph_s, self.__calG_s.conj())
             )/(9.0*_c_au)
@@ -271,6 +284,8 @@ class RamanInvariants():
         if self.__b_s_calG is None:
             if self.__G_indMD is None:
                 raise InvariantNA('beta_s(calG)')
+            if self.__alph_s is None or self.__calG_s is None:
+                raise ValueError('Missing data to compute beta_s(calG)')
             self.__b_s_calG = np.imag(
                 3*np.einsum('ij,ij->', self.__alph_s, self.__calG_s.conj())
                 - np.einsum('ii,jj->', self.__alph_s, self.__calG_s.conj())
@@ -283,6 +298,8 @@ class RamanInvariants():
         if self.__b_a_calG is None:
             if self.__G_indMD is None:
                 raise InvariantNA('beta_a(calG)')
+            if self.__alph_a is None or self.__calG_a is None:
+                raise ValueError('Missing data to compute beta_a(calG)')
             self.__b_a_calG = 3.0*np.imag(
                     np.einsum('ij,ij->', self.__alph_a, self.__calG_a.conj())
                 )/(2.0*_c_au)
@@ -294,6 +311,8 @@ class RamanInvariants():
         if self.__b_s_romA is None:
             if self.__A_indED is None:
                 raise InvariantNA('beta_s(romA)')
+            if self.__alph_s is None or self.__romA1_s is None:
+                raise ValueError('Missing data to compute beta_s(romA)')
             self.__b_s_romA = self.inc_frq*np.imag(
                 1j*np.einsum('ij,ij->', self.__alph_s, self.__romA1_s.conj())
             )/(2.0*_c_au)
@@ -305,6 +324,9 @@ class RamanInvariants():
         if self.__b_a_romA is None:
             if self.__A_indED is None:
                 raise InvariantNA('beta_a(romA)')
+            if (self.__alph_a is None or self.__romA1_a is None
+                    or self.__romA2_a is None):
+                raise ValueError('Missing data to compute beta_a(romA)')
             self.__b_a_romA = self.inc_frq*np.imag(
                 1j*np.einsum('ij,ij->', self.__alph_a,
                              self.__romA1_a.conj() + self.__romA2_a.conj())
@@ -317,6 +339,8 @@ class RamanInvariants():
         if self.__b_s_calA is None:
             if self.__A_indEQ is None:
                 raise InvariantNA('beta_s(calA)')
+            if self.__alph_s is None or self.__calA1_s is None:
+                raise ValueError('Missing data to compute beta_s(calA)')
             self.__b_s_calA = self.scat_frq*np.imag(
                 1j*np.einsum('ij,ij->', self.__alph_s, self.__calA1_s.conj())
             )/(2.0*_c_au)
@@ -328,6 +352,9 @@ class RamanInvariants():
         if self.__b_a_calA is None:
             if self.__A_indEQ is None:
                 raise InvariantNA('beta_a(calA)')
+            if (self.__alph_a is None or self.__calA1_a is None
+                    or self.__calA2_a is None):
+                raise ValueError('Missing data to compute beta_a(calA)')
             self.__b_a_calA = self.inc_frq*np.imag(
                 1j*np.einsum('ij,ij->', self.__alph_a,
                              (self.__calA1_a.conj() + self.__calA2_a.conj()))
@@ -361,7 +388,7 @@ class RamanInvariants():
         self.__b_s_calA = None
         self.__b_a_calA = None
 
-    def __get_alpha(self) -> np.ndarray:
+    def __get_alpha(self) -> np.ndarray | None:
         return self.__alpha
 
     alpha = property(__get_alpha, __set_alpha,
@@ -383,7 +410,7 @@ class RamanInvariants():
         self.__b_s_romG = None
         self.__b_a_romG = None
 
-    def __get_G_indED(self) -> tp.Optional[np.ndarray]:
+    def __get_G_indED(self) -> np.ndarray | None:
         return self.__G_indED
 
     G_indED = property(__get_G_indED, __set_G_indED,
@@ -410,7 +437,7 @@ class RamanInvariants():
         self.__b_s_romA = None
         self.__b_a_romA = None
 
-    def __get_A_indED(self) -> tp.Optional[np.ndarray]:
+    def __get_A_indED(self) -> np.ndarray | None:
         return self.__A_indED
 
     A_indED = property(__get_A_indED, __set_A_indED,
@@ -435,7 +462,7 @@ class RamanInvariants():
         self.__b_s_calG = None
         self.__b_a_calG = None
 
-    def __get_G_indMD(self) -> tp.Optional[np.ndarray]:
+    def __get_G_indMD(self) -> np.ndarray | None:
         return self.__G_indMD
 
     G_indMD = property(__get_G_indMD, __set_G_indMD,
@@ -463,14 +490,14 @@ class RamanInvariants():
         self.__b_s_calA = None
         self.__b_a_calA = None
 
-    def __get_A_indEQ(self) -> tp.Optional[np.ndarray]:
+    def __get_A_indEQ(self) -> np.ndarray | None:
         return self.__A_indEQ
 
     A_indEQ = property(__get_A_indEQ, __set_A_indEQ,
                        doc="Electric dipole-induced electric quadrupole "
                        + "tensor")
 
-    def __set_incfrq(self, energy: tp.Optional[float]):
+    def __set_incfrq(self, energy: float | None):
         if energy is not None:
             self.__Winc = 2*pi*_c_au*1.0e-8*PHYSFACT.bohr2ang*energy
         else:
@@ -478,13 +505,13 @@ class RamanInvariants():
         self.__b_s_romA = None
         self.__b_a_romA = None
 
-    def __get_incfrq(self) -> tp.Optional[float]:
+    def __get_incfrq(self) -> float | None:
         return self.__Winc
 
     inc_frq = property(__get_incfrq, __set_incfrq,
                        doc="""Incident frequency (s^-1)""")
 
-    def __set_scatfrq(self, energy: tp.Optional[float]):
+    def __set_scatfrq(self, energy: float | None):
         if energy is not None:
             self.__Wscat = 2*pi*_c_au*1.0e-8*PHYSFACT.bohr2ang*energy
         else:
@@ -492,7 +519,7 @@ class RamanInvariants():
         self.__b_s_calA = None
         self.__b_a_calA = None
 
-    def __get_scatfrq(self) -> tp.Optional[float]:
+    def __get_scatfrq(self) -> float | None:
         return self.__Wscat
 
     scat_frq = property(__get_scatfrq, __set_scatfrq,
@@ -545,6 +572,10 @@ def raman_intensities(rinv: RamanInvariants,
     scat = res.group('scat').lower().replace(')', '').replace('(', '')
     do_CIS = do_ROA is False or (do_ROA and use_CID)
     do_CID = do_ROA
+    x_CIS = None
+    x_CID = None
+    a_CIS = None
+    a_CID = None
     if do_FFR:
         if mode == 'ICP':
             if scat == '0':
@@ -919,13 +950,20 @@ def raman_intensities(rinv: RamanInvariants,
     res = None
     if do_ROA:
         if use_CID:
+            if (x_CIS is None or x_CID is None
+                    or a_CID is None or a_CIS is None):
+                raise InternalError('CIS/CID terms incorrectly set.')
             if abs(x_CIS) > sys.float_info.epsilon:
                 res = x_CID/x_CIS if get_activity else \
                     (a_CID*x_CID)/(a_CIS*x_CIS)
             else:
                 res = 0.0
         else:
+            if x_CID is None or a_CID is None:
+                raise InternalError('CID terms incorrectly set.')
             res = x_CID if get_activity else a_CID*x_CID
     else:
+        if x_CIS is None or a_CIS is None:
+            raise InternalError('CIS terms incorrectly set.')
         res = x_CIS if get_activity else a_CIS*x_CIS
     return res

@@ -20,5 +20,7 @@ Notes
   obviously depend on the file and the way it was generated.
 """
 
-from estampes.parser.base import DataFile  # noqa: F401
+# flake8: noqa: F401
+
+from estampes.parser.base import DataFile
 from estampes.parser.functions import reshape_dblock, parse_qlabels

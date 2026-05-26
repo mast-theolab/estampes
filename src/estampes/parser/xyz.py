@@ -6,9 +6,12 @@ This module provides basic classes and methods to parse XYZ files.
 
 import os
 import typing as tp
+from collections.abc import Sequence
 
+from estampes.base import (
+    QLabel, QDataType, QData,
+    ParseDataError, ParseKeyError, ParsingError)
 from estampes.parser.functions import parse_qlabels
-from estampes.base import ParseDataError, ParseKeyError, QDataType, QData
 from estampes.tools.atom import convert_labsymb
 from estampes.data.physics import PHYSFACT
 
@@ -30,7 +33,7 @@ class FileXYZ(object):
     Main class to handle XYZ files.
     """
 
-    def __init__(self, fname: str) -> None:
+    def __init__(self, fname: str):
         """Initialize XYZ IO file instance.
 
         Initializes an instance of FileXYZ.
@@ -49,13 +52,13 @@ class FileXYZ(object):
         return self.__fname
 
     @filename.setter
-    def filename(self, name: str) -> None:
+    def filename(self, name: str):
         if not os.path.exists(name):
             raise FileNotFoundError('XYZ file not found')
         self.__fname = name
 
     @property
-    def full_version(self) -> tp.Tuple[str, tp.Any]:
+    def full_version(self) -> tuple[str, tp.Any]:
         """Full version of the program, which generated the file.
 
         Full program version, for the parser interface.
@@ -119,9 +122,9 @@ class FileXYZ(object):
                         fmt = 'Number of atoms in geometry {} does not match.'
                         raise ValueError(fmt.format(self.__ngeoms))
 
-    def read_data(self, *to_find: tp.Sequence[str],
-                  geom: tp.Optional[int] = 1,
-                  raise_error: bool = True) -> tp.Dict[str, tp.Any]:
+    def read_data(self, *to_find: str,
+                  geom: int = 1,
+                  raise_error: bool = True) -> dict[str, tp.Any] | None:
         """Extract data corresponding to the keys to find.
 
         Extracts data based on keywords.
@@ -151,7 +154,8 @@ class FileXYZ(object):
             datlist['natoms'] = self.__natoms
         rest = ls_keys - {'natoms', 'title', 'atoms', 'atcrd'}
         if len(rest) > 0 and raise_error:
-            raise ParseKeyError(rest[0])
+            msg = f'Unsupported keywords: {", ".join(rest)}'
+            raise ParseKeyError(msg)
         if {'title', 'atoms', 'atcrd'} & ls_keys:
             if geom_ > 0 or 'atcrd' not in ls_keys:
                 with open(self.__fname, 'r', encoding="utf-8") as fobj:
@@ -161,13 +165,111 @@ class FileXYZ(object):
             else:
                 with open(self.__fname, 'r', encoding="utf-8") as fobj:
                     datlist = parse_xyz(fobj, to_find)
+                    if datlist is None:
+                        return None
                     datlist['atcrd'] = [datlist['atcrd']]
                     i = 1
                     while i < self.__ngeoms:
                         i += 1
-                        datlist['atcrd'].append(
-                            parse_xyz(fobj, ['atcrd'])['atcrd'])
+                        res = parse_xyz(fobj, ['atcrd'])
+                        if res is None:
+                            raise ParsingError(
+                                f'Failed to read structure num. {i}')
+                        datlist['atcrd'].append(res['atcrd'])
         return datlist
+
+    def get_data(self,
+                 *qlabels: str | QLabel,
+                 error_noqty: bool = True,
+                 **keys4qlab) -> QDataType | None:
+        """Get data from a XYZ file for each quantity label.
+
+        Reads one or more full quantity labels from `qlabels` and returns
+        the corresponding data.
+
+        Parameters
+        ----------
+        *qlabels
+            List of full quantity labels to parse.
+        error_noqty
+            If True, error is raised if the quantity is not found.
+        **keys4qlab
+            Aliases for the qlabels to be used in returned data object.
+
+        Returns
+        -------
+        dict
+            For each `qlabel`, returns the corresponding data block.
+
+        Raises
+        ------
+        TypeError
+            Wrong type of data file object.
+        ParseKeyError
+            Missing required quantity in data block.
+        IndexError
+            State definition inconsistent with available data.
+        QuantityError
+            Unsupported quantity.
+        """
+        # Check if anything to do
+        if len(qlabels) == 0 and len(keys4qlab) == 0:
+            return None
+        # Build Keyword List
+        # ------------------
+        # Build full list of qlabels
+        qty_dict, dupl_keys = parse_qlabels(qlabels, keys4qlab)
+        # List of keywords
+        keydata = {}
+        geom = None
+        for qkey, qlabel in qty_dict.items():
+            # Label parsing
+            # ^^^^^^^^^^^^^
+            if qlabel.label in ('atoms', 'atnum', 'atlab'):
+                keydata[qkey] = 'atoms'
+            else:
+                if qlabel.label == 2:
+                    keydata[qkey] = 'atcrd'
+                else:
+                    keydata[qkey] = qlabel.label
+                if qlabel.label in ('atcrd', 2, 1):
+                    if qlabel.kind == 'last':
+                        geom = -1
+                    elif qlabel.kind == 'first':
+                        geom = 1
+                    else:
+                        geom = 0
+        if geom is None:
+            geom = 1
+        # Data Extraction
+        # ---------------
+        # Use of set to remove redundant keywords
+        datablocks = self.read_data(*set(keydata.values()), geom=geom,
+                                    raise_error=error_noqty)
+        if datablocks is None:
+            return None
+        dobjs = {}
+        for qkey, qlabel in qty_dict.items():
+            key = keydata[qkey]
+            dobjs[qkey] = QData(qlabel)
+            if qlabel.label in ('atnum', 'atlab'):
+                dobjs[qkey].set(
+                    data=convert_labsymb(qlabel.label == 'atlab',
+                                         *datablocks[key]))
+            else:
+                if qlabel.label in ('atcrd', 2):
+                    if geom == 0:
+                        num = self.nstruct
+                    else:
+                        num = 1
+                    dobjs[qkey].add_field('ngeoms', value=num)
+                dobjs[qkey].set(data=datablocks[key])
+        # Handle possible duplicate keys
+        if dupl_keys:
+            for item, key in dupl_keys.items():
+                dobjs[item] = dobjs[key]
+        return dobjs
+
 
 # ================
 # Module Functions
@@ -175,9 +277,9 @@ class FileXYZ(object):
 
 
 def parse_xyz(fobj: tp.IO,
-              what: tp.Sequence[str],
+              what: Sequence[str],
               blank_ok: bool = True
-              ) -> tp.Optional[tp.Dict[str, tp.Any]]:
+              ) -> dict[str, tp.Any] | None:
     """Parse a XYZ configuration.
 
     Parses an xyz configuration, assuming the first line to read is the
@@ -258,99 +360,3 @@ def parse_xyz(fobj: tp.IO,
             data['atcrd'].append(coord)
     # Termination
     return data
-
-
-def get_data(dfobj: FileXYZ,
-             *qlabels: str,
-             error_noqty: bool = True,
-             **keys4qlab) -> QDataType:
-    """Get data from a XYZ file for each quantity label.
-
-    Reads one or more full quantity labels from `qlabels` and returns
-    the corresponding data.
-
-    Parameters
-    ----------
-    dfobj
-        Data file object.
-    *qlabels
-        List of full quantity labels to parse.
-    error_noqty
-        If True, error is raised if the quantity is not found.
-    **keys4qlab
-        Aliases for the qlabels to be used in returned data object.
-
-    Returns
-    -------
-    dict
-        For each `qlabel`, returns the corresponding data block.
-
-    Raises
-    ------
-    TypeError
-        Wrong type of data file object.
-    ParseKeyError
-        Missing required quantity in data block.
-    IndexError
-        State definition inconsistent with available data.
-    QuantityError
-        Unsupported quantity.
-    """
-    # First, check that the file is a correct instance
-    if not isinstance(dfobj, FileXYZ):
-        raise TypeError('FileXYZ instance expected')
-    # Check if anything to do
-    if len(qlabels) == 0 and len(keys4qlab) == 0:
-        return None
-    # Build Keyword List
-    # ------------------
-    # Build full list of qlabels
-    qty_dict, dupl_keys = parse_qlabels(qlabels, keys4qlab)
-    # List of keywords
-    keydata = {}
-    geom = None
-    for qkey, qlabel in qty_dict.items():
-        # Label parsing
-        # ^^^^^^^^^^^^^
-        if qlabel.label in ('atoms', 'atnum', 'atlab'):
-            keydata[qkey] = 'atoms'
-        else:
-            if qlabel.label == 2:
-                keydata[qkey] = 'atcrd'
-            else:
-                keydata[qkey] = qlabel.label
-            if qlabel.label in ('atcrd', 2, 1):
-                if qlabel.kind == 'last':
-                    geom = -1
-                elif qlabel.kind == 'first':
-                    geom = 1
-                else:
-                    geom = 0
-    if geom is None:
-        geom = 1
-    # Data Extraction
-    # ---------------
-    # Use of set to remove redundant keywords
-    datablocks = dfobj.read_data(*set(keydata.values()), geom=geom,
-                                 raise_error=error_noqty)
-    dobjs = {}
-    for qkey, qlabel in qty_dict.items():
-        key = keydata[qkey]
-        dobjs[qkey] = QData(qlabel)
-        if qlabel.label in ('atnum', 'atlab'):
-            dobjs[qkey].set(
-                data=convert_labsymb(qlabel.label == 'atlab',
-                                     *datablocks[key]))
-        else:
-            if qlabel.label in ('atcrd', 2):
-                if geom == 0:
-                    num = dfobj.nstruct
-                else:
-                    num = 1
-                dobjs[qkey].add_field('ngeoms', value=num)
-            dobjs[qkey].set(data=datablocks[key])
-    # Handle possible duplicate keys
-    if dupl_keys:
-        for item, key in dupl_keys.items():
-            dobjs[item] = dobjs[key]
-    return dobjs

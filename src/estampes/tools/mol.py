@@ -4,28 +4,20 @@ Module providing tools to manipulate data relative to molecules.
 
 """
 
-import typing as tp
-
 import numpy as np
+import numpy.typing as npt
 
-from estampes.base import TypeAtCrd, TypeAtLab, TypeAtMas, TypeBonds
+from estampes.base.types_npt import AtsMasType
+from estampes.base import AtsCrdType, AtsLabType, BondsType
 from estampes.data.atom import atomic_data
-
-
-# ================
-# Module Constants
-# ================
-
-# Typeat_crd = npt.ArrayLike
-# Typeat_mass = npt.ArrayLike
 
 
 # ==============
 # Module Methods
 # ==============
 
-def center_of_mass(at_crd: TypeAtCrd,
-                   at_mass: TypeAtMas) -> np.ndarray:
+def center_of_mass(at_crd: AtsCrdType,
+                   at_mass: AtsMasType) -> np.ndarray:
     """Computes the center of a mass.
 
     Computes and returns the center of mass.
@@ -47,14 +39,16 @@ def center_of_mass(at_crd: TypeAtCrd,
     IndexError
         Size inconsistency between masses and coordinates.
     """
+    at_crd = np.asarray(at_crd)
+    at_mass = np.asarray(at_mass)
     if at_crd.shape[0] != at_mass.shape[0]:
         raise IndexError('Size inconsistency between masses and coordinates.')
     return np.einsum('ij,i->j', at_crd, at_mass)/np.sum(at_mass)
 
 
-def list_bonds(at_lab: TypeAtLab,
-               at_crd: TypeAtCrd,
-               rtol: float = 1.1) -> TypeBonds:
+def list_bonds(at_lab: AtsLabType,
+               at_crd: AtsCrdType,
+               rtol: float = 1.1) -> BondsType:
     """Finds and lists bonds between atoms.
 
     Parameters
@@ -76,26 +70,26 @@ def list_bonds(at_lab: TypeAtLab,
     natoms = len(at_lab)
     atdat = atomic_data(*at_lab)
     for i in range(natoms-1):
-        xyz_i = at_crd[i]
+        xyz_i = np.asarray(at_crd[i])
         rad_i = max(atdat[at_lab[i]]['rcov'], key=lambda x: x or 0.)
         if rad_i is None:
-            raise ValueError('Missing rcov for atom {}'.format(i))
+            raise ValueError(f'Missing rcov for atom {i}')
         for j in range(i+1, natoms):
-            xyz_j = at_crd[j]
+            xyz_j = np.asarray(at_crd[j])
             rad_j = max(atdat[at_lab[j]]['rcov'], key=lambda x: x or 0.)
             if rad_j is None:
-                raise ValueError('Missing rcov for atom {}'.format(j))
+                raise ValueError(f'Missing rcov for atom {j}')
             if np.linalg.norm(xyz_j-xyz_i) < (rad_i + rad_j)*rtol/100.:
                 bonds.append((i, j))
 
     return bonds
 
 
-def eckart_orient(at_crd: TypeAtCrd,
-                  at_mass: TypeAtMas,
+def eckart_orient(at_crd: AtsCrdType,
+                  at_mass: AtsMasType,
                   get_rotation: bool = False,
-                  get_translation: bool = False,
-                  as_tuple: bool = False) -> tp.Dict[str, np.ndarray]:
+                  get_translation: bool = False
+                  ) -> dict[str, npt.NDArray]:
     """Return Eckart orientation.
 
     Given a set of atomic coordinates and the masses, return a new
@@ -124,17 +118,21 @@ def eckart_orient(at_crd: TypeAtCrd,
         'transl': (3) translation vector (not by default).
     """
     tvec = - center_of_mass(at_crd, at_mass)
-    c_new = at_crd  + tvec
+    c_new = np.asarray(at_crd) + tvec
     _, pmom_evec = inertia_mom(at_crd, at_mass)
     # Check if chirality preserved:
-    x = pmom_evec[0,0] * (pmom_evec[1,1]*pmom_evec[2,2]
-                          - pmom_evec[2,1]*pmom_evec[1,2]) \
-        + pmom_evec[0,1] * (pmom_evec[1,2]*pmom_evec[2,0]
-                          - pmom_evec[1,0]*pmom_evec[2,2]) \
-        + pmom_evec[0,2] * (pmom_evec[1,0]*pmom_evec[2,1]
-                          - pmom_evec[1,1]*pmom_evec[2,0])
+    x = (
+        pmom_evec[0, 0] * (
+            pmom_evec[1, 1]*pmom_evec[2, 2]
+            - pmom_evec[2, 1]*pmom_evec[1, 2])
+        + pmom_evec[0, 1] * (
+            pmom_evec[1, 2]*pmom_evec[2, 0]
+            - pmom_evec[1, 0]*pmom_evec[2, 2])
+        + pmom_evec[0, 2] * (
+            pmom_evec[1, 0]*pmom_evec[2, 1]
+            - pmom_evec[1, 1]*pmom_evec[2, 0]))
     if x < 0.0:
-        pmom_evec[:,0] *= -1
+        pmom_evec[:, 0] *= -1
 
     c_new = c_new @ pmom_evec
 
@@ -142,13 +140,13 @@ def eckart_orient(at_crd: TypeAtCrd,
     if get_rotation:
         res['rotmat'] = pmom_evec
     if get_translation:
-        res['rotmat'] = tvec
+        res['transl'] = tvec
 
     return res
 
 
-def inertia_mom(at_crd: TypeAtCrd,
-                at_mass: TypeAtMas) -> tp.Tuple[np.ndarray, np.ndarray]:
+def inertia_mom(at_crd: AtsCrdType,
+                at_mass: AtsMasType) -> tuple[npt.NDArray, npt.NDArray]:
     """Build inertia moments
 
     Computes the inertia moments and the returns the principal moments
@@ -168,6 +166,8 @@ def inertia_mom(at_crd: TypeAtCrd,
     np.ndarray
         (3,3) Eigenvectors from the diagonalization.
     """
+    at_crd = np.asarray(at_crd)
+    at_mass = np.asarray(at_mass)
     if at_crd.shape[0] != at_mass.shape[0]:
         raise IndexError('Size inconsistency between masses and coordinates.')
 

@@ -5,9 +5,10 @@ Provides specialized functions to extract data for specific quantities.
 
 import re
 
-from estampes.base import QData, QLabel, \
-    ParseKeyError, ParsingError, QuantityError, \
-    TypeDBlocGLog
+from estampes.base import (
+    QData, QLabel,
+    ParseKeyError, ParsingError, QuantityError,
+    DBlocGLogType)
 from estampes.data.physics import PHYSFACT
 
 __ang2au = 1.0 / PHYSFACT.bohr2ang
@@ -16,7 +17,7 @@ xyz2id = {'X': 0, 'Y': 1, 'Z': 2}
 
 
 def parse_fcdat(qlab: QLabel,
-                dblock: TypeDBlocGLog,
+                dblock: DBlocGLogType,
                 iref: int = 0) -> QData:
     """Parse extracted data related to Franck-Condon spectroscopy.
 
@@ -413,7 +414,7 @@ def parse_fcdat(qlab: QLabel,
     return dobj
 
 
-def parse_vptdat(qlab: QLabel, dblock: TypeDBlocGLog) -> QData:
+def parse_vptdat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
     """Parse extracted data related to VPTx.
 
     Parses data related to calculations within the vibrational
@@ -560,7 +561,7 @@ def parse_vptdat(qlab: QLabel, dblock: TypeDBlocGLog) -> QData:
     return dobj
 
 
-def parse_vtrans_data(qlab: QLabel, dblock: TypeDBlocGLog,
+def parse_vtrans_data(qlab: QLabel, dblock: DBlocGLogType,
                       iref: int = 0) -> QData:
     """Parse extracted data related to vibrational transitions.
 
@@ -710,7 +711,7 @@ def parse_vtrans_data(qlab: QLabel, dblock: TypeDBlocGLog,
     return dobj
 
 
-def parse_trans_str(qlab: QLabel, dblock: TypeDBlocGLog,
+def parse_trans_str(qlab: QLabel, dblock: DBlocGLogType,
                     iref: int = 0) -> QData:
     """Parse extracted data related to transition strengths.
 
@@ -835,7 +836,7 @@ def parse_trans_str(qlab: QLabel, dblock: TypeDBlocGLog,
     return dobj
 
 
-def parse_ramact_data(qlab: QLabel, dblock: TypeDBlocGLog,
+def parse_ramact_data(qlab: QLabel, dblock: DBlocGLogType,
                       do_roa: bool = False) -> QData:
     """Parse extracted data related to Raman/ROA activity.
 

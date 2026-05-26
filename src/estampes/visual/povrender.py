@@ -32,16 +32,19 @@ along Y.
 
 import os
 import re
-import typing as tp
 from math import inf, isclose, radians, tan
+import typing as tp
+from collections.abc import Sequence
 
 import numpy as np
 import numpy.typing as npt
 
 from estampes.base import QLabel
-from estampes.base.types import Type1Vib, TypeAtCrd, TypeAtCrdM, TypeAtLab, \
-    TypeAtLabM, TypeBondsM, TypeVibsM
-from estampes.base.errors import ArgumentError, QuantityError
+from estampes.base.types import (
+    AtCrdType, AtLabType,
+    AtsCrdType, AtsLabType, BondType, BondsType, VibType,
+    MAtsCrdType, MAtsLabType, MBondsType, MVibType)
+from estampes.base.errors import ArgumentError, InternalError, QuantityError
 from estampes.parser import DataFile
 from estampes.data.atom import atomic_data
 from estampes.data.colors import to_rgb_list
@@ -237,14 +240,14 @@ class POVBuilder():
     """
 
     def __init__(self,
-                 infiles: tp.Optional[tp.Union[tp.List[str], str]] = None,
+                 infiles: list[str] | str | None = None,
                  *,
                  load_data: bool = True,
                  load_vibs: bool = False,
-                 povfile: tp.Optional[str] = None,
-                 at_crds: tp.Optional[TypeAtCrdM] = None,
-                 at_labs: tp.Optional[TypeAtLabM] = None,
-                 v_modes: tp.Optional[TypeVibsM] = None,
+                 povfile: str | None = None,
+                 at_crds: AtsCrdType | MAtsCrdType | None = None,
+                 at_labs: AtsLabType | MAtsLabType | None = None,
+                 v_modes: VibType | MVibType | None = None,
                  nmols: int = 0,
                  in_au: bool = True,
                  **params):
@@ -301,14 +304,7 @@ class POVBuilder():
                 'POVBuilder should be initialized with a single mode.')
 
         self.__load_vibs = load_vibs
-        self.__nmols = 0
-        self.__atcrd = []
-        self.__atlab = []
-        self.__bonds = []
-        self.__vmodes = []
-        self.__infiles = []
-        self.__loaded = []
-        self.__nvibs = 0
+        self.__reset_db()
         if infiles is not None:
             if isinstance(infiles, (tuple, list)):
                 if load_data:
@@ -335,23 +331,40 @@ class POVBuilder():
                 raise ArgumentError(
                     'Input files and molecule specifications both missing.\n'
                     + 'Nothing to do.')
+            if (not isinstance(at_crds, Sequence)
+                    or not isinstance(at_labs, Sequence)):
+                raise ArgumentError(
+                    'Atomic labels and coordinates should be sequences.')
             if nmols > 1:
                 self.__nmols = nmols
-                self.__atcrd = np.array(at_crds)
-                if self.__atcrd.ndim != 3:
-                    raise ArgumentError('Expected array of coordinates')
-                if self.__atcrd.shape[0] < nmols:
-                    raise ArgumentError(f'Expected {nmols} structures.')
-                self.__atlab = np.array(at_labs)
-                if self.__atlab.ndim == 1:
+                ndims = np.asarray(at_crds).ndim
+                if ndims == 3:
+                    self.__atcrd = [np.array(item) for item in at_crds]
+                    if any((item.ndim != 2 for item in self.__atcrd)):
+                        raise ArgumentError('Expected array of coordinates')
+                    if len(self.__atcrd) != nmols:
+                        raise ArgumentError(f'Expected {nmols} structures.')
+                elif ndims == 2:
+                    self.__atcrd = [np.array(item).reshape(-1, 3)
+                                    for item in at_crds]
+                    if len(self.__atcrd) != nmols:
+                        raise ArgumentError(f'Expected {nmols} structures.')
+                else:
+                    raise ArgumentError('Unknown structure for at_crds')
+                ndims = len(np.shape(at_labs))
+                if ndims == 1:
                     # We expand atlab to be the same for each quantity
-                    self.__atlab = np.tile(self.__atlab, (nmols, 1))
-                elif self.__atlab.ndim == 2:
-                    if self.__atlab.shape[0] < nmols:
-                        raise ArgumentError(f'Expected {nmols} atomic labels.')
+                    self.__atlab = [  # type: ignore
+                        list(at_labs) for _ in range(nmols)]
+                elif ndims == 2:
+                    if len(at_labs) != nmols:
+                        raise ArgumentError(
+                            f'Expected {nmols} groups of atomic labels.')
+                    self.__atlab = list(at_labs)  # type: ignore
+                else:
+                    raise ArgumentError('Unexpected structure of at_labs')
                 if v_modes is not None:
-                    self.__vmodes = np.array(v_modes)
-                    shape = self.__vmodes.shape
+                    shape = np.shape(self.__vmodes)
                     if len(shape) < 3:
                         raise ArgumentError(
                             'modes',
@@ -360,6 +373,7 @@ class POVBuilder():
                     if shape[0] != nmols:
                         raise IndexError(
                             'The modes do not match the number of molecules')
+                    self.__vmodes = [np.array(item) for item in v_modes]
                     n_at3 = self.__atcrd[0].size
                     self.__nvibs = self.__vmodes[0].size // n_at3
                     if self.__nvibs == 1:
@@ -385,15 +399,23 @@ class POVBuilder():
                     self.__atcrd *= PHYSFACT.bohr2ang
             elif nmols in (0, 1):
                 self.__nmols = 1
-                self.__atcrd = [np.array(at_crds)]
+                ndims = np.asarray(at_crds).ndim
+                if ndims == 2:
+                    self.__atcrd = [np.array(at_crds)]
+                elif ndims == 1:
+                    self.__atcrd = [np.array(at_crds).reshape(-1, 3)]
+                else:
+                    raise ArgumentError('Unknown structure for at_crds')
                 # We store the number of atoms to check vibrations
                 # Indeed, we may have a full array or only 1 vibration
                 n_at3 = self.__atcrd[0].size
                 if self.__atcrd[0].ndim != 2:
                     raise ArgumentError('Expected coordinates as 2D array')
-                self.__atlab = [np.array(at_labs)]
-                if self.__atlab[0].ndim != 1:
-                    raise ArgumentError('Expected atomic numbers as 1D array')
+                ndims = len(np.shape(at_labs))
+                if ndims == 1:
+                    self.__atlab = [at_labs]  # type: ignore
+                else:
+                    raise ArgumentError('Unexpected structure of at_labs')
                 if v_modes is not None:
                     self.__vmodes = [np.array(v_modes)]
                     # first check how many elements are given
@@ -423,17 +445,31 @@ class POVBuilder():
             _tol_bonds = params.get('tol_bonds', 1.2)
             self.__bonds = []
             for imol in range(nmols):
+                if self.__atlab[imol] is None or self.__atcrd[imol] is None:
+                    raise InternalError(
+                        'Incorrectly built atomic labels and coordinates')
                 self.__bonds.append(
-                    list_bonds(self.__atlab[imol],
-                               self.__atcrd[imol], _tol_bonds))
+                    list_bonds(self.__atlab[imol],  # type: ignore
+                               self.__atcrd[imol],  # type: ignore
+                               _tol_bonds))
 
         if povfile is not None:
             self.__povfile = povfile
         else:
             self.__povfile = None
 
+    def __reset_db(self):
+        self.__nmols: int = 0
+        self.__atcrd: list[npt.NDArray] | list[None] = []
+        self.__atlab: list[AtsLabType] | list[None] = []
+        self.__bonds: list[BondsType] = []
+        self.__vmodes: list[npt.NDArray] | list[None] = []
+        self.__infiles: list[str] = []
+        self.__loaded: list[bool] = []
+        self.__nvibs: int = 0
+
     def load_data(self, *,
-                  infile: tp.Optional[tp.Union[str, int]] = None,
+                  infile: str | int | None = None,
                   reset: bool = True,
                   force_reload: bool = False,
                   **params):
@@ -471,24 +507,21 @@ class POVBuilder():
         if extfile:
             ifile = 0
             if reset:
-                del self.__atcrd[:]
-                del self.__atlab[:]
-                del self.__vmodes[:]
-                del self.__infiles[:]
-                del self.__loaded[:]
-                del self.__bonds[:]
-                self.__nmols = 0
+                self.__reset_db()
             if infile in self.__infiles:
                 if force_reload:
                     ifile = self.__infiles.index(infile)
                 else:
                     return
             dfile = DataFile(infile)
-            qdata = dfile.get_data(**dkeys)
+            qdata = dfile.get_data(**dkeys, error_noqty=True)
+            if qdata is None:
+                raise QuantityError('Unable to extract data')
             if ifile == 0:
                 self.__infiles.append(infile)
                 self.__nmols += 1
                 self.__loaded.append(True)
+
                 self.__atcrd.append(
                     np.array(qdata['atcrd'].data)*PHYSFACT.bohr2ang)
                 self.__atlab.append(
@@ -586,9 +619,9 @@ class POVBuilder():
                             raise ValueError(
                                 'Inconsistency in number of normal modes')
 
-    def write_pov(self, *, povname: tp.Optional[str] = None,
-                  id_mol: tp.Optional[int] = None,
-                  id_vib: tp.Optional[int] = None,
+    def write_pov(self, *, povname: str | None = None,
+                  id_mol: int | None = None,
+                  id_vib: int | None = None,
                   merge_mols: bool = True,
                   mol_model: str = 'balls',
                   mol_mater: str = 'plastic',
@@ -803,10 +836,10 @@ class POVBuilder():
                 print(MSG_POV_WIN)
 
 
-def build_box(at_lab: TypeAtLab,
-              at_crd: TypeAtCrd,
+def build_box(at_lab: AtLabType,
+              at_crd: AtCrdType,
               at_repr: str = 'balls',
-              **extras) -> tp.Dict[str, float]:
+              **extras) -> dict[str, float]:
     """Build the outer box containing the molecule.
 
     Builds the outer box containing the whole molecule and returns its
@@ -888,9 +921,9 @@ def build_box(at_lab: TypeAtLab,
     }
 
 
-def set_cam_depth(box_mol: tp.Dict[str, float],
-                  xangle: tp.Union[float, int] = 68,
-                  yangle: tp.Union[float, int] = 53) -> float:
+def set_cam_depth(box_mol: dict[str, float],
+                  xangle: float | int = 68,
+                  yangle: float | int = 53) -> float:
     """Set the camera distance from center.
 
     Set the camera distance from center.
@@ -1012,9 +1045,9 @@ light_source {{
 
 def write_pov_mol(fobj: tp.TextIO,
                   nmols: int,
-                  at_lab: TypeAtLabM,
-                  at_crd: TypeAtCrdM,
-                  bonds: TypeBondsM,
+                  at_lab: MAtLabType,
+                  at_crd: MAtCrdType,
+                  bonds: MBondsType,
                   col_bond_as_atom: bool = False,
                   representation: str = 'balls',
                   scale_atoms: float = 1.0,
@@ -1022,7 +1055,7 @@ def write_pov_mol(fobj: tp.TextIO,
                   material: str = 'plastic',
                   show_mol: bool = True,
                   anim_type: int = 0,
-                  anim_vec: tp.Optional[npt.ArrayLike] = None,
+                  anim_vec: npt.ArrayLike | None = None,
                   **extras):
     """Write molecular specifications in a POV-Ray file.
 
@@ -1366,14 +1399,14 @@ object {{
 
 
 def write_pov_vib(fobj: tp.TextIO,
-                  at_crd: TypeAtCrdM,
-                  evec: Type1Vib,
+                  at_crd: MAtCrdType,
+                  evec: VibType,
                   representation: str = 'arrow',
                   scale_vib: float = 1.0,
                   material: str = 'glass',
                   show_obj: str = 'both',
-                  color: tp.Optional[tp.Any] = None,
-                  color2: tp.Optional[tp.Any] = None,
+                  color: tp.Any | None = None,
+                  color2: tp.Any | None = None,
                   scale_obj: float = 1.0,
                   animate: bool = False,
                   **extras):
@@ -1525,7 +1558,7 @@ def write_pov_vib(fobj: tp.TextIO,
 '''
     else:
         raise ArgumentError('Unsupported representation of vibrations.')
-    
+
     fmt_vib += '''
         matrix < {rot[0][0]:9.6f}, {rot[0][2]:9.6f}, {rot[0][1]:9.6f},
                  {rot[1][0]:9.6f}, {rot[1][2]:9.6f}, {rot[1][1]:9.6f},

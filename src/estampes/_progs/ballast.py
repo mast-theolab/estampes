@@ -12,6 +12,7 @@ import typing as tp
 import configparser as cfg
 # We need to use * for the scaling functions
 from math import *
+from collections.abc import Callable, Sequence
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -194,7 +195,7 @@ AreaAlpha = 50%
 """
 
 
-def fscale(expr: str, var: str) -> tp.Callable[[float], float]:
+def fscale(expr: str, var: str) -> Callable[[float], float]:
     """Return a scaling function.
 
     Analyzes the mathematical expression in `expr` and returns a
@@ -227,8 +228,7 @@ def fscale(expr: str, var: str) -> tp.Callable[[float], float]:
 
 def get_subp_spec(subp: str, max_rows: int,
                   max_cols: int
-                  ) -> tp.Tuple[tp.Union[int, tp.List[int]],
-                                tp.Union[int, tp.List[int]]]:
+                  ) -> tuple[int | list[int], int | list[int]]:
     """Get subplot specifications and check if valid.
 
     Parses a subplot specifications and returns a valid definition
@@ -313,7 +313,7 @@ Ex. '3:Test' means that the label 'Test' is for the 3rd file (start at 1).
                         help='Create a documented INI file as example.')
 
 
-def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
+def parse_args(args: Sequence[str]) -> argparse.Namespace:
     """Parse arguments.
 
     Parses commandline arguments
@@ -335,8 +335,7 @@ def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
 
 
 def parse_subid(ident: str, ncols: int = 1
-                ) -> tp.Tuple[tp.Union[int, tp.Tuple[int, int]],
-                              tp.Union[int, tp.Tuple[int, int]]]:
+                ) -> tuple[int | tuple[int, int], int | tuple[int, int]]:
     """Parse a subplot identifier.
 
     Takes a subplot identifier and returns the corresponding row and
@@ -361,7 +360,7 @@ def parse_subid(ident: str, ncols: int = 1
     ValueError
         Unable to parse the subplot specification.
     """
-    def split_coord(coord: str) -> tp.Union[int, tp.Tuple[int, int]]:
+    def split_coord(coord: str) -> int | tuple[int, int]:
         """Split correctly a single coordinate."""
         if not coord.strip():
             return 1
@@ -395,8 +394,8 @@ def parse_subid(ident: str, ncols: int = 1
 
 
 def parse_files(file_spec: str,
-                file_type: tp.Optional[str] = None
-                ) -> tp.List[tp.Tuple[DataFile, tp.Union[float, str]]]:
+                file_type: str | None = None
+                ) -> list[tuple[DataFile, float | str]]:
     """Parse the File/Files specification in input ini file.
 
     Parses a file specification as provided by the option File/Files
@@ -457,9 +456,8 @@ def parse_files(file_spec: str,
 
 
 def parse_inifile(fname: str
-                  ) -> tp.Tuple[tp.Dict[str, tp.Any],
-                                tp.List[tp.List[SpecLayout]],
-                                tp.Dict[str, tp.Any]]:
+                  ) -> tuple[dict[str, tp.Any], list[list[SpecLayout]],
+                             dict[str, tp.Any]]:
     """Parse INI file.
 
     Parses a INI configuration file.

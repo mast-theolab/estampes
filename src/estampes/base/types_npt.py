@@ -2,15 +2,14 @@
 
 from collections.abc import Sequence
 
-from numpy.typing import ArrayLike
+from numpy.typing import NDArray
 
-TypeAtCrd = ArrayLike
-TypeAtLab = ArrayLike
-TypeAtMas = ArrayLike
-Type1Vib = ArrayLike
-TypeVibs = ArrayLike
-TypeAtLabM = TypeAtLab | Sequence[TypeAtLab]
-TypeAtMasM = TypeAtMas | Sequence[TypeAtMas]
-TypeAtCrdM = TypeAtCrd | Sequence[TypeAtCrd]
-TypeVibsM = TypeVibs | Sequence[TypeVibs]
-TypeVib1M = Type1Vib | Sequence[Type1Vib]
+AtCrdType = Sequence[float] | NDArray
+AtsCrdType = Sequence[AtCrdType] | NDArray
+
+AtMasType = float
+AtsMasType = Sequence[AtMasType] | NDArray
+
+VibType = Sequence[float] | Sequence[Sequence[float]] | NDArray
+VibsType = Sequence[Sequence[float]] | Sequence[Sequence[Sequence[float]]] \
+    | NDArray

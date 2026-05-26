@@ -6,7 +6,7 @@ for ESTAMPES tools.
 """
 
 import re
-import typing as tp
+from collections.abc import Callable, Sequence
 
 from estampes.base.errors import ArgumentError
 
@@ -16,7 +16,7 @@ from estampes.base.errors import ArgumentError
 # ==============
 
 def convert_expr(expr: str,
-                 variable: tp.Optional[str] = None,
+                 variable: str | None = None,
                  natural: bool = True) -> str:
     """Convert mathematical expression to correct Python form.
 
@@ -78,7 +78,7 @@ def convert_range_spec(spec: str,
                        only_positive: bool = True,
                        no_duplicates: bool = False,
                        do_sort: bool = True,
-                       py_index: bool = False) -> tp.List[int]:
+                       py_index: bool = False) -> list[int]:
     """Convert a range specification.
 
     Converts a range specification of the form "i,j,k-m" and returns
@@ -153,10 +153,9 @@ def convert_range_spec(spec: str,
 
 def parse_argval_options(argval: str,
                          delim: str = '(',
-                         choices: tp.Optional[tp.Sequence[str]] = None,
-                         convert: tp.Optional[tp.Callable[[str], str]] = None,
-                         ) -> tp.Tuple[str, tp.Sequence[list],
-                                       tp.Dict[str, str]]:
+                         choices: Sequence[str] | None = None,
+                         convert: Callable[[str], str] | None = None,
+                         ) -> tuple[str, Sequence[list], dict[str, str]]:
     """Parse options stored in an argument value.
 
     Parses a commandline or option value, extracting sub-options if

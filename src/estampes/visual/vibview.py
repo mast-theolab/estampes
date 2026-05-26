@@ -14,7 +14,7 @@ from PySide6.Qt3DCore import Qt3DCore
 from PySide6.Qt3DRender import Qt3DRender
 from PySide6.Qt3DExtras import Qt3DExtras
 
-from estampes.base import Type1Vib, TypeAtCrd
+from estampes.base import VibType, AtCrdType
 from estampes.base.errors import ArgumentError
 from estampes.data.colors import to_rgb_list
 from estampes.data.visual import PATH_OBJ3D, MATERIALS, MODELS, VIBCOLS
@@ -28,8 +28,8 @@ class VibMode(Qt3DCore.QEntity):
     """
 
     def __init__(self,
-                 at_crd: TypeAtCrd,
-                 vib_mode: Type1Vib,
+                 at_crd: AtCrdType,
+                 vib_mode: VibType,
                  model: tp.Optional[str] = None,
                  material: tp.Optional[str] = None,
                  color: tp.Optional[tp.Any] = None,
@@ -79,7 +79,7 @@ class VibMode(Qt3DCore.QEntity):
         self.update_vib(vib_mode, at_crd)
 
     @property
-    def mode(self) -> Type1Vib:
+    def mode(self) -> VibType:
         """Return the mode definition.
 
         Returns the displacement coordinates corresponding of the mode
@@ -107,8 +107,8 @@ class VibMode(Qt3DCore.QEntity):
                 return self.__optview.get('col-')
 
     def update_vib(self,
-                   vib_mode: Type1Vib,
-                   at_crd: tp.Optional[TypeAtCrd] = None,
+                   vib_mode: VibType,
+                   at_crd: tp.Optional[AtCrdType] = None,
                    render: bool = True):
         """Update geometry information.
 

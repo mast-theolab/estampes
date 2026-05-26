@@ -10,7 +10,7 @@ import sys
 import os
 import argparse
 from collections.abc import Sequence
-import typing as tp
+from io import Reader
 
 import numpy as np
 
@@ -58,14 +58,14 @@ HELP_SORT = '''Sort the electronic structure methods:
 - file: respect the order given in the file
 - alpha: reorder by sorting the methods in alphabetic order'''
 
-TypeMol = list[str]
+tp_mol = list[str]
 TypeESM = list[str]
 TypeGBS = list[str]
 TypeVib = list[str]
 TypeInF = list[str]
-TypeTag = list[tp.Optional[str]]
-TypeCol = list[tp.Optional[str]]
-TypeOptDat = tuple[TypeMol, TypeESM, TypeGBS, TypeVib, TypeInF, TypeTag,
+TypeTag = list[str | None]
+TypeCol = list[str | None]
+TypeOptDat = tuple[tp_mol, TypeESM, TypeGBS, TypeVib, TypeInF, TypeTag,
                    TypeCol]
 # Type for calculated values (for a given method)
 # [level][mode] = value
@@ -151,7 +151,7 @@ def parse_args(args: Sequence[str]) -> argparse.Namespace:
     return opts
 
 
-def parse_optfile(fobj: tp.IO) -> TypeOptDat:
+def parse_optfile(fobj: Reader[str]) -> TypeOptDat:
     """Parse option file.
 
     Parses Option file and returns the data as series of list:
@@ -228,7 +228,7 @@ def parse_optfile(fobj: tp.IO) -> TypeOptDat:
     return lmol, lmet, lbas, lvib, lnam, ltag, lcol
 
 
-def parse_reffile(fobj: tp.IO,
+def parse_reffile(fobj: Reader[str],
                   mol: str) -> TypeRDat:
     """Parse reference data file.
 
@@ -276,8 +276,7 @@ def parse_reffile(fobj: tp.IO,
     return data
 
 
-def parse_compfile(fobj: tp.IO) -> list[tuple[tp.Optional[str],
-                                              tp.Optional[str]]]:
+def parse_compfile(fobj: Reader[str]) -> list[tuple[str | None, str | None]]:
     """Parse file with methods to compare.
 
     Accepted structure:
@@ -514,8 +513,8 @@ def build_mean_data(op_mol: str,
                     dcalc: dict[str, TypeMeth],
                     dref: TypeRDat,
                     do_plot: bool,
-                    compfile: tp.Optional[str] = None,
-                    imgfile: tp.Optional[str] = None):
+                    compfile: str | None = None,
+                    imgfile: str | None = None):
     """Build (and display) average statistical data.
 
     Builds average statistical data and displays if requested.
@@ -784,7 +783,7 @@ def build_dist_data(op_mol: str,
                     absval: bool,
                     labels: Sequence[str],
                     colors: Sequence[str],
-                    levels: tp.Optional[Sequence[str]],
+                    levels: Sequence[str] | None,
                     dcalc: TypeMols,
                     dref: TypeRDat,
                     do_plot: bool) -> None:

@@ -6,7 +6,7 @@ This module provides basic data related to atoms.
 from math import pi
 import typing as tp
 
-from estampes.base import TypeQOpt, TypeQTag
+from estampes.base import QLabSubType, QLabTagType
 from estampes.data.physics import PHYSCNST, PHYSFACT
 
 
@@ -14,9 +14,9 @@ from estampes.data.physics import PHYSCNST, PHYSFACT
 # Module Functions
 # ================
 
-def property_data(qtag: TypeQTag,
-                  qopt: TypeQOpt = None
-                  ) -> tp.NamedTuple:
+def property_data(qtag: QLabTagType,
+                  qopt: QLabSubType = None
+                  ) -> QBaseInfo:
     """Generate property data.
 
     Generates a named tuple containing basic data for a given
@@ -203,7 +203,7 @@ def property_data(qtag: TypeQTag,
     return QBaseInfo(name=qname, dim=qdim, der=qder, d1q=qd1q, unit=qunit)
 
 
-def property_units(qtag: str, unit: str = 'SI') -> tp.Tuple[float, str]:
+def property_units(qtag: str, unit: str = 'SI') -> tuple[float, str]:
     """Return conversion factors and unit labels.
 
     Returns the conversion factor from atomic unit to new unit, as well
@@ -231,23 +231,28 @@ def property_units(qtag: str, unit: str = 'SI') -> tp.Tuple[float, str]:
         Unsupported unit system.
     """
     _unit = unit.lower()
-    if qtag == '101':
-        if _unit == 'si':  # Conversion to C.m
-            # conv = phys_fact('au2deb') * 100./PHYSCNST.slight * 1.0e-21
-            conv = PHYSFACT.e2C * PHYSFACT.bohr2ang * 1.0e-10
-            new_unit = 'C.m'
-        elif _unit == 'cgs':  # Conversion to statC.cm
-            conv = PHYSFACT.e2C*PHYSCNST.slight/10. * PHYSFACT.bohr2ang * 1.e-8
-            new_unit = 'statC.cm'
-    elif qtag == '102':
-        # Note that we compute the nuclear magnetic dipole (not electronic)
-        if _unit == 'si':  # Conversion to A.m^2 == J/T
-            conv = PHYSCNST.planck/(2*pi) * PHYSFACT.e2C / PHYSFACT.amu2kg
-            new_unit = 'A.m^2'
-        elif _unit == 'cgs':  # Conversion to statA.cm^2
-            conv = 1.0e4 * PHYSCNST.planck/(2*pi) \
-                * (PHYSFACT.e2C*PHYSCNST.slight/10.) / PHYSFACT.amu2kg
-            new_unit = 'statA.cm^2'
+    conv = 1.0
+    new_unit = 'N/A'
+    match qtag:
+        case '101':
+            if _unit == 'si':  # Conversion to C.m
+                # conv = phys_fact('au2deb') * 100./PHYSCNST.slight * 1.0e-21
+                conv = PHYSFACT.e2C * PHYSFACT.bohr2ang * 1.0e-10
+                new_unit = 'C.m'
+            elif _unit == 'cgs':  # Conversion to statC.cm
+                conv = PHYSFACT.e2C*PHYSCNST.slight/10. \
+                    * PHYSFACT.bohr2ang * 1.e-8
+                new_unit = 'statC.cm'
+        case '102':
+            # Note that we compute the nuclear magnetic dipole (not electronic)
+            if _unit == 'si':  # Conversion to A.m^2 == J/T
+                conv = PHYSCNST.planck/(2*pi) * PHYSFACT.e2C / PHYSFACT.amu2kg
+                new_unit = 'A.m^2'
+            elif _unit == 'cgs':  # Conversion to statA.cm^2
+                conv = 1.0e4 * PHYSCNST.planck/(2*pi) \
+                    * (PHYSFACT.e2C*PHYSCNST.slight/10.) / PHYSFACT.amu2kg
+                new_unit = 'statA.cm^2'
+
     return conv, new_unit
 
 
@@ -257,7 +262,7 @@ def property_units(qtag: str, unit: str = 'SI') -> tp.Tuple[float, str]:
 
 class QBaseInfo(tp.NamedTuple):
     name: str  # Printable name
-    dim: tp.Union[int, str, tp.Tuple[tp.Any]]  # dimension(s)
+    dim: int | str | tuple[tp.Any, ...]  # dimension(s)
     der: bool  # Flag if property derivable
     d1q: str  # Type of analytical 1st derivative (p or q)
     unit: str  # Default unit

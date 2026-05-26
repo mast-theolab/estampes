@@ -7,11 +7,12 @@ operations, for ESTAMPES tools.
 
 from math import acos, atan2, degrees, exp, log, pi, sqrt
 import typing as tp
+from collections.abc import Sequence
 
 import numpy as np
 import numpy.typing as npt
 
-from estampes.base import TypeAtCrd, ArgumentError
+from estampes.base import AtCrdType, AtsCrdType, ArgumentError
 from estampes.data.physics import PHYSFACT
 
 
@@ -20,7 +21,7 @@ from estampes.data.physics import PHYSFACT
 # ==============
 
 
-def angle(r1: npt.ArrayLike, r2: npt.ArrayLike, r3: npt.ArrayLike,
+def angle(r1: AtCrdType, r2: AtCrdType, r3: AtCrdType,
           radians: bool = False) -> float:
     """Compute the angle formed by the points 1, 2, 3.
 
@@ -55,7 +56,7 @@ def angle(r1: npt.ArrayLike, r2: npt.ArrayLike, r3: npt.ArrayLike,
         return ang
 
 
-def bond(r1: npt.ArrayLike, r2: npt.ArrayLike, in_au: bool = False) -> float:
+def bond(r1: AtCrdType, r2: AtCrdType, in_au: bool = False) -> float:
     """Compute the bond length between points 1 and 2.
 
     Computes the distance between points 1 and 2 at positions r_i.
@@ -77,13 +78,14 @@ def bond(r1: npt.ArrayLike, r2: npt.ArrayLike, in_au: bool = False) -> float:
         bond length.
     """
     if in_au:
-        return np.linalg.norm(np.array(r2) - np.array(r1))
+        return float(np.linalg.norm(np.array(r2) - np.array(r1)))
     else:
-        return np.linalg.norm(np.array(r2) - np.array(r1))*PHYSFACT.bohr2ang
+        return float(
+            np.linalg.norm(np.array(r2) - np.array(r1))*PHYSFACT.bohr2ang)
 
 
-def dihedral(r1: npt.ArrayLike, r2: npt.ArrayLike, r3: npt.ArrayLike,
-             r4: npt.ArrayLike, radians: bool = False) -> float:
+def dihedral(r1: AtCrdType, r2: AtCrdType, r3: AtCrdType,
+             r4: AtCrdType, radians: bool = False) -> float:
     """Compute the dihedral formed between points 1, 2, 3, 4.
 
     Computes the dihedral angle between points 1, 2, 3, 4 at positions
@@ -210,7 +212,7 @@ def levi_civita_tens() -> np.ndarray:
 
 
 def rotate(rotmat: npt.ArrayLike, array: npt.ArrayLike,
-           transpose: bool = False) -> tp.Union[np.ndarray, tp.List[tp.Any]]:
+           transpose: bool = False) -> np.ndarray | list[tp.Any]:
     """Rotate an array.
 
     Rotates an array using rotation matrix `rotmat`.
@@ -239,6 +241,7 @@ def rotate(rotmat: npt.ArrayLike, array: npt.ArrayLike,
     """
     tolist = isinstance(array, (list, tuple))
     array = np.asarray(array)
+    rotmat = np.asarray(array)
     shape = array.shape
     if len(shape) == 1:
         op = 'ij,i->j' if transpose else 'ij,j->i'
@@ -275,8 +278,8 @@ def nint(x: float, /) -> int:
     return int(x + 0.5)
 
 
-def square_ltmat(ltmat: tp.Union[tp.Sequence[float], np.ndarray],
-                 what: str = 'symm') -> np.ndarray:
+def square_ltmat(ltmat: Sequence[float] | npt.NDArray,
+                 what: str = 'symm') -> npt.NDArray:
     """Square a lower-triangular matrix.
 
     Takes a lower-triangular matrix and returns the 2D symmetric or
@@ -327,13 +330,13 @@ def square_ltmat(ltmat: tp.Union[tp.Sequence[float], np.ndarray],
     return sqmat
 
 
-def superpose(c_ref: TypeAtCrd,
-              c_new: TypeAtCrd,
-              at_mass: tp.Optional[np.ndarray] = None,
+def superpose(c_ref: AtsCrdType,
+              c_new: AtsCrdType,
+              at_mass: npt.NDArray | None = None,
               get_ctrans: bool = False,
-              at_mask: tp.Optional[np.ndarray] = None
-              ) -> tp.Union[tp.Tuple[np.ndarray, np.ndarray],
-                            tp.Tuple[np.ndarray, np.ndarray, TypeAtCrd]]:
+              at_mask: npt.NDArray | None = None
+              ) -> tuple[npt.NDArray, npt.NDArray] | \
+                   tuple[npt.NDArray, npt.NDArray, AtsCrdType]:
     """Return the transformation matrices to superpose c_new onto c_ref.
 
     Returns the rotation matrix and transition vector to maximize the
@@ -385,19 +388,22 @@ def superpose(c_ref: TypeAtCrd,
     DEBUG = False
     com_ref = [0., 0., 0.]
     com_new = [0., 0., 0.]
+    c_ref = np.asarray(c_ref)
+    c_new = np.asarray(c_new)
     size_ref = c_ref.shape
     size_new = c_new.shape
     if size_ref != size_new:
         raise IndexError('Inconsistency in shapes of the structure')
     natoms = size_ref[0]
-    if at_mass is not None:
-        use_m = True
+    use_m = at_mass is not None
+    if use_m:
+        weight = np.asarray(at_mass)
         if at_mass.shape[0] != natoms:
             raise IndexError('Atomic masses inconsistent with structures')
     else:
-        use_m = False
+        weight = np.ones(natoms)
     if at_mask is not None:
-        mask = at_mask
+        mask = np.asarray(at_mask)
         if mask.shape[0] != natoms:
             raise IndexError('Mask inconsistent with structures.')
     else:
@@ -407,13 +413,11 @@ def superpose(c_ref: TypeAtCrd,
 
     # Calculate the center of mass and move the structure
     if use_m:
-        totwt = np.sum(at_mass)
-        com_ref = np.einsum('ij,i->j', c_ref, at_mass)
-        com_new = np.einsum('ij,i->j', c_new, at_mass)
+        totwt = np.sum(weight)
     else:
         totwt = 1.0
-        com_ref = np.einsum('ij->j', c_ref)
-        com_new = np.einsum('ij->j', c_new)
+    com_ref = np.einsum('ij,i->j', c_ref, weight)
+    com_new = np.einsum('ij,i->j', c_new, weight)
     c_new_ = c_new - com_new/totwt
     c_ref_ = c_ref - com_ref/totwt
 
@@ -421,7 +425,6 @@ def superpose(c_ref: TypeAtCrd,
     for ia in range(natoms):
         if not mask[ia]:
             continue
-        weight = at_mass[ia] if use_m else 1.0
         xnew = c_new_[ia, 0]
         ynew = c_new_[ia, 1]
         znew = c_new_[ia, 2]
@@ -439,16 +442,16 @@ def superpose(c_ref: TypeAtCrd,
         diag1 = 2.0*xnew*xref
         diag2 = 2.0*ynew*yref
         diag3 = 2.0*znew*zref
-        qmat[0, 0] += weight*(diag0 - diag1 - diag2 - diag3)
-        qmat[1, 1] += weight*(diag0 - diag1 + diag2 + diag3)
-        qmat[2, 2] += weight*(diag0 + diag1 - diag2 + diag3)
-        qmat[3, 3] += weight*(diag0 + diag1 + diag2 - diag3)
-        qmat[1, 0] += weight*2.0*(yz - zy)
-        qmat[2, 0] += weight*2.0*(zx - xz)
-        qmat[3, 0] += weight*2.0*(xy - yx)
-        qmat[2, 1] += weight*2.0*(-(xy + yx))
-        qmat[3, 1] += weight*2.0*(-(xz + zx))
-        qmat[3, 2] += weight*2.0*(-(yz + zy))
+        qmat[0, 0] += weight[ia]*(diag0 - diag1 - diag2 - diag3)
+        qmat[1, 1] += weight[ia]*(diag0 - diag1 + diag2 + diag3)
+        qmat[2, 2] += weight[ia]*(diag0 + diag1 - diag2 + diag3)
+        qmat[3, 3] += weight[ia]*(diag0 + diag1 + diag2 - diag3)
+        qmat[1, 0] += weight[ia]*2.0*(yz - zy)
+        qmat[2, 0] += weight[ia]*2.0*(zx - xz)
+        qmat[3, 0] += weight[ia]*2.0*(xy - yx)
+        qmat[2, 1] += weight[ia]*2.0*(-(xy + yx))
+        qmat[3, 1] += weight[ia]*2.0*(-(xz + zx))
+        qmat[3, 2] += weight[ia]*2.0*(-(yz + zy))
     _, qmvec = np.linalg.eigh(qmat, UPLO='L')
     q0q0 = qmvec[0, 0] * qmvec[0, 0]
     q1q1 = qmvec[1, 0] * qmvec[1, 0]
@@ -472,15 +475,15 @@ def superpose(c_ref: TypeAtCrd,
     if DEBUG:
         print('ROTATION MATRIX')
         for i in range(3):
-            print('{0[0]:8.5f}{0[1]:8.5f}{0[2]:8.5f}'.format(rotmat[i, :]))
+            print(f'{rotmat[i, 0]:8.5f}{rotmat[i, 1]:8.5f}{rotmat[i, 2]:8.5f}')
     if get_ctrans:
         return rotmat, (com_new-com_ref)/totwt, c_new_ @ rotmat
     else:
         return rotmat, (com_new-com_ref)/totwt
 
 
-def vrotate_3D(vec: np.ndarray,
-               ref: np.ndarray) -> np.ndarray:
+def vrotate_3D(vec: npt.NDArray,
+               ref: npt.NDArray) -> npt.NDArray:
     """Rotates a vector in a 3D space.
 
     Returns the rotation matrix for `vec` to match the orientation of a

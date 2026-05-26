@@ -6,12 +6,12 @@ Module providing tools to parse/analyse anharmonic data.
 import typing as tp
 
 from estampes.base import QLabel
-from estampes.base.errors import ArgumentError
+from estampes.base.errors import ArgumentError, ParsingError
 from estampes.parser import DataFile
 
 
-def variational_notation(dfile: tp.Optional[DataFile] = None,
-                         assign: tp.Optional[tp.List[tp.Any]] = None) -> bool:
+def variational_notation(dfile: DataFile | None = None,
+                         assign: list[tp.Any] | None = None) -> bool:
     """Check if variational notation used for vibrational states.
 
     Returns True if the variational notation has been used to represent
@@ -42,9 +42,10 @@ def variational_notation(dfile: tp.Optional[DataFile] = None,
         except IndexError as err:
             raise ValueError('Incorrect assignment information') from err
     elif dfile is not None:
-        res = dfile.get_data(
-            key=QLabel(quantity='vtrans', level='A'))['key'].data
-        answer = res[1][1][0][1] == 0
+        res = dfile.get_data(key=QLabel(quantity='vtrans', level='A'))
+        if res is None:
+            raise ParsingError('Failed to extract assignment information')
+        answer = res['key'].data[1][1][0][1] == 0
     else:
         raise ArgumentError('Missing input data')
 

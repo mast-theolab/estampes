@@ -7,9 +7,10 @@ a Gaussian log file.
 import re
 from collections.abc import Sequence
 
-from estampes.base import QData, \
-    ParseKeyError, ParsingError, \
-    TypeDBlocGLog, QDataType, TypeQInfo
+from estampes.base import (
+    QData, QDataType, QInfoType,
+    ParseKeyError, ParsingError,
+    DBlocGLogType)
 from estampes.data.physics import PHYSFACT
 from estampes.parser.gaussian.glog.parse_prp import parse_1xx_dat, \
     parse_3xx_dat, parse_13xx_dat, parse_en_dat
@@ -19,10 +20,10 @@ from estampes.parser.gaussian.glog.parse_qty import parse_fcdat, \
 __ang2au = 1.0 / PHYSFACT.bohr2ang
 
 
-def parse_data(qdict: TypeQInfo,
+def parse_data(qdict: QInfoType,
                key2blocks: dict[str, tuple[int, int]],
                ndatablock: Sequence[int],
-               datablocks: TypeDBlocGLog,
+               datablocks: DBlocGLogType,
                gver: tuple[str, str] | None = None,
                raise_error: bool = True) -> QDataType:
     """Parse data arrays to extract specific quantity.

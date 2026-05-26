@@ -15,10 +15,13 @@ The module also provides some conversion functions specific to
 Gaussian, which apply to different types, like the structure of electric
 quadrupole moment
 """
-import typing as tp
+from collections.abc import Sequence
+
+from estampes.base import InternalError
 
 
-def g_elquad_LT_to_2D(vec: tp.Sequence[float]) -> tp.List[tp.List[float]]:
+def g_elquad_LT_to_2D(vec: Sequence[str] | Sequence[int] | Sequence[float]
+                      ) -> list[list[float]]:
     """Convert electric quadrupole from LT form to 2D tensor.
 
     Gaussian has a particular way to store internally the electric
@@ -33,10 +36,12 @@ def g_elquad_LT_to_2D(vec: tp.Sequence[float]) -> tp.List[tp.List[float]]:
         Note that the list can have a longer size, only the first
         elements are used.
     """
+    if len(vec) < 6:
+        raise InternalError('Missing elements to build symmetric tensor')
     return [
-        [vec[0], vec[3], vec[4]],
-        [vec[3], vec[1], vec[5]],
-        [vec[4], vec[5], vec[2]]
+        [float(vec[0]), float(vec[3]), float(vec[4])],
+        [float(vec[3]), float(vec[1]), float(vec[5])],
+        [float(vec[4]), float(vec[5]), float(vec[2])]
     ]
 
 

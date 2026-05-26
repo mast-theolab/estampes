@@ -2,14 +2,11 @@
 
 from collections.abc import Sequence
 
-TypeAtCrd = Sequence[Sequence[float]]
-TypeAtLab = Sequence[str | int]
-TypeAtMas = Sequence[float]
-Type1Vib = Sequence[Sequence[float]]
-TypeVibs = Sequence[Sequence[float]]
+AtCrdType = Sequence[float]
+AtsCrdType = Sequence[AtCrdType]
 
-TypeAtLabM = TypeAtLab | Sequence[TypeAtLab]
-TypeAtMasM = TypeAtMas | Sequence[TypeAtMas]
-TypeAtCrdM = TypeAtCrd | Sequence[TypeAtCrd]
-TypeVibsM = TypeVibs | Sequence[TypeVibs]
-TypeVib1M = Type1Vib | Sequence[Type1Vib]
+AtMasType = float
+AtsMasType = Sequence[AtMasType]
+
+VibType = Sequence[float] | Sequence[Sequence[float]]
+VibsType = Sequence[Sequence[float]] | Sequence[Sequence[Sequence[float]]]

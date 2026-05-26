@@ -4,7 +4,9 @@ Provides classes to build simple or more advanced interfaces to
 visualize molecules and associated properties.
 """
 import os
+import sys
 import typing as tp
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -13,13 +15,22 @@ from PySide6.Qt3DCore import Qt3DCore
 from PySide6.Qt3DRender import Qt3DRender
 from PySide6.Qt3DExtras import Qt3DExtras
 
-from estampes.base.types import Type1Vib, TypeAtCrdM, TypeAtLabM, TypeBondsM, \
-    TypeColor
+from estampes.base.types import (
+    AtsCrdType, AtsLabType, BondsType,
+    MAtsCrdType, MAtsLabType, MBondsType,
+    VibType, ColorType)
+from estampes.base.errors import ArgumentError, InternalError
 from estampes.tools.atom import convert_labsymb
 from estampes.tools.math import rotate
 from estampes.visual.molview import Molecule
 from estampes.visual.vibview import VibMode
 from estampes.visual.povrender import POVBuilder, MSG_POV_CMD_HTML, MSG_POV_WIN
+
+
+__msg_mol_list = 'Unexpected list structure for a single molecule in {}'
+__msg_mol_none = 'Molecule database should have been set before {}'
+__msg_mol_nolist = 'Multiple molecules should be stored in list before {}'
+__msg_file_list = 'Unexpected file list for a single molecules in {}'
 
 
 class MolWin(Qt3DExtras.Qt3DWindow):
@@ -32,13 +43,13 @@ class MolWin(Qt3DExtras.Qt3DWindow):
     click_mol = QtCore.Signal(list)
 
     def __init__(self, nmols: int,
-                 atlabs: TypeAtLabM,
-                 atcrds: TypeAtCrdM,
-                 bonds: TypeBondsM,
-                 model: tp.Optional[str] = None,
-                 material: tp.Optional[str] = None,
+                 atlabs: AtsLabType | MAtsLabType,
+                 atcrds: AtsCrdType | MAtsCrdType,
+                 bonds: BondsType | MBondsType,
+                 model: str | None = None,
+                 material: str | None = None,
                  col_bond_as_atom: bool = False,
-                 molcols: tp.Optional[TypeColor] = None,
+                 molcols: ColorType | None = None,
                  **extras):
         """Build an instance of MolWin.
 
@@ -74,10 +85,11 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         super(MolWin, self).__init__()
 
         self.__vib = None
-        self.__mol = None
+        self.__mol: list[Molecule] | Molecule | None = None
         self.__nmols = 0
         self.__vib_changed_since_anim = None
         self.__dialog = None
+        self.__fnames: list[str] | str | None = None
 
         if 'fnames' in extras:
             fname = extras['fnames']
@@ -93,7 +105,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
             if nmols == 1:
                 self.__fnames = fname[0]
             else:
-                self.__fnames = fname[:]
+                self.__fnames = list(fname[:])
         else:
             self.__fnames = None
 
@@ -109,22 +121,39 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         self.rootEntity = Qt3DCore.QEntity()
         Molecule.reset_counter()
         if nmols == 1:
+            # Check if the structure is correct and that a multi-mols structure
+            # has not been provided
+            # We do the check on atlabs since it is the simplest, we assume
+            # that at lest atlabs, atcrds and bonds are correct
+            if isinstance(atlabs[0], (tuple, list)):
+                _atlabs: AtsLabType = atlabs[0]  # type: ignore
+                _atcrds: AtsCrdType = atcrds[0]  # type: ignore
+                _bonds: BondsType = bonds[0]  # type: ignore
+            else:
+                _atlabs: AtsLabType = atlabs  # type: ignore
+                _atcrds: AtsCrdType = atcrds  # type: ignore
+                _bonds: BondsType = bonds  # type: ignore
+
             self.__nmols = 1
-            self.__mol = Molecule(atlabs, atcrds, bonds, model, material,
-                                  col_bond_as_atom, molcols, self.rootEntity)
+            self.__mol = Molecule(
+                _atlabs, _atcrds, _bonds, model, material,
+                col_bond_as_atom, molcols, self.rootEntity)
             self.__mol.addMouse(self.__cam)
             self.__mol.click_molatom.connect(self.atom_clicked)
         else:
             self.__nmols = nmols
             self.__mol = []
+            if not isinstance(atlabs[0], (tuple, list)):
+                raise ArgumentError(
+                    'Wrong data structure for multiple molecules')
             for i in range(nmols):
                 if molcols is None:
                     molcol = None
                 else:
-                    molcol = molcols[i]
-                self.__mol.append(Molecule(atlabs[i], atcrds[i], bonds[i],
-                                           model, material, col_bond_as_atom,
-                                           molcol, self.rootEntity))
+                    molcol = molcols[i]  # type: ignore
+                self.__mol.append(Molecule(
+                    atlabs[i], atcrds[i], bonds[i], model,  # type: ignore
+                    material, col_bond_as_atom, molcol, self.rootEntity))
                 self.__mol[-1].addMouse(self.__cam)
                 self.__mol[-1].click_molatom.connect(self.atom_clicked)
         self.camController = Qt3DExtras.QOrbitCameraController(self.rootEntity)
@@ -151,35 +180,43 @@ class MolWin(Qt3DExtras.Qt3DWindow):
             self.__show_help()
 
         # Add shortcuts
+        key_ctrl = QtCore.Qt.Modifier.CTRL
+        key_shft = QtCore.Qt.Modifier.SHIFT
         self.keyHelp = QtGui.QShortcut(
             QtGui.QKeySequence(
-                QtGui.Qt.CTRL | QtGui.Qt.SHIFT | QtGui.Qt.Key_H),
+                key_ctrl | key_shft | QtCore.Qt.Key.Key_H),
             self,
-            context=QtCore.Qt.ApplicationShortcut)
-        self.keyHelp.activated.connect(self.__show_help)
-        self.keyHelp.activatedAmbiguously.connect(self.__show_help)
+            context=QtCore.Qt.ShortcutContext.ApplicationShortcut)
+        self.keyHelp.activated.connect(  # pylint: disable=E1101
+            self.__show_help)
+        self.keyHelp.activatedAmbiguously.connect(  # pylint: disable=E1101
+            self.__show_help)
         self.keyVib = QtGui.QShortcut(
-            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_A), self,
-            context=QtCore.Qt.ApplicationShortcut)
-        self.keyVib.activated.connect(self.__anim_vibration)
+            QtGui.QKeySequence(key_ctrl | QtCore.Qt.Key.Key_A), self,
+            context=QtCore.Qt.ShortcutContext.ApplicationShortcut)
+        self.keyVib.activated.connect(  # pylint: disable=E1101
+            self.__anim_vibration)
         self.keyExport = QtGui.QShortcut(
-            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_E), self,
-            context=QtCore.Qt.ApplicationShortcut)
-        self.keyExport.activated.connect(self.__export_pov)
-        self.keyGeom = QtGui.QShortcut(
-            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_G), self,
-            context=QtCore.Qt.ApplicationShortcut)
-        self.keyGeom.activated.connect(self.__show_geom)
+            QtGui.QKeySequence(key_ctrl | QtCore.Qt.Key.Key_E), self,
+            context=QtCore.Qt.ShortcutContext.ApplicationShortcut)
+        self.keyExport.activated.connect(  # pylint: disable=E1101
+            self.__export_pov)
+        self.keyGeom = QtGui.QShortcut(  # pylint: disable=E1101
+            QtGui.QKeySequence(key_ctrl | QtCore.Qt.Key.Key_G), self,
+            context=QtCore.Qt.ShortcutContext.ApplicationShortcut)
+        self.keyGeom.activated.connect(  # pylint: disable=E1101
+            self.__show_geom)
         self.keyPrint = QtGui.QShortcut(
-            QtGui.QKeySequence(QtGui.Qt.CTRL | QtGui.Qt.Key_P), self,
-            context=QtCore.Qt.ApplicationShortcut)
-        self.keyPrint.activated.connect(self.__capture_scene)
+            QtGui.QKeySequence(key_ctrl | QtCore.Qt.Key.Key_P), self,
+            context=QtCore.Qt.ShortcutContext.ApplicationShortcut)
+        self.keyPrint.activated.connect(  # pylint: disable=E1101
+            self.__capture_scene)
 
-    def add_vibmode(self, vib_mode: Type1Vib,
-                    model: tp.Optional[str] = None,
-                    material: tp.Optional[str] = None,
-                    color: tp.Optional[tp.Any] = None,
-                    color2: tp.Optional[tp.Any] = None,
+    def add_vibmode(self, vib_mode: VibType,
+                    model: str | None = None,
+                    material: str | None = None,
+                    color: tp.Any | None = None,
+                    color2: tp.Any | None = None,
                     mol: int = -1):
         """Add vibrational mode.
 
@@ -201,26 +238,36 @@ class MolWin(Qt3DExtras.Qt3DWindow):
             Set target molecule if several of interest.
             Default: last included molecule.
         """
+        if self.__mol is None:
+            raise InternalError(__msg_mol_none.format('add_vibmode'))
         self.__vib_changed_since_anim = True
         if self.__vib is not None:
             del self.__vib
         if self.__nmols > 1:
+            if not isinstance(self.__mol, list):
+                raise InternalError(__msg_mol_nolist.format('add_vibmode'))
             try:
                 atcrd = self.__mol[mol].at_crd
             except IndexError as err:
                 raise ValueError('Molecule does not exist.') from err
         else:
+            if isinstance(self.__mol, list):
+                raise InternalError(__msg_mol_list.format('add_vibmode'))
             atcrd = self.__mol.at_crd
         self.__vib = VibMode(atcrd, vib_mode, model, material,
                              color=color, color2=color2,
                              rootEntity=self.rootEntity)
 
-    def upd_vibmode(self, vib_mode: Type1Vib, **kwargs):
+    def upd_vibmode(self, vib_mode: VibType, **kwargs):
         """Update vibrational mode.
 
         Extra keywords are sent to add_vibmode.
         """
         self.__vib_changed_since_anim = True
+        if self.__mol is None:
+            raise InternalError(__msg_mol_none.format('upd_vibmode'))
+        if isinstance(self.__mol, list):
+            raise NotImplementedError('Multi-molecules vibrations NYI')
         if self.__vib is None:
             self.add_vibmode(vib_mode, **kwargs)
         else:
@@ -234,7 +281,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
             self.__mol.animation_status = 'reset'
 
     @QtCore.Slot(list)
-    def atom_clicked(self, molatom: tp.Sequence[int]):
+    def atom_clicked(self, molatom: Sequence[int]):
         """Capture the information on the clicked atom.
 
         Captures the information from the clicked atom on one of the
@@ -249,7 +296,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
 
     def mousePressEvent(self, mouseEvent):
         """Define the event for mouse pressing."""
-        if mouseEvent.button() == QtCore.Qt.RightButton:
+        if mouseEvent.button() == QtCore.Qt.MouseButton.RightButton:
             self.__cam.setViewCenter(QtGui.QVector3D(0, 0, 0))
         # print(mouseEvent.x())
         # self.__cam.setViewCenter(QtGui.QVector3D(mouseEvent.x(),
@@ -268,6 +315,8 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         elif self.__fnames is None:
             povfile = 'molecule.pov'
         else:
+            if isinstance(self.__fnames, list):
+                raise InternalError(__msg_file_list.format('export_pov'))
             povfile = os.path.splitext(self.__fnames)[0] + '.pov'
             workdir = os.path.realpath(os.path.dirname(povfile))
 
@@ -276,7 +325,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         self.__dialog.setWindowTitle('Export POV-Ray description file')
         self.__dialog.setNameFilter("POV-Ray files (*.pov)")
         self.__dialog.setNameFilter("All files (*)")
-        self.__dialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        self.__dialog.setFileMode(QtWidgets.QFileDialog.FileMode.AnyFile)
         self.__dialog.setAcceptMode(
             QtWidgets.QFileDialog.AcceptMode.AcceptSave)
         self.__dialog.setDefaultSuffix('.pov')
@@ -284,20 +333,34 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         if not self.__dialog.exec_():
             return
 
-        povfile = os.path.realpath(self.__dialog.selectedFiles()[0])
+        files = self.__dialog.selectedFiles()
+        if not isinstance(files, (list, tuple)):
+            raise InternalError('Could not extract file list from File dialog')
+        if not files:
+            msgBox = QtWidgets.QMessageBox()
+            msgBox.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+            msgBox.setText("Missing POV-Ray scene file")
+            msgBox.setInformativeText('No file has been selected')
+            msgBox.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+            msgBox.setDefaultButton(
+                QtWidgets.QMessageBox.StandardButton.NoButton)
+            msgBox.exec()
 
-        rmat = self.__cam.transform().rotation().toRotationMatrix().data()
+            return
+        povfile = os.path.realpath(files[0])
+
+        rmat = self.__cam.transform().rotation().toRotationMatrix()
         # We need to transpose the rotation matrix since it is intended for
         # the camera and we want to apply it to the system.
         # We then permute Y and Z in each dimension to correct from the right
         # to the left-handed system.
-        rotmat = [
-            [rmat[0], rmat[6], rmat[3]],
-            [rmat[2], rmat[8], rmat[5]],
-            [rmat[1], rmat[7], rmat[4]]
-        ]
+        # The type definition of QMatrix3x3 in some versions of PySide6 did
+        # not provide a description of getitem even if rmat[i, j] should work
+        # we silence it here.
         pov_opts = {
-            'rotation': rotmat,
+            'rotation': [
+                [rmat[i, j] for j in range(3)]  # type: ignore
+                for i in range(3)],
             'verbose': False
         }
         if self.__vib is not None:
@@ -309,6 +372,10 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         else:
             mode = None
         if self.__nmols == 1:
+            if isinstance(self.__mol, list):
+                raise InternalError(__msg_mol_list.format('export_pov'))
+            if self.__mol is None:
+                raise InternalError(__msg_mol_none.format('export_pov'))
             pov_opts['mol_model'] = self.__mol.viz_options('model')
             pov_opts['mol_mater'] = self.__mol.viz_options('material')
             builder = POVBuilder(None, povfile=povfile,
@@ -318,6 +385,10 @@ class MolWin(Qt3DExtras.Qt3DWindow):
                                  nmols=self.__nmols, in_au=False)
             builder.write_pov(**pov_opts)
         else:
+            if not isinstance(self.__mol, list):
+                raise InternalError(__msg_mol_nolist.format('export_pov'))
+            if self.__mol is None:
+                raise InternalError(__msg_mol_none.format('export_pov'))
             pov_opts['mol_model'] = self.__mol[0].viz_options('model')
             pov_opts['mol_mater'] = self.__mol[0].viz_options('material')
             builder = POVBuilder(None, povfile=povfile,
@@ -328,14 +399,14 @@ class MolWin(Qt3DExtras.Qt3DWindow):
             builder.write_pov(**pov_opts)
 
         txt = MSG_POV_CMD_HTML.format(file=povfile)
-        if os.sys.platform == 'win32':
+        if sys.platform == 'win32':
             txt += '\n\n' + MSG_POV_WIN
         msgBox = QtWidgets.QMessageBox()
-        msgBox.setIcon(QtWidgets.QMessageBox.Information)
+        msgBox.setIcon(QtWidgets.QMessageBox.Icon.Information)
         msgBox.setText("Information for the execution of POV-Ray")
         msgBox.setInformativeText(txt)
-        msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
-        msgBox.setDefaultButton(QtWidgets.QMessageBox.Ok)
+        msgBox.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        msgBox.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Ok)
         msgBox.exec()
 
     def __capture_scene(self):
@@ -355,6 +426,8 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         if self.__nmols > 1 or self.__fnames is None:
             fname = f'scene.{ftype}'
         else:
+            if isinstance(self.__fnames, list):
+                raise InternalError(__msg_file_list.format('capture_scene'))
             fname = f'{os.path.splitext(self.__fnames)[0]}.{ftype}'
 
         self.__dialog = QtWidgets.QFileDialog()
@@ -363,7 +436,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         self.__dialog.setNameFilter(
             f"Supported image files (*{' *'.join(supported)})")
         self.__dialog.setNameFilter("All files (*)")
-        self.__dialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+        self.__dialog.setFileMode(QtWidgets.QFileDialog.FileMode.AnyFile)
         self.__dialog.setAcceptMode(
             QtWidgets.QFileDialog.AcceptMode.AcceptSave)
         self.__dialog.setDefaultSuffix('.png')
@@ -382,6 +455,10 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         if self.__vib is None:
             return
         if self.__nmols == 1:
+            if self.__mol is None:
+                raise InternalError(__msg_mol_none.format('anim_vibration'))
+            if isinstance(self.__mol, list):
+                raise InternalError(__msg_mol_list.format('anim_vibration'))
             if self.__vib_changed_since_anim:
                 self.__mol.animate(self.__vib.mode)
                 self.__vib_changed_since_anim = False
@@ -393,6 +470,12 @@ class MolWin(Qt3DExtras.Qt3DWindow):
     def __show_geom(self):
         """Open a dialog displaying the current geometry."""
         def update_geom(which: int = 0):
+            if self.__mol is None:
+                raise InternalError(
+                    __msg_mol_none.format('update_geom in show_geom'))
+            if isinstance(self.__mol, list):
+                raise InternalError(
+                    __msg_mol_list.format('update_geom in show_geom'))
             if 0 <= which < 3:
                 atcrd = self.__mol.get_at_crd(True)
             else:
@@ -423,13 +506,16 @@ class MolWin(Qt3DExtras.Qt3DWindow):
             if self.__nmols > 1 or self.__fnames is None:
                 fname = 'system.xyz'
             else:
+                if isinstance(self.__fnames, list):
+                    raise InternalError(
+                        __msg_file_list.format('save_xyz in show_geom'))
                 fname = f'{os.path.splitext(self.__fnames)[0]}.xyz'
             win_save = QtWidgets.QFileDialog()
             win_save.setDirectory(os.getcwd())
             win_save.setWindowTitle("Export XYZ file")
             win_save.setNameFilter("XYZ files (*.xyz *.XYZ)")
             win_save.setNameFilter("All files (*)")
-            win_save.setFileMode(QtWidgets.QFileDialog.AnyFile)
+            win_save.setFileMode(QtWidgets.QFileDialog.FileMode.AnyFile)
             win_save.setAcceptMode(QtWidgets.QFileDialog.AcceptMode.AcceptSave)
             win_save.setDefaultSuffix('.xyz')
             win_save.selectFile(os.path.basename(fname))
@@ -451,6 +537,13 @@ class MolWin(Qt3DExtras.Qt3DWindow):
             'Reference geometry, including only rotations',
             'Reference geometry in original orientation'
         ]
+        if self.__mol is None:
+            raise InternalError(__msg_mol_none.format('show_geom'))
+        if self.__nmols > 1:
+            raise NotImplementedError(
+                'Multiple molecules for "show_geom" NYI.')
+        if isinstance(self.__mol, list):
+            raise InternalError(__msg_mol_list.format('show_geom'))
         atlab = self.__mol.at_lab
         for atom in atlab:
             if isinstance(atom, int):
@@ -469,16 +562,18 @@ class MolWin(Qt3DExtras.Qt3DWindow):
 
         choices = QtWidgets.QComboBox()
         choices.addItems(list_choices)
-        choices.currentIndexChanged.connect(update_geom)
+        choices.currentIndexChanged.connect(  # pylint: disable=E1101
+            update_geom)
         layout.addWidget(choices)
 
         buttons = QtWidgets.QHBoxLayout()
         btn_close = QtWidgets.QPushButton('Close')
-        btn_close.clicked.connect(self.__dialog.close)
+        btn_close.clicked.connect(  # pylint: disable=E1101
+            self.__dialog.close)
         btn_clip = QtWidgets.QPushButton('Copy to clipboard')
-        btn_clip.clicked.connect(to_clipboard)
+        btn_clip.clicked.connect(to_clipboard)  # pylint: disable=E1101
         btn_save = QtWidgets.QPushButton('Save')
-        btn_save.clicked.connect(save_xyz)
+        btn_save.clicked.connect(save_xyz)  # pylint: disable=E1101
         buttons.addWidget(btn_close)
         buttons.addStretch()
         buttons.addWidget(btn_clip)
@@ -492,7 +587,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
     def __show_help(self):
         """Show help message"""
         self.__dialog = QtWidgets.QMessageBox()
-        self.__dialog.setIcon(QtWidgets.QMessageBox.Information)
+        self.__dialog.setIcon(QtWidgets.QMessageBox.Icon.Information)
         self.__dialog.setText("Available commands")
         self.__dialog.setInformativeText("""
 <style>
@@ -561,6 +656,8 @@ Pressing it again pauses or resumes the motion.</dd>
 fail.</dd>
 </dl>
 """)
-        self.__dialog.setStandardButtons(QtWidgets.QMessageBox.Close)
-        self.__dialog.setDefaultButton(QtWidgets.QMessageBox.Close)
+        self.__dialog.setStandardButtons(
+            QtWidgets.QMessageBox.StandardButton.Close)
+        self.__dialog.setDefaultButton(
+            QtWidgets.QMessageBox.StandardButton.Close)
         self.__dialog.show()

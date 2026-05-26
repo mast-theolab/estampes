@@ -1,4 +1,4 @@
-"""Manage low-level operations on Gaussian formatted checkpoint files.
+"""Manages low-level operations on Gaussian formatted checkpoint files.
 
 Provides low-level interfaces to manipulate/extract data in Gaussian
 formatted checkpoint files.
@@ -18,10 +18,13 @@ import re  # Used to find keys in fchk file
 from tempfile import TemporaryFile
 from shutil import copyfileobj
 import typing as tp
+from collections.abc import Sequence
 from math import ceil
 
-from estampes.base import ArgumentError, ParseDataError, ParseKeyError, \
-    QuantityError, TypeDFChk, QDataType, TypeQInfo, QData, QLabel
+from estampes.base import (
+    QData, QDataType, QLabel,
+    ArgumentError, InternalError, ParseDataError, ParseKeyError, QuantityError,
+    DBlocFChkType, QInfoType)
 from estampes.data import property as edpr
 from estampes.data.physics import phys_fact
 from estampes.parser.functions import parse_qlabels, reshape_dblock
@@ -31,8 +34,8 @@ from estampes.parser.gaussian import g_elquad_LT_to_2D
 # Module Constants
 # ================
 
-TypeKword = tp.Dict[str, tp.Tuple[str, int, int]]
-TypeQKwrd = tp.Union[str, tp.List[str]]
+KwordType = dict[str, tuple[str, int, int]]
+QKwrdType = tuple[str | None, list[str]]
 
 NCOLS_FCHK = {  # Maximum number of columns per type in fchk
     'C': 5,  # Number of columns for character data per line
@@ -78,7 +81,7 @@ class FChkIO(object):
         """
         self.filename = fname
         if load_keys:
-            self.__keys = self.__store_keys()  # type: tp.Optional[TypeKword]
+            self.__keys = self.__store_keys()  # type: KwordType | None
         else:
             self.__keys = None
         try:
@@ -103,7 +106,7 @@ class FChkIO(object):
         self.__fname = name
 
     @property
-    def version(self) -> tp.Dict[str, str]:
+    def version(self) -> dict[str, str | None]:
         """Return the version of Gaussian used to generate the FChk file.
 
         Returns the version as a dictionary with two keys:
@@ -118,7 +121,7 @@ class FChkIO(object):
         Earlier versions of Gaussian did not support this so this may be
         empty.
         """
-        return self.__gversion
+        return self.__gversion  # type: ignore
 
     def show_keys(self):
         """Return the available keys (only if loaded)."""
@@ -128,7 +131,7 @@ class FChkIO(object):
             return sorted(self.__keys.keys())
 
     @property
-    def full_version(self) -> tp.Tuple[str, tp.Any]:
+    def full_version(self) -> tuple[str, tp.Any]:
         """Return the full Gaussian version, for the parser interface.
 
         Returns the full version of Gaussian used to generate the log file.
@@ -147,7 +150,7 @@ class FChkIO(object):
 
     def read_data(self,
                   *to_find: str,
-                  raise_error: bool = True) -> TypeDFChk:
+                  raise_error: bool = True) -> DBlocFChkType:
         """Extract data corresponding to the keys to find.
 
         Parameters
@@ -163,7 +166,7 @@ class FChkIO(object):
             Key not found.
         """
         keylist = []  # List of keywords to search
-        datlist = {}  # type: QDataType # List of data
+        datlist = {}  # List of data
 
         # Fast Search
         # -----------
@@ -200,15 +203,16 @@ class FChkIO(object):
                         if line.startswith(key):
                             datlist[key] = self.__read_datablock(fobj, line)
                             nkeys -= 1
-            remaining = list(set(to_find) - set(datlist))
+            remaining = set(to_find) - set(datlist)
             if len(remaining) > 0 and raise_error:
-                raise ParseKeyError(remaining[0])
+                msg = f'Unsupported keywords: {", ".join(remaining)}'
+                raise ParseKeyError(msg)
 
         return datlist
 
     def write_data(self,
-                   data: tp.Dict[str, tp.Sequence[tp.Any]],
-                   new_file: tp.Optional[str] = None,
+                   data: dict[str, Sequence[tp.Any]],
+                   new_file: str | None = None,
                    error_key: bool = True,
                    error_size: bool = True) -> None:
         """Write data corresponding to the keys to find.
@@ -257,7 +261,7 @@ class FChkIO(object):
             keys_no = list(set(data) - keys)
         else:
             nkeys = len(data)
-            keys_no = data.keys()
+            keys_no = list(data.keys())
             with open(self.filename, 'r', encoding="utf-8") as fobj:
                 line = fobj.readline()
                 while line and nkeys > 0:
@@ -274,7 +278,7 @@ class FChkIO(object):
 
         # Now set where data are to be saved
         if new_file is None:
-            fdest = TemporaryFile()
+            fdest = TemporaryFile(mode='wt')
         else:
             fdest = open(new_file, 'w', encoding="utf-8")
 
@@ -312,7 +316,85 @@ class FChkIO(object):
                 fsrc.seek(0)
                 copyfileobj(fdest, fsrc)
 
-    def __store_keys(self) -> TypeKword:
+    def get_data(self,
+                 *qlabels: str | QLabel,
+                 error_noqty: bool = True,
+                 **keys4qlab) -> QDataType | None:
+        """Get data from a FChk file for each quantity label.
+
+        Reads one or more full quantity labels from `qlabels` and returns
+        the corresponding data.
+
+        Parameters
+        ----------
+        *qlabels
+            List of full quantity labels to parse.
+        error_noqty
+            If True, error is raised if the quantity is not found.
+        **keys4qlab
+            Aliases for the qlabels to be used in returned data object.
+
+        Returns
+        -------
+        dict
+            Data for each quantity.
+
+        Raises
+        ------
+        TypeError
+            Wrong type of data file object.
+        ParseKeyError
+            Missing required quantity in data block.
+        IndexError
+            State definition inconsistent with available data.
+        QuantityError
+            Unsupported quantity.
+        """
+        # Check if anything to do
+        if len(qlabels) == 0 and len(keys4qlab) == 0:
+            return None
+        # Build Keyword List
+        # ------------------
+        # Build full list of qlabels
+        qty_dict, dupl_keys = parse_qlabels(qlabels, keys4qlab)
+        # List of keywords
+        full_kwlist = []
+        main_kwlist = {}
+        for qkey, qlabel in qty_dict.items():
+            # Label parsing
+            # ^^^^^^^^^^^^^
+            keyword, keywords = qlab_to_kword(qlabel)
+            if keyword is not None:
+                full_kwlist.extend(keywords)
+                main_kwlist[qkey] = keyword
+        # Check if list in the end is not empty
+        if not main_kwlist:
+            raise QuantityError('Unsupported quantities')
+        # Data Extraction
+        # ---------------
+        # Use of set to remove redundant keywords
+        datablocks = self.read_data(*list(set(full_kwlist)), raise_error=False)
+        # Data Parsing
+        # ------------
+        gver = (self.version['major'], self.version['minor'])
+        try:
+            data = parse_data(qty_dict, main_kwlist, datablocks, gver,
+                              error_noqty)
+        except (QuantityError, NotImplementedError) as err:
+            msg = f'Unsupported quantities.\n=> {err}'
+            raise QuantityError(msg) from err
+        except (ParseKeyError, IndexError) as err:
+            msg = f'Missing data in FChk.\n=> {err}'
+            raise IndexError(msg) from err
+
+        # Fill redundant keys
+        if dupl_keys:
+            for item, key in dupl_keys.items():
+                data[item] = data[key]
+
+        return data
+
+    def __store_keys(self) -> KwordType:
         """Store the keys in the fchk to speed up search.
 
         Loads the keys present in the file and pointers to their
@@ -345,10 +427,10 @@ class FChkIO(object):
                 fpos += len(line)
         return keys
 
-    def __info_block(self, line: tp.Optional[str] = None,
-                     datatype: tp.Optional[str] = None,
-                     numdata: tp.Optional[int] = None
-                     ) -> tp.List[tp.Any]:
+    def __info_block(self, line: str | None = None,
+                     datatype: str | None = None,
+                     numdata: int | None = None
+                     ) -> tuple[str, int, int, int]:
         """Extract information on a given block.
 
         Extracts information on a block, either from the line or data
@@ -381,10 +463,10 @@ class FChkIO(object):
         ParseDataError
             Unsupported data types.
         """
-        if datatype is None and line is None:
-            raise ArgumentError('line and datatype cannot be both absent')
         # If data type unknown, line has not been parsed
         if datatype is None:
+            if line is None:
+                raise ArgumentError('line and datatype cannot be both absent')
             cols = line.split()
             if 'N=' in line:
                 dtype = cols[-3]
@@ -393,6 +475,8 @@ class FChkIO(object):
                 dtype = cols[-2]
                 ndata = 0
         else:
+            if numdata is None:
+                raise ArgumentError('numdata must be set with datatype')
             dtype = datatype
             ndata = numdata
         # Sets parameters:
@@ -405,9 +489,9 @@ class FChkIO(object):
 
     def __read_datablock(self, fobj: tp.TextIO,
                          line: str,
-                         datatype: tp.Optional[str] = None,
-                         numdata: tp.Optional[int] = None
-                         ) -> tp.List[tp.Any]:
+                         datatype: str | None = None,
+                         numdata: int | None = None
+                         ) -> list[str] | list[int] | list[float]:
         """Read a data block in the formatted checkpoint file.
 
         Reads a data block from a Gaussian formatted checkpoint file.
@@ -464,12 +548,12 @@ class FChkIO(object):
                     data.extend([fconv(item) for item in line.split()])
         return data
 
+
 # ================
 # Module Functions
 # ================
 
-
-def qlab_to_kword(qlab: QLabel) -> TypeQKwrd:
+def qlab_to_kword(qlab: QLabel) -> QKwrdType:
     """Return the keyword(s) relevant for a given quantity.
 
     Returns the keyword corresponding to the block containing the
@@ -726,12 +810,13 @@ def qlab_to_kword(qlab: QLabel) -> TypeQKwrd:
                     raise NotImplementedError('Static hyperpolarizability NYI')
             else:
                 raise QuantityError(f'Unknown quantity: {qlab.label}')
-    keywords.insert(0, keyword)
+    if keyword is not None:
+        keywords.insert(0, keyword)
     return keyword, keywords
 
 
-def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
-                          kword: str) -> QDataType:
+def _parse_electrans_data(qlab: QLabel, dblocks: DBlocFChkType,
+                          kword: str) -> QData:
     """Sub-function to parse electronic-transition related data.
 
     Parses and returns data for a given quantity related to an
@@ -760,6 +845,7 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
     QuantityError
         Unsupported quantity.
     """
+    dobj = QData(qlab)
     # ETran Scalar Definition
     # -----------------------
     # Check that ETran scalars are present and parse relevant values
@@ -772,19 +858,25 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
         # 4. Number of header words (irrelevant in fchk)
         # 5. State of interest
         # 6. Number of deriv. (3*natoms + 3: electric field derivatives)
-        (nstates, ndata, nlr, _, iroot, _) = dblocks[key][:6]
+        nstates = int(dblocks[key][0])
+        ndata = int(dblocks[key][1])
+        nlr = int(dblocks[key][2])
+        iroot = int(dblocks[key][4])
     else:
         raise ParseKeyError('Missing scalars definition')
     key = 'Number of atoms'
     natoms = None
     if qlab.derord > 0:
         if key in dblocks:
-            natoms = dblocks[key][0]
+            natoms = int(dblocks[key][0])
         else:
             raise ParseKeyError('Missing number of atoms')
     # States Information
     # ------------------
-    initial, final = qlab.rstate
+    if not isinstance(qlab.rstate, (list, tuple)):
+        raise ParseKeyError('Incorrect transition definition')
+    initial = int(qlab.rstate[0])
+    final = int(qlab.rstate[1])
     if initial != 0:
         if final != 0:
             raise IndexError('Unsupported transition')
@@ -796,17 +888,20 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
         key = 'SCF Energy'
         if key not in dblocks:
             raise ParseKeyError('Missing ground-state energy')
-        energy0 = dblocks[key][0]
+        energy0 = float(dblocks[key][0])
         if final == 'a':
-            data = [dblocks[kword][i*ndata*nlr]-energy0
+            data = [float(dblocks[kword][i*ndata*nlr])-energy0
                     for i in range(nstates)]
         else:
-            fstate = final == 'c' and iroot or final
+            fstate = iroot if final == 'c' else final
             if fstate > nstates:
                 raise IndexError('Missing electronic state')
             data = float(dblocks[kword][(fstate-1)*ndata*nlr]) - energy0
+        dobj.set(data=data)
     elif qlab.label in (101, 102, 107):
         lqty = edpr.property_data(qlab.label).dim
+        if not isinstance(lqty, int):
+            raise InternalError('Dipolar dimension should be an integer')
         if qlab.label == 101:
             if qlab.kind == 'len':
                 offset = 1
@@ -823,10 +918,12 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
                             dblocks[kword][i*ndata*nlr+offset:
                                            i*ndata*nlr+offset+lqty])
                             for i in range(nstates)]
+                    dobj.set(shape='Ns,3,3')
                 else:
                     data = [dblocks[kword][i*ndata*nlr+offset:
                                            i*ndata*nlr+offset+lqty]
                             for i in range(nstates)]
+                    dobj.set(shape=f'Ns,{lqty}')
             else:
                 fstate = final == 'c' and iroot or final
                 if fstate > nstates:
@@ -834,8 +931,11 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
                 i0 = (fstate-1)*ndata + offset
                 if qlab.label == 107:
                     data = g_elquad_LT_to_2D(dblocks[kword][i0:i0+lqty])
+                    dobj.set(shape='3,3')
                 else:
                     data = dblocks[kword][i0:i0+lqty]
+                    dobj.set(shape=f'{lqty}')
+            dobj.set(data=data)
         elif qlab.derord == 1:
             # We accept 'a' as alias for 'c' in this case
             # but add a nesting level to represent the list
@@ -847,27 +947,35 @@ def _parse_electrans_data(qlab: QLabel, dblocks: TypeDFChk,
             # 3*ndata below is for field derivatives.
             offset0 = ndata*nstates*nlr + 3*ndata + offset
             data = []
+            if natoms is None:
+                raise ParseKeyError(
+                    'Number of atoms not found to build derivatives')
             for i in range(3*natoms):
                 if qlab.label == 107:
                     data.append(
                         g_elquad_LT_to_2D(dblocks[kword][offset0+i*ndata:
                                                          offset0+i*ndata+lqty])
                     )
+                    dobj.set(shape='3*Na,3,3')
                 else:
                     data.append(dblocks[kword][offset0+i*ndata:
                                                offset0+i*ndata+lqty])
+                    dobj.set(shape=f'3*Na,{lqty}')
             if final == 'a':
                 data = [data]
+            dobj.set(data=data)
         else:
             raise NotImplementedError(
                 'Higher-order transition moment derivatives not yet available')
     else:
-        raise QuantityError(qlab.label)
-    return data
+        if qlab.label is None:
+            raise ArgumentError('QLabel is not set.')
+        raise QuantityError(f'{qlab.label}')
+    return dobj
 
 
-def _parse_freqdep_data(qlab: QLabel, dblocks: TypeDFChk,
-                        kword: str) -> QDataType:
+def _parse_freqdep_data(qlab: QLabel, dblocks: DBlocFChkType,
+                        kword: str) -> QData:
     """Parse data on frequency-dependent properties.
 
     Parses and returns data on a specific property for one or more
@@ -905,27 +1013,36 @@ def _parse_freqdep_data(qlab: QLabel, dblocks: TypeDFChk,
         else:
             key = 'Frequencies for DFD properties'
         if key not in dblocks:
-            raise ParseKeyError('Missing incident freqs.')
-        incfrqs = [str(int(item*phys_fact('au2cm1'))) for item in dblocks[key]]
+            raise ParseKeyError('Missing incident frequencies.')
+        incfrqs = [str(int(float(item)*phys_fact('au2cm1')))
+                   for item in dblocks[key]]
     else:
         incfrqs = None
     if qlab.kind == 'dynamic':
         qopt = 0
     elif qlab.kind == 'static':
         qopt = -1
+        raise NotImplementedError('Missing parsing of static properties')
     elif isinstance(qlab.kind, int):
         qopt = qlab.kind
-    else:
+    elif qlab.kind is not None:
+        if incfrqs is None:
+            raise InternalError(
+                'Missing list of incident frequencies to choose')
         for i, item in enumerate(incfrqs):
             if int(qlab.kind) == item:
                 qopt = i + 1
                 break
         else:
             raise ParseKeyError('Omega not found in list of incident freqs.')
+    else:
+        raise ArgumentError('Type of Raman spectrum unset.')
     # Quantity-specific Treatment
     # ---------------------------
     dobj.set(unit='au')
     if qlab.label == 300:
+        if incfrqs is None:
+            raise ParseKeyError('Missing incident frequencies.')
         data = {'data': [], 'keys': []}
         for freq, key in zip(dblocks[kword], incfrqs):
             data['data'].append(freq)
@@ -935,22 +1052,24 @@ def _parse_freqdep_data(qlab: QLabel, dblocks: TypeDFChk,
         return dobj
 
     # Check size of derivatives is requested
-    if qlab.derord == 0:
-        nder = 1
-    elif qlab.derord == 1:
+    nder = 1
+    if qlab.derord == 1:
         key = 'Number of atoms'
         if key not in dblocks:
             raise ParseKeyError('Missing number of atoms')
-        natoms = dblocks[key][0]
+        natoms = int(dblocks[key][0])
         nder = 3*natoms
-    else:
+    elif qlab.derord > 0:
         raise IndexError('Unsupported derivative order')
 
     # Create alias to datablocks[kword] for simplicity
     d = dblocks[kword]
+    data = None
     if qlab.label in (301, 302, 303):
         if qopt == 0:
             data = {}
+            if incfrqs is None:
+                raise ParseKeyError('Missing incident frequencies.')
             for ifrq, incfrq in enumerate(incfrqs):
                 ioffF = ifrq*9*nder
                 fdat = []
@@ -968,6 +1087,8 @@ def _parse_freqdep_data(qlab: QLabel, dblocks: TypeDFChk,
     elif qlab.label == 304:
         if qopt == 0:
             data = {}
+            if incfrqs is None:
+                raise ParseKeyError('Missing incident frequencies.')
             # the data are saved in Fortran order
             # first quad, then dip.
             # Moreover, quad stored as XX, YY, ZZ, XY, XZ, YZ
@@ -992,10 +1113,10 @@ def _parse_freqdep_data(qlab: QLabel, dblocks: TypeDFChk,
     return dobj
 
 
-def parse_data(qdict: TypeQInfo,
-               qlab2kword: tp.Dict[str, str],
-               datablocks: TypeDFChk,
-               gver: tuple[str, str] | None = None,
+def parse_data(qdict: QInfoType,
+               qlab2kword: dict[str, str],
+               datablocks: DBlocFChkType,
+               gver: tuple[str | None, str | None] | None = None,
                raise_error: bool = True) -> QDataType:
     """Parse data arrays to extract specific quantities.
 
@@ -1055,12 +1176,16 @@ def parse_data(qdict: TypeQInfo,
         elif qlab.label in ('atmas', 'atnum'):
             dobjs[qkey].set(data=datablocks[kword])
         elif qlab.label == 'swopt':
-            dobjs[qkey].set(data=' '.join(datablocks[kword]))
+            dobjs[qkey].set(data=' '.join(datablocks[kword]))  # type: ignore
         elif qlab.label == 'molsym':
             raise NotImplementedError()
         elif qlab.label == 'swver':
             pattern = re.compile(r'(?:(\w+)-)?(\w{3})Rev-?([\w.+]+)')
-            res = re.match(pattern, ''.join(datablocks[kword])).groups()
+            found = re.match(pattern,
+                             ''.join(datablocks[kword]))  # type: ignore
+            if found is None:
+                raise ParseKeyError('Unable to parse software version')
+            res = found.groups()
             data = {'major': res[-2], 'minor': res[-1]}
             if len(res) == 3:
                 data['system'] = res[0]
@@ -1117,8 +1242,9 @@ def parse_data(qdict: TypeQInfo,
             else:
                 key = 'ETran scalars'
                 if key in datablocks:
-                    (nstates, ndata, _, _, iroot,
-                        _) = [item for item in datablocks[key][:6]]
+                    nstates = int(datablocks[key][0])
+                    ndata = int(datablocks[key][1])
+                    iroot = int(datablocks[key][4])
                 else:
                     nstates = 1
                     ndata = 16  # TODO: This may not work in the future.
@@ -1235,88 +1361,3 @@ def parse_data(qdict: TypeQInfo,
                         raise NotImplementedError()
 
     return dobjs
-
-
-def get_data(dfobj: FChkIO,
-             *qlabels: str,
-             error_noqty: bool = True,
-             **keys4qlab) -> QDataType | None:
-    """Get data from a FChk file for each quantity label.
-
-    Reads one or more full quantity labels from `qlabels` and returns
-    the corresponding data.
-
-    Parameters
-    ----------
-    dfobj
-        Formatted checkpoint file as `FChkIO` object.
-
-    *qlabels
-        List of full quantity labels to parse.
-    error_noqty
-        If True, error is raised if the quantity is not found.
-    **keys4qlab
-        Aliases for the qlabels to be used in returned data object.
-
-    Returns
-    -------
-    dict
-        Data for each quantity.
-
-    Raises
-    ------
-    TypeError
-        Wrong type of data file object.
-    ParseKeyError
-        Missing required quantity in data block.
-    IndexError
-        State definition inconsistent with available data.
-    QuantityError
-        Unsupported quantity.
-    """
-    # First, check that the file is a correct instance
-    if not isinstance(dfobj, FChkIO):
-        raise TypeError('FChkIO instance expected')
-    # Check if anything to do
-    if len(qlabels) == 0 and len(keys4qlab) == 0:
-        return None
-    # Build Keyword List
-    # ------------------
-    # Build full list of qlabels
-    qty_dict, dupl_keys = parse_qlabels(qlabels, keys4qlab)
-    # List of keywords
-    full_kwlist = []
-    main_kwlist = {}
-    for qkey, qlabel in qty_dict.items():
-        # Label parsing
-        # ^^^^^^^^^^^^^
-        keyword, keywords = qlab_to_kword(qlabel)
-        if keyword is not None:
-            full_kwlist.extend(keywords)
-            main_kwlist[qkey] = keyword
-    # Check if list in the end is not empty
-    if not main_kwlist:
-        raise QuantityError('Unsupported quantities')
-    # Data Extraction
-    # ---------------
-    # Use of set to remove redundant keywords
-    datablocks = dfobj.read_data(*list(set(full_kwlist)), raise_error=False)
-    # Data Parsing
-    # ------------
-    gver = (dfobj.version['major'], dfobj.version['minor'])
-    try:
-        data = parse_data(qty_dict, main_kwlist, datablocks, gver,
-                          error_noqty)
-    except (QuantityError, NotImplementedError) as err:
-        msg = f'Unsupported quantities.\n=> {err}'
-        raise QuantityError(msg) from err
-    except (ParseKeyError, IndexError) as err:
-        msg = f'Missing data in FChk.\n=> {err}'
-        raise IndexError(msg) from err
-
-    # Fill redundant keys
-    if dupl_keys:
-        for item, key in dupl_keys.items():
-            data[item] = data[key]
-
-    return data
