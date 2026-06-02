@@ -32,6 +32,7 @@ Other blocks are:
 
 ### Fixed
 - **API**: Fixed shape of the mass-weighted normal-coordinates matrix when directly read from data file to be consistent to the one generated from force constants matrix in method `DataFile.get_hess_data` (2D arrays systematically generated).
+- **API**: Fixed parsing of `FCDat:Assign` from Gaussian log files. `QData.data` returns a dictionary of all extracted data.
 
 ### Changed
 - **DEV**: Some parts of the code have been cleaned up considering more modern typing hints recommendations in Python and to reduce warnings produced by syntax analyzers.

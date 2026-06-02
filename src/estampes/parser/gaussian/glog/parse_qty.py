@@ -333,9 +333,11 @@ def parse_fcdat(qlab: QLabel,
         raise NotImplementedError()
     elif qlab.kind == 'Assign':
         data = {'T': [], 'E': [], 'I': []}
-        if qlab.label == 'DipStr':
+        # We check second line to find the type of quantity:
+        line_int = dblock[-1][0].split()
+        if '(DipStr' in line_int:
             qty = 'DS'
-        elif qlab.label == 'RotStr':
+        elif '(RotStr' in line_int:
             qty = 'RS'
         else:
             msg = 'Unrecognized spectroscopy-specific quantity'
@@ -361,6 +363,7 @@ def parse_fcdat(qlab: QLabel,
             data[qty].append(float(line[-1]))
         for key, val in data.items():
             dobj.add_field(key, value=val)
+        dobj.set(data=data)
     elif qlab.kind == 'GeomIS':
         data = []
         # By default, we choose the standard orientation if present
