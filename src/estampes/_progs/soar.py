@@ -18,11 +18,11 @@ from estampes.tools.math import superpose
 from estampes.tools.mol import eckart_orient
 from estampes.tools.vib import build_dusch_J, build_dusch_K
 from estampes.visual.plotmat import plot_jmat, plot_kvec
+from estampes.data.physics import PHYSFACT
+from estampes.data.visual import MOLCOLS
+from estampes.tools.mol import list_bonds
 
 try:
-    from estampes.data.physics import PHYSFACT
-    from estampes.data.visual import MOLCOLS
-    from estampes.tools.mol import list_bonds
     # from PySide6 import QtWidgets
     from matplotlib.backends.backend_qtagg import FigureCanvas
     from matplotlib.backends.backend_qtagg import \
@@ -68,8 +68,13 @@ def parse_args(args: tp.Optional[tp.Sequence[str]] = None
     msg = 'Do not plot the matrices and vectors.'
     parser.add_argument('--no-plots', action='store_false', dest='show_plots',
                         default=None, help=msg)
-    msg = 'Show the overlapped structures.'
+    msg = 'Analyse overlap, considering the highest coefficients of J_ik^2'
+    parser.add_argument('--overlap', action='store_true',
+                        help=msg)
+    msg = 'Threshold to be applied for the overlap analysis'
+    parser.add_argument('--overlap-limit', default=0.8, help=msg)
     if QT_AVAIL:
+        msg = 'Show the overlapped structures.'
         parser.add_argument('--show-mols', action='store_true',
                             dest='show_mols', default=None, help=msg)
     msg = 'Plot the matrices and vectors (default).'
@@ -110,8 +115,14 @@ def main():
     Lmat_ref, freq_ref = dfile_ref.get_hess_data()
     Lmat_new, freq_new = dfile_new.get_hess_data()
 
-    data_ref = dfile_ref.get_data(**keys)
-    data_new = dfile_new.get_data(**keys)
+    data_ref = dfile_ref.get_data(error_noqty=True, **keys)
+    data_new = dfile_new.get_data(error_noqty=True, **keys)
+    if data_ref is None:
+        print('ERROR: Unable to extract data for reference structure')
+        sys.exit(1)
+    if data_new is None:
+        print('ERROR: Unable to extract data for new structure')
+        sys.exit(1)
 
     at_mass = np.array(data_ref['mass'].data)
     c_ref = np.array(data_ref['crd'].data)
@@ -136,9 +147,29 @@ def main():
     i = 0
     for x, y in zip(freq_ref, freq_new):
         i += 1
-        print(' {:4d} | {:10.4f} | {:10.4f}'.format(i, x, y))
+        print(f' {i:4d} | {x:10.4f} | {y:10.4f}')
+
+    if dopts.overlap:
+        if dopts.overlap_limit < 0:
+            print('The threshold for the overlap analysis cannot be negative.')
+            sys.exit(1)
+        print('\n New modes | Projection')
+        for i in range(n_vib):
+            order = np.flip(np.argsort(jmat[i, :]**2))
+            elements = []
+            total = 0.0
+            k = 0
+            while total < dopts.overlap_limit:
+                x = jmat[i, order[k]]**2
+                elements.append(f'{x:.2f}*({order[k]+1})')
+                total += x
+                k += 1
+            print(f' {i+1:>9d} | {" + ".join(elements)}')
 
     if show_ui:
+        if not QT_AVAIL:
+            print('Something is wrong, the UI should not be accessible.')
+            sys.exit(99)
         qapp = QtWidgets.QApplication.instance()
         if not qapp:
             qapp = QtWidgets.QApplication()
