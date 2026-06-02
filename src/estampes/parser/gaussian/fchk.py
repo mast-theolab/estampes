@@ -651,13 +651,13 @@ def qlab_to_kword(qlab: QLabel) -> QKwrdType:
         if isinstance(qlab.rstate, tuple):
             keyword = 'ETran state values'
             keywords = ['ETran scalars']
-            if qlab.label == 1 and qlab.derord == 0:
+            if qlab.label == 1 and qlab.derord <= 0:
                 keywords.append('SCF Energy')
             if qlab.derord > 0:
                 keywords.append('Number of atoms')
         else:
             if qlab.label == 1:
-                if qlab.derord == 0:
+                if qlab.derord <= 0:
                     if qlab.rstate == 'c':
                         keyword = 'Total Energy'
                         del keywords[:]
@@ -685,14 +685,14 @@ def qlab_to_kword(qlab: QLabel) -> QKwrdType:
             elif qlab.label == 93:
                 keyword = 'RotTr to input orientation'
             elif qlab.label == 101:
-                if qlab.derord == 0:
+                if qlab.derord <= 0:
                     if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
                         keyword = 'Dipole Moment'
                 elif qlab.derord == 1:
                     if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
                         keyword = 'Dipole Derivatives'
             elif qlab.label == 102:
-                if qlab.derord == 0:
+                if qlab.derord <= 0:
                     if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
                         raise ParseDataError('Magnetic dipole not available')
                 elif qlab.derord == 1:
@@ -727,7 +727,7 @@ def qlab_to_kword(qlab: QLabel) -> QKwrdType:
             elif qlab.label == 209:
                 raise NotImplementedError()
             elif qlab.label == 300:
-                if qlab.derord == 0:
+                if qlab.derord <= 0:
                     if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
                         keyword = 'Frequencies for FD properties'
                     else:
@@ -742,7 +742,7 @@ def qlab_to_kword(qlab: QLabel) -> QKwrdType:
                         raise ParseDataError(msg)
             elif qlab.label == 301:
                 if qlab.kind != 'static':
-                    if qlab.derord == 0:
+                    if qlab.derord <= 0:
                         keywords = ['Frequencies for FD properties']
                         if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
                             keyword = 'Alpha(-w,w)'
@@ -755,7 +755,7 @@ def qlab_to_kword(qlab: QLabel) -> QKwrdType:
                     raise NotImplementedError('Static alpha NYI')
             elif qlab.label == 302:
                 if qlab.kind != 'static':
-                    if qlab.derord == 0:
+                    if qlab.derord <= 0:
                         keywords = ['Frequencies for FD properties']
                         if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
                             keyword = 'FD Optical Rotation Tensor'
@@ -771,7 +771,7 @@ def qlab_to_kword(qlab: QLabel) -> QKwrdType:
                     raise ParseDataError('Alpha(w,0) not available')
             elif qlab.label == 304:
                 if qlab.kind != 'static':
-                    if qlab.derord == 0:
+                    if qlab.derord <= 0:
                         keywords = ['Frequencies for FD properties']
                         if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
                             keyword = 'D-Q polarizability'
@@ -784,7 +784,7 @@ def qlab_to_kword(qlab: QLabel) -> QKwrdType:
                     raise NotImplementedError('Static D-Q NYI.')
             elif qlab.label == 305:
                 if qlab.kind != 'static':
-                    if qlab.derord == 0:
+                    if qlab.derord <= 0:
                         keywords = ['Frequencies for FD properties']
                         if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
                             raise NotImplementedError()
@@ -798,7 +798,7 @@ def qlab_to_kword(qlab: QLabel) -> QKwrdType:
             elif qlab.label == 306:
                 if qlab.kind != 'static':
                     keywords = ['Frequencies for FD properties']
-                    if qlab.derord == 0:
+                    if qlab.derord <= 0:
                         if isinstance(qlab.rstate, int) or qlab.rstate == 'c':
                             raise NotImplementedError()
                     elif qlab.derord == 1:
@@ -911,7 +911,7 @@ def _parse_electrans_data(qlab: QLabel, dblocks: DBlocFChkType,
             offset = 7
         else:
             offset = 10
-        if qlab.derord == 0:
+        if qlab.derord <= 0:
             if final == 'a':
                 if qlab.label == 107:
                     data = [g_elquad_LT_to_2D(
@@ -1008,7 +1008,7 @@ def _parse_freqdep_data(qlab: QLabel, dblocks: DBlocFChkType,
     # Check Incident Frequency
     # ------------------------
     if qlab.kind != 'static':
-        if qlab.derord == 0:
+        if qlab.derord <= 0:
             key = 'Frequencies for FD properties'
         else:
             key = 'Frequencies for DFD properties'
@@ -1331,7 +1331,7 @@ def parse_data(qdict: QInfoType,
                                     'Unsupported type of transition')
                         dobjs[qkey].set(data=data)
                     elif qlab.label == 1:
-                        if qlab.derord == 0:
+                        if qlab.derord <= 0:
                             dobjs[qkey].set(data=datablocks[kword][0])
                         elif qlab.derord in (1, 2):
                             dobjs[qkey].set(data=datablocks[kword])
