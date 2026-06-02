@@ -35,6 +35,7 @@ Other blocks are:
 - **API**: Fixed parsing of `FCDat:Assign` from Gaussian log files. `QData.data` returns a dictionary of all extracted data.
 
 ### Changed
+- **LIB**(`visual.molui.MolWin`): Changed shortcut to activate animations in the molecular viewer to `A` instead of `CTRL+A`.
 - **DEV**: Some parts of the code have been cleaned up considering more modern typing hints recommendations in Python and to reduce warnings produced by syntax analyzers.
 
 

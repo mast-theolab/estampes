@@ -192,7 +192,7 @@ class MolWin(Qt3DExtras.Qt3DWindow):
         self.keyHelp.activatedAmbiguously.connect(  # pylint: disable=E1101
             self.__show_help)
         self.keyVib = QtGui.QShortcut(
-            QtGui.QKeySequence(key_ctrl | QtCore.Qt.Key.Key_A), self,
+            QtGui.QKeySequence(QtCore.Qt.Key.Key_A), self,
             context=QtCore.Qt.ShortcutContext.ApplicationShortcut)
         self.keyVib.activated.connect(  # pylint: disable=E1101
             self.__anim_vibration)
@@ -641,7 +641,7 @@ viewport.</dd>
 <p>On Mac OSX, <code>Ctrl</code> is replaced by <code>Command</code>.</p>
 
 <dl>
-    <dt>Ctrl+A</dt>
+    <dt>A</dt>
     <dd>Animates vibration if a vibration has been selected.<br />
 Pressing it again pauses or resumes the motion.</dd>
     <dt>Ctrl+E</dt>
