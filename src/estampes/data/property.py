@@ -10,6 +10,20 @@ from estampes.base import QLabSubType, QLabTagType
 from estampes.data.physics import PHYSCNST, PHYSFACT
 
 
+# ==============
+# Module Classes
+# ==============
+
+class QBaseInfo(tp.NamedTuple):
+    """Type for basic quantity/property information."""
+
+    name: str  # Printable name
+    dim: int | str | tuple[tp.Any, ...]  # dimension(s)
+    der: bool  # Flag if property derivable
+    d1q: str  # Type of analytical 1st derivative (p or q)
+    unit: str  # Default unit
+
+
 # ================
 # Module Functions
 # ================
@@ -254,15 +268,3 @@ def property_units(qtag: str, unit: str = 'SI') -> tuple[float, str]:
                 new_unit = 'statA.cm^2'
 
     return conv, new_unit
-
-
-# ==============
-# Module Classes
-# ==============
-
-class QBaseInfo(tp.NamedTuple):
-    name: str  # Printable name
-    dim: int | str | tuple[tp.Any, ...]  # dimension(s)
-    der: bool  # Flag if property derivable
-    d1q: str  # Type of analytical 1st derivative (p or q)
-    unit: str  # Default unit
