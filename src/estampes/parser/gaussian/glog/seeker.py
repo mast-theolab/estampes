@@ -12,7 +12,7 @@ from estampes.base import QLabel, \
 from estampes.parser.gaussian.glog.search_keys import keys_prp_3xx
 from estampes.parser.gaussian.glog.types import QKwrdType
 from estampes.parser.gaussian.glog.logkeys import RR_OMEGA_LINE, \
-    RR_OMEGA_UNIT, RR_OMEGA_VAL, KEY_FP, KEY_UINT
+    RR_OMEGA_UNIT, RR_OMEGA_VAL, KEY_DP, KEY_FP, KEY_UINT
 
 
 def qlab_to_linkdata(qlab: QLabel,
@@ -678,6 +678,57 @@ def qlab_to_linkdata(qlab: QLabel,
                         fmt1.append(key_state + key_xyz)
                     else:
                         raise NotImplementedError('Unsupported initial state')
+                elif qlab.derord == 1:
+                    # Check if transition specification is compatible
+                    if state_i == 'a' or state_i != 0:
+                        msg = 'Parsing of electronic transition moments ' \
+                            'from excited states not yet supported for ' \
+                            'properties'
+                        raise NotImplementedError(msg)
+                    if isinstance(state_f, int):
+                        # We need to check if final state is the right one,
+                        # but this can only be done a posteriori with processed
+                        # data.
+                        lnk1.append(lnk0)
+                        key1.append(key0)
+                        sub1.append(sub0)
+                        end1.append(end0)
+                        fmt1.append(fmt0)
+                        num1.append(num0)
+                    # The block seems only available with #P and is more a
+                    # matrix dump, containing all the block of derivatives,
+                    # with: energy, edip (len), edip (vel), mdip, equad, in
+                    # rows
+                    # The first 3 columns are electric-field derivatives.
+                    # There is no specific end to the block, so we simply look
+                    # if there is a character in column 2, since the number
+                    # of properties should be limited to 16 or a relatively
+                    # low number anyway.
+                    # To find the right property, we simply add a regex on
+                    # the row index
+                    if qlab.label == 101:
+                        if qlab.kind == 'len':
+                            fmt_index = '(?: 2 | 3 | 4 )'
+                        elif qlab.kind == 'vel':
+                            fmt_index = '(?: 5 | 6 | 7 )'
+                        else:
+                            raise NotImplementedError(
+                                'Unsupported dipolar formalism')
+                    elif qlab.label == 102:
+                        fmt_index = '(?: 8 | 9 | 10 )'
+                    elif qlab.label == 107:
+                        fmt_index = '(?: 11 | 12 | 13 | 14 | 15 | 16 )'
+                    else:
+                        raise NotImplementedError(
+                            'Unsupported property for electronic transition '
+                            'moments')
+                    lnk1.append(9999)
+                    key1.append(' Electronic Transition Derivatives')
+                    sub1.append(1)
+                    num1.append(0)
+                    end1.append(lambda s: s[1] != ' ')
+                    fmt1.append(
+                        rf'^\s+{fmt_index}(?P<val>(?:{KEY_DP}){{1,5}})\s*$')
                 else:
                     raise NotImplementedError(
                         'Electronic transition moments derivatives NYI')

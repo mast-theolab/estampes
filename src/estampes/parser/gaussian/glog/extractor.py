@@ -75,14 +75,16 @@ def parse_data(qdict: QInfoType,
         # -----------
         # Check if some data extracted
         num = 0
+        ref_state = -1
         if first == last:
             iref = first
             num = len(datablocks[iref])
+            has_eltrans_info = 'Excited State' in ''.join(datablocks[iref])
         else:
             iref = -1
             # Check if transition information may be present:
-            if (qlabel.rstate == 'c'
-                    and 'Excited State' in ''.join(datablocks[first])):
+            has_eltrans_info = 'Excited State' in ''.join(datablocks[first])
+            if qlabel.rstate == 'c' and has_eltrans_info:
                 realfirst = first + 1
             else:
                 realfirst = first
@@ -90,6 +92,8 @@ def parse_data(qdict: QInfoType,
                 if num == 0 and ndatablock[i] > 0 and datablocks[i]:
                     iref = i  # Ignore first, null indexes
                     num = len(datablocks[i])
+        if has_eltrans_info:
+            ref_state = __get_eltrans_root(datablocks[first])
         if num == 0 and not empty_cases_ok(qlabel.label, qlabel.kind):
             if raise_error:
                 raise ParseKeyError(msg_noqty)
@@ -343,7 +347,8 @@ def parse_data(qdict: QInfoType,
         # Electric-field properties
         # -------------------------
         elif qlabel.label in range(101, 200):
-            dobjs[qkey] = parse_1xx_dat(qlabel, datablocks[first:last+1])
+            dobjs[qkey] = parse_1xx_dat(qlabel, datablocks[first:last+1],
+                                        ref_state)
         # Dynamic (frequency-dependent) properties
         # ----------------------------------------
         elif qlabel.label in range(300, 400):
@@ -428,3 +433,28 @@ def __del_nonactive_modes(dobj_vtrans: QData,
     new_vlevel.set(data=vlevel)
 
     return new_vtrans, new_vlevel
+
+
+def __get_eltrans_root(dblock: Sequence[str]) -> int:
+    """Get the electronic transition reference state.
+
+    Parses the block containing the electronic transition information
+    and extracts the reference excited state.
+    """
+    if 'Excited State' not in dblock[0]:
+        raise ParsingError(
+            'Unknown structure of the electronic transition block')
+
+    for i, line in enumerate(dblock):
+        if line.startswith('This state for'):
+            if 'Excited State' not in dblock[i-1]:
+                raise ParsingError(
+                    'Unknown structure of the electronic transition block')
+            try:
+                return int(dblock[i-1].split()[2].rstrip(':'))
+            except ValueError as err:
+                raise ParsingError(
+                    'Unknown structure of the electronic transition block') \
+                    from err
+
+    raise ParsingError('Failed to identify the reference excited state')

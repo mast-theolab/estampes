@@ -28,6 +28,7 @@ Other blocks are:
 
 ### Added
 - **API**: Added parsing of Y (Upsilon) matrix in VPT2 calculations from Gaussian log files.
+- **API**: Added parsing of first derivatives of electronic transitions dipole moments for electric dipole, magnetic dipole and electric quadrupole from Gaussian log files.
 
 ### Fixed
 - **API**: Fixed shape of the mass-weighted normal-coordinates matrix when directly read from data file to be consistent to the one generated from force constants matrix in method `DataFile.get_hess_data` (2D arrays systematically generated).

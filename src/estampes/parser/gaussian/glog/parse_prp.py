@@ -153,29 +153,30 @@ def parse_en_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
     return dobj
 
 
-def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
+def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType,
+                  ref_state: int) -> QData:
     """Parse extracted data related to 1xx properties/quantities."""
     dobj = QData(qlab)
     if qlab.label == 101:
         if isinstance(qlab.rstate, tuple):
-            Si, Sf = qlab.rstate
+            state_i, state_f = qlab.rstate
             if qlab.derord == 0:
                 dobj.set(unit='e.a0')
-                if Si == 0:
-                    if isinstance(Sf, int):
+                if state_i == 0:
+                    if isinstance(state_f, int):
                         val = [float(item) for item in dblock[-1][0].split()]
-                    elif Sf == 'a':
+                    elif state_f == 'a':
                         val = {}
                         for i, line in enumerate(dblock[-1]):
                             val[i+1] = [float(item) for item in line.split()]
                     else:
                         raise NotImplementedError(
                             'Unsupported final state spec.')
-                elif isinstance(Si, int):
-                    if isinstance(Sf, int):
+                elif isinstance(state_i, int):
+                    if isinstance(state_f, int):
                         val = [float(item)
                                for item in dblock[-1][0].split()[2:]]
-                    elif Sf == 'a':
+                    elif state_f == 'a':
                         val = {}
                         for line in dblock[-1]:
                             cols = line.split()
@@ -186,8 +187,8 @@ def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
                     else:
                         raise NotImplementedError(
                             'Unsupported final state spec.')
-                elif Si == 'a':
-                    if isinstance(Sf, int):
+                elif state_i == 'a':
+                    if isinstance(state_f, int):
                         val = {}
                         for line in dblock[-1]:
                             cols = line.split()
@@ -195,7 +196,7 @@ def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
                             x, y, z = float(cols[2]), float(cols[3]), \
                                 float(cols[4])
                             val[i] = [x, y, z]
-                    elif Sf == 'a':
+                    elif state_f == 'a':
                         val = {}
                         for line in dblock[-1]:
                             cols = line.split()
@@ -212,6 +213,21 @@ def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
                     raise NotImplementedError(
                         'Unsupported initial state spec.')
                 dobj.set(data=val)
+            elif qlab.derord == 1:
+                if isinstance(state_f, int):
+                    if ref_state >= 0 and state_f != ref_state:
+                        raise QuantityError(
+                            f'State of reference {ref_state} incompatible with'
+                            ' requested state {state_f}')
+                # c and a are always OK
+                dobj.set(unit='e')
+                x = [float(item.replace('D', 'e')) for vec in dblock[-1][0::3]
+                     for item in vec.split()][3:]
+                y = [float(item.replace('D', 'e')) for vec in dblock[-1][1::3]
+                     for item in vec.split()][3:]
+                z = [float(item.replace('D', 'e')) for vec in dblock[-1][2::3]
+                     for item in vec.split()][3:]
+                dobj.set(data=[list(xyz) for xyz in zip(x, y, z)])
             else:
                 raise NotImplementedError(
                     'Electronic transition dipole moments derivatives NYI')
@@ -232,24 +248,24 @@ def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
                 raise NotImplementedError()
     elif qlab.label == 102:
         if isinstance(qlab.rstate, tuple):
-            Si, Sf = qlab.rstate
+            state_i, state_f = qlab.rstate
             if qlab.derord == 0:
                 dobj.set(unit='hbar.e/me')
-                if Si == 0:
-                    if isinstance(Sf, int):
+                if state_i == 0:
+                    if isinstance(state_f, int):
                         val = [float(item) for item in dblock[-1][0].split()]
-                    elif Sf == 'a':
+                    elif state_f == 'a':
                         val = {}
                         for i, line in enumerate(dblock[-1]):
                             val[i+1] = [float(item) for item in line.split()]
                     else:
                         raise NotImplementedError(
                             'Unsupported final state spec.')
-                elif isinstance(Si, int):
-                    if isinstance(Sf, int):
+                elif isinstance(state_i, int):
+                    if isinstance(state_f, int):
                         val = [float(item)
                                for item in dblock[-1][0].split()[2:]]
-                    elif Sf == 'a':
+                    elif state_f == 'a':
                         val = {}
                         for line in dblock[-1]:
                             cols = line.split()
@@ -260,8 +276,8 @@ def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
                     else:
                         raise NotImplementedError(
                             'Unsupported final state spec.')
-                elif Si == 'a':
-                    if isinstance(Sf, int):
+                elif state_i == 'a':
+                    if isinstance(state_f, int):
                         val = {}
                         for line in dblock[-1]:
                             cols = line.split()
@@ -269,7 +285,7 @@ def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
                             x, y, z = float(cols[2]), float(cols[3]), \
                                 float(cols[4])
                             val[i] = [x, y, z]
-                    elif Sf == 'a':
+                    elif state_f == 'a':
                         val = {}
                         for line in dblock[-1]:
                             cols = line.split()
@@ -286,6 +302,21 @@ def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
                     raise NotImplementedError(
                         'Unsupported initial state spec.')
                 dobj.set(data=val)
+            elif qlab.derord == 1:
+                if isinstance(state_f, int):
+                    if ref_state >= 0 and state_f != ref_state:
+                        raise QuantityError(
+                            f'State of reference {ref_state} incompatible with'
+                            ' requested state {state_f}')
+                # c and a are always OK
+                dobj.set(unit='hbar.e/(me.a0)')
+                x = [float(item.replace('D', 'e')) for vec in dblock[-1][0::3]
+                     for item in vec.split()][3:]
+                y = [float(item.replace('D', 'e')) for vec in dblock[-1][1::3]
+                     for item in vec.split()][3:]
+                z = [float(item.replace('D', 'e')) for vec in dblock[-1][2::3]
+                     for item in vec.split()][3:]
+                dobj.set(data=[list(xyz) for xyz in zip(x, y, z)])
             else:
                 raise NotImplementedError(
                     'Electronic transition dipole moments derivatives NYI')
@@ -300,14 +331,14 @@ def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
                 raise NotImplementedError(f'Prp {qlab.label} NYI')
     elif qlab.label == 107:
         if isinstance(qlab.rstate, tuple):
-            Si, Sf = qlab.rstate
+            state_i, state_f = qlab.rstate
             if qlab.derord == 0:
                 dobj.set(unit='e.a0^2')
-                if Si == 0:
-                    if isinstance(Sf, int):
+                if state_i == 0:
+                    if isinstance(state_f, int):
                         val = g_elquad_LT_to_2D(
                             [float(item) for item in dblock[-1][0].split()])
-                    elif Sf == 'a':
+                    elif state_f == 'a':
                         val = {}
                         for i, line in enumerate(dblock[-1]):
                             val[i+1] = g_elquad_LT_to_2D(
@@ -315,12 +346,12 @@ def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
                     else:
                         raise NotImplementedError(
                             'Unsupported final state spec.')
-                elif isinstance(Si, int):
-                    if isinstance(Sf, int):
+                elif isinstance(state_i, int):
+                    if isinstance(state_f, int):
                         val = g_elquad_LT_to_2D(
                             [float(item)
                              for item in dblock[-1][0].split()[2:]])
-                    elif Sf == 'a':
+                    elif state_f == 'a':
                         val = {}
                         for line in dblock[-1]:
                             cols = line.split()
@@ -330,15 +361,15 @@ def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
                     else:
                         raise NotImplementedError(
                             'Unsupported final state spec.')
-                elif Si == 'a':
-                    if isinstance(Sf, int):
+                elif state_i == 'a':
+                    if isinstance(state_f, int):
                         val = {}
                         for line in dblock[-1]:
                             cols = line.split()
                             j, i = int(cols[0]), int(cols[1])
                             val[i] = g_elquad_LT_to_2D(
                                 [float(item) for item in cols[2:]])
-                    elif Sf == 'a':
+                    elif state_f == 'a':
                         val = {}
                         for line in dblock[-1]:
                             cols = line.split()
@@ -354,6 +385,28 @@ def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
                     raise NotImplementedError(
                         'Unsupported initial state spec.')
                 dobj.set(data=val)
+            elif qlab.derord == 1:
+                if isinstance(state_f, int):
+                    if ref_state >= 0 and state_f != ref_state:
+                        raise QuantityError(
+                            f'State of reference {ref_state} incompatible with'
+                            ' requested state {state_f}')
+                # c and a are always OK
+                dobj.set(unit='e.a0')
+                xx = [float(item.replace('D', 'e')) for vec in dblock[-1][0::6]
+                      for item in vec.split()][3:]
+                yy = [float(item.replace('D', 'e')) for vec in dblock[-1][1::6]
+                      for item in vec.split()][3:]
+                zz = [float(item.replace('D', 'e')) for vec in dblock[-1][2::6]
+                      for item in vec.split()][3:]
+                xy = [float(item.replace('D', 'e')) for vec in dblock[-1][3::6]
+                      for item in vec.split()][3:]
+                xz = [float(item.replace('D', 'e')) for vec in dblock[-1][4::6]
+                      for item in vec.split()][3:]
+                yz = [float(item.replace('D', 'e')) for vec in dblock[-1][5::6]
+                      for item in vec.split()][3:]
+                dobj.set(data=[g_elquad_LT_to_2D(xyz)
+                               for xyz in zip(xx, yy, zz, xy, xz, yz)])
             else:
                 raise NotImplementedError(
                     'Electronic transition dipole moments derivatives NYI')
@@ -362,10 +415,7 @@ def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
                 # we should check if the state is the right one.
                 raise NotImplementedError(f'Prp {qlab.label} NYI')
 
-            if qlab.derord == 0:
-                raise NotImplementedError(f'Prp {qlab.label} NYI')
-            else:
-                raise NotImplementedError(f'Prp {qlab.label} NYI')
+            raise NotImplementedError(f'Prp {qlab.label} NYI')
     else:
         raise NotImplementedError(f'Quantity {qlab.label} not yet supported.')
 
