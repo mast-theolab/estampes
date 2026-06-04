@@ -155,7 +155,7 @@ def parse_argval_options(argval: str,
                          delim: str = '(',
                          choices: Sequence[str] | None = None,
                          convert: Callable[[str], str] | None = None,
-                         ) -> tuple[str, Sequence[list], dict[str, str]]:
+                         ) -> tuple[str, list[str], dict[str, str]]:
     """Parse options stored in an argument value.
 
     Parses a commandline or option value, extracting sub-options if
