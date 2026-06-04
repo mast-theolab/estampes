@@ -32,6 +32,7 @@ Other blocks are:
 - **API**: Added parsing of first derivatives of electronic transitions dipole moments for electric dipole, magnetic dipole and electric quadrupole from Gaussian log files.
 
 ### Fixed
+- **LIB**(`data.visual`): Fixed material keyword for plastic in POV-Ray.
 - **API**: Fixed shape of the mass-weighted normal-coordinates matrix when directly read from data file to be consistent to the one generated from force constants matrix in method `DataFile.get_hess_data` (2D arrays systematically generated).
 - **API**: Fixed parsing of `FCDat:Assign` from Gaussian log files. `QData.data` returns a dictionary of all extracted data.
 

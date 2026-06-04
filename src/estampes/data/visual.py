@@ -55,7 +55,7 @@ MATERIALS = {
         'povray': 'Mater_Metal'
     },
     'plastic': {
-        'povray': 'Mater_Metal'
+        'povray': 'Mater_Plastic'
     },
 }
 
