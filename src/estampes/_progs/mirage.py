@@ -11,12 +11,13 @@ import sys
 import os
 import argparse
 import typing as tp
+from collections.abc import Sequence
 
 import numpy as np
 
-from estampes.base import QLabel
+from estampes.base import QLabel, ParsingError
 from estampes.parser import DataFile
-from estampes.data.colors import to_rgb_list
+# from estampes.data.colors import to_rgb_list
 from estampes.data.physics import PHYSFACT
 from estampes.data.visual import MODELS, MATERIALS
 from estampes.tools.char import parse_argval_options
@@ -123,7 +124,7 @@ NOTE: only available if input file contains eigenvectors.'''
     # scale
 
 
-def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
+def parse_args(args: Sequence[str]) -> argparse.Namespace:
     """Parse arguments.
 
     Parameters
@@ -142,9 +143,9 @@ def parse_args(args: tp.Sequence[str]) -> argparse.Namespace:
     return parser.parse_args(args)
 
 
-def extract_data(infile: tp.Sequence[str],
+def extract_data(infile: str,
                  tol_bond: float,
-                 read_vib: bool = False) -> tp.Dict[str, tp.Any]:
+                 read_vib: bool = False) -> dict[str, tp.Any]:
     """Extract data from one input file.
 
     Extracts atomic data and coordinates, as well as on vibrational
@@ -172,16 +173,19 @@ def extract_data(infile: tp.Sequence[str],
     }
 
     dfile = DataFile(infile)
-    dobjs = dfile.get_data(**dkeys)
+    dobjs = dfile.get_data(error_noqty=True, **dkeys)
+    if dobjs is None:
+        raise ParsingError(
+            f'Failed to extract structure information from {infile}')
     data['atnum'] = dobjs['atnum'].data
     data['coord'] = np.array(dobjs['atcrd'].data)*PHYSFACT.bohr2ang
     data['bonds'] = list_bonds(data['atnum'], data['coord'], tol_bond)
 
     if read_vib:
-        data['eval'], data['evec'] = dfile.get_hess_data(
-            get_evec=False, get_eval=True, get_lweigh=True)
-        # data['evec'] = dfile.get_hess_data(get_evec=True, get_eval=False,
-        #                                    get_lweigh=False)
+        res = dfile.get_hess_data(get_evec=False, get_eval='eval',
+                                  get_lweigh='evec')
+        data['eval'] = res['eval']
+        data['evec'] = res['evec']
 
     return data
 
@@ -220,7 +224,7 @@ def main():
         print('ERROR: Molecular representation model unsupported.')
         print('       This should not happen.')
         sys.exit(1)
-    vib_opts = {'col0': None, 'col1': None}
+    vib_opts: dict[str, str | None] = {'col0': None, 'col1': None}
     if read_vib:
         if opts.vib_model is None:
             vib_model = 'arrows'
@@ -380,7 +384,9 @@ def main():
             table.resizeColumnToContents(0)
             table.horizontalHeader().setSectionResizeMode(
                 QtWidgets.QHeaderView.Stretch)
-            table.cellClicked.connect(
+            # Pylint disabled because it does not recognize the C++ structure
+            # of Qt for Python, resulting in a false positive.
+            table.cellClicked.connect(  # pylint: disable=E1101
                 lambda row, col: molwin.upd_vibmode(
                     mols_evec[row].reshape(-1, 3), model=vib_model,
                     material=vib_mat, color=vib_opts['col0'],

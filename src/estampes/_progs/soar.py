@@ -112,8 +112,8 @@ def main():
         'num': QLabel(quantity='AtNum'),
         'crd': QLabel(quantity='AtCrd')
     }
-    Lmat_ref, freq_ref = dfile_ref.get_hess_data()
-    Lmat_new, freq_new = dfile_new.get_hess_data()
+    hessdat_ref = dfile_ref.get_hess_data()
+    hessdat_new = dfile_new.get_hess_data()
 
     data_ref = dfile_ref.get_data(error_noqty=True, **keys)
     data_new = dfile_new.get_data(error_noqty=True, **keys)
@@ -127,25 +127,27 @@ def main():
     at_mass = np.array(data_ref['mass'].data)
     c_ref = np.array(data_ref['crd'].data)
     c_new = np.array(data_new['crd'].data)
-    n_vib = Lmat_ref.shape[0]
+    n_vib = hessdat_ref['evec'].shape[0]
     if dopts.superpose:
         # Put first molecule in Eckart orientation and rotate the eigenvectors
         c_ref, rotmat = eckart_orient(c_ref, at_mass, True).values()
-        Lmat_ref = np.reshape(np.reshape(Lmat_ref, (n_vib, -1, 3)) @ rotmat,
-                              (n_vib, -1))
+        hessdat_ref['evec'] = np.reshape(np.reshape(hessdat_ref['evec'],
+                                                    (n_vib, -1, 3)) @ rotmat,
+                                         (n_vib, -1))
         # Superpose second geometry on top of first
         rotmat, _, c_new = superpose(c_ref, c_new, at_mass, get_ctrans=True)
-        Lmat_new = np.reshape(np.reshape(Lmat_new, (n_vib, -1, 3)) @ rotmat,
-                              (n_vib, -1))
+        hessdat_new['evec'] = np.reshape(np.reshape(hessdat_new['evec'],
+                                                    (n_vib, -1, 3)) @ rotmat,
+                                         (n_vib, -1))
 
-    jmat = build_dusch_J(Lmat_new, Lmat_ref)
-    kvec = build_dusch_K(Lmat_ref, at_mass, c_new - c_ref)
+    jmat = build_dusch_J(hessdat_new['evec'], hessdat_ref['evec'])
+    kvec = build_dusch_K(hessdat_ref['evec'], at_mass, c_new - c_ref)
 
     print('''\
  num. | Ref. freq. |  New freq.
  -----+------------+-----------''')
     i = 0
-    for x, y in zip(freq_ref, freq_new):
+    for x, y in zip(hessdat_ref['freq'], hessdat_new['freq']):
         i += 1
         print(f' {i:4d} | {x:10.4f} | {y:10.4f}')
 

@@ -42,15 +42,16 @@ import numpy.typing as npt
 from estampes.base import QLabel
 from estampes.base.types import (
     AtCrdType, AtLabType,
-    AtsCrdType, AtsLabType, BondType, BondsType, VibType,
+    AtsCrdType, AtsLabType, BondsType, VibType,
     MAtsCrdType, MAtsLabType, MBondsType, MVibType)
-from estampes.base.errors import ArgumentError, InternalError, QuantityError
+from estampes.base.errors import (
+    ArgumentError, InternalError, ParsingError, QuantityError)
 from estampes.parser import DataFile
 from estampes.data.atom import atomic_data
 from estampes.data.colors import to_rgb_list
 from estampes.data.physics import PHYSFACT
-from estampes.data.visual import BONDDATA, MODELS, MOLCOLS, RAD_VIS_SCL, \
-    VIBCOLS
+from estampes.data.visual import (
+    BONDDATA, MATERIALS, MODELS, MOLCOLS, RAD_VIS_SCL, VIBCOLS)
 from estampes.tools.atom import convert_labsymb
 from estampes.tools.math import rotate, vrotate_3D
 from estampes.tools.mol import list_bonds
@@ -226,12 +227,6 @@ MAT_METAL = '''
 #end
 '''
 
-CHOICES_MATER = {
-    'glass': 'Mater_Glass',
-    'plastic': 'Mater_Plastic',
-    'metal': 'Mater_Metal'
-}
-
 
 class POVBuilder():
     """POV-Ray input builder.
@@ -303,8 +298,16 @@ class POVBuilder():
             raise ArgumentError(
                 'POVBuilder should be initialized with a single mode.')
 
-        self.__load_vibs = load_vibs
-        self.__reset_db()
+        self.__load_vibs: bool = load_vibs
+        self.__nmols: int = 0
+        self.__atcrd: dict[int, npt.NDArray] = {}
+        self.__atlab: dict[int, AtsLabType] = {}
+        self.__bonds: dict[int, BondsType] = {}
+        self.__vmodes: dict[int, npt.NDArray] = {}
+        self.__infiles: list[str] = []
+        self.__loaded: list[bool] = []
+        self.__nat3: list[int] = []
+        self.__nvibs: list[int] = []
         if infiles is not None:
             if isinstance(infiles, (tuple, list)):
                 if load_data:
@@ -313,19 +316,17 @@ class POVBuilder():
                 else:
                     self.__nmols = len(infiles)
                     self.__infiles = infiles[:]
-                    self.__atcrd = [None for _ in range(self.__nmols)]
-                    self.__atlab = [None for _ in range(self.__nmols)]
-                    self.__vmodes = [None for _ in range(self.__nmols)]
                     self.__loaded = [False for _ in range(self.__nmols)]
+                    self.__nvibs: list[int] = [0 for _ in range(self.__nmols)]
+                    self.__nat3: list[int] = [0 for _ in range(self.__nmols)]
             else:
                 if load_data:
                     self.load_data(infile=infiles, **params)
                 else:
                     self.__infiles = [infiles]
-                    self.__atcrd = [None]
-                    self.__atlab = [None]
-                    self.__vmodes = [None]
                     self.__loaded = [False]
+                    self.__nat3 = [0]
+                    self.__nvib = [0]
         else:
             if at_crds is None or at_labs is None:
                 raise ArgumentError(
@@ -334,37 +335,45 @@ class POVBuilder():
             if (not isinstance(at_crds, Sequence)
                     or not isinstance(at_labs, Sequence)):
                 raise ArgumentError(
-                    'Atomic labels and coordinates should be sequences.')
+                    'Atomic labels and coordinates must be sequences.')
             if nmols > 1:
                 self.__nmols = nmols
                 ndims = np.asarray(at_crds).ndim
                 if ndims == 3:
-                    self.__atcrd = [np.array(item) for item in at_crds]
-                    if any((item.ndim != 2 for item in self.__atcrd)):
+                    self.__atcrd = {i: np.array(item)
+                                    for i, item in enumerate(at_crds)}
+                    if any((item.ndim != 2
+                            for _, item in self.__atcrd.items())):
                         raise ArgumentError('Expected array of coordinates')
                     if len(self.__atcrd) != nmols:
                         raise ArgumentError(f'Expected {nmols} structures.')
                 elif ndims == 2:
-                    self.__atcrd = [np.array(item).reshape(-1, 3)
-                                    for item in at_crds]
+                    self.__atcrd = {i: np.array(item).reshape(-1, 3)
+                                    for i, item in enumerate(at_crds)}
                     if len(self.__atcrd) != nmols:
                         raise ArgumentError(f'Expected {nmols} structures.')
                 else:
                     raise ArgumentError('Unknown structure for at_crds')
+                self.__nat3 = [item.size for _, item in self.__atcrd.items()]
                 ndims = len(np.shape(at_labs))
                 if ndims == 1:
                     # We expand atlab to be the same for each quantity
-                    self.__atlab = [  # type: ignore
-                        list(at_labs) for _ in range(nmols)]
+                    # simple basic control: all coordinates have same size.
+                    if min(self.__nat3) != max(self.__nat3):
+                        raise ArgumentError(
+                            'atlab',
+                            'Atlab cannot be propagated onto different '
+                            + 'structures')
+                    self.__atlab = {i: list(at_labs) for i in range(nmols)}
                 elif ndims == 2:
                     if len(at_labs) != nmols:
                         raise ArgumentError(
                             f'Expected {nmols} groups of atomic labels.')
-                    self.__atlab = list(at_labs)  # type: ignore
+                    self.__atlab = {i: item for i, item in enumerate(at_labs)}
                 else:
                     raise ArgumentError('Unexpected structure of at_labs')
                 if v_modes is not None:
-                    shape = np.shape(self.__vmodes)
+                    shape = np.asarray(v_modes).shape
                     if len(shape) < 3:
                         raise ArgumentError(
                             'modes',
@@ -373,27 +382,28 @@ class POVBuilder():
                     if shape[0] != nmols:
                         raise IndexError(
                             'The modes do not match the number of molecules')
-                    self.__vmodes = [np.array(item) for item in v_modes]
-                    n_at3 = self.__atcrd[0].size
-                    self.__nvibs = self.__vmodes[0].size // n_at3
-                    if self.__nvibs == 1:
-                        # We have only 1 vibration stored, reverse number for
-                        # internal use
-                        self.__nvibs = -1
-                        if self.__vmodes[0].ndim == 2:
-                            for i in range(self.__nmols):
+                    self.__vmodes = {i: np.array(item)
+                                     for i, item in enumerate(v_modes)}
+                    self.__nvibs = [self.__vmodes[i].size // self.__nat3[i]
+                                    for i in range(self.__nmols)]
+                    for i, nvib in enumerate(self.__nvibs):
+                        if nvib == 1:
+                            # We have only 1 vibration stored, reverse number
+                            # for internal use
+                            self.__nvibs[i] = -1
+                            if self.__vmodes[i].ndim == 2:
                                 self.__vmodes[i] = np.reshape(
-                                    self.__vmodes[i], (1, n_at3))
-                    else:
-                        if self.__vmodes[0].ndim == 3:
-                            for i in range(self.__nmols):
+                                    self.__vmodes[i], (1, self.__nat3[i]))
+                        else:
+                            if self.__vmodes[i].ndim == 3:
                                 self.__vmodes[i] = np.reshape(
-                                    self.__vmodes[i], (-1, n_at3))
-                        elif self.__vmodes[0].ndim != 2:
-                            raise ArgumentError(
-                                'Expected vibrational modes as 2D array')
+                                    self.__vmodes[i], (-1, self.__nat3[i]))
+                            elif self.__vmodes[i].ndim != 2:
+                                raise ArgumentError(
+                                    'Expected vibrational modes as 2D array')
                 else:
-                    self.__vmodes = [None for _ in range(nmols)]
+                    self.__vmodes = {}
+                    self.__nvibs = [0 for _ in range(nmols)]
                 self.__loaded = [True for _ in range(nmols)]
                 if in_au:
                     self.__atcrd *= PHYSFACT.bohr2ang
@@ -401,41 +411,42 @@ class POVBuilder():
                 self.__nmols = 1
                 ndims = np.asarray(at_crds).ndim
                 if ndims == 2:
-                    self.__atcrd = [np.array(at_crds)]
+                    self.__atcrd[0] = np.array(at_crds)
                 elif ndims == 1:
-                    self.__atcrd = [np.array(at_crds).reshape(-1, 3)]
+                    self.__atcrd[0] = np.array(at_crds).reshape(-1, 3)
                 else:
                     raise ArgumentError('Unknown structure for at_crds')
+                self.__nat3 = [self.__atcrd[0].size]
                 # We store the number of atoms to check vibrations
                 # Indeed, we may have a full array or only 1 vibration
-                n_at3 = self.__atcrd[0].size
                 if self.__atcrd[0].ndim != 2:
                     raise ArgumentError('Expected coordinates as 2D array')
                 ndims = len(np.shape(at_labs))
                 if ndims == 1:
-                    self.__atlab = [at_labs]  # type: ignore
+                    self.__atlab[0] = at_labs
                 else:
                     raise ArgumentError('Unexpected structure of at_labs')
                 if v_modes is not None:
-                    self.__vmodes = [np.array(v_modes)]
+                    self.__vmodes[0] = np.array(v_modes)
                     # first check how many elements are given
-                    self.__nvibs = self.__vmodes[0].size // n_at3
-                    if self.__nvibs == 1:
+                    self.__nvibs = [self.__vmodes[0].size // self.__nat3[0]]
+                    if self.__nvibs[0] == 1:
                         # We have only 1 vibration stored, reverse number for
                         # internal use
-                        self.__nvibs = -1
+                        self.__nvibs[0] = -1
                         if self.__vmodes[0].ndim == 2:
                             self.__vmodes[0] = np.reshape(self.__vmodes[0],
-                                                          (1, n_at3))
+                                                          (1, self.__nat3[0]))
                     else:
                         if self.__vmodes[0].ndim == 3:
                             self.__vmodes[0] = np.reshape(
-                                self.__vmodes[0], (-1, n_at3))
+                                self.__vmodes[0], (-1, self.__nat3[0]))
                         elif self.__vmodes[0].ndim != 2:
                             raise ArgumentError(
                                 'Expected vibrational modes as 2D array')
                 else:
-                    self.__vmodes = [None]
+                    self.__vmodes = {}
+                    self.__nvibs = [0]
                 self.__loaded = [True]
                 if in_au:
                     self.__atcrd[0] *= PHYSFACT.bohr2ang
@@ -443,15 +454,14 @@ class POVBuilder():
                 raise ArgumentError(
                     'Negative number of arguments not allowed.')
             _tol_bonds = params.get('tol_bonds', 1.2)
-            self.__bonds = []
+            self.__bonds = {}
             for imol in range(nmols):
                 if self.__atlab[imol] is None or self.__atcrd[imol] is None:
                     raise InternalError(
                         'Incorrectly built atomic labels and coordinates')
-                self.__bonds.append(
-                    list_bonds(self.__atlab[imol],  # type: ignore
-                               self.__atcrd[imol],  # type: ignore
-                               _tol_bonds))
+                self.__bonds[imol] = list_bonds(self.__atlab[imol],
+                                                self.__atcrd[imol],
+                                                _tol_bonds)
 
         if povfile is not None:
             self.__povfile = povfile
@@ -459,14 +469,15 @@ class POVBuilder():
             self.__povfile = None
 
     def __reset_db(self):
-        self.__nmols: int = 0
-        self.__atcrd: list[npt.NDArray] | list[None] = []
-        self.__atlab: list[AtsLabType] | list[None] = []
-        self.__bonds: list[BondsType] = []
-        self.__vmodes: list[npt.NDArray] | list[None] = []
-        self.__infiles: list[str] = []
-        self.__loaded: list[bool] = []
-        self.__nvibs: int = 0
+        self.__nmols = 0
+        self.__atcrd = {}
+        self.__atlab = {}
+        self.__bonds = {}
+        self.__vmodes = {}
+        self.__infiles = []
+        self.__loaded = []
+        self.__nvibs = []
+        self.__nat3 = []
 
     def load_data(self, *,
                   infile: str | int | None = None,
@@ -505,7 +516,7 @@ class POVBuilder():
         _tol_bonds = params.get('tol_bonds', 1.2)
         extfile = isinstance(infile, str)
         if extfile:
-            ifile = 0
+            ifile = -1
             if reset:
                 self.__reset_db()
             if infile in self.__infiles:
@@ -517,116 +528,114 @@ class POVBuilder():
             qdata = dfile.get_data(**dkeys, error_noqty=True)
             if qdata is None:
                 raise QuantityError('Unable to extract data')
-            if ifile == 0:
+            if ifile == -1:
                 self.__infiles.append(infile)
                 self.__nmols += 1
+                ifile = self.__nmols - 1
                 self.__loaded.append(True)
 
-                self.__atcrd.append(
-                    np.array(qdata['atcrd'].data)*PHYSFACT.bohr2ang)
-                self.__atlab.append(
-                    convert_labsymb(True, *qdata['atnum'].data))
-                self.__bonds.append(
-                    list_bonds(self.__atlab[-1], self.__atcrd[-1], _tol_bonds))
+                self.__atcrd[ifile] = \
+                    np.array(qdata['atcrd'].data)*PHYSFACT.bohr2ang
+                self.__nat3.append(self.__atcrd[ifile].size)
+                self.__atlab[ifile] = \
+                    convert_labsymb(True, *qdata['atnum'].data)
+                if self.__atlab[ifile] is None or self.__atcrd[ifile] is None:
+                    raise InternalError(
+                        'Failure to extract structure information.')
+                self.__bonds[ifile] = \
+                    list_bonds(self.__atlab[ifile], self.__atcrd[ifile],
+                               _tol_bonds)
                 if self.__load_vibs:
-                    n_at3 = self.__atcrd[0].size
                     try:
-                        self.__vmodes.append(dfile.get_hess_data(True, False))
+                        self.__vmodes[ifile] = \
+                            dfile.get_hess_data(True, False)['evec']
+                        self.__nvibs.append(
+                            self.__vmodes[ifile].size // self.__nat3[-1])
                     except QuantityError:
-                        self.__vmodes.append(None)
-                    nvib = self.__vmodes[0].size // n_at3
-                    if self.__nvibs == 0:
-                        self.__nvibs = nvib
-                    else:
-                        if self.__nvibs != nvib:
-                            raise ValueError(
-                                'Inconsistency in number of normal modes')
+                        pass
             else:
                 self.__loaded[ifile] = True
                 self.__atcrd[ifile] = \
                     np.array(qdata['atcrd'].data)*PHYSFACT.bohr2ang
+                self.__nat3[ifile] = self.__atcrd[ifile].size
                 self.__atlab[ifile] = \
                     convert_labsymb(True, *qdata['atnum'].data)
                 self.__bonds[ifile] = \
                     list_bonds(self.__atlab[ifile],
                                self.__atcrd[ifile], _tol_bonds)
                 if self.__load_vibs:
-                    n_at3 = self.__atcrd[ifile].size
                     try:
-                        self.__vmodes[ifile] = dfile.get_hess_data(True, False)
+                        self.__vmodes[ifile] = \
+                            dfile.get_hess_data(True, False)['evec']
+                        self.__nvibs[ifile] = self.__vmodes[ifile].size \
+                            // self.__nat3[ifile]
                     except QuantityError:
-                        self.__vmodes[ifile] = None
-                    nvib = self.__vmodes[ifile].size // n_at3
-                    if self.__nvibs == 0:
-                        self.__nvibs = nvib
-                    else:
-                        if self.__nvibs != nvib:
-                            raise ValueError(
-                                'Inconsistency in number of normal modes')
+                        pass
         elif isinstance(infile, int):
             # Check if content already loaded:
             if self.__loaded[infile] and not force_reload:
                 return
             dfile = DataFile(self.__infiles[infile])
-            qdata = dfile.get_data(**dkeys)
+            qdata = dfile.get_data(error_noqty=True, **dkeys)
+            if qdata is None:
+                raise ParsingError(
+                    f'Failed to extract data from file {infile}')
             self.__loaded[infile] = True
             self.__atcrd[infile] = \
                 np.array(qdata['atcrd'].data)*PHYSFACT.bohr2ang
+            self.__nat3[infile] = self.__atcrd[infile].size
             self.__atlab[infile] = \
                 convert_labsymb(True, *qdata['atnum'].data)
             self.__bonds[infile] = \
                 list_bonds(self.__atlab[infile],
                            self.__atcrd[infile], _tol_bonds)
             if self.__load_vibs:
-                n_at3 = self.__atcrd[infile].size
                 try:
-                    self.__vmodes[infile] = dfile.get_hess_data(True, False)
+                    self.__vmodes[infile] = \
+                        dfile.get_hess_data(True, False)['evec']
+                    self.__nvibs[infile] = self.__vmodes[infile].size \
+                        // self.__nat3[infile]
                 except QuantityError:
-                    self.__vmodes[infile] = None
-                nvib = self.__vmodes[infile].size // n_at3
-                if self.__nvibs == 0:
-                    self.__nvibs = nvib
-                else:
-                    if self.__nvibs != nvib:
-                        raise ValueError(
-                            'Inconsistency in number of normal modes')
-        else:
-            for ifile, fname in self.__infiles:
+                    pass
+        elif infile is None:
+            for ifile, fname in enumerate(self.__infiles):
                 # Check if content already loaded:
                 if self.__loaded[ifile] and not force_reload:
                     continue
                 dfile = DataFile(fname)
-                qdata = dfile.get_data(**dkeys)
+                qdata = dfile.get_data(error_noqty=True, **dkeys)
+                if qdata is None:
+                    raise ParsingError(
+                        f'Failed to extract data from file {fname}')
                 self.__loaded[ifile] = True
                 self.__atcrd[ifile] = \
                     np.array(qdata['atcrd'].data)*PHYSFACT.bohr2ang
+                self.__nat3[ifile] = self.__atcrd[ifile].size
                 self.__atlab[ifile] = \
                     convert_labsymb(True, *qdata['atnum'].data)
                 self.__bonds[ifile] = \
                     list_bonds(self.__atlab[ifile],
                                self.__atcrd[ifile], _tol_bonds)
                 if self.__load_vibs:
-                    n_at3 = self.__atcrd[ifile].size
                     try:
-                        self.__vmodes[ifile] = dfile.get_hess_data(True, False)
+                        self.__vmodes[ifile] = \
+                            dfile.get_hess_data(True, False)['evec']
+                        self.__nvibs[ifile] = \
+                            self.__vmodes[ifile].size // self.__nat3[ifile]
                     except QuantityError:
-                        self.__vmodes[ifile] = None
-                    nvib = self.__vmodes[ifile].size // n_at3
-                    if self.__nvibs == 0:
-                        self.__nvibs = nvib
-                    else:
-                        if self.__nvibs != nvib:
-                            raise ValueError(
-                                'Inconsistency in number of normal modes')
+                        pass
+        else:
+            raise ArgumentError('infile',
+                                'Unrecognized information passed as infile')
 
     def write_pov(self, *, povname: str | None = None,
                   id_mol: int | None = None,
                   id_vib: int | None = None,
                   merge_mols: bool = True,
-                  mol_model: str = 'balls',
-                  mol_mater: str = 'plastic',
-                  vib_model: str = 'arrows',
-                  vib_mater: str = 'plastic',
+                  mol_model: str | None = None,
+                  mol_mater: str | None = None,
+                  vib_model: str | None = None,
+                  vib_mater: str | None = None,
                   verbose: bool = True,
                   animate: bool = False,
                   **params):
@@ -665,6 +674,57 @@ class POVBuilder():
             - write_pov_mol: rotation
             - write_pov_vib: rotation
         """
+        # Check representation model for molecules
+        if mol_model is None:
+            mol_model = 'balls'
+        elif not isinstance(mol_model, str):
+            raise ArgumentError('mol_model', 'Incorrect value for "mol_model')
+        else:
+            key = mol_model.lower()
+            mol_models = None
+            for label, params in MODELS['mol'].items():
+                if key in params['alias']:
+                    mol_models = label
+            if mol_models is None:
+                raise ArgumentError('mol_model',
+                                    'Unrecognized representation of molecules')
+        # Check representation model for vibrations
+        if vib_model is None:
+            vib_model = 'balls'
+        elif not isinstance(vib_model, str):
+            raise ArgumentError('vib_model', 'Incorrect value for "vib_model')
+        else:
+            key = vib_model.lower()
+            vib_models = None
+            for label, params in MODELS['vib'].items():
+                if key in params['alias']:
+                    vib_models = label
+            if vib_models is None:
+                raise ArgumentError(
+                    'vib_model', 'Unrecognized representations of vibrations')
+        # Check material for molecules
+        if mol_mater is None:
+            mol_mater = 'plastic'
+        elif not isinstance(mol_mater, str):
+            raise ArgumentError('mol_mater', 'Incorrect value for "mol_mater')
+        else:
+            key = mol_mater.lower()
+            if key not in MATERIALS:
+                raise ArgumentError('mol_mater',
+                                    'Unrecognized material for molecules')
+            mol_mater = key
+        # Check material for vibrations
+        if vib_mater is None:
+            vib_mater = 'plastic'
+        elif not isinstance(vib_mater, str):
+            raise ArgumentError('vib_mater', 'Incorrect value for "vib_mater')
+        else:
+            key = vib_mater.lower()
+            if key not in MATERIALS:
+                raise ArgumentError('vib_mater',
+                                    'Unrecognized material for molecules')
+            vib_mater = key
+
         fmt_write_file = 'Description scene saved in file: {file}'
         # Initial check on arguments validity/consistency
         mol = None
@@ -990,7 +1050,7 @@ def write_pov_head(fobj: tp.TextIO,
         raise OSError('The file must be opened before') from err
 
     _mater = incl_material.lower()
-    if _mater not in set(CHOICES_MATER) | {'all'}:
+    if _mater not in set(MATERIALS) | {'all'}:
         _mater = 'all'
 
     if anim_type == 1:
@@ -1045,8 +1105,8 @@ light_source {{
 
 def write_pov_mol(fobj: tp.TextIO,
                   nmols: int,
-                  at_lab: MAtLabType,
-                  at_crd: MAtCrdType,
+                  at_lab: MAtsLabType,
+                  at_crd: MAtsCrdType,
                   bonds: MBondsType,
                   col_bond_as_atom: bool = False,
                   representation: str = 'balls',
@@ -1107,7 +1167,7 @@ def write_pov_mol(fobj: tp.TextIO,
     if representation not in ('balls', 'sticks', 'spheres'):
         raise ArgumentError('Unsupported molecular representation.')
 
-    if material not in CHOICES_MATER:
+    if material not in MATERIALS:
         raise ArgumentError('Unsupported material definition.')
 
     show_bonds = representation != 'spheres'
@@ -1124,12 +1184,12 @@ def write_pov_mol(fobj: tp.TextIO,
 
     fmt_mat_at = f'''
 #declare mat_at_{{at:2s}} = \
-{CHOICES_MATER[material]}({{c[0]:3d}}, {{c[1]:3d}}, {{c[2]:3d}})'''
+{MATERIALS[material]["povray"]}({{c[0]:3d}}, {{c[1]:3d}}, {{c[2]:3d}})'''
     fmt_mat_bo = '''
 #declare mat_bo_{at:2s} = material {{ mat_{ref} }}'''
     fmt_mat_mol = f'''
 #declare mat_mol{{id:02d}} = \
-{CHOICES_MATER[material]}({{c[0]:3d}}, {{c[1]:3d}}, {{c[2]:3d}})'''
+{MATERIALS[material]["povray"]}({{c[0]:3d}}, {{c[1]:3d}}, {{c[2]:3d}})'''
     fmt_rad_at = '''
 #declare r_at_{at:2s} = {r:.6f}*scl_rat;'''
     if nmols == 1:
@@ -1250,7 +1310,7 @@ def write_pov_mol(fobj: tp.TextIO,
             if not col_bond_as_atom:
                 fmt = f'''
 #declare mat_bond = \
-{CHOICES_MATER[material]}({{c[0]:3d}}, {{c[1]:3d}}, {{c[2]:3d}})
+{MATERIALS[material]["povray"]}({{c[0]:3d}}, {{c[1]:3d}}, {{c[2]:3d}})
 '''
                 fobj.write(fmt.format(c=BONDDATA['rgb']))
                 fmt = 'bond'
@@ -1399,7 +1459,7 @@ object {{
 
 
 def write_pov_vib(fobj: tp.TextIO,
-                  at_crd: MAtCrdType,
+                  at_crd: MAtsCrdType,
                   evec: VibType,
                   representation: str = 'arrow',
                   scale_vib: float = 1.0,
@@ -1449,10 +1509,10 @@ def write_pov_vib(fobj: tp.TextIO,
     try:
         if not fobj.writable():
             raise OSError('Cannot write on file.')
-    except AttributeError() as err:
+    except AttributeError as err:
         raise OSError('The file must be opened before') from err
 
-    if material not in CHOICES_MATER:
+    if material not in MATERIALS:
         raise ArgumentError('material',
                             'Unsupported material definition.')
 
@@ -1478,7 +1538,8 @@ def write_pov_vib(fobj: tp.TextIO,
                 raise ArgumentError('color',
                                     'Incorrect color specifications') \
                                     from err
-        fobj.write(OBJ_ARROW.format(mat=CHOICES_MATER[material], rgb=rgb0))
+        fobj.write(OBJ_ARROW.format(mat=MATERIALS[material]['povray'],
+                                    rgb=rgb0))
         fmt_vib = '''\
     object {{
         Build_Arrow({lvib})
@@ -1495,7 +1556,7 @@ def write_pov_vib(fobj: tp.TextIO,
                 raise ArgumentError('color',
                                     'Incorrect color specifications') \
                                     from err
-        fobj.write(OBJ_MID_ARROW.format(mat=CHOICES_MATER[material],
+        fobj.write(OBJ_MID_ARROW.format(mat=MATERIALS[material]['povray'],
                                         rgb=rgb0))
         fmt_vib = '''\
     object {{
@@ -1521,7 +1582,7 @@ def write_pov_vib(fobj: tp.TextIO,
                 raise ArgumentError('color2',
                                     'Incorrect color specifications') \
                                     from err
-        fobj.write(OBJ_DUAL_ARROW.format(mat=CHOICES_MATER[material],
+        fobj.write(OBJ_DUAL_ARROW.format(mat=MATERIALS[material]['povray'],
                                          rgb1=rgb0, rgb2=rgb1))
         scale_displ = 1.5  # we increase a bit the vector to be readable
         fmt_vib = '''\
@@ -1549,7 +1610,7 @@ def write_pov_vib(fobj: tp.TextIO,
                 raise ArgumentError('color2',
                                     'Incorrect color specifications') \
                                     from err
-        fobj.write(OBJ_2COL_SPHERE.format(mat=CHOICES_MATER[material],
+        fobj.write(OBJ_2COL_SPHERE.format(mat=MATERIALS[material]['povray'],
                                           rgb1=rgb0, rgb2=rgb1))
         fmt_vib = '''\
     object {{

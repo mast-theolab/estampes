@@ -94,13 +94,13 @@ class DataFile(object):
                                     **keys4qlabels)
 
     def get_hess_data(self,
-                      get_evec: bool = True,
-                      get_eval: bool = True,
-                      get_rmas: bool = False,
-                      get_lweigh: bool = False,
+                      get_evec: bool | str = True,
+                      get_eval: bool | str = True,
+                      get_rmas: bool | str = False,
+                      get_lweigh: bool | str = False,
                       pre_data: QDataType | None = None,
                       force_calc: bool | None = None
-                      ) -> tp.Any | list[tp.Any]:
+                      ) -> dict[str, tp.Any]:
         """Get or build Hessian data (eigenvectors and values).
 
         This function retrieves or builds the eigenvectors and
@@ -119,6 +119,9 @@ class DataFile(object):
         * for Gaussian log files, final data have insufficient precision
           and must be regenerated
 
+        For `get_` keywords, if a string is provided, it is used as key
+        in the returned dictionary.
+
         Parameters
         ----------
         get_evec
@@ -136,14 +139,14 @@ class DataFile(object):
 
         Returns
         -------
-        Returned values depend on what has been requested.
-        If only one quantity is requested, it is returned as is,
-        otherwise a list is returned containing by order:
+        dict
+            Dictionary containing the quantities requested.
+            Possible quantities are:
 
-        * eigenvectors
-        * eigenvalues
-        * reduced masses (if available).
-        * mass-weighted eigenvectors
+            * eigenvectors (default: `lmat`)
+            * eigenvalues (default: `freq`)
+            * reduced masses (default: `redmas`, if available).
+            * mass-weighted eigenvectors (default: `lmweigh`)
 
         Raises
         ------
@@ -222,8 +225,8 @@ class DataFile(object):
             if (len(fccart.shape) == 1 or shape == 'lt'):
                 res = build_vibrations(
                     square_ltmat(pre_data[key_ffx].data),
-                    atmas, atcrd, True, get_evec, get_eval, get_rmas,
-                    get_lweigh, nvib=nvib)
+                    atmas, atcrd, True, bool(get_evec), bool(get_eval),
+                    bool(get_rmas), bool(get_lweigh), nvib=nvib)
                 if get_evec:
                     eigvec = res['evec']
                 if get_eval:
@@ -310,8 +313,8 @@ class DataFile(object):
                         square_ltmat(tmp_data['d2EdX2'].data),
                         np.array(tmp_data['atmas'].data),
                         np.array(tmp_data['atcrd'].data),
-                        True, get_evec, get_eval, get_rmas,
-                        get_lweigh, nvib=nvib)
+                        True, bool(get_evec), bool(get_eval), bool(get_rmas),
+                        bool(get_lweigh), nvib=nvib)
                     if get_evec:
                         eigvec = res['evec']
                     if get_eval:
@@ -328,25 +331,35 @@ class DataFile(object):
                         msg = 'Unable to retrieve normal mode wavenumbers'
                         raise QuantityError(msg)
 
-        result = []
+        result = {}
         if get_evec:
             if eigvec is None:
                 raise QuantityError('Missing eigenvectors')
-            result.append(eigvec)
+            key = get_evec if isinstance(get_evec, str) else 'evec'
+            result[key] = eigvec
         if get_eval:
             if eigval is None:
                 raise QuantityError('Missing eigenvalues')
-            result.append(eigval)
+            key = get_eval if isinstance(get_eval, str) else 'eval'
+            if key in result:
+                raise ArgumentError(
+                    'Overlap in keywords for returned values in get_hess_data')
+            result[key] = eigval
         if get_rmas:
             if redmas is None:
                 raise QuantityError('Missing reduced masses')
-            result.append(redmas)
+            key = get_rmas if isinstance(get_rmas, str) else 'redmas'
+            if key in result:
+                raise ArgumentError(
+                    'Overlap in keywords for returned values in get_hess_data')
+            result[key] = redmas
         if get_lweigh:
             if lmweig is None:
                 raise QuantityError('Missing mass-weighted eigenvectors')
-            result.append(lmweig)
+            key = get_lweigh if isinstance(get_lweigh, str) else 'lmweigh'
+            if key in result:
+                raise ArgumentError(
+                    'Overlap in keywords for returned values in get_hess_data')
+            result[key] = lmweig
 
-        if len(result) == 1:
-            return result[0]
-        else:
-            return result
+        return result
