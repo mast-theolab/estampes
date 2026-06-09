@@ -28,6 +28,7 @@ Other blocks are:
 
 ### Added
 - **OAR**: New options `--overlap` and `--overlap-limit` to print details on the overlap between reference and new sets of normal modes.
+- **LIB**(`visual.povrender`): Added POV-Ray `version` and `assumed_gamma` directives, as recommended since POV-Ray version 3.7.
 - **API**: Added parsing of Y (Upsilon) matrix in VPT2 calculations from Gaussian log files.
 - **API**: Added parsing of first derivatives of electronic transitions dipole moments for electric dipole, magnetic dipole and electric quadrupole from Gaussian log files.
 

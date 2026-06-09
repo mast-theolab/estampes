@@ -1059,9 +1059,11 @@ def write_pov_head(fobj: tp.TextIO,
         step = '#declare step = clock / 2;\n'
     else:
         step = '\n'
-    fobj.write(f'''\
+    fobj.write(f'''#version 3.7;
+               
 global_settings {{
     ambient_light rgb <0.200, 0.200, 0.200>
+    assumed_gamma 1.0
     max_trace_level 15
 }}
 
