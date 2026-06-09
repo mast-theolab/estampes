@@ -661,9 +661,9 @@ def parse_vtrans_data(qlab: QLabel, dblock: DBlocGLogType,
                             svals.append((0, 0))
                         else:
                             state = []
-                            for osc in sdesc.split(','):
+                            for osc in sdesc.split(';'):
                                 state.append(tuple([
-                                    int(i) for i in osc.split('^')
+                                    int(num) for num in osc.split('^')
                                 ]))
                             svals.append(tuple(state))
                     data[count] = tuple(svals)
