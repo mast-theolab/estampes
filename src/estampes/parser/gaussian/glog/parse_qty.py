@@ -978,10 +978,10 @@ def parse_ramact_data(qlab: QLabel, dblock: DBlocGLogType,
                     ifreq = 0
                     ioff = 1
                     i = 0
+                    dfreq = {}
                     for line in dblock[iref]:
                         iline += 1
                         block = iline % 3  # 3: number of setups
-                        dfreq = {}
                         if block == 1:
                             if ifreq == len(incfreqs):
                                 ifreq = 0
