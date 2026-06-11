@@ -935,9 +935,11 @@ def build_box(at_lab: AtLabType,
     """
     xmin, ymin, zmin, xmax, ymax, zmax = +inf, +inf, +inf, -inf, -inf, -inf
     if at_repr != 'sticks':
-        rkey = 'rdvw' if at_repr == 'spheres' else 'rvis'
         atdat = atomic_data(*sorted(set(at_lab)))
-        _rad = max([x[rkey] for x in atdat.values()])
+        if at_repr == 'spheres':
+            _rad = max([x['rvdw']['truhlar_ext'] for x in atdat.values()])
+        else:
+            _rad = max([x['rvis'] for x in atdat.values()])
     else:
         _rad = BONDDATA['rvis']*RAD_VIS_SCL
     if 'rotation' not in extras:
@@ -1060,7 +1062,7 @@ def write_pov_head(fobj: tp.TextIO,
     else:
         step = '\n'
     fobj.write(f'''#version 3.7;
-               
+
 global_settings {{
     ambient_light rgb <0.200, 0.200, 0.200>
     assumed_gamma 1.0
@@ -1337,7 +1339,7 @@ def write_pov_mol(fobj: tp.TextIO,
         if representation == 'sticks':
             rval = bo_rad
         elif representation == 'spheres':
-            rval = atdat[atom]['rvdw']
+            rval = atdat[atom]['rvdw']['truhlar_ext']
         else:
             rval = atdat[atom]['rvis']*RAD_VIS_SCL
         fobj.write(fmt_rad_at.format(at=atdat[atom]['symb'], r=rval))

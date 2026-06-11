@@ -110,7 +110,7 @@ class TypeAtDat(tp.TypedDict):
     num: int
     mass: float
     rcov: tuple[int | None, ...]
-    rvdw: float | None
+    rvdw: dict[str, float | None]
     rvis: float | None
     rgb: tuple[int, ...] | None
 
