@@ -132,7 +132,7 @@ class QLabel():
             self.reset()
             self.__set_quantity(quantity)
 
-        if descriptor is not None or quantity is not None:
+        if descriptor is not None:
             if self.__qtype is None:
                 raise ArgumentError('Quantity type is not set. Cannot proceed')
             self.__set_descriptor(descriptor)
@@ -584,7 +584,10 @@ class QLabel():
         """
         # Derivative order
         if derorder is None:
-            self.__dord = -1
+            if isinstance(self.__qtype, int):
+                self.__dord = 0
+            else:
+                self.__dord = -1
         elif isinstance(derorder, int):
             if derorder >= 0:
                 self.__dord = derorder
