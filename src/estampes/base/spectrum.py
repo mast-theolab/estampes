@@ -306,6 +306,14 @@ class Spectrum():
                     if val:
                         self.__params['temp'] = val if val > 0 else None
         # Initialize main data array
+        self.__xaxis: list[None | list[float]] = [None, None]
+        self.__yaxis: list[None | list[float]] = [None, None]
+        self.__xlabel = [None, None]
+        self.__ylabel = [None, None]
+        self.__xunit = [None, None]
+        self.__yunit = [None, None]
+        self.__broad_info: list[None | dict[str, tp.Any]] = [None, None]
+        self.__spec_info = None
         self.__xaxes = []
         self.__yaxes = []
         self.__xlabels = []
@@ -314,15 +322,7 @@ class Spectrum():
         self.__yunits = []
         self.__broad_infos = []
         self.__spec_infos = []
-        self.__xaxis = [None, None]
-        self.__yaxis = [None, None]
-        self.__xlabel = [None, None]
-        self.__ylabel = [None, None]
-        self.__xunit = [None, None]
-        self.__yunit = [None, None]
-        self.__broad_info = [None, None]
         self.__extras = []
-        self.__spec_info = None
         self.__ytags = []
         self.__idref = 0
         self.__loaded = None
@@ -344,7 +344,7 @@ class Spectrum():
         if load_data:
             self.load_data(ylabel)
         # -- Set weights for multiple files
-        self.__weights = None
+        self.__weights: float | list[float | str] | None = None
         self.__calc_weight = None
         self.set_weights(weigh_dbsets)
         # Create aliases
@@ -806,7 +806,7 @@ class Spectrum():
         else:
             if broad_info[iaxis] is None:
                 raise ParsingError('Missing broadening information.')
-            if isinstance(broad_info[iaxis], dict):
+            if not isinstance(broad_info[iaxis], dict):
                 raise ParsingError(
                     'Incorrect format of broadening information.')
             if info.lower() in ('f', 'func', 'function'):
@@ -872,9 +872,16 @@ class Spectrum():
             raise ValueError('Broadening function not supported.')
         if bfun is not None:
             for ifile in range(self.__num_dfiles):
+                if not self.__broad_info:
+                    self.__broad_infos[ifile] = [{}, {}]
+                if self.__broad_infos[ifile][iaxis] is None:
+                    self.__broad_infos[ifile][iaxis] = {}
                 self.__broad_infos[ifile][iaxis]['hwhm'] = bfun
         else:
             if self.__num_dfiles == 1:
+                if self.__broad_infos[0][iaxis] is None:
+                    raise InternalError('Broadening information missing for '
+                                        + 'set up')
                 bfun = self.__broad_infos[0][iaxis]['func']
             else:
                 funcs = list(filter(lambda x: x[iaxis]['func'] is not None,
@@ -1139,6 +1146,9 @@ class Spectrum():
             self.__xaxis[iaxis], self.__yaxis[iaxis] = _combine_axes(
                 self.__xaxes, self.__yaxes, self.__weights,
                 self.__broad_infos, iaxis)
+            if self.__spec_infos is None:
+                raise InternalError(
+                    'Spectra information not set to combine data')
             (self.__broad_info[iaxis], self.__xunit[iaxis],
              self.__yunit[iaxis], self.__xlabel[iaxis], self.__ylabel[iaxis],
              self.__spec_info) = _set_combined_params(
@@ -1300,7 +1310,10 @@ def _get_data_e_trans(dobj: QDataType,
     xlabel = 'Energy'
     xunit = dobj['ener'].unit
     yunit = dobj['int'].unit
-    ylabel = SPEC2DATA[spec][yunit.split(':')]
+    if yunit is not None:
+        ylabel = SPEC2DATA[spec][yunit.split(':')[0]]
+    else:
+        raise InternalError('Unset Y unit to identify intensity')
     broadening = {'func': 'stick', 'hwhm': None}
 
     return xaxis, xlabel, xunit, yaxis, ylabel, yunit, broadening
@@ -1366,7 +1379,7 @@ def _get_data_spectrum(dobj: QDataType,
         xaxis = dobj['spc'].data['x'][0]
         xlabel = dobj['par'].data['x'][0]
         # For Y, generate key information to retrieve data
-        ykeys = (key for key in dobj['spc'].data if key.startswith('y'))
+        ykeys = [key for key in dobj['spc'].data if key.startswith('y')]
         nidx = len(ykeys[0]) - 1
         yfmt = f'y{{:0{nidx:d}d}}'
         offset = 0
@@ -1410,7 +1423,7 @@ def _get_data_spectrum(dobj: QDataType,
 
 def _combine_axes(xaxes: Sequence[Sequence[Sequence[float]]],
                   yaxes: Sequence[Sequence[Sequence[float]]],
-                  weights: Sequence[float],
+                  weights: float | Sequence[float | str] | None,
                   broad_infos: Sequence[Sequence[dict[str, tp.Any]]],
                   axis: int = 0
                   ) -> tuple[list[float], list[float]]:
@@ -1445,7 +1458,9 @@ def _combine_axes(xaxes: Sequence[Sequence[Sequence[float]]],
     * The 0-th axes are assumed to contain "raw" data.  Interpolation is
       activated if datasets are found already broadened.
     """
-    axes = [[], []]
+    axes: list[list[float]] = [[], []]
+    if weights is None or not isinstance(weights, (tuple, list)):
+        raise InternalError('Weights expected to be given as lists.')
     n_xaxes = len(xaxes)
     n_yaxes = len(yaxes)
     n_weights = len(weights)
@@ -1475,24 +1490,24 @@ def _combine_axes(xaxes: Sequence[Sequence[Sequence[float]]],
                     and abs(max(step) - min(step)) < tol):
                 raise NotImplementedError('Interpolation not yet implemented')
             # Now let us combine spectra
-            axes[0] = xaxes[0][axis][:]
+            axes[0] = list(xaxes[0][axis][:])
             axes[1] = [0.0 for _ in range(l_xaxis)]
             for i, yaxis in enumerate(yaxes):
                 if len(yaxis[axis]) != l_xaxis:
                     raise IndexError(
                         f'Y axis from dataset n. {i+1} inconsistent in size.')
                 for iy, y in enumerate(yaxis[axis]):
-                    axes[1][iy] += weights[i]*y
+                    axes[1][iy] += float(weights[i])*y
         else:
             axes[0] = [val for xaxis in xaxes for val in xaxis[axis]]
-            axes[1] = [weight*val
+            axes[1] = [float(weight)*val
                        for yaxis, weight in zip(yaxes, weights)
                        for val in yaxis[axis]]
             axes.sort(key=lambda x: x[0])
     else:
         if num_already_broad == 0:
             axes[0] = [val for xaxis in xaxes for val in xaxis[axis]]
-            axes[1] = [weight*val
+            axes[1] = [float(weight)*val
                        for yaxis, weight in zip(yaxes, weights)
                        for val in yaxis[axis]]
             axes.sort(key=lambda x: x[0])
@@ -1503,14 +1518,14 @@ def _combine_axes(xaxes: Sequence[Sequence[Sequence[float]]],
             l_xaxis = len(xaxes[0][axis])
             if not all((len(xaxis[axis]) == l_xaxis for xaxis in xaxes)):
                 raise IndexError('Inconsistency in the X axes')
-            axes[0] = xaxes[0][axis][:]
+            axes[0] = list(xaxes[0][axis][:])
             axes[1] = [0.0 for _ in range(l_xaxis)]
             for i, yaxis in enumerate(yaxes):
                 if len(yaxis[axis]) != l_xaxis:
                     raise IndexError(
                         f'Y axis from dataset n. {i+1} inconsistent in size.')
                 for iy, y in enumerate(yaxis[axis]):
-                    axes[1][iy] += weights[i]*y
+                    axes[1][iy] += float(weights[i])*y
         else:
             raise ArgumentError(
                 'axes',
@@ -1526,7 +1541,7 @@ def _set_combined_params(broad_infos: Sequence[Sequence[dict[str, tp.Any]]],
                          xlabels: Sequence[Sequence[str]],
                          ylabels: Sequence[Sequence[str]],
                          axis: int = 0
-                         ) -> tuple[Sequence[dict[str, tp.Any]],
+                         ) -> tuple[list[dict[str, tp.Any]],
                                     str, str, str, str,
                                     dict[str, tp.Any] | None]:
     """Set parameters for the combined spectra.
