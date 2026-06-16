@@ -100,10 +100,10 @@ def atomic_data(*atoms: AtLabType) -> AtDatType:
     """
     at_data = {}
     for atom in set(atoms):
-        try:
+        if isinstance(atom, str):
             at_symb = atom.title()
             at_idx = at_symb
-        except AttributeError:
+        else:
             at_symb = ELEMENTS[atom]
             at_idx = atom
         if at_symb == 'H':
