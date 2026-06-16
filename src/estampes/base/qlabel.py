@@ -4,7 +4,6 @@ Defines the QLabel class, used to communicate with the parser(s) to
 retrieve the information of interest.
 """
 import re
-import typing as tp
 
 from estampes.base.errors import ArgumentError
 from estampes.base.types import QLabStaType
@@ -132,26 +131,16 @@ class QLabel():
             self.reset()
             self.__set_quantity(quantity)
 
-        if descriptor is not None:
-            if self.__qtype is None:
-                raise ArgumentError('Quantity type is not set. Cannot proceed')
-            self.__set_descriptor(descriptor)
+        if self.__qtype is None:
+            raise ArgumentError('Quantity type is not set. Cannot proceed')
 
-        if ((derorder is not None or dercoord is not None)
-                or quantity is not None):
-            if self.__qtype is None:
-                raise ArgumentError('Quantity type is not set. Cannot proceed')
-            self.__set_deriv_info(derorder, dercoord)
+        self.__set_descriptor(descriptor)
 
-        if refstate is not None or quantity is not None:
-            if self.__qtype is None:
-                raise ArgumentError('Quantity type is not set. Cannot proceed')
-            self.__set_state_trans(refstate)
+        self.__set_deriv_info(derorder, dercoord)
 
-        if level is not None or quantity is not None:
-            if self.__qtype is None:
-                raise ArgumentError('Quantity type is not set. Cannot proceed')
-            self.__set_level_info(level)
+        self.__set_state_trans(refstate)
+
+        self.__set_level_info(level)
 
     def build_qstring(self) -> str:
         """Build qlabel string.
@@ -615,7 +604,7 @@ class QLabel():
             if self.__dcrd not in ['X', 'Q', 'QX', 'I', 'QRED']:
                 raise ValueError('Incorrect derivatives coordinates')
 
-    def __set_state_trans(self, refstate: tp.Optional[QLabStaType]) -> None:
+    def __set_state_trans(self, refstate: QLabStaType | None) -> None:
         """Set reference electronic state or transition.
 
         Sets the reference electronic state or transition for which the
@@ -647,7 +636,7 @@ class QLabel():
                     raise ArgumentError('Incorrect state specification')
                 data = res.groupdict()
             if data['start'] == '':
-                val1 = 'c'  # type: tp.Union[str, int]
+                val1 = 'c'
             elif data['start'].lower() in ('c', 'a'):
                 val1 = data['start'].lower()
             else:
@@ -660,7 +649,7 @@ class QLabel():
                 self.__rsta = val1
             else:
                 if data['end'] == '':
-                    val2 = 'c'  # type: tp.Union[str, int]
+                    val2 = 'c'
                 elif data['end'].lower() in ('c', 'a'):
                     val2 = data['end'].lower()
                 else:
@@ -679,7 +668,7 @@ class QLabel():
                 # Necessary for some internal tests, kept this way for now.
                 self.__rsta = 'c'
 
-    def __set_level_info(self, level: tp.Optional[str]) -> None:
+    def __set_level_info(self, level: str | None) -> None:
         """Set the reference level of theory.
 
         Sets the reference level of theory for the quantity.
@@ -714,4 +703,4 @@ class QLabel():
             self.__qlvl = lvl
 
 
-QInfoType = tp.Dict[str, QLabel]
+QInfoType = dict[str, QLabel]
