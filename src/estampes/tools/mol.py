@@ -79,7 +79,7 @@ def list_bonds(at_lab: AtsLabType,
             rad_j = max(atdat[at_lab[j]]['rcov'], key=lambda x: x or 0.)
             if rad_j is None:
                 raise ValueError(f'Missing rcov for atom {j}')
-            if np.linalg.norm(xyz_j-xyz_i) < (rad_i + rad_j)*rtol/100.:
+            if np.linalg.norm(xyz_j-xyz_i) < (rad_i + rad_j)*rtol:
                 bonds.append((i, j))
 
     return bonds
