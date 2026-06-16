@@ -112,8 +112,8 @@ def main():
         'num': QLabel(quantity='AtNum'),
         'crd': QLabel(quantity='AtCrd')
     }
-    hessdat_ref = dfile_ref.get_hess_data()
-    hessdat_new = dfile_new.get_hess_data()
+    hessdat_ref = dfile_ref.get_hess_data(get_eval='freq')
+    hessdat_new = dfile_new.get_hess_data(get_eval='freq')
 
     data_ref = dfile_ref.get_data(error_noqty=True, **keys)
     data_new = dfile_new.get_data(error_noqty=True, **keys)
