@@ -74,16 +74,29 @@ def parse_data(qdict: QInfoType,
         # Basic Check: property available
         # -----------
         # Check if some data extracted
+        # For eltrans_info, we know it should be the first block in absolute,
+        # and a block of strings, not a block of lists, so we first exclude
+        # multi-dimensional blocks.
+        if datablocks[first]:
+            if isinstance(datablocks[first], list):
+                has_eltrans_info = isinstance(datablocks[first][0], str)
+            else:
+                has_eltrans_info = False
+        else:
+            has_eltrans_info = False
         num = 0
         ref_state = -1
         if first == last:
             iref = first
             num = len(datablocks[iref])
-            has_eltrans_info = 'Excited State' in ''.join(datablocks[iref])
+            if has_eltrans_info:
+                has_eltrans_info = 'Excited State' in ''.join(datablocks[iref])
         else:
             iref = -1
             # Check if transition information may be present:
-            has_eltrans_info = 'Excited State' in ''.join(datablocks[first])
+            if has_eltrans_info:
+                has_eltrans_info = \
+                    'Excited State' in ''.join(datablocks[first])
             if qlabel.rstate == 'c' and has_eltrans_info:
                 realfirst = first + 1
             else:
