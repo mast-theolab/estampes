@@ -875,8 +875,8 @@ def _parse_electrans_data(qlab: QLabel, dblocks: DBlocFChkType,
     # ------------------
     if not isinstance(qlab.rstate, (list, tuple)):
         raise ParseKeyError('Incorrect transition definition')
-    initial = int(qlab.rstate[0])
-    final = int(qlab.rstate[1])
+    initial = qlab.rstate[0]
+    final = qlab.rstate[1]
     if initial != 0:
         if final != 0:
             raise IndexError('Unsupported transition')
@@ -894,6 +894,8 @@ def _parse_electrans_data(qlab: QLabel, dblocks: DBlocFChkType,
                     for i in range(nstates)]
         else:
             fstate = iroot if final == 'c' else final
+            if isinstance(fstate, str):
+                raise InternalError('Only c and a recognized as final states')
             if fstate > nstates:
                 raise IndexError('Missing electronic state')
             data = float(dblocks[kword][(fstate-1)*ndata*nlr]) - energy0
@@ -926,6 +928,9 @@ def _parse_electrans_data(qlab: QLabel, dblocks: DBlocFChkType,
                     dobj.set(shape=f'Ns,{lqty}')
             else:
                 fstate = final == 'c' and iroot or final
+                if isinstance(fstate, str):
+                    raise InternalError(
+                        'Only c and a recognized as final states')
                 if fstate > nstates:
                     raise IndexError('Missing electronic state')
                 i0 = (fstate-1)*ndata + offset
@@ -940,6 +945,9 @@ def _parse_electrans_data(qlab: QLabel, dblocks: DBlocFChkType,
             # We accept 'a' as alias for 'c' in this case
             # but add a nesting level to represent the list
             fstate = final in ('a', 'c') and iroot or final
+            if isinstance(fstate, str):
+                raise InternalError(
+                        'Only c and a recognized as final states')
             if fstate != iroot:
                 raise IndexError('Only root available for derivative')
             if qlab.dercrd != 'X':
