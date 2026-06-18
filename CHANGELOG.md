@@ -43,6 +43,7 @@ Other blocks are:
 ### Changed
 - **LIB**(`visual.molui.MolWin`): Changed shortcut to activate animations in the molecular viewer to `A` instead of `CTRL+A`.
 - **API**: `DataFile.get_hess_data` now returns a dictionary instead of a tuple, making handling of partial data sets simpler.  The keys associated to the quantities can be chosen by providing a string to the `get_xxx` parameters.
+- **API**: The parser from resonance Raman incident frequencies accepts negative frequencies to handle special cases.
 - **DEV**: Some parts of the code have been cleaned up considering more modern typing hints recommendations in Python and to reduce warnings produced by syntax analyzers.
 
 
