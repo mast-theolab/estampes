@@ -1243,8 +1243,7 @@ def parse_data(qdict: QInfoType,
             # Transition moments
             # ^^^^^^^^^^^^^^^^^^
             if isinstance(qlab.rstate, tuple):
-                dobjs[qkey].set(
-                    data=_parse_electrans_data(qlab, datablocks, kword))
+                dobjs[qkey] = _parse_electrans_data(qlab, datablocks, kword)
             # States-specific Quantities
             # ^^^^^^^^^^^^^^^^^^^^^^^^^^
             else:
