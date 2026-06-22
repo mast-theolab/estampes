@@ -349,7 +349,7 @@ class GLogIO(object):
     def get_data(self,
                  *qlabels: str | QLabel,
                  error_noqty: bool = True,
-                 **keys4qlab) -> QDataType | None:
+                 **keys4qlab) -> QDataType:
         """Get data from a GLog file for each quantity label.
 
         Reads one or more full quantity labels from `qlab` and returns the
@@ -384,7 +384,7 @@ class GLogIO(object):
         """
         # Check if anything to do
         if len(qlabels) == 0 and len(keys4qlab) == 0:
-            return None
+            return {}
         # Build Keyword List
         # ------------------
         # Build full list of qlabels

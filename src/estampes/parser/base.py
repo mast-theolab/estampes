@@ -85,7 +85,7 @@ class DataFile(object):
     def get_data(self,
                  *qlabels: str | QLabel,
                  error_noqty: bool = True,
-                 **keys4qlabels) -> QDataType | None:
+                 **keys4qlabels) -> QDataType:
         """Get data from Data File object.
 
         Wrapper to internal get_data functions.

@@ -387,8 +387,6 @@ class Spectrum():
                 if not qkeys:
                     raise NotImplementedError('Keywords not available')
             dobjs = dfile.get_data(error_noqty=True, **qkeys)
-            if dobjs is None:
-                raise ParsingError('Failed to extract spectral data.')
             self.__xaxes.append([None, None])
             self.__yaxes.append([None, None])
             self.__xlabels.append([None, None])

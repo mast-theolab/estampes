@@ -181,7 +181,7 @@ class FileXYZ(object):
     def get_data(self,
                  *qlabels: str | QLabel,
                  error_noqty: bool = True,
-                 **keys4qlab) -> QDataType | None:
+                 **keys4qlab) -> QDataType:
         """Get data from a XYZ file for each quantity label.
 
         Reads one or more full quantity labels from `qlabels` and returns
@@ -214,7 +214,7 @@ class FileXYZ(object):
         """
         # Check if anything to do
         if len(qlabels) == 0 and len(keys4qlab) == 0:
-            return None
+            return {}
         # Build Keyword List
         # ------------------
         # Build full list of qlabels
@@ -247,7 +247,7 @@ class FileXYZ(object):
         datablocks = self.read_data(*set(keydata.values()), geom=geom,
                                     raise_error=error_noqty)
         if datablocks is None:
-            return None
+            return {}
         dobjs = {}
         for qkey, qlabel in qty_dict.items():
             key = keydata[qkey]

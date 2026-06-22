@@ -117,12 +117,6 @@ def main():
 
     data_ref = dfile_ref.get_data(error_noqty=True, **keys)
     data_new = dfile_new.get_data(error_noqty=True, **keys)
-    if data_ref is None:
-        print('ERROR: Unable to extract data for reference structure')
-        sys.exit(1)
-    if data_new is None:
-        print('ERROR: Unable to extract data for new structure')
-        sys.exit(1)
 
     at_mass = np.array(data_ref['mass'].data)
     c_ref = np.array(data_ref['crd'].data)

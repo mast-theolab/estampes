@@ -174,9 +174,6 @@ def extract_data(infile: str,
 
     dfile = DataFile(infile)
     dobjs = dfile.get_data(error_noqty=True, **dkeys)
-    if dobjs is None:
-        raise ParsingError(
-            f'Failed to extract structure information from {infile}')
     data['atnum'] = dobjs['atnum'].data
     data['coord'] = np.array(dobjs['atcrd'].data)*PHYSFACT.bohr2ang
     data['bonds'] = list_bonds(data['atnum'], data['coord'], tol_bond)

@@ -43,8 +43,6 @@ def variational_notation(dfile: DataFile | None = None,
             raise ValueError('Incorrect assignment information') from err
     elif dfile is not None:
         res = dfile.get_data(key=QLabel(quantity='vtrans', level='A'))
-        if res is None:
-            raise ParsingError('Failed to extract assignment information')
         answer = res['key'].data[1][1][0][1] == 0
     else:
         raise ArgumentError('Missing input data')

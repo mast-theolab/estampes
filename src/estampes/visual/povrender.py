@@ -526,8 +526,6 @@ class POVBuilder():
                     return
             dfile = DataFile(infile)
             qdata = dfile.get_data(**dkeys, error_noqty=True)
-            if qdata is None:
-                raise QuantityError('Unable to extract data')
             if ifile == -1:
                 self.__infiles.append(infile)
                 self.__nmols += 1
@@ -577,9 +575,6 @@ class POVBuilder():
                 return
             dfile = DataFile(self.__infiles[infile])
             qdata = dfile.get_data(error_noqty=True, **dkeys)
-            if qdata is None:
-                raise ParsingError(
-                    f'Failed to extract data from file {infile}')
             self.__loaded[infile] = True
             self.__atcrd[infile] = \
                 np.array(qdata['atcrd'].data)*PHYSFACT.bohr2ang
@@ -604,9 +599,6 @@ class POVBuilder():
                     continue
                 dfile = DataFile(fname)
                 qdata = dfile.get_data(error_noqty=True, **dkeys)
-                if qdata is None:
-                    raise ParsingError(
-                        f'Failed to extract data from file {fname}')
                 self.__loaded[ifile] = True
                 self.__atcrd[ifile] = \
                     np.array(qdata['atcrd'].data)*PHYSFACT.bohr2ang
