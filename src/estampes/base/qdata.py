@@ -250,4 +250,4 @@ class QData():
         return new
 
 
-QDataType = dict[str, QData]
+QDataType = dict[str | QLabel, QData]
