@@ -335,8 +335,7 @@ def superpose(c_ref: AtsCrdType,
               at_mass: npt.NDArray | None = None,
               get_ctrans: bool = False,
               at_mask: npt.NDArray | None = None
-              ) -> tuple[npt.NDArray, npt.NDArray] | \
-                   tuple[npt.NDArray, npt.NDArray, AtsCrdType]:
+              ) -> dict[str, npt.NDArray | AtsCrdType]:
     """Return the transformation matrices to superpose c_new onto c_ref.
 
     Returns the rotation matrix and transition vector to maximize the
@@ -364,12 +363,12 @@ def superpose(c_ref: AtsCrdType,
 
     Returns
     -------
-    np.ndarray
-        Rotation matrix (3,3).
-    np.ndarray
-        Transition vector (3).
-    np.ndarray : optional
-        Transformed structure, on request (N,3).
+    dict
+        Dictionary with the following content:
+
+        * `rmat`: rotation matrix (3,3).
+        * `tvec`: translation vector (3).
+        * `cnew` (optional): transformed structure (Nat, 3).
 
     Raises
     ------
@@ -477,9 +476,16 @@ def superpose(c_ref: AtsCrdType,
         for i in range(3):
             print(f'{rotmat[i, 0]:8.5f}{rotmat[i, 1]:8.5f}{rotmat[i, 2]:8.5f}')
     if get_ctrans:
-        return rotmat, (com_new-com_ref)/totwt, c_new_ @ rotmat
+        return {
+            'rmat': rotmat,
+            'tvec': (com_new-com_ref)/totwt,
+            'cnew': c_new_ @ rotmat
+        }
     else:
-        return rotmat, (com_new-com_ref)/totwt
+        return {
+            'rmat': rotmat,
+            'tvec': (com_new-com_ref)/totwt,
+        }
 
 
 def vrotate_3D(vec: npt.NDArray,

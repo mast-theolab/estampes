@@ -130,15 +130,17 @@ def main():
     n_vib = hessdat_ref['evec'].shape[0]
     if dopts.superpose:
         # Put first molecule in Eckart orientation and rotate the eigenvectors
-        c_ref, rotmat = eckart_orient(c_ref, at_mass, True).values()
+        wdict = eckart_orient(c_ref, at_mass, True)
+        c_ref = wdict['coords']
         hessdat_ref['evec'] = np.reshape(np.reshape(hessdat_ref['evec'],
-                                                    (n_vib, -1, 3)) @ rotmat,
-                                         (n_vib, -1))
+                                                    (n_vib, -1, 3))
+                                         @ wdict['rotmat'], (n_vib, -1))
         # Superpose second geometry on top of first
-        rotmat, _, c_new = superpose(c_ref, c_new, at_mass, get_ctrans=True)
+        wdict = superpose(c_ref, c_new, at_mass, get_ctrans=True)
         hessdat_new['evec'] = np.reshape(np.reshape(hessdat_new['evec'],
-                                                    (n_vib, -1, 3)) @ rotmat,
-                                         (n_vib, -1))
+                                                    (n_vib, -1, 3))
+                                         @ wdict['rmat'], (n_vib, -1))
+        c_new = wdict['cnew']
 
     jmat = build_dusch_J(hessdat_new['evec'], hessdat_ref['evec'])
     kvec = build_dusch_K(hessdat_ref['evec'], at_mass, c_new - c_ref)
