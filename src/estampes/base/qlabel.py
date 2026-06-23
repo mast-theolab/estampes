@@ -344,6 +344,7 @@ class QLabel():
                    NMOrder    Order of normal modes in VPT block
                    quartic    Quartic force constants (in cm-1)
                    YMat       VPT Upsilon matrix
+                   NMFlags    Normal mode flag status
 
          vtrans    RR         Transition information for resonance Raman
         =========  ========  ===========================================
@@ -488,6 +489,8 @@ class QLabel():
                     self.__qdesc = 'CICoef'
                 elif key in ('NMORD', 'NMORDER'):
                     self.__qdesc = 'NMOrder'
+                elif key in ('NMFLAG', 'NMFLAGS', 'NMSTAT', 'NMSTATUS'):
+                    self.__qdesc = 'NMFlags'
                 elif key in ('FREQ', 'QUAD', 'QUADRATIC', 'FIJ'):
                     self.__qdesc = 'freq'
                 elif key in ('CUBIC', 'FIJK'):

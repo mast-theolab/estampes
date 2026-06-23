@@ -33,6 +33,7 @@ Other blocks are:
 - **LIB**(`tools.output`): New function `fortran_fmt_D` to simulate old Fortran `D` format, primarily intended for quick comparisons with output produced by Fortran programs.
 - **API**: Added parsing of Y (Upsilon) matrix in VPT2 calculations from Gaussian log files.
 - **API**: Added parsing of first derivatives of electronic transitions dipole moments for electric dipole, magnetic dipole and electric quadrupole from Gaussian log files.
+- **API**: Added parsing of normal-modes status flags (`VPTDat:NMFlags`) from Gaussian log files.
 
 ### Fixed
 - **LIB**(`data.atom`): Fixed van der Waals radii; the new database returns a dictionary of vdW radii, with several implemented DB.

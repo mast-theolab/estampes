@@ -436,6 +436,16 @@ def qlab_to_linkdata(qlab: QLabel,
             end1.append(lambda s: '=====' in s)
             fmt1.append(r'^\s*(?P<val>\([HA]\)\s+\|(?:\s+\d+\|)+)\s*$')
             num1.append(0)
+        elif qlab.kind == 'NMFlags':
+            lnk1.append(717)
+            key1.append(' Definition of the model system: Active modes')
+            sub1.append(1)
+            end1.append(lambda s: not s.strip())
+            fmt1.append(
+                r'^\s*(?P<val>'
+                + r'(?:The \d+ (?:Active|Inactive|Passive) Modes are:|'
+                + r'(?:\s*\d+)+))\s*$')
+            num1.append(0)
         elif qlab.kind == 'XMat':
             # The second group is to correct the numbering if passive modes
             #     present.

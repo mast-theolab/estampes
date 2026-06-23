@@ -516,6 +516,24 @@ def parse_vptdat(qlab: QLabel, dblock: DBlocGLogType) -> QData:
                 data['H->A'][mode_H] = mode_A
                 data['A->H'][mode_A] = mode_H
         dobj.set(data=data)
+    elif qlab.kind == 'NMFlags':
+        data = {'active': [], 'inactive': [], 'passive': []}
+        decl_nvals = {'active': 0, 'inactive': 0, 'passive': 0}
+        key = ''
+        for line in dblock[-1]:
+            if line.startswith('The'):
+                key = line.split()[2].lower()
+                if key not in data:
+                    raise ParsingError('Unknown normal-modes status')
+                decl_nvals[key] = int(line.split()[1].lower())
+            else:
+                data[key].extend([int(item) for item in line.split()])
+        for key, nvals in decl_nvals.items():
+            if nvals != len(data[key]):
+                msg = f'Failed to parse list of {key} modes: {data[key]} ' \
+                    + f'extracted by {nvals} expected.'
+                raise ParsingError(msg)
+        dobj.set(data=data)
     elif qlab.kind == 'freq':
         dobj.set(unit='cm^{-1}')
         data = {}
