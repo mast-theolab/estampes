@@ -31,6 +31,7 @@ Other blocks are:
 - **LIB**(`data.property`): Added components `size` and `form` to named tuple `QBaseInfo`.
 - **LIB**(`tools`): New module `tools.output` to provide simple functions for common printing/output-related operations.
 - **LIB**(`tools.output`): New function `fortran_fmt_D` to simulate old Fortran `D` format, primarily intended for quick comparisons with output produced by Fortran programs.
+- **LIB**(`tools.output`): New function `pstruct_to_labels` to construct labels for the components of a property or quantity.
 - **LIB**(`visual.povrender`): Added POV-Ray `version` and `assumed_gamma` directives, as recommended since POV-Ray version 3.7.
 - **API**: Added parsing of Y (Upsilon) matrix in VPT2 calculations from Gaussian log files.
 - **API**: Added parsing of first derivatives of electronic transitions dipole moments for electric dipole, magnetic dipole and electric quadrupole from Gaussian log files.
