@@ -6,7 +6,7 @@ This module provides basic data related to atoms.
 from math import pi
 import typing as tp
 
-from estampes.base import QLabSubType, QLabTagType
+from estampes.base import QLabTagType
 from estampes.data.physics import PHYSCNST, PHYSFACT
 
 
@@ -19,9 +19,11 @@ class QBaseInfo(tp.NamedTuple):
 
     name: str  # Printable name
     dim: int | str | tuple[tp.Any, ...]  # dimension(s)
+    size: int  # Total size
     der: bool  # Flag if property derivable
     d1q: str  # Type of analytical 1st derivative (p or q)
     unit: str  # Default unit
+    form: str | tuple[tp.Any, ...]  # Form/shape of the quantity
 
 
 # ================
@@ -29,7 +31,7 @@ class QBaseInfo(tp.NamedTuple):
 # ================
 
 def property_data(qtag: QLabTagType,
-                  qopt: QLabSubType = None
+                  variant: str = '',
                   ) -> QBaseInfo:
     """Generate property data.
 
@@ -42,19 +44,25 @@ def property_data(qtag: QLabTagType,
         Full name of the property.
     dim
         Dimension (as integer, string or tuple).
+    size
+        Total size of the components, negative if it depends on variable
+        components (e.g., number of atoms).
     der
         Property is derivable (True, False).
     d1q
         Type of analytic 1st derivative wrt normal modes ('p', 'q').
     unit
         Atomic units.
+    form
+        Form/shape of the quantity: scalar, xyz, xyz2D, xyzLT (lower
+        triangular), xyz3D, xyzLC (lower cube), atom
 
     Parameters
     ----------
     qlabel
         Property label.
-    qsublabel
-        Property sub-label/option.
+    variant
+        Variant of the property format.
 
     Returns
     -------
@@ -66,155 +74,215 @@ def property_data(qtag: QLabTagType,
     KeyError
         Unrecognized atomic symbol.
     """
+    gvers = variant.lower() in ('gaussian', 'gxx', 'g16', 'gdv')
     item = str(qtag).lower()
     if item == '1':
         qname = 'energy'
         qdim = 1
+        qsize = 1
         qder = True
         qd1q = 'q'
         qunit = 'Eh'
+        qform = 'scalar'
     elif item == '50':
         qname = 'non-adiabatic couplings'
         qdim = ('nat', 3)
+        qsize = 1  # Technically, non adiabatic couplings are scalars.
         qder = True
         qd1q = 'p'
         qunit = '1/a0'
+        qform = 'scalar'
     elif item == '101':
         qname = 'electric dipole'
         qdim = 3
+        qsize = 3
         qder = True
         qd1q = 'q'
         qunit = 'e.a0'
+        qform = 'xyz'
     elif item == '102':
         qname = 'magnetic dipole'
         qdim = 3
+        qsize = 3
         qder = True
         qd1q = 'p'
         qunit = 'e.hbar/me'
+        qform = 'xyz'
     elif item == '103':
         qname = 'polarizability tensor'
-        qdim = 6
+        if gvers:
+            qdim = 6
+            qsize = 6
+            qform = 'xyzLT'
+        else:
+            qdim = (3, 3)
+            qsize = 9
+            qform = ('xyz', 'xyz')
         qder = True
         qd1q = 'q'
         qunit = 'a0^3'
     elif item == '104':
         qname = 'optical rotations'
-        qdim = 9
+        qdim = (3, 3)
+        qsize = 9
         qder = True
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('xyz', 'xyz')
     elif item == '105':
         qname = 'dipole-quadrupole polarizability'
         qdim = (3, 6)
+        qsize = 18
         qder = True
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('xyz', 'xyzLT')
     elif item == '106':
         qname = 'hyperpolarizability'
         qdim = (3, 6)
+        qsize = 18
         qder = True
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('xyz', 'xyzLT')
     elif item == '107':
         qname = 'quadrupole'
-        qdim = 6
+        if gvers:
+            qdim = 6
+            qsize = 6
+            qform = 'xyzLT'
+        else:
+            qdim = (3, 3)
+            qsize = 9
+            qform = ('xyz', 'xyz')
         qder = True
         qd1q = 'q'
         qunit = 'a.u.'
     elif item == '201':
         qname = 'magnetic susceptibility'
         qdim = (3, 3)
+        qsize = 9
         qder = False
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('xyz', 'xyz')
     elif item == '202':
         qname = 'rotational g-Tensor'
         qdim = (3, 3)
+        qsize = 9
         qder = False
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('xyz', 'xyz')
     elif item == '203':
         qname = 'NMR shielding tensors'
         qdim = ('nat', (3, 3))
+        qsize = -9
         qder = False
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('atom', ('xyz', 'xyz'))
     elif item == '204':
         qname = 'spin-rotation tensors'
         qdim = ('nat', (3, 3))
+        qsize = -9
         qder = False
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('atom', ('xyz', 'xyz'))
     elif item == '205':
         qname = 'anisotropic hyperfine tensors'
         qdim = ('nat', 6)
+        qsize = -6
         qder = False
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('atom', 'xyzLT')
     elif item == '206':
         qname = 'isotropic (Fermi) terms'
         qdim = 'nat'
+        qsize = -1
         qder = False
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = 'atom'
     elif item == '207':
         qname = 'ESR g-tensor'
         qdim = (3, 3)
+        qsize = 9
         qder = False
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('xyz', 'xyz')
     elif item == '208':
         qname = 'nuclear quadrupole tensors'
         qdim = ('nat', 6)
+        qsize = -6
         qder = False
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('atom', 'xyzLT')
     elif item == '209':
         qname = 'isotropic spin-spin coupling'
         qdim = 'nattt'
+        qsize = -1
         qder = False
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = 'atomLT'
     elif item == '301':
         qname = 'polarizability alpha(-w,w)'
         qdim = (3, 3)
+        qsize = 9
         qder = True
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('xyz', 'xyz')
     elif item == '302':
         qname = 'optical rotations'
         qdim = (3, 3)
+        qsize = 9
         qder = True
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('xyz', 'xyz')
     elif item == '303':
         qname = 'polarizability alpha(w,0)'
         qdim = (3, 3)
+        qsize = 9
         qder = True
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('xyz', 'xyz')
     elif item == '304':
         qname = 'dipole-quadrupole polarizability'
         qdim = (3, 6)
+        qsize = 18
         qder = True
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('xyz', 'xyzLT')
     elif item == '305':
         qname = 'hyperpolarizability beta(-w,w,0)'
         qdim = (3, 6)
+        qsize = 18
         qder = True
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('xyz', 'xyzLT')
     elif item == '306':
         qname = 'hyperpolarizability Beta(w,w,-2w)'
         qdim = (3, 6)
+        qsize = 18
         qder = True
         qd1q = 'q'
         qunit = 'a.u.'
+        qform = ('xyz', 'xyzLT')
     else:
         raise IndexError('Unrecognized property')
 
-    return QBaseInfo(name=qname, dim=qdim, der=qder, d1q=qd1q, unit=qunit)
+    return QBaseInfo(name=qname, dim=qdim, size=qsize, der=qder, d1q=qd1q,
+                     unit=qunit, form=qform)
 
 
 def property_units(qtag: str, unit: str = 'SI') -> tuple[float, str]:

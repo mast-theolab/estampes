@@ -28,25 +28,27 @@ Other blocks are:
 
 ### Added
 - **OAR**: New options `--overlap` and `--overlap-limit` to print details on the overlap between reference and new sets of normal modes.
-- **LIB**(`visual.povrender`): Added POV-Ray `version` and `assumed_gamma` directives, as recommended since POV-Ray version 3.7.
+- **LIB**(`data.property`): Added components `size` and `form` to named tuple `QBaseInfo`.
 - **LIB**(`tools`): New module `tools.output` to provide simple functions for common printing/output-related operations.
 - **LIB**(`tools.output`): New function `fortran_fmt_D` to simulate old Fortran `D` format, primarily intended for quick comparisons with output produced by Fortran programs.
+- **LIB**(`visual.povrender`): Added POV-Ray `version` and `assumed_gamma` directives, as recommended since POV-Ray version 3.7.
 - **API**: Added parsing of Y (Upsilon) matrix in VPT2 calculations from Gaussian log files.
 - **API**: Added parsing of first derivatives of electronic transitions dipole moments for electric dipole, magnetic dipole and electric quadrupole from Gaussian log files.
 - **API**: Added parsing of normal-modes status flags (`VPTDat:NMFlags`) from Gaussian log files.
 
 ### Fixed
+- **LIB**(`base.qdata`): `QDataType` has been corrected to account for the fact that returned values from `DataFile.get_data` can have `QLabels` as keys.
 - **LIB**(`data.atom`): Fixed van der Waals radii; the new database returns a dictionary of vdW radii, with several implemented DB.
 - **LIB**(`data.visual`): Fixed material keyword for plastic in POV-Ray.
-- **LIB**(`base.qdata`): `QDataType` has been corrected to account for the fact that returned values from `DataFile.get_data` can have `QLabels` as keys.
 - **API**: Fixed shape of the mass-weighted normal-coordinates matrix when directly read from data file to be consistent to the one generated from force constants matrix in method `DataFile.get_hess_data` (2D arrays systematically generated).
 - **API**: Fixed parsing of `FCDat:Assign` from Gaussian log files. `QData.data` returns a dictionary of all extracted data.
 - **API**: Fixed parsing of RR vibrational states from Gaussian log files with multiple excited modes.
 - **API**: Restored partially old behavior of `QLabel` with derorder equal to 0 for numerical quantities (properties). The new behavior, setting it as -1, created a lot of conflicts in other existing parts of the code.
 
 ### Changed
-- **LIB**(`visual.molui.MolWin`): Changed shortcut to activate animations in the molecular viewer to `A` instead of `CTRL+A`.
+- **LIB**(`data.property`): Removed `qopt` parameter in definition of `property_data` and added `variant` to get property information relative to some variants (e.g., size for tensors stored in lower-triangular format).
 - **LIB**(`tools.math`): Object returned by `superpose` is now a dictionary instead of a tuple of variable size.
+- **LIB**(`visual.molui.MolWin`): Changed shortcut to activate animations in the molecular viewer to `A` instead of `CTRL+A`.
 - **API**: `DataFile.get_hess_data` now returns a dictionary instead of a tuple, making handling of partial data sets simpler.  The keys associated to the quantities can be chosen by providing a string to the `get_xxx` parameters.
 - **API**: The parser from resonance Raman incident frequencies accepts negative frequencies to handle special cases.
 - **API**: `DataFile.get_data` always returns a dictionary, which can be empty if no keys are provided.
