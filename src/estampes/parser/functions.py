@@ -7,7 +7,7 @@ from collections.abc import Mapping, Sequence
 
 from estampes.base import ArgumentError, QLabel
 
-type _tp_QLab = str | QLabel
+_tp_QLab = str | QLabel
 
 
 def parse_qlabels(qlabs_list: Sequence[_tp_QLab],
