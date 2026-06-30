@@ -8,8 +8,8 @@ import re
 from collections.abc import Sequence
 
 from estampes.base import QLabel, \
-    InternalError, ParseKeyError
-from estampes.parser.gaussian.glog.search_keys import keys_prp_3xx
+    InternalError, ParseKeyError, QuantityError
+from estampes.parser.gaussian.glog.search_keys import keys_arch, keys_prp_3xx
 from estampes.parser.gaussian.glog.types import QKwrdType
 from estampes.parser.gaussian.glog.logkeys import RR_OMEGA_LINE, \
     RR_OMEGA_UNIT, RR_OMEGA_VAL, KEY_DP, KEY_FP, KEY_UINT
@@ -864,17 +864,21 @@ def qlab_to_linkdata(qlab: QLabel,
                     raise NotImplementedError()
                 elif qlab.derord == 2:
                     if qlab.rstate == 'c':
-                        lnk1.append(-716)
-                        key1.append(
-                            ' Force constants in Cartesian coordinates:')
-                        sub1.append(1)
-                        end1.append(
+                        arckey = keys_arch()
+                        lnk1.extend((-716, arckey[0]))
+                        key1.extend((
+                            ' Force constants in Cartesian coordinates:',
+                            arckey[1]))
+                        sub1.extend((1, arckey[2]))
+                        end1.extend((
                             lambda s:
-                                not re.match(r'^\s+\d+(\s+-?\d|\s*$)', s))
-                        fmt1.append(
+                                not re.match(r'^\s+\d+(\s+-?\d|\s*$)', s),
+                            arckey[3]))
+                        fmt1.extend((
                             r'^\s+(?P<val>(?:\s*\d+|'
-                            + r'\s*\d+\s+-?\d+\.\d+D?[-+]\d+){1,5})\s*$')
-                        num1.append(0)
+                            + r'\s*\d+\s+-?\d+\.\d+D?[-+]\d+){1,5})\s*$',
+                            arckey[4]))
+                        num1.extend((0, arckey[5]))
                     elif isinstance(qlab.rstate, int):
                         raise NotImplementedError()
                 elif qlab.derord == 3:
@@ -927,14 +931,44 @@ def qlab_to_linkdata(qlab: QLabel,
             elif qlab.label == 101:
                 if qlab.derord == 0:
                     if qlab.rstate == 'c':
-                        lnk1.append(601)
-                        key1.append(' Dipole moment (field-independent basis,'
-                                    + ' Debye):')
-                        sub1.append(1)
-                        end1.append(lambda s: True)
-                        fmt1.append(r'^\s+(?P<val>(?:\s*[XYZ]=\s+-?\d+\.\d+)'
-                                    + r'{3}).*$')
-                        num1.append(0)
+                        arckey = keys_arch()
+                        lnk1.extend((601, arckey[0]))
+                        key1.extend((' Dipole moment (field-independent basis,'
+                                     + ' Debye):',
+                                     arckey[1]))
+                        sub1.extend((1, arckey[2]))
+                        end1.extend((lambda s: True, arckey[3]))
+                        fmt1.extend((r'^\s+(?P<val>(?:\s*[XYZ]=\s+-?\d+\.\d+)'
+                                    + r'{3}).*$', arckey[4]))
+                        num1.extend((0, arckey[5]))
+                elif qlab.derord == 1:
+                    if qlab.rstate == 'c':
+                        arckey = keys_arch()
+                        lnk1.append(arckey[0])
+                        key1.append(arckey[1])
+                        sub1.append(arckey[2])
+                        end1.append(arckey[3])
+                        fmt1.append(arckey[4])
+                        num1.append(arckey[5])
+                else:
+                    raise NotImplementedError(
+                        'Unsupported derivative order of electric dipole')
+            elif qlab.label == 102:
+                if qlab.derord == 0:
+                    if qlab.rstate == 'c':
+                        raise QuantityError('Magnetic dipole not available.')
+                elif qlab.derord == 1:
+                    if qlab.rstate == 'c':
+                        arckey = keys_arch()
+                        lnk1.append(arckey[0])
+                        key1.append(arckey[1])
+                        sub1.append(arckey[2])
+                        end1.append(arckey[3])
+                        fmt1.append(arckey[4])
+                        num1.append(arckey[5])
+                else:
+                    raise NotImplementedError(
+                        'Unsupported derivative order of magnetic dipole')
             elif qlab.label in range(300, 400):
                 lnk2, key2, sub2, fmt2, end2, num2 = keys_prp_3xx(qlab, gver)
                 lnk1.extend(lnk2)

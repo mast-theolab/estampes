@@ -3,11 +3,34 @@
 Provides the keys necessary to delimit the data to extract from a
 Gaussian log file.
 """
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from estampes.base import QLabel
 from estampes.parser.gaussian.glog.logkeys import KEY_DP, KEY_FP, KEY_UINT
 from estampes.parser.gaussian.glog.types import QKwrdListType
+
+
+def keys_arch() -> tuple[int, str, int, Callable[[str], bool], str, int]:
+    """Provide information for the parsing of the archive block.
+
+    The function provides the parameters to parse the whole block,
+    which simpler to parse after.
+    """
+    lnk = -9999
+    # Technically archive could have a different value after first 1\ but with
+    # new archive format, it should be always 1.
+    # This may require to be updated.
+    # GINC (Gaussian Inc) should always be there.
+    key = r' 1\1\GINC-'
+    sub = 0
+
+    def end_cond(s: str) -> bool:
+        return s.rstrip().endswith(r'\@')
+
+    fmt = r'^ (?P<val>.{,70})\s*$'
+    num = 0
+
+    return lnk, key, sub, end_cond, fmt, num
 
 
 def keys_prp_3xx(qlab: QLabel,

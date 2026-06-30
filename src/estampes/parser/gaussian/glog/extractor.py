@@ -361,7 +361,7 @@ def parse_data(qdict: QInfoType,
         # -------------------------
         elif qlabel.label in range(101, 200):
             dobjs[qkey] = parse_1xx_dat(qlabel, datablocks[first:last+1],
-                                        ref_state)
+                                        ref_state, iref-first)
         # Dynamic (frequency-dependent) properties
         # ----------------------------------------
         elif qlabel.label in range(300, 400):

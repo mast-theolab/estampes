@@ -83,27 +83,54 @@ def parse_en_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
             for key, val in data.items():
                 dobj.add_field(key, value=val)
         elif qlab.derord == 2:
-            maxcols = 5
-            nbloc = 0
+            # First block of dblock dedicated to transition information to
+            # check if related to excited state, so 1st relevant index (iref)
+            # should be 1, not 0
             dobj.set(unit='Eh.a0^{-2}')
             dobj.set(shape='LT')
-            data = []
-            # store in linear form
-            for line in dblock[iref]:
-                if '.' not in line:
-                    nbloc += 1
-                else:
-                    cols = line.split()
-                    i = int(cols[0])
-                    if nbloc == 1:
-                        data.extend([gfloat(item) for item in cols[1:]])
-                        if i > 5:
-                            data.extend(0.0 for _ in range(maxcols, i))
+            if iref == 1:  # first block, lower-triangular in main log
+                maxcols = 5
+                nbloc = 0
+                data = []
+                # store in linear form
+                for line in dblock[iref]:
+                    if '.' not in line:
+                        nbloc += 1
                     else:
-                        ioff = i*(i-1)//2 + (nbloc-1)*maxcols
-                        ncols = len(cols) - 1
-                        data[ioff:ioff+ncols] \
-                            = [gfloat(item) for item in cols[1:]]
+                        cols = line.split()
+                        i = int(cols[0])
+                        if nbloc == 1:
+                            data.extend([gfloat(item) for item in cols[1:]])
+                            if i > 5:
+                                data.extend(0.0 for _ in range(maxcols, i))
+                        else:
+                            ioff = i*(i-1)//2 + (nbloc-1)*maxcols
+                            ncols = len(cols) - 1
+                            data[ioff:ioff+ncols] \
+                                = [gfloat(item) for item in cols[1:]]
+            elif iref == 2:
+                sections = (''.join(dblock[iref])).split(r'\\')
+                # First section is the header, it contains job type.
+                # Check we have frequency job.
+                items = sections[0].split('\\')
+                if items[3] != 'Freq':
+                    raise QuantityError(
+                        'Cartesian force constants not present in file')
+                # Now we need to go down
+                if 'NImag' in sections[4]:
+                    data = [float(item) for item in sections[5].split(',')]
+                else:
+                    for i, section in enumerate(sections):
+                        if 'NImag=' in section:
+                            data = [float(item)
+                                    for item in sections[i+1].split(',')]
+                            break
+                    else:
+                        raise ParsingError('Unable to find the force constants'
+                                           + ' block in archive')
+            else:
+                raise NotImplementedError(
+                    'Unknown block index for energy 2nd deriv.')
             dobj.set(data=data)
         elif qlab.derord == 3:
             if qlab.dercrd == 'Q':
@@ -154,7 +181,7 @@ def parse_en_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
 
 
 def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType,
-                  ref_state: int) -> QData:
+                  ref_state: int, iref: int) -> QData:
     """Parse extracted data related to 1xx properties/quantities."""
     dobj = QData(qlab)
     if qlab.label == 101:
@@ -238,10 +265,55 @@ def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType,
 
             if qlab.derord == 0:
                 if qlab.rstate == 'c':
-                    val = [float(item)/phys_fact('au2Deb') for item in
-                           dblock[-1][0].split()[1::2]]
-                    dobj.set(data=val)
                     dobj.set(unit='e.a0')
+                    if iref == 1:  # first block
+                        val = [float(item)/phys_fact('au2Deb')
+                               for item in dblock[-1][0].split()[1::2]]
+                        dobj.set(data=val)
+                    elif iref == 2:  # archive block
+                        sections = (''.join(dblock[iref])).split(r'\\')
+                        for section in sections[4:]:
+                            if 'Dipole=' in section:
+                                elements = section.split('\\')
+                                break
+                        else:
+                            raise QuantityError(
+                                'Electric dipole not found in archive')
+                        for element in elements:
+                            if element.startswith('Dipole='):
+                                items = element.split('=')[1].split(',')
+                                vals = [float(item) for item in items]
+                                dobj.set(data=vals)
+                    else:
+                        raise NotImplementedError(
+                            f'Unknown block index for {qlab.label}.')
+
+                else:
+                    raise NotImplementedError()
+            elif qlab.derord == 1:
+                if qlab.rstate == 'c':
+                    dobj.set(unit='e')
+                    if iref == 1:  # archive block
+                        sections = (''.join(dblock[iref])).split(r'\\')
+                        for section in sections[4:]:
+                            if 'DipoleDeriv=' in section:
+                                elements = section.split('\\')
+                                break
+                        else:
+                            raise QuantityError(
+                                'Electric dipole derivatives not found in '
+                                + 'archive')
+                        for element in elements:
+                            if element.startswith('DipoleDeriv='):
+                                items = element.split('=')[1].split(',')
+                                vals = [[float(items[i]), float(items[i+1]),
+                                         float(items[i+2])]
+                                        for i in range(0, len(items), 3)]
+                                dobj.set(data=vals)
+                    else:
+                        raise NotImplementedError(
+                            f'Unknown block index for {qlab.label}.')
+
                 else:
                     raise NotImplementedError()
             else:
@@ -327,6 +399,28 @@ def parse_1xx_dat(qlab: QLabel, dblock: DBlocGLogType,
 
             if qlab.derord == 0:
                 raise QuantityError('Magnetic dipole moment not available')
+            elif qlab.derord == 1:
+                dobj.set(unit='hbar.e/(me.a0)')
+                if iref == 1:  # archive block
+                    sections = (''.join(dblock[iref])).split(r'\\')
+                    for section in sections[4:]:
+                        if 'AAT=' in section:
+                            elements = section.split('\\')
+                            break
+                    else:
+                        raise QuantityError(
+                            'Magnetic dipole derivatives not found in '
+                            + 'archive')
+                    for element in elements:
+                        if element.startswith('AAT='):
+                            items = element.split('=')[1].split(',')
+                            vals = [[float(items[i]), float(items[i+1]),
+                                     float(items[i+2])]
+                                    for i in range(0, len(items), 3)]
+                            dobj.set(data=vals)
+                else:
+                    raise NotImplementedError(
+                        f'Unknown block index for {qlab.label}.')
             else:
                 raise NotImplementedError(f'Prp {qlab.label} NYI')
     elif qlab.label == 107:

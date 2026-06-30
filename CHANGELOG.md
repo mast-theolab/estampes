@@ -36,6 +36,8 @@ Other blocks are:
 - **API**: Added parsing of Y (Upsilon) matrix in VPT2 calculations from Gaussian log files.
 - **API**: Added parsing of first derivatives of electronic transitions dipole moments for electric dipole, magnetic dipole and electric quadrupole from Gaussian log files.
 - **API**: Added parsing of normal-modes status flags (`VPTDat:NMFlags`) from Gaussian log files.
+- **API**: Parsing of electric dipole + first derivatives, atomic axial tensors and Cartesian force constants from archive section in Gaussian log files.
+- **API**: Keys to parse the archive section in Gaussian log files (`parser.gaussian.glog.search_keys` module).
 
 ### Fixed
 - **LIB**(`base.qdata`): `QDataType` has been corrected to account for the fact that returned values from `DataFile.get_data` can have `QLabels` as keys.
