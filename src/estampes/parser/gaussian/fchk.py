@@ -59,7 +59,7 @@ DFMT_FCHK = {  # Data format for each type
 # ==============
 
 
-class FChkIO(object):
+class FChkIO():
     """Main class to handle formatted checkpoint file operations.
 
     Main class to manage the parsing and formatting of data stored in
@@ -81,7 +81,7 @@ class FChkIO(object):
         """
         self.filename = fname
         if load_keys:
-            self.__keys = self.__store_keys()  # type: KwordType | None
+            self.__keys: KwordType | None = self.__store_keys()
         else:
             self.__keys = None
         try:
@@ -1186,7 +1186,10 @@ def parse_data(qdict: QInfoType,
         elif qlab.label == 'swopt':
             dobjs[qkey].set(data=' '.join(datablocks[kword]))  # type: ignore
         elif qlab.label == 'molsym':
-            raise NotImplementedError()
+            if raise_error:
+                raise NotImplementedError()
+            else:
+                dobjs[qkey] = None
         elif qlab.label == 'swver':
             pattern = re.compile(r'(?:(\w+)-)?(\w{3})Rev-?([\w.+]+)')
             found = re.match(pattern,
@@ -1227,16 +1230,25 @@ def parse_data(qdict: QInfoType,
             elif qlab.kind == 'redmas':
                 offset = ndat
             else:
-                raise NotImplementedError('Unsupported quantity')
-            dobjs[qkey].set(data=datablocks[kword][offset:offset+ndat])
+                if raise_error:
+                    raise NotImplementedError()
+                else:
+                    dobjs[qkey] = None
+
         # Vibronic Information
         # --------------------
         elif qlab.label == 'fcdat':
-            raise NotImplementedError()
+            if raise_error:
+                raise NotImplementedError()
+            else:
+                dobjs[qkey] = None
         # Anharmonic Information
         # ----------------------
         elif qlab.label == 'vptdat':
-            raise NotImplementedError()
+            if raise_error:
+                raise NotImplementedError()
+            else:
+                dobjs[qkey] = None
         # State(s)-dependent quantities
         # -----------------------------
         else:
@@ -1343,7 +1355,10 @@ def parse_data(qdict: QInfoType,
                         elif qlab.derord in (1, 2):
                             dobjs[qkey].set(data=datablocks[kword])
                         else:
-                            raise NotImplementedError()
+                            if raise_error:
+                                raise NotImplementedError()
+                            else:
+                                dobjs[qkey] = None
                     elif qlab.label == 92:
                         dobjs[qkey].set(data=reshape_dblock(
                             datablocks[kword][:9], (3, 3)))
@@ -1355,16 +1370,25 @@ def parse_data(qdict: QInfoType,
                         if qlab.derord in (0, 1):
                             dobjs[qkey].set(data=datablocks[kword])
                         else:
-                            raise NotImplementedError()
+                            if raise_error:
+                                raise NotImplementedError()
+                            else:
+                                dobjs[qkey] = None
                     elif qlab.label == 102:
                         if qlab.derord == 1:
                             dobjs[qkey].set(data=datablocks[kword])
                         else:
-                            raise NotImplementedError()
+                            if raise_error:
+                                raise NotImplementedError()
+                            else:
+                                dobjs[qkey] = None
                     elif qlab.label in range(300, 400):
                         dobjs[qkey] = _parse_freqdep_data(qlab, datablocks,
                                                           kword)
                     else:
-                        raise NotImplementedError()
+                        if raise_error:
+                            raise NotImplementedError()
+                        else:
+                            dobjs[qkey] = None
 
     return dobjs
