@@ -13,6 +13,7 @@ Tools have each one their own trigram
 - **BLS**: _Ballast_
 - **BRS**: _Bars_
 - **CRS**: _Corsairs_
+- **DER**: _Deriveur_
 - **ESP**: _ESParser_
 - **MRG**: _Mirage_
 - **OAR**: _Soar_
@@ -27,6 +28,7 @@ Other blocks are:
 ## Unreleased
 
 ### Added
+- **DER**: New program `Deriveur` to handle numerical differentiation, building the displaced geometries (`Deriveur shift`) and to construct the differences (`Deriveur diff`).
 - **OAR**: New options `--overlap` and `--overlap-limit` to print details on the overlap between reference and new sets of normal modes.
 - **LIB**(`data.property`): Added components `size` and `form` to named tuple `QBaseInfo`.
 - **LIB**(`tools`): New module `tools.output` to provide simple functions for common printing/output-related operations.
