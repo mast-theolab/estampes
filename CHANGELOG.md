@@ -43,6 +43,7 @@ Other blocks are:
 - **LIB**(`base.qdata`): `QDataType` has been corrected to account for the fact that returned values from `DataFile.get_data` can have `QLabels` as keys.
 - **LIB**(`data.atom`): Fixed van der Waals radii; the new database returns a dictionary of vdW radii, with several implemented DB.
 - **LIB**(`data.visual`): Fixed material keyword for plastic in POV-Ray.
+- **LIB**(`tools.vib`/`parser.base`): Normalized mass-weighted eigenvectors can be requested, to facilitate some conversions.
 - **API**: Fixed shape of the mass-weighted normal-coordinates matrix when directly read from data file to be consistent to the one generated from force constants matrix in method `DataFile.get_hess_data` (2D arrays systematically generated).
 - **API**: Fixed parsing of `FCDat:Assign` from Gaussian log files. `QData.data` returns a dictionary of all extracted data.
 - **API**: Fixed parsing of RR vibrational states from Gaussian log files with multiple excited modes.

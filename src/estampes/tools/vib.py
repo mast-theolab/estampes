@@ -1,4 +1,4 @@
-"""Toolbox for molecular vibrations
+"""Toolbox for molecular vibrations.
 
 Module providing tools to manipulate data relative to vibrations.
 
@@ -121,7 +121,8 @@ def build_vibrations(fc_cart: npt.ArrayLike,
                      get_rmas: bool = True,
                      get_lweigh: bool = True,
                      nvib: int | None = None,
-                     remove_rottrans: bool = True
+                     remove_rottrans: bool = True,
+                     norm_lweigh: bool = False
                      ) -> dict[str, npt.NDArray[np.float64] | None]:
     """Build vibrational data from force constants matrix.
 
@@ -154,6 +155,8 @@ def build_vibrations(fc_cart: npt.ArrayLike,
     remove_rottrans
         Remove any residual rotation and translation by projecting them
         out.
+    norm_lweigh
+        Ensure that `lweigh` is normalized in output.
 
     Returns
     -------
@@ -171,12 +174,9 @@ def build_vibrations(fc_cart: npt.ArrayLike,
     result = {}
     # First, quick size check
     n_at = len(at_mass)
-    if not isinstance(at_mass, np.ndarray):
-        at_mass = np.array(at_mass)
-    if not isinstance(fc_cart, np.ndarray):
-        fc_cart = np.array(fc_cart)
-    if not isinstance(at_crd, np.ndarray):
-        at_crd = np.array(at_crd)
+    at_mass = np.asarray(at_mass)
+    fc_cart = np.asarray(fc_cart)
+    at_crd = np.asarray(at_crd)
     n_at3 = fc_cart.shape[0]
     if n_at*3 != n_at3:
         raise ArgumentError('Size',
@@ -219,8 +219,14 @@ def build_vibrations(fc_cart: npt.ArrayLike,
                 break
         result['freq'] = freqs if get_eval else None
         result['evec'] = np.transpose(hessvec[:, vibs]) if get_evec else None
-        result['lmweigh'] = np.transpose(
-            lmweig[:, vibs]*np.sqrt(red_mas[vibs])) if get_lweigh else None
+        if get_lweigh:
+            if norm_lweigh:
+                result['lmweigh'] = np.transpose(lmweig[:, vibs])
+            else:
+                result['lmweigh'] = np.transpose(
+                    lmweig[:, vibs]*np.sqrt(red_mas[vibs]))
+        else:
+            result['lmweigh'] = None
         result['redmas'] = red_mas[vibs] if get_rmas else None
     else:
         # Let us build the internal coordinates FC matrix
@@ -287,8 +293,13 @@ def build_vibrations(fc_cart: npt.ArrayLike,
             freqs.append(hessval_to_freq(val))
         result['freq'] = freqs if get_eval else None
         result['evec'] = np.transpose(lmat) if get_evec else None
-        result['lmweigh'] = np.transpose(
-            lmweig*np.sqrt(red_mas)) if get_lweigh else None
+        if get_lweigh:
+            if norm_lweigh:
+                result['lmweigh'] = np.transpose(lmweig)
+            else:
+                result['lmweigh'] = np.transpose(lmweig*np.sqrt(red_mas))
+        else:
+            result['lmweigh'] = None
         result['redmas'] = red_mas if get_rmas else None
 
     return result
@@ -436,7 +447,7 @@ def norm_evec(evec: npt.ArrayLike) -> npt.NDArray[np.float64]:
 
 
 def orient_modes(Lmat: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-    """Sets a unique orientation for normal coordinates.
+    """Set a unique orientation for normal coordinates.
 
     Sets the sign for each column of `Lmat` so that the highest element
     is positive.  This way, the vectors can adopt a consistent

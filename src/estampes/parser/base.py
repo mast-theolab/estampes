@@ -100,6 +100,7 @@ class DataFile(object):
                       get_lweigh: bool | str = False,
                       pre_data: QDataBaseType | None = None,
                       force_calc: bool | None = None,
+                      norm_lweigh: bool = False
                       ) -> dict[str, tp.Any]:
         """Get or build Hessian data (eigenvectors and values).
 
@@ -136,6 +137,8 @@ class DataFile(object):
             Database with quantities already loaded from previous queries.
         force_calc
             Force the computation of the eigenvectors and eigenvalues.
+        norm_lweigh
+            Ensure that `lweigh` is normalized in output.
 
         Returns
         -------
@@ -227,7 +230,8 @@ class DataFile(object):
                 res = build_vibrations(
                     square_ltmat(pre_data[key_ffx].data),
                     atmas, atcrd, True, bool(get_evec), bool(get_eval),
-                    bool(get_rmas), bool(get_lweigh), nvib=nvib)
+                    bool(get_rmas), bool(get_lweigh), nvib=nvib,
+                    norm_lweigh=norm_lweigh)
                 if get_evec:
                     eigvec = res['evec']
                 if get_eval:
@@ -242,7 +246,7 @@ class DataFile(object):
                 if key_evec is None or pre_data is None:
                     raise InternalError('pre_data[key_evec] should be set')
                 # Check if eigenvectors need to be corrected
-                calc_rmas = (get_rmas and
+                calc_rmas = ((get_rmas or (get_lweigh and norm_lweigh)) and
                              pre_data[key_evec].dtype == 'L.M^{-1/2}')
                 eigvec = convert_hess_evec(
                     hessvec, atmas, natoms,
@@ -252,7 +256,11 @@ class DataFile(object):
                     redmas = (eigvec**2).sum(axis=1)
                     eigvec /= np.sqrt(redmas[:, np.newaxis])
                 if get_lweigh:
-                    lmweig = np.array(hessvec)
+                    if norm_lweigh:
+                        lmweig = np.array(hessvec) \
+                            / np.sqrt(redmas[:, np.newaxis])
+                    else:
+                        lmweig = np.array(hessvec)
             if get_eval and hessval is not None:
                 eigval = hessval
 
@@ -286,7 +294,7 @@ class DataFile(object):
                         hessvec = tmp_data['hessvec'].data
                         atmas = np.array(tmp_data['atmas'].data)
                         natoms = tmp_data['natoms'].data
-                        calc_rmas = (get_rmas and
+                        calc_rmas = ((get_rmas or (get_lweigh and norm_lweigh)) and
                                      tmp_data['hessvec'].dtype == 'L.M^{-1/2}')
                         eigvec = convert_hess_evec(
                             hessvec, atmas, natoms,
@@ -296,7 +304,11 @@ class DataFile(object):
                             redmas = (eigvec**2).sum(axis=1)
                             eigvec /= np.sqrt(redmas[:, np.newaxis])
                         if get_lweigh:
-                            lmweig = np.reshape(hessvec, (-1, 3*natoms))
+                            if norm_lweigh:
+                                lmweig = np.reshape(hessvec, (-1, 3*natoms)) \
+                                    / np.sqrt(redmas[:, np.newaxis])
+                            else:
+                                lmweig = np.reshape(hessvec, (-1, 3*natoms))
                     else:
                         do_calc = True
                 if calc_eval:
@@ -315,7 +327,7 @@ class DataFile(object):
                         np.array(tmp_data['atmas'].data),
                         np.array(tmp_data['atcrd'].data),
                         True, bool(get_evec), bool(get_eval), bool(get_rmas),
-                        bool(get_lweigh), nvib=nvib)
+                        bool(get_lweigh), nvib=nvib, norm_lweigh=norm_lweigh)
                     if get_evec:
                         eigvec = res['evec']
                     if get_eval:
