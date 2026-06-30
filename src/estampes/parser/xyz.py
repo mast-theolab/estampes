@@ -9,7 +9,7 @@ import typing as tp
 from collections.abc import Sequence
 
 from estampes.base import (
-    QLabel, QDataType, QData,
+    QLabel, QParseDataType, QData,
     ParseDataError, ParseKeyError, ParsingError)
 from estampes.parser.functions import parse_qlabels
 from estampes.tools.atom import convert_labsymb
@@ -181,7 +181,7 @@ class FileXYZ(object):
     def get_data(self,
                  *qlabels: str | QLabel,
                  error_noqty: bool = True,
-                 **keys4qlab) -> QDataType:
+                 **keys4qlab) -> QParseDataType:
         """Get data from a XYZ file for each quantity label.
 
         Reads one or more full quantity labels from `qlabels` and returns

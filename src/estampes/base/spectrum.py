@@ -7,7 +7,7 @@ from math import ceil
 import typing as tp
 from collections.abc import Sequence
 
-from estampes.base.qdata import QData, QDataType
+from estampes.base.qdata import QData, QParseDataType
 from estampes.parser import DataFile
 from estampes.base import QLabel, ColorType
 from estampes.base.errors import ArgumentError, InternalError, ParsingError
@@ -1154,7 +1154,7 @@ class Spectrum():
                  self.__yunits, self.__xlabels, self.__ylabels)
 
 
-def _get_data_v_trans(dobj: QDataType,
+def _get_data_v_trans(dobj: QParseDataType,
                       spec: str,
                       params: dict[str, tp.Any]
                       ) -> tuple[list[float], str, str, list[float], str, str,
@@ -1268,7 +1268,7 @@ State {mode} was not found in one of the lists.''') from err
     return xaxis, xlabel, xunit, yaxis, ylabel, yunit, broadening, extra
 
 
-def _get_data_e_trans(dobj: QDataType,
+def _get_data_e_trans(dobj: QParseDataType,
                       spec: str
                       ) -> tuple[list[float], str, str, list[float], str, str,
                                  dict[str, tp.Any]]:
@@ -1317,7 +1317,7 @@ def _get_data_e_trans(dobj: QDataType,
     return xaxis, xlabel, xunit, yaxis, ylabel, yunit, broadening
 
 
-def _get_data_spectrum(dobj: QDataType,
+def _get_data_spectrum(dobj: QParseDataType,
                        ylabel: str | None = None
                        ) -> tuple[list[float], str, str, list[float], str, str,
                                   dict[str, tp.Any], dict[str, tp.Any],

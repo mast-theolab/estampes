@@ -12,7 +12,7 @@ Notes
 import os
 import typing as tp
 
-from estampes.base import QLabel, QDataType
+from estampes.base import QLabel, QData, QDataBaseType, QParseDataType
 from estampes.base.errors import (
     ArgumentError, InternalError, ParsingError, QuantityError)
 from estampes.parser import csv, xyz
@@ -85,7 +85,7 @@ class DataFile(object):
     def get_data(self,
                  *qlabels: str | QLabel,
                  error_noqty: bool = True,
-                 **keys4qlabels) -> QDataType:
+                 **keys4qlabels) -> QParseDataType:
         """Get data from Data File object.
 
         Wrapper to internal get_data functions.
@@ -98,8 +98,8 @@ class DataFile(object):
                       get_eval: bool | str = True,
                       get_rmas: bool | str = False,
                       get_lweigh: bool | str = False,
-                      pre_data: QDataType | None = None,
-                      force_calc: bool | None = None
+                      pre_data: QDataBaseType | None = None,
+                      force_calc: bool | None = None,
                       ) -> dict[str, tp.Any]:
         """Get or build Hessian data (eigenvectors and values).
 
@@ -193,24 +193,25 @@ class DataFile(object):
         do_calc = force_calc
         if pre_data is not None:
             for key in pre_data:
-                qlabel = pre_data[key].qlabel
-                if qlabel.label == 'natoms':
-                    natoms = pre_data['natoms'].data
-                elif qlabel.label == 'nvib':
-                    nvib = pre_data['nvib'].data
-                elif qlabel.label == 'atmas':
-                    atmas = np.array(pre_data[key].data)
-                elif qlabel.label == 'atcrd':
-                    atcrd = np.array(pre_data[key].data)
-                elif qlabel.label == 'hessvec':
-                    key_evec = key
-                    hessvec = np.array(pre_data[key].data)
-                elif qlabel.label == 'hessdat' and qlabel.kind == 'freq':
-                    hessval = np.array(pre_data[key].data)
-                elif (qlabel.label == 1 and qlabel.derord == 2
-                      and qlabel.dercrd == 'X'):
-                    key_ffx = key
-                    fccart = np.array(pre_data[key].data)
+                if isinstance(pre_data[key], QData):
+                    qlabel = pre_data[key].qlabel
+                    if qlabel.label == 'natoms':
+                        natoms = pre_data['natoms'].data
+                    elif qlabel.label == 'nvib':
+                        nvib = pre_data['nvib'].data
+                    elif qlabel.label == 'atmas':
+                        atmas = np.array(pre_data[key].data)
+                    elif qlabel.label == 'atcrd':
+                        atcrd = np.array(pre_data[key].data)
+                    elif qlabel.label == 'hessvec':
+                        key_evec = key
+                        hessvec = np.array(pre_data[key].data)
+                    elif qlabel.label == 'hessdat' and qlabel.kind == 'freq':
+                        hessval = np.array(pre_data[key].data)
+                    elif (qlabel.label == 1 and qlabel.derord == 2
+                          and qlabel.dercrd == 'X'):
+                        key_ffx = key
+                        fccart = np.array(pre_data[key].data)
 
         if force_calc and (
                 fccart is not None and

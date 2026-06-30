@@ -38,8 +38,8 @@ MVibType
     Static type for multiple sets of a single vibrations.
 MVibsType
     Static type for multiple sets of vibrations.
-QDataType : dict
-    Static type for data returned by parsers.
+QDataBaseType : dict
+    Static type for extracted data.
 QInfoType : dict
     Static type for dictionary of full quantity labels.
 QLabCrdType
@@ -56,6 +56,8 @@ QLabSubType
     Static type for quantity option.
 QLabTagType
     Static type for quantity tag.
+QParseDataType : dict
+    Static type for data returned by parsers.
 RealCplxType
     Type variable designated either float or complex.
 StrIntType
@@ -100,4 +102,4 @@ from estampes.base.errors import (
     ParsingError, QuantityError)
 
 from estampes.base.qlabel import QLabel, QInfoType
-from estampes.base.qdata import QData, QDataType
+from estampes.base.qdata import QData, QDataBaseType, QParseDataType

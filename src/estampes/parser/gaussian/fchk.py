@@ -22,7 +22,7 @@ from collections.abc import Sequence
 from math import ceil
 
 from estampes.base import (
-    QData, QDataType, QLabel,
+    QData, QParseDataType, QLabel,
     ArgumentError, InternalError, ParseDataError, ParseKeyError, QuantityError,
     DBlocFChkType, QInfoType)
 from estampes.data import property as edpr
@@ -323,7 +323,7 @@ class FChkIO():
     def get_data(self,
                  *qlabels: str | QLabel,
                  error_noqty: bool = True,
-                 **keys4qlab) -> QDataType:
+                 **keys4qlab) -> QParseDataType:
         """Get data from a FChk file for each quantity label.
 
         Reads one or more full quantity labels from `qlabels` and returns
@@ -1133,7 +1133,7 @@ def parse_data(qdict: QInfoType,
                qlab2kword: dict[str, str],
                datablocks: DBlocFChkType,
                gver: tuple[str | None, str | None] | None = None,
-               raise_error: bool = True) -> QDataType:
+               raise_error: bool = True) -> QParseDataType:
     """Parse data arrays to extract specific quantities.
 
     Parses data array to extract relevant information for each quantity.

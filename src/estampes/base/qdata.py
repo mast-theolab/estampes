@@ -250,4 +250,5 @@ class QData():
         return new
 
 
-QDataType = dict[str | QLabel, QData]
+QDataBaseType = dict[str, QData]
+QParseDataType = dict[str, QData | None]

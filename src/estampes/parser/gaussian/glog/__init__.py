@@ -10,7 +10,7 @@ import typing as tp
 from collections.abc import Callable
 
 from estampes.base import (
-    QLabel, QDataType,
+    QLabel, QParseDataType,
     ParseKeyError, QuantityError,
     DBlocGLogType)
 
@@ -349,7 +349,7 @@ class GLogIO(object):
     def get_data(self,
                  *qlabels: str | QLabel,
                  error_noqty: bool = True,
-                 **keys4qlab) -> QDataType:
+                 **keys4qlab) -> QParseDataType:
         """Get data from a GLog file for each quantity label.
 
         Reads one or more full quantity labels from `qlab` and returns the

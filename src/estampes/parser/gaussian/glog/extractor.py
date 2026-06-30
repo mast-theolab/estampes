@@ -8,7 +8,7 @@ import re
 from collections.abc import Sequence
 
 from estampes.base import (
-    QData, QDataType, QInfoType,
+    QData, QParseDataType, QInfoType,
     ParseKeyError, ParsingError,
     DBlocGLogType)
 from estampes.data.physics import PHYSFACT
@@ -25,7 +25,7 @@ def parse_data(qdict: QInfoType,
                ndatablock: Sequence[int],
                datablocks: DBlocGLogType,
                gver: tuple[str, str] | None = None,
-               raise_error: bool = True) -> QDataType:
+               raise_error: bool = True) -> QParseDataType:
     """Parse data arrays to extract specific quantity.
 
     Parses data array to extract relevant information for each quantity.

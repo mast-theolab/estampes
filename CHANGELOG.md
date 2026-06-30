@@ -57,6 +57,7 @@ Other blocks are:
 - **API**: The parser from resonance Raman incident frequencies accepts negative frequencies to handle special cases.
 - **API**: `DataFile.get_data` always returns a dictionary, which can be empty if no keys are provided.
 - **API**: Implementation errors due to missing parsing of quantities are now silenced if `error_qty` is set to `False` in calls to `DataFile.get_data`.
+- **API**: `QDataType` is split into `QParseDataType` for data returned by parsers and `QDataBaseType` for databases of extracted data transferred between components of the library.
 - **DEV**: Some parts of the code have been cleaned up considering more modern typing hints recommendations in Python and to reduce warnings produced by syntax analyzers.
 
 
