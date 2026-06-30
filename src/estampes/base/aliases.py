@@ -47,14 +47,11 @@ spectroscopy = {
     # CPP
     'CircularPolarizedPhosphorescence'.casefold(): 'CPP',
     'CPP'.casefold(): 'CPP',
-    # CPP
-    'CircularPolarizedPhosphorescence'.casefold(): 'CPP',
-    'CPP'.casefold(): 'CPP',
     # RR
     'ResonanceRaman'.casefold(): 'RR',
     'vRR'.casefold(): 'RR',
     'RR'.casefold(): 'RR',
-    # RR
+    # RROA
     'ResonanceRamanOptical Activity'.casefold(): 'RROA',
     'vRROA'.casefold(): 'RROA',
     'RROA'.casefold(): 'RROA',
