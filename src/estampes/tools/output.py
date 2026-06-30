@@ -4,7 +4,7 @@ The module provides some simple tools for common output operations.
 """
 import re
 import typing as tp
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 
 from estampes.base import ArgumentError
 from estampes.data.property import QBaseInfo
@@ -62,13 +62,13 @@ def fortran_fmt_D(number_s: float | Sequence[float], fmt: str) -> str:
             if len_e + 1 < len(p_exp):
                 return len_w*'*'
             else:
-                py_fmt = f'{{:+{len_e}d}}'
-                p_exp = 'D' + py_fmt.format(int(p_exp))
+                py_fmt = f'{{:+0{len_e}d}}'
+                p_exp = 'D' + py_fmt.format(int(p_exp)+1)
         else:
             if len(p_exp) == 3:
-                p_exp = 'D' + p_exp
+                p_exp = f'D{int(p_exp)+1:+03d}'
             elif len(p_exp) == 4:
-                p_exp = py_fmt.format(int(p_exp))
+                p_exp = f'{int(p_exp)+1:+04d}'
             else:
                 return len_w*'*'
 
@@ -88,12 +88,13 @@ def fortran_fmt_D(number_s: float | Sequence[float], fmt: str) -> str:
 
     if isinstance(number_s, float):
         return num_to_repr(number_s)
-    elif isinstance(number_s, (tuple, list)):
+    elif isinstance(number_s, (Sequence, Iterable)):
         repr_s = []
         for item in number_s:
             repr_s.append(num_to_repr(item))
         return ''.join(repr_s)
     else:
+        print(type)
         raise TypeError('Unsupported representation of number_s')
 
 
@@ -232,3 +233,70 @@ def pstruct_to_labels(qinfo: QBaseInfo,
                                       for lab3 in comps[2]))
                     case _:
                         raise ValueError('Unsupported component structure')
+
+
+def sec_header(output: tp.IO, level: int, title: str, lead_spaces: int = 1):
+    """Write section header in output.
+    
+    Writes a section header in the file object defined with output.
+    
+    Parameters
+    ----------
+    output
+        File object where the section header is printed.
+    level
+        Hierarchical level of the section:
+        
+        - `-1`: Main title
+        - `0`: Chapter
+        - `1`: Section / Header1
+        - `2`: Subsection / Header2
+        - `3`: Subsubsection / Header3
+        - `4`: Paragraph / Header4
+
+    title
+        Header title.
+    lead_spaces
+        Leading shift for the section.
+    """
+    ltitle = len(title.strip())
+    if ltitle == 0:
+        return
+    
+    if level == -1:
+        length = max(76, ltitle+8)
+        fmt = f'''\
+{lead_spaces*' '}/{length*'-'}\\
+{lead_spaces*' '}|{length*' '}|
+{lead_spaces*' '}|{{:^{length}s}}|
+{lead_spaces*' '}|{length*' '}|
+{lead_spaces*' '}\\{length*'-'}/
+'''
+    elif level == 0:
+        length = max(78, ltitle+4)
+        fmt = f'''
+
+{lead_spaces*' '}{length*'*'}
+
+{lead_spaces*' '}{{:^{length}s}}
+
+{lead_spaces*' '}{length*'*'}'''
+    elif level == 1:
+        fmt = f'''
+
+{lead_spaces*' '}{{:{ltitle}}}
+{lead_spaces*' '}{ltitle*'='}'''
+    elif level == 2:
+        fmt = f'''
+{lead_spaces*' '}{{:{ltitle}s}}
+{lead_spaces*' '}{ltitle*'-'}'''
+    elif level == 3:
+        fmt = f'''
+{lead_spaces*' '}{{:{ltitle}s}}
+{lead_spaces*' '}{ltitle*'^'}'''
+    elif level >= 4:
+        fmt = f'''
+{lead_spaces*' '}### {{:{ltitle}^s}} ###'''
+    else:
+        raise ArgumentError('level', 'Unsupported header level')
+    output.write(fmt.format(title.strip()) + '\n')
