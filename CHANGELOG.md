@@ -47,6 +47,7 @@ Other blocks are:
 - **API**: Fixed parsing of `FCDat:Assign` from Gaussian log files. `QData.data` returns a dictionary of all extracted data.
 - **API**: Fixed parsing of RR vibrational states from Gaussian log files with multiple excited modes.
 - **API**: Restored partially old behavior of `QLabel` with derorder equal to 0 for numerical quantities (properties). The new behavior, setting it as -1, created a lot of conflicts in other existing parts of the code.
+- **API**: electric dipole and magnetic dipole derivatives extracted from formatted checkpoint files are given as lists of lists instead of a pure list, to be consistent with the Gaussian log files.
 
 ### Changed
 - **LIB**(`data.property`): Removed `qopt` parameter in definition of `property_data` and added `variant` to get property information relative to some variants (e.g., size for tensors stored in lower-triangular format).

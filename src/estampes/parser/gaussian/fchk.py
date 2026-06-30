@@ -90,7 +90,11 @@ class FChkIO():
             qdict = {qtag: QLabel(quantity=qtag)}
             qkwrd = {qtag: key}
             qdata = self.read_data(key)
-            self.__gversion = parse_data(qdict, qkwrd, qdata)[qtag].data
+            res = parse_data(qdict, qkwrd, qdata)[qtag]
+            if res is None:
+                self.__gversion = {'major': None, 'minor': None}
+            else:
+                self.__gversion = res.data
         except ParseKeyError:
             self.__gversion = {'major': None, 'minor': None}
 
@@ -369,7 +373,11 @@ class FChkIO():
                 main_kwlist[qkey] = keyword
         # Check if list in the end is not empty
         if not main_kwlist:
-            raise QuantityError('Unsupported quantities')
+            if error_noqty:
+                raise QuantityError('Unsupported quantities')
+            else:
+                return {qkey: None for qkey in qty_dict}
+
         # Data Extraction
         # ---------------
         # Use of set to remove redundant keywords
@@ -1226,9 +1234,9 @@ def parse_data(qdict: QInfoType,
                 raise ParseKeyError('Missing necessary dimension')
             ndat = int(datablocks[key][0])
             if qlab.kind == 'freq':
-                offset = 0
+                dobjs[qkey].set(data=datablocks[kword][:ndat])
             elif qlab.kind == 'redmas':
-                offset = ndat
+                dobjs[qkey].set(data=datablocks[kword][ndat:2*ndat])
             else:
                 if raise_error:
                     raise NotImplementedError()
@@ -1367,8 +1375,14 @@ def parse_data(qdict: QInfoType,
                     elif qlab.label in (50, 91):
                         dobjs[qkey].set(data=datablocks[kword])
                     elif qlab.label == 101:
-                        if qlab.derord in (0, 1):
+                        if qlab.derord == 0:
                             dobjs[qkey].set(data=datablocks[kword])
+                        elif qlab.derord == 1:
+                            data = [[datablocks[kword][i+ix]
+                                     for ix in range(3)]
+                                    for i in range(0, len(datablocks[kword]),
+                                                   3)]
+                            dobjs[qkey].set(data=data)
                         else:
                             if raise_error:
                                 raise NotImplementedError()
@@ -1376,7 +1390,11 @@ def parse_data(qdict: QInfoType,
                                 dobjs[qkey] = None
                     elif qlab.label == 102:
                         if qlab.derord == 1:
-                            dobjs[qkey].set(data=datablocks[kword])
+                            data = [[datablocks[kword][i+ix]
+                                     for ix in range(3)]
+                                    for i in range(0, len(datablocks[kword]),
+                                                   3)]
+                            dobjs[qkey].set(data=data)
                         else:
                             if raise_error:
                                 raise NotImplementedError()
