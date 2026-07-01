@@ -648,12 +648,14 @@ def parse_3xx_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
                                             daz[-nrest:],
                                         ])
                                         ioff = 0
-                                    else:
+                                    elif nrest > 0:
                                         dalp_dx = [
                                             dax[-nrest:],
                                             day[-nrest:],
                                             daz[-nrest:]]
                                         ioff = nrest
+                                    else:
+                                        ioff = 0
                         dobj.set(data=data)
                         if qlab.label in (301, 303):
                             dobj.set(unit='a0^2')
@@ -871,7 +873,7 @@ def parse_3xx_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
                                              [dxz[-n2], dyz[-n2], dzz[-n2]]],
                                         ])
                                         ioff = 0
-                                    else:
+                                    elif nr > 0:
                                         n1 = -nr + 1
                                         n2 = -nr + 2
                                         data[incfrq].append([
@@ -886,6 +888,8 @@ def parse_3xx_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
                                              [dxz[-n2], dyz[-n2], dzz[-n2]]],
                                         ])
                                         ioff = nr
+                                    else:
+                                        ioff = 0
                         dobj.set(data=data)
                         dobj.set(unit='N/A')
                     elif qlab.dercrd == 'Q':
