@@ -260,7 +260,7 @@ def keys_prp_3xx(qlab: QLabel,
                             + ' derivatives')
                     else:
                         key.append(
-                            ' Property number 2 -- Derivative D-Q '
+                            ' Property number 4 -- Derivative D-Q '
                             + 'polarizability')
                     sub.append(1)
                     # s.lstrip() + ' ' to protect the test from empty line
