@@ -31,6 +31,7 @@ Other blocks are:
 - **DER**: New program `Deriveur` to handle numerical differentiation, building the displaced geometries (`Deriveur shift`) and to construct the differences (`Deriveur diff`).
 - **OAR**: New options `--overlap` and `--overlap-limit` to print details on the overlap between reference and new sets of normal modes.
 - **LIB**(`data.property`): Added components `size` and `form` to named tuple `QBaseInfo`.
+- **LIB**(`data.property`): Added component `symb`, storing a symbol or representation of the property for printing (note that some symbols are unicode and thus may not be rendered properly in terminals).
 - **LIB**(`tools`): New module `tools.output` to provide simple functions for common printing/output-related operations.
 - **LIB**(`tools.output`): New function `fortran_fmt_D` to simulate old Fortran `D` format, primarily intended for quick comparisons with output produced by Fortran programs.
 - **LIB**(`tools.output`): New function `pstruct_to_labels` to construct labels for the components of a property or quantity.

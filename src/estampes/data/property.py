@@ -18,6 +18,7 @@ class QBaseInfo(tp.NamedTuple):
     """Type for basic quantity/property information."""
 
     name: str  # Printable name
+    symb: str  # Symbol
     dim: int | str | tuple[tp.Any, ...]  # dimension(s)
     size: int  # Total size
     der: bool  # Flag if property derivable
@@ -78,6 +79,7 @@ def property_data(qtag: QLabTagType,
     item = str(qtag).lower()
     if item == '1':
         qname = 'energy'
+        qsymb = 'E'
         qdim = 1
         qsize = 1
         qder = True
@@ -86,6 +88,7 @@ def property_data(qtag: QLabTagType,
         qform = 'scalar'
     elif item == '50':
         qname = 'non-adiabatic couplings'
+        qsymb = '\u039B\u0302'  # lambda with a circumflex
         qdim = ('nat', 3)
         qsize = 1  # Technically, non adiabatic couplings are scalars.
         qder = True
@@ -94,6 +97,7 @@ def property_data(qtag: QLabTagType,
         qform = 'scalar'
     elif item == '101':
         qname = 'electric dipole'
+        qsymb = '\u03BC'  # mu
         qdim = 3
         qsize = 3
         qder = True
@@ -102,6 +106,7 @@ def property_data(qtag: QLabTagType,
         qform = 'xyz'
     elif item == '102':
         qname = 'magnetic dipole'
+        qsymb = 'm'
         qdim = 3
         qsize = 3
         qder = True
@@ -110,6 +115,7 @@ def property_data(qtag: QLabTagType,
         qform = 'xyz'
     elif item == '103':
         qname = 'polarizability tensor'
+        qsymb = '\u0251'  # alpha
         if gvers:
             qdim = 6
             qsize = 6
@@ -123,6 +129,7 @@ def property_data(qtag: QLabTagType,
         qunit = 'a0^3'
     elif item == '104':
         qname = 'optical rotations'
+        qsymb = 'G'
         qdim = (3, 3)
         qsize = 9
         qder = True
@@ -131,6 +138,7 @@ def property_data(qtag: QLabTagType,
         qform = ('xyz', 'xyz')
     elif item == '105':
         qname = 'dipole-quadrupole polarizability'
+        qsymb = 'A'
         qdim = (3, 6)
         qsize = 18
         qder = True
@@ -139,6 +147,7 @@ def property_data(qtag: QLabTagType,
         qform = ('xyz', 'xyzLT')
     elif item == '106':
         qname = 'hyperpolarizability'
+        qsymb = '\u03B2'  # beta
         qdim = (3, 6)
         qsize = 18
         qder = True
@@ -147,6 +156,7 @@ def property_data(qtag: QLabTagType,
         qform = ('xyz', 'xyzLT')
     elif item == '107':
         qname = 'quadrupole'
+        qsymb = '\u01EB'  # small O with Ogonek
         if gvers:
             qdim = 6
             qsize = 6
@@ -160,6 +170,7 @@ def property_data(qtag: QLabTagType,
         qunit = 'a.u.'
     elif item == '201':
         qname = 'magnetic susceptibility'
+        qsymb = '\u03C7'  # chi
         qdim = (3, 3)
         qsize = 9
         qder = False
@@ -168,6 +179,7 @@ def property_data(qtag: QLabTagType,
         qform = ('xyz', 'xyz')
     elif item == '202':
         qname = 'rotational g-Tensor'
+        qsymb = 'g'
         qdim = (3, 3)
         qsize = 9
         qder = False
@@ -176,6 +188,7 @@ def property_data(qtag: QLabTagType,
         qform = ('xyz', 'xyz')
     elif item == '203':
         qname = 'NMR shielding tensors'
+        qsymb = '\u03C3'  # sigma
         qdim = ('nat', (3, 3))
         qsize = -9
         qder = False
@@ -184,6 +197,7 @@ def property_data(qtag: QLabTagType,
         qform = ('atom', ('xyz', 'xyz'))
     elif item == '204':
         qname = 'spin-rotation tensors'
+        qsymb = 'S'
         qdim = ('nat', (3, 3))
         qsize = -9
         qder = False
@@ -192,6 +206,7 @@ def property_data(qtag: QLabTagType,
         qform = ('atom', ('xyz', 'xyz'))
     elif item == '205':
         qname = 'anisotropic hyperfine tensors'
+        qsymb = 'A'
         qdim = ('nat', 6)
         qsize = -6
         qder = False
@@ -200,6 +215,7 @@ def property_data(qtag: QLabTagType,
         qform = ('atom', 'xyzLT')
     elif item == '206':
         qname = 'isotropic (Fermi) terms'
+        qsymb = 'A'
         qdim = 'nat'
         qsize = -1
         qder = False
@@ -208,6 +224,7 @@ def property_data(qtag: QLabTagType,
         qform = 'atom'
     elif item == '207':
         qname = 'ESR g-tensor'
+        qsymb = 'g'
         qdim = (3, 3)
         qsize = 9
         qder = False
@@ -216,6 +233,7 @@ def property_data(qtag: QLabTagType,
         qform = ('xyz', 'xyz')
     elif item == '208':
         qname = 'nuclear quadrupole tensors'
+        qsymb = '\u03C7'  # chi
         qdim = ('nat', 6)
         qsize = -6
         qder = False
@@ -224,6 +242,7 @@ def property_data(qtag: QLabTagType,
         qform = ('atom', 'xyzLT')
     elif item == '209':
         qname = 'isotropic spin-spin coupling'
+        qsymb = 'J'
         qdim = 'nattt'
         qsize = -1
         qder = False
@@ -232,6 +251,7 @@ def property_data(qtag: QLabTagType,
         qform = 'atomLT'
     elif item == '301':
         qname = 'polarizability alpha(-w,w)'
+        qsymb = '\u0251(-\u03C9,\u03C9)'  # alpha(-omega,omega)
         qdim = (3, 3)
         qsize = 9
         qder = True
@@ -240,6 +260,7 @@ def property_data(qtag: QLabTagType,
         qform = ('xyz', 'xyz')
     elif item == '302':
         qname = 'optical rotations'
+        qsymb = 'G'
         qdim = (3, 3)
         qsize = 9
         qder = True
@@ -248,6 +269,7 @@ def property_data(qtag: QLabTagType,
         qform = ('xyz', 'xyz')
     elif item == '303':
         qname = 'polarizability alpha(w,0)'
+        qsymb = '\u0251(-\u03C9,0)'  # alpha(-omega,0)
         qdim = (3, 3)
         qsize = 9
         qder = True
@@ -256,6 +278,7 @@ def property_data(qtag: QLabTagType,
         qform = ('xyz', 'xyz')
     elif item == '304':
         qname = 'dipole-quadrupole polarizability'
+        qsymb = 'A'
         qdim = (3, 6)
         qsize = 18
         qder = True
@@ -264,6 +287,7 @@ def property_data(qtag: QLabTagType,
         qform = ('xyz', 'xyzLT')
     elif item == '305':
         qname = 'hyperpolarizability beta(-w,w,0)'
+        qsymb = '\u03B2(-\u03C9,\u03C9,0)'  # beta(-omega,omega,0)
         qdim = (3, 6)
         qsize = 18
         qder = True
@@ -272,6 +296,7 @@ def property_data(qtag: QLabTagType,
         qform = ('xyz', 'xyzLT')
     elif item == '306':
         qname = 'hyperpolarizability Beta(w,w,-2w)'
+        qsymb = '\u03B2(\u03C9,\u03C9,-2\u03C9)'  # beta(omega,omega,-2omega)
         qdim = (3, 6)
         qsize = 18
         qder = True
