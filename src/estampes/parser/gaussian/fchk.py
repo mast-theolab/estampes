@@ -19,14 +19,14 @@ from tempfile import TemporaryFile
 from shutil import copyfileobj
 import typing as tp
 from collections.abc import Sequence
-from math import ceil
+from math import ceil, pi
 
 from estampes.base import (
     QData, QParseDataType, QLabel,
     ArgumentError, InternalError, ParseDataError, ParseKeyError, QuantityError,
     DBlocFChkType, QInfoType)
 from estampes.data import property as edpr
-from estampes.data.physics import phys_fact
+from estampes.data.physics import phys_fact, PHYSFACT
 from estampes.parser.functions import parse_qlabels, reshape_dblock
 from estampes.parser.gaussian import g_elquad_LT_to_2D
 
@@ -761,7 +761,7 @@ def qlab_to_kword(qlab: QLabel) -> QKwrdType:
                             keyword = 'Derivative Alpha(-w,w)'
                 else:
                     raise NotImplementedError('Static alpha NYI')
-            elif qlab.label == 302:
+            elif qlab.label in (302, 312):
                 if qlab.kind != 'static':
                     if qlab.derord <= 0:
                         keywords = ['Frequencies for FD properties']
@@ -1079,22 +1079,26 @@ def _parse_freqdep_data(qlab: QLabel, dblocks: DBlocFChkType,
         raise IndexError('Unsupported derivative order')
 
     # Create alias to datablocks[kword] for simplicity
-    d = dblocks[kword]
+    d: list[float] = dblocks[kword]  # type: ignore
     data = None
-    if qlab.label in (301, 302, 303):
+    if qlab.label in (301, 302, 303, 312):
         if qopt == 0:
             data = {}
             if incfrqs is None:
                 raise ParseKeyError('Missing incident frequencies.')
             for ifrq, incfrq in enumerate(incfrqs):
+                if qlab.label == 312:
+                    a = 2*pi*1.0e-8*PHYSFACT.bohr2ang*float(incfrq)
+                else:
+                    a = 1.0
                 ioffF = ifrq*9*nder
                 fdat = []
                 for ider in range(nder):
                     ioff = ioffF + ider*9
                     fdat.append([
-                        [d[ioff], d[ioff+3], d[ioff+6]],
-                        [d[ioff+1], d[ioff+4], d[ioff+7]],
-                        [d[ioff+2], d[ioff+5], d[ioff+8]]
+                        [a*d[ioff], a*d[ioff+3], a*d[ioff+6]],
+                        [a*d[ioff+1], a*d[ioff+4], a*d[ioff+7]],
+                        [a*d[ioff+2], a*d[ioff+5], a*d[ioff+8]]
                     ])
                 if nder == 1:
                     data[incfrq] = fdat[0]
@@ -1108,15 +1112,16 @@ def _parse_freqdep_data(qlab: QLabel, dblocks: DBlocFChkType,
             # the data are saved in Fortran order
             # first quad, then dip.
             # Moreover, quad stored as XX, YY, ZZ, XY, XZ, YZ
+            conv = 3./2.
             for ifrq, incfrq in enumerate(incfrqs):
                 ioffF = ifrq*9*nder
                 fdat = []
                 for ider in range(nder):
                     ioff = ioffF + ider*18
                     fdat.append([
-                        g_elquad_LT_to_2D(d[ioff:ioff+6]),
-                        g_elquad_LT_to_2D(d[ioff+6:ioff+12]),
-                        g_elquad_LT_to_2D(d[ioff+12:ioff+18])
+                        g_elquad_LT_to_2D(d[ioff:ioff+6], conv),
+                        g_elquad_LT_to_2D(d[ioff+6:ioff+12], conv),
+                        g_elquad_LT_to_2D(d[ioff+12:ioff+18], conv)
                     ])
                 if nder == 1:
                     data[incfrq] = fdat[0]

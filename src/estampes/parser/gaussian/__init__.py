@@ -20,7 +20,8 @@ from collections.abc import Sequence
 from estampes.base import InternalError
 
 
-def g_elquad_LT_to_2D(vec: Sequence[str] | Sequence[int] | Sequence[float]
+def g_elquad_LT_to_2D(vec: Sequence[str] | Sequence[int] | Sequence[float],
+                      factor: float = 1.0
                       ) -> list[list[float]]:
     """Convert electric quadrupole from LT form to 2D tensor.
 
@@ -35,13 +36,16 @@ def g_elquad_LT_to_2D(vec: Sequence[str] | Sequence[int] | Sequence[float]
         Vector of data corresponding to the sequence stored in memory.
         Note that the list can have a longer size, only the first
         elements are used.
+    factor
+        Factor to be applied to the components, primarily intended to
+        convert the elements in Gaussian dipole-quadrupole A tensor.
     """
     if len(vec) < 6:
         raise InternalError('Missing elements to build symmetric tensor')
     return [
-        [float(vec[0]), float(vec[3]), float(vec[4])],
-        [float(vec[3]), float(vec[1]), float(vec[5])],
-        [float(vec[4]), float(vec[5]), float(vec[2])]
+        [factor*float(vec[0]), factor*float(vec[3]), factor*float(vec[4])],
+        [factor*float(vec[3]), factor*float(vec[1]), factor*float(vec[5])],
+        [factor*float(vec[4]), factor*float(vec[5]), factor*float(vec[2])]
     ]
 
 

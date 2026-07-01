@@ -109,8 +109,9 @@ def keys_prp_3xx(qlab: QLabel,
                         key.append(
                             ' Property number 1 -- Derivative Alpha(-w,w)')
                     sub.append(1)
+                    # s.lstrip() + ' ' to protect the test from empty line
                     end.append(lambda s: s.startswith(' Property number')
-                               or s.lstrip()[0] not in '123456789')
+                               or (s.lstrip() + ' ')[0] not in '123456789')
                     num.append(1)
                     fmt.append(
                         r'^\s+(?P<val>' + KEY_UINT
@@ -143,7 +144,7 @@ def keys_prp_3xx(qlab: QLabel,
                     )
                 else:
                     raise NotImplementedError('Support of derivatives NYI.')
-    elif qlab.label == 302:
+    elif qlab.label in (302, 312):
         # Optical rotation
         if qlab.kind == 'static':
             raise NotImplementedError('Static G not yet implemented')
@@ -172,7 +173,24 @@ def keys_prp_3xx(qlab: QLabel,
                         + r' +(?(p)Y|[XZ]) +\|(?:\s+' + KEY_DP + r'){3})\s*$'
                     )
                 else:
-                    raise NotImplementedError('Support of derivatives NYI.')
+                    lnk.append(1110)
+                    major = 'GDV' if gver is None else gver[0]
+                    if major == 'G16':
+                        key.append(
+                            ' Property number 2 -- FD Optical Rotation Tensor'
+                            + ' derivatives')
+                    else:
+                        key.append(
+                            ' Property number 2 -- Derivative FD Optical '
+                            + 'Rotation Tensor')
+                    sub.append(1)
+                    # s.lstrip() + ' ' to protect the test from empty line
+                    end.append(lambda s: s.startswith(' Property number')
+                               or (s.lstrip() + ' ')[0] not in '123456789')
+                    num.append(1)
+                    fmt.append(
+                        r'^\s+(?P<val>' + KEY_UINT
+                        + r'(?:\s+' + KEY_DP + r'|\s+' + KEY_UINT + r')*)\s*$')
             elif qlab.derord == 2:
                 if qlab.dercrd == 'Q':
                     lnk.append(717)
@@ -234,7 +252,24 @@ def keys_prp_3xx(qlab: QLabel,
                         + KEY_DP + r'){3})\s*$'
                     )
                 else:
-                    raise NotImplementedError('Support of derivatives NYI.')
+                    lnk.append(1110)
+                    major = 'GDV' if gver is None else gver[0]
+                    if major == 'G16':
+                        key.append(
+                            ' Property number 4 -- D-Q polarizability'
+                            + ' derivatives')
+                    else:
+                        key.append(
+                            ' Property number 2 -- Derivative D-Q '
+                            + 'polarizability')
+                    sub.append(1)
+                    # s.lstrip() + ' ' to protect the test from empty line
+                    end.append(lambda s: s.startswith(' Property number')
+                               or (s.lstrip() + ' ')[0] not in '123456789')
+                    num.append(1)
+                    fmt.append(
+                        r'^\s+(?P<val>' + KEY_UINT
+                        + r'(?:\s+' + KEY_DP + r'|\s+' + KEY_UINT + r')*)\s*$')
             elif qlab.derord == 2:
                 if qlab.dercrd == 'Q':
                     lnk.append(717)

@@ -2,14 +2,15 @@
 
 Provides specialized functions to extract data for specific properties.
 """
-
 import re
+from math import pi
 
 from estampes.base import (
     QData, QLabel,
-    ParseDataError, ParseKeyError, ParsingError, QuantityError,
+    ArgumentError, ParseDataError, ParseKeyError, ParsingError, QuantityError,
     DBlocGLogType)
-from estampes.data.physics import phys_fact
+from estampes.data.physics import phys_fact, PHYSFACT
+from estampes.data.property import property_data
 from estampes.parser.gaussian import g_elquad_LT_to_2D, gfloat
 
 xyz2id = {'X': 0, 'Y': 1, 'Z': 2}
@@ -540,6 +541,10 @@ def parse_3xx_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
         return [gfloat(item) for item in block.split()]
 
     dobj = QData(qlab)
+    if qlab.label is None:
+        raise ArgumentError('qlab', 'Missing label specification')
+    qinfo = property_data(qlab.label)
+
     if qlab.label == 300:
         data = {'data': [], 'keys': []}
         if qlab.level != 'A':
@@ -559,7 +564,7 @@ def parse_3xx_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
         dobj.set(unit=unit.lower())
         dobj.set(data=data['data'])
         dobj.add_field('keys', value=data['keys'])
-    elif qlab.label in (301, 302, 303):
+    elif qlab.label in (301, 302, 303, 312):
         if isinstance(qlab.rstate, tuple):
             raise NotImplementedError('Electronic transition dip. moment NYI.')
         else:
@@ -581,25 +586,30 @@ def parse_3xx_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
                         n_incfrqs = len(incfrqs)
                         if len(dblock[-1]) % n_incfrqs != 0:
                             raise ParseDataError(
-                                'd alpha/d X',
+                                f'd {qinfo.symb}/d X',
                                 'Unknown data structure in Gaussian log file')
                         # NOTE: we assume the data stored on max. 5 cols.
                         for incfrq, block in zip(incfrqs,
                                                  dblock[-1][-n_incfrqs:]):
+                            if qlab.label == 312:
+                                conv = 2*pi*1.0e-8*PHYSFACT.bohr2ang \
+                                    * float(incfrq)
+                            else:
+                                conv = 1.0
                             ioff = 0
                             dalp_dx = []
                             for iblk in range(0, len(block), 4):
-                                dax = [gfloat(item) for item in
+                                dax = [conv*gfloat(item) for item in
                                        block[iblk+1].strip().split()[1:]]
-                                day = [gfloat(item) for item in
+                                day = [conv*gfloat(item) for item in
                                        block[iblk+2].strip().split()[1:]]
-                                daz = [gfloat(item) for item in
+                                daz = [conv*gfloat(item) for item in
                                        block[iblk+3].strip().split()[1:]]
                                 ncols = len(block[iblk].strip().split())
                                 if ioff == 0:
                                     if ncols < 3:
                                         raise ParseDataError(
-                                            'd alpha/d X',
+                                            f'd {qinfo.symb}/d X',
                                             'Incorrect number of columns in '
                                             + f'block {iblk+1}')
                                     data[incfrq].append([
@@ -611,7 +621,7 @@ def parse_3xx_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
                                 else:
                                     if ncols < 3 - ioff:
                                         raise ParseDataError(
-                                            'd alpha/d X',
+                                            f'd {qinfo.symb}/d X',
                                             'Missing data to build tensor')
                                     dalp_dx[0].extend(dax[:3-ioff])
                                     dalp_dx[1].extend(day[:3-ioff])
@@ -645,7 +655,10 @@ def parse_3xx_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
                                             daz[-nrest:]]
                                         ioff = nrest
                         dobj.set(data=data)
-                        dobj.set(unit='a0^2')
+                        if qlab.label in (301, 303):
+                            dobj.set(unit='a0^2')
+                        else:
+                            dobj.set(unit='N/A')
                     elif qlab.dercrd == 'Q':
                         data = {freq: {} for freq in incfrqs}
                         ioff = -1
@@ -746,13 +759,135 @@ def parse_3xx_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
                 raise NotImplementedError(
                     'Static dipole-quadrupole property NYI.')
             else:
+                conv = 3./2.
                 incfrqs = list_incfrq(dblock[iref])
                 if qlab.derord == 0:
                     raise NotImplementedError(
                         'Reference freq-dep. property tensor NYI.')
                 elif qlab.derord == 1:
                     if qlab.dercrd == 'X':
-                        raise NotImplementedError('d A/d X NYI.')
+                        data = {freq: [] for freq in incfrqs}
+                        n_incfrqs = len(incfrqs)
+                        if len(dblock[-1]) % n_incfrqs != 0:
+                            raise ParseDataError(
+                                f'd {qinfo.symb}/d X',
+                                'Unknown data structure in Gaussian log file')
+                        # NOTE: we assume the data stored on max. 5 cols.
+                        for incfrq, block in zip(incfrqs,
+                                                 dblock[-1][-n_incfrqs:]):
+                            ioff = 0
+                            rest = []
+                            for iblk in range(0, len(block), 7):
+                                dxx = [conv*gfloat(item) for item in
+                                       block[iblk+1].strip().split()[1:]]
+                                dyy = [conv*gfloat(item) for item in
+                                       block[iblk+2].strip().split()[1:]]
+                                dzz = [conv*gfloat(item) for item in
+                                       block[iblk+3].strip().split()[1:]]
+                                dxy = [conv*gfloat(item) for item in
+                                       block[iblk+4].strip().split()[1:]]
+                                dxz = [conv*gfloat(item) for item in
+                                       block[iblk+5].strip().split()[1:]]
+                                dyz = [conv*gfloat(item) for item in
+                                       block[iblk+6].strip().split()[1:]]
+                                ncols = len(block[iblk].strip().split())
+                                if ioff == 0:
+                                    if ncols < 3:
+                                        raise ParseDataError(
+                                            f'd {qinfo.symb}/d X',
+                                            'Incorrect number of columns in '
+                                            + f'block {iblk+1}')
+                                    data[incfrq].append([
+                                        [[dxx[0], dxy[0], dxz[0]],
+                                         [dxy[0], dyy[0], dyz[0]],
+                                         [dxz[0], dyz[0], dzz[0]]],
+                                        [[dxx[1], dxy[1], dxz[1]],
+                                         [dxy[1], dyy[1], dyz[1]],
+                                         [dxz[1], dyz[1], dzz[1]]],
+                                        [[dxx[2], dxy[2], dxz[2]],
+                                         [dxy[2], dyy[2], dyz[2]],
+                                         [dxz[2], dyz[2], dzz[2]]],
+                                    ])
+                                    if ncols > 3:
+                                        rest = [dxx[3:], dyy[3:], dzz[3:],
+                                                dxy[3:], dxz[3:], dyz[3:]]
+                                        ioff = ncols - 3
+                                else:
+                                    if ncols < 3 - ioff:
+                                        raise ParseDataError(
+                                            f'd {qinfo.symb}/d X',
+                                            'Missing data to build tensor')
+                                    rest[0].extend(dxx[:3-ioff])
+                                    rest[1].extend(dyy[:3-ioff])
+                                    rest[2].extend(dzz[:3-ioff])
+                                    rest[3].extend(dxy[:3-ioff])
+                                    rest[4].extend(dxz[:3-ioff])
+                                    rest[5].extend(dyz[:3-ioff])
+                                    data[incfrq].append([
+                                        [[rest[0][0], rest[3][0], rest[4][0]],
+                                         [rest[3][0], rest[1][0], rest[5][0]],
+                                         [rest[4][0], rest[5][0], rest[2][0]]],
+                                        [[rest[0][1], rest[3][1], rest[4][1]],
+                                         [rest[3][1], rest[1][1], rest[5][1]],
+                                         [rest[4][1], rest[5][1], rest[2][1]]],
+                                        [[rest[0][2], rest[3][2], rest[4][2]],
+                                         [rest[3][2], rest[1][2], rest[5][2]],
+                                         [rest[4][2], rest[5][2], rest[2][2]]],
+                                    ])
+                                    # Compute number of remainig cols.
+                                    nr = ncols - (3 - ioff)
+                                    if nr > 3:
+                                        # only possible case: 1 + 3 + 1
+                                        n1 = -nr + 1
+                                        n2 = -nr + 2
+                                        data[incfrq].append([
+                                            [[dxx[-nr], dxy[-nr], dxz[-nr]],
+                                             [dxy[-nr], dyy[-nr], dyz[-nr]],
+                                             [dxz[-nr], dyz[-nr], dzz[-nr]]],
+                                            [[dxx[-n1], dxy[-n1], dxz[-n1]],
+                                             [dxy[-n1], dyy[-n1], dyz[-n1]],
+                                             [dxz[-n1], dyz[-n1], dzz[-n1]]],
+                                            [[dxx[-n2], dxy[-n2], dxz[-n2]],
+                                             [dxy[-n2], dyy[-n2], dyz[-n2]],
+                                             [dxz[-n2], dyz[-n2], dzz[-n2]]],
+                                        ])
+                                        rest = [dxx[-nr+3:], dyy[-nr+3:],
+                                                dzz[-nr+3:], dxy[-nr+3:],
+                                                dxz[-nr+3:], dyz[-nr+3:]]
+                                        ioff = nr - 3
+                                    elif nr == 3:
+                                        # exactly 3 columns remaining
+                                        n1 = -nr + 1
+                                        n2 = -nr + 2
+                                        data[incfrq].append([
+                                            [[dxx[-nr], dxy[-nr], dxz[-nr]],
+                                             [dxy[-nr], dyy[-nr], dyz[-nr]],
+                                             [dxz[-nr], dyz[-nr], dzz[-nr]]],
+                                            [[dxx[-n1], dxy[-n1], dxz[-n1]],
+                                             [dxy[-n1], dyy[-n1], dyz[-n1]],
+                                             [dxz[-n1], dyz[-n1], dzz[-n1]]],
+                                            [[dxx[-n2], dxy[-n2], dxz[-n2]],
+                                             [dxy[-n2], dyy[-n2], dyz[-n2]],
+                                             [dxz[-n2], dyz[-n2], dzz[-n2]]],
+                                        ])
+                                        ioff = 0
+                                    else:
+                                        n1 = -nr + 1
+                                        n2 = -nr + 2
+                                        data[incfrq].append([
+                                            [[dxx[-nr], dxy[-nr], dxz[-nr]],
+                                             [dxy[-nr], dyy[-nr], dyz[-nr]],
+                                             [dxz[-nr], dyz[-nr], dzz[-nr]]],
+                                            [[dxx[-n1], dxy[-n1], dxz[-n1]],
+                                             [dxy[-n1], dyy[-n1], dyz[-n1]],
+                                             [dxz[-n1], dyz[-n1], dzz[-n1]]],
+                                            [[dxx[-n2], dxy[-n2], dxz[-n2]],
+                                             [dxy[-n2], dyy[-n2], dyz[-n2]],
+                                             [dxz[-n2], dyz[-n2], dzz[-n2]]],
+                                        ])
+                                        ioff = nr
+                        dobj.set(data=data)
+                        dobj.set(unit='N/A')
                     elif qlab.dercrd == 'Q':
                         data = {freq: {} for freq in incfrqs}
                         ioff = -1
