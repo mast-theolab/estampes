@@ -42,6 +42,7 @@ Other blocks are:
 - **API**: Added parsing of normal-modes status flags (`VPTDat:NMFlags`) from Gaussian log files.
 - **API**: Parsing of electric dipole + first derivatives, atomic axial tensors and Cartesian force constants from archive section in Gaussian log files.
 - **API**: Keys to parse the archive section in Gaussian log files (`parser.gaussian.glog.search_keys` module).
+- **API**: New quantity `312`, for the electric dipole-magnetic dipole G tensor, to avoid confusion with the optical rotation tensor typically stored by Gaussian.
 
 ### Fixed
 - **LIB**(`base.qdata`): `QDataType` has been corrected to account for the fact that returned values from `DataFile.get_data` can have `QLabels` as keys.
@@ -63,6 +64,7 @@ Other blocks are:
 - **API**: `DataFile.get_data` always returns a dictionary, which can be empty if no keys are provided.
 - **API**: Implementation errors due to missing parsing of quantities are now silenced if `error_qty` is set to `False` in calls to `DataFile.get_data`.
 - **API**: `QDataType` is split into `QParseDataType` for data returned by parsers and `QDataBaseType` for databases of extracted data transferred between components of the library.
+- **API**: `dynamic` is now the default descriptor for quantity=301, while static is the default for 303 and 305.
 - **DEV**: Some parts of the code have been cleaned up considering more modern typing hints recommendations in Python and to reduce warnings produced by syntax analyzers.
 
 

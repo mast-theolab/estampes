@@ -243,6 +243,7 @@ class QLabel():
            304     Dipole-quadrupole polarizability
            305     Hyperpolarizability Beta(-w,w,0)
            306     Hyperpolarizability Beta(w,w,-2w)
+           312     electric dipole -magnetic dipole G tensor
         *Vibrational transition moments of properties*
         ----------------------------------------------------------------
           1300     List of incident frequencies
@@ -524,10 +525,10 @@ class QLabel():
                 else:
                     raise ArgumentError(
                         f'Incorrect sup-opt for {self.__qtype}')
-        elif (self.__qtype in range(300, 310)
-              or self.__qtype in range(1300, 1310)):
+        elif (self.__qtype in range(300, 400)
+              or self.__qtype in range(1300, 1400)):
             if descriptor is None or not descriptor.strip():
-                self.__qdesc = 'static' if self.__qtype in (301, 303) \
+                self.__qdesc = 'static' if self.__qtype in (303, 305) \
                     else 'dynamic'
             elif descriptor.lower() in ('all', 'dynamic', 'static'):
                 self.__qdesc = descriptor.lower()

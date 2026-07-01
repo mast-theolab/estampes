@@ -303,11 +303,20 @@ def property_data(qtag: QLabTagType,
         qd1q = 'q'
         qunit = 'a.u.'
         qform = ('xyz', 'xyzLT')
+    elif item == '312':
+        qname = 'electric dipole-magnetic dipole G tensor'
+        qsymb = 'G'
+        qdim = (3, 3)
+        qsize = 9
+        qder = True
+        qd1q = 'q'
+        qunit = 'a.u.'
+        qform = ('xyz', 'xyz')
     else:
         raise IndexError('Unrecognized property')
 
     return QBaseInfo(name=qname, dim=qdim, size=qsize, der=qder, d1q=qd1q,
-                     unit=qunit, form=qform)
+                     unit=qunit, form=qform, symb=qsymb)
 
 
 def property_units(qtag: str, unit: str = 'SI') -> tuple[float, str]:
