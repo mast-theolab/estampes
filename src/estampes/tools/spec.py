@@ -184,7 +184,7 @@ def convert_x(unit_to: str,
 def convert_y(specabbr: str,
               unit_to: str,
               unit_from: str,
-              **subopts: dict[str, tp.Any]
+              **subopts: tp.Any
               ) -> tuple[float,
                          Callable[[float], float] | None,
                          Callable[[float], float] | None]:
