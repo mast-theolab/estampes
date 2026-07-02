@@ -249,6 +249,15 @@ def property_data(qtag: QLabTagType,
         qd1q = 'q'
         qunit = 'a.u.'
         qform = 'atomLT'
+    elif item == '300':
+        qname = 'incident frequencies'
+        qsymb = '\u03C9\u1D62'  # omega_i
+        qdim = 1
+        qsize = 1
+        qder = False
+        qd1q = 'q'
+        qunit = 'cm-1'
+        qform = 'scalar'
     elif item == '301':
         qname = 'polarizability alpha(-w,w)'
         qsymb = '\u0251(-\u03C9,\u03C9)'  # alpha(-omega,omega)
