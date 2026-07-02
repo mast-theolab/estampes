@@ -1219,10 +1219,10 @@ def qlab_to_linkdata(qlab: QLabel,
                             sub1.append(1)
                             num1.append(-1)
                             fmt1.extend(
-                                [r'^\s+Raman Activ Fr=\s?\d --- \s*'
-                                 + r'(?P<val>-?\d.*)\s*$',
-                                 r'^\s+RamAct Fr=\s?\d+--\s+(?P<val>\d.*)\s*$',
-                                 r'^\s+Raman\d Fr=\s?\d+--\s+(?P<val>\d.*)'
+                                [r'^\s+(?P<val>Raman Activ Fr=\s?\d --- \s*'
+                                 + r'-?\d.*)\s*$',
+                                 r'^\s+(?P<val>RamAct Fr=\s?\d+--\s+\d.*)\s*$',
+                                 r'^\s+(?P<val>Raman\d Fr=\s?\d+--\s+\d.*)'
                                  + r'\s*$'])
                         lnk1.append(-717)
                         if qlab.kind in ('static', 'dynamic'):
@@ -1290,8 +1290,8 @@ def qlab_to_linkdata(qlab: QLabel,
                                 + 'intensity difference (CID)'
                                 or s.startswith(' ## INCIDENT WAVENUMBER:'))
                     sub1.extend([1, 1])
-                    fmt1.extend([r'^\s+ROA\d\s+ Fr= ?\d+-- \s*'
-                                 + r'(?P<val>-?\d.*)\s*$',
+                    fmt1.extend([r'^\s+(?P<val>ROA\d\s+ Fr= ?\d+-- \s*'
+                                 + r'-?\d.*)\s*$',
                                  r'^\s+\d+\(1\)\s+'
                                  + r'(?:-?\d+\.\d+\s+|\*+\s+){2}'
                                  + r'(?P<val>-?\d+\.\d+|\*+)\s+'

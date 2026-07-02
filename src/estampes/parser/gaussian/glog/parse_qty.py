@@ -988,10 +988,17 @@ def parse_ramact_data(qlab: QLabel, dblock: DBlocGLogType,
                 incfreqs = [item for line in dblock[1]
                             for item in line.split()]
                 if qlab.kind == 'dynamic':
+                    setups = ['SCP(180)u', 'SCP(90)z', 'DCPI(180)']
+                    key = 'ROA' if do_roa else 'Raman'
+                    add_setup4 = False
+                    for line in dblock[iref]:
+                        if f'{key}4' in line:
+                            add_setup4 = True
+                    if add_setup4:
+                        setups.append('SCP(0)u')
                     omegas = incfreqs[:]
                     for freq in incfreqs:
-                        data[freq] = {
-                            'SCP(180)u': {}, 'SCP(90)z': {}, 'DCPI(180)': {}}
+                        data[freq] = {key: {} for key in setups}
                     iline = 0
                     ifreq = 0
                     ioff = 1
@@ -999,16 +1006,16 @@ def parse_ramact_data(qlab: QLabel, dblock: DBlocGLogType,
                     dfreq = {}
                     for line in dblock[iref]:
                         iline += 1
-                        block = iline % 3  # 3: number of setups
+                        block = iline % len(setups)
                         if block == 1:
                             if ifreq == len(incfreqs):
                                 ifreq = 0
                                 ioff += i + 1
                             dfreq = data[incfreqs[ifreq]]
                             ifreq += 1
-                        d = dfreq[
-                            ('SCP(180)u', 'SCP(90)z', 'DCPI(180)')[block-1]]
-                        for i, col in enumerate(line.strip().split()):
+                        d = dfreq[setups[block-1]]
+                        for i, col in enumerate(
+                                line.strip().rsplit('--')[1].split()):
                             try:
                                 d[ioff+i] = float(col)*yfactor
                             except ValueError:
@@ -1016,9 +1023,16 @@ def parse_ramact_data(qlab: QLabel, dblock: DBlocGLogType,
                 else:
                     if qlab.kind in incfreqs:
                         ref_freq = incfreqs.index(qlab.kind)
+                        setups = ['SCP(180)u', 'SCP(90)z', 'DCPI(180)']
+                        key = 'ROA' if do_roa else 'Raman'
+                        add_setup4 = False
+                        for line in dblock[iref]:
+                            if f'{key}4' in line:
+                                add_setup4 = True
+                        if add_setup4:
+                            setups.append('SCP(0)u')
                         omegas = [ref_freq]
-                        data[incfreqs[ref_freq]] = {
-                            'SCP(180)u': {}, 'SCP(90)z': {}, 'DCPI(180)': {}}
+                        data[incfreqs[ref_freq]] = {key: {} for key in setups}
                         iline = 0
                         ifreq = 0
                         iref = 0
@@ -1026,7 +1040,7 @@ def parse_ramact_data(qlab: QLabel, dblock: DBlocGLogType,
                         dfreq = {}
                         for line in dblock[iref]:
                             iline += 1
-                            block = iline % 3
+                            block = iline % len(setups)
                             if block == 1:
                                 if ifreq % len(incfreqs) != ref_freq:
                                     ifreq += 1
@@ -1034,9 +1048,9 @@ def parse_ramact_data(qlab: QLabel, dblock: DBlocGLogType,
                                 dfreq = data[incfreqs[ref_freq]]
                                 ifreq += 1
                                 iref += i+1
-                            d = dfreq[('SCP(180)u', 'SCP(90)z',
-                                       'DCPI(180)')[block-1]]
-                            for i, col in enumerate(line.strip().split()):
+                            d = dfreq[setups[block-1]]
+                            for i, col in enumerate(
+                                    line.strip().rsplit('--')[1].split()):
                                 try:
                                     d[iref+i+1] = float(col)*yfactor
                                 except ValueError:
