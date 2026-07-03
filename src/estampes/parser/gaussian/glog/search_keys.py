@@ -37,7 +37,7 @@ def keys_prp_3xx(qlab: QLabel,
                  gver: Sequence[str] | None = None) -> QKwrdListType:
     """Provide extractor info for frequency-dependent properties."""
     # Get incident frequency information
-    if qlab.kind != 'static':
+    if qlab.kind != 'static' or qlab.label == 300:
         if qlab.level != 'A':
             # Technically, level can be E or H for harmonic
             # so we proceed by elimination, excluding the clear case, A.
