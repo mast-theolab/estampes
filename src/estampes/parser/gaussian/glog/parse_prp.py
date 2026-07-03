@@ -840,8 +840,8 @@ def parse_3xx_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
                                     nr = ncols - (3 - ioff)
                                     if nr > 3:
                                         # only possible case: 1 + 3 + 1
-                                        n1 = -nr + 1
-                                        n2 = -nr + 2
+                                        n1 = nr - 1
+                                        n2 = nr - 2
                                         data[incfrq].append([
                                             [[dxx[-nr], dxy[-nr], dxz[-nr]],
                                              [dxy[-nr], dyy[-nr], dyz[-nr]],
@@ -859,8 +859,8 @@ def parse_3xx_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
                                         ioff = nr - 3
                                     elif nr == 3:
                                         # exactly 3 columns remaining
-                                        n1 = -nr + 1
-                                        n2 = -nr + 2
+                                        n1 = nr - 1
+                                        n2 = nr - 2
                                         data[incfrq].append([
                                             [[dxx[-nr], dxy[-nr], dxz[-nr]],
                                              [dxy[-nr], dyy[-nr], dyz[-nr]],
@@ -874,8 +874,8 @@ def parse_3xx_dat(qlab: QLabel, dblock: DBlocGLogType, iref: int = 0) -> QData:
                                         ])
                                         ioff = 0
                                     elif nr > 0:
-                                        n1 = -nr + 1
-                                        n2 = -nr + 2
+                                        n1 = nr - 1
+                                        n2 = nr - 2
                                         data[incfrq].append([
                                             [[dxx[-nr], dxy[-nr], dxz[-nr]],
                                              [dxy[-nr], dyy[-nr], dyz[-nr]],
