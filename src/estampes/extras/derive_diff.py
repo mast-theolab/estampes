@@ -1116,7 +1116,7 @@ def main_diff(fname_ref: str,
     try:
         qdata = parse_qty(quantity)
     except KeyError as err:
-        print(f'ERROR: {str(err).strip("'")}')
+        print(f'ERROR: {str(err).strip("\'")}')
         sys.exit(1)
 
     patt_info = get_tmpl_fmt_from_file(file_pattern)
