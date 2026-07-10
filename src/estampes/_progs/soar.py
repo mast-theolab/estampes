@@ -14,13 +14,13 @@ import numpy as np
 
 from estampes.base import QLabel
 from estampes.parser import DataFile
-from estampes.tools.math import superpose
-from estampes.tools.mol import eckart_orient
-from estampes.tools.vib import build_dusch_J, build_dusch_K
-from estampes.visual.plotmat import plot_jmat, plot_kvec
 from estampes.data.physics import PHYSFACT
 from estampes.data.visual import MOLCOLS
-from estampes.tools.mol import list_bonds
+from estampes.tools.char import convert_range_spec
+from estampes.tools.math import superpose
+from estampes.tools.mol import eckart_orient, list_bonds
+from estampes.tools.vib import build_dusch_J, build_dusch_K
+from estampes.visual.plotmat import plot_jmat, plot_kvec
 
 try:
     # from PySide6 import QtWidgets
@@ -34,7 +34,7 @@ try:
 except ModuleNotFoundError:
     QT_AVAIL = False
 
-PROGNAME = 'soar.py'
+PROGNAME = 'essoar'
 
 
 def parse_args(args: tp.Optional[tp.Sequence[str]] = None
@@ -80,8 +80,10 @@ def parse_args(args: tp.Optional[tp.Sequence[str]] = None
     msg = 'Plot the matrices and vectors (default).'
     parser.add_argument('--show-plots', action='store_true', dest='show_plots',
                         default=None, help=msg)
-    msg = 'Superpose the structure before checking the overlap.'
-    parser.add_argument('-s', '--superpose', action='store_true',
+    msg = '''Superpose the structure before checking the overlap.
+A list of atoms can be provided, separated by commas; ranges can also be \
+provided.'''
+    parser.add_argument('-s', '--superpose', nargs='?', const=True,
                         help=msg)
 
     if args is not None:
@@ -118,7 +120,12 @@ def main():
     data_ref = dfile_ref.get_data(error_noqty=True, **keys)
     data_new = dfile_new.get_data(error_noqty=True, **keys)
 
+    if (data_ref['mass'] is None or data_ref['crd'] is None
+            or data_new['crd'] is None):
+        print('ERROR: Could not extract basic data from ref and new')
+        sys.exit()
     at_mass = np.array(data_ref['mass'].data)
+    n_atoms = len(at_mass)
     c_ref = np.array(data_ref['crd'].data)
     c_new = np.array(data_new['crd'].data)
     n_vib = hessdat_ref['evec'].shape[0]
@@ -130,7 +137,20 @@ def main():
                                                     (n_vib, -1, 3))
                                          @ wdict['rotmat'], (n_vib, -1))
         # Superpose second geometry on top of first
-        wdict = superpose(c_ref, c_new, at_mass, get_ctrans=True)
+        if isinstance(dopts.superpose, str):
+            try:
+                at_list = convert_range_spec(dopts.superpose, py_index=True)
+            except (ValueError, IndexError) as err:
+                print('Error encountered while parsing list of atoms for',
+                      'superposition')
+                print(err)
+                sys.exit(1)
+            at_mask = np.array([i in at_list for i in range(n_atoms)])
+        else:
+            at_mask = np.ones(n_atoms)
+
+        wdict = superpose(c_ref, c_new, at_mass, get_ctrans=True,
+                          at_mask=at_mask)
         hessdat_new['evec'] = np.reshape(np.reshape(hessdat_new['evec'],
                                                     (n_vib, -1, 3))
                                          @ wdict['rmat'], (n_vib, -1))
@@ -190,6 +210,9 @@ def main():
 
         if dopts.show_mols:
             mols_atcrd = [c_ref*PHYSFACT.bohr2ang, c_new*PHYSFACT.bohr2ang]
+            if data_ref['num'] is None or data_new['num'] is None:
+                print('ERROR: Failed to extract atomic numbers')
+                sys.exit(2)
             mols_atnum = [data_ref['num'].data, data_new['num'].data]
             mols_bonds = [list_bonds(mols_atnum[0], mols_atcrd[0], 1.2),
                           list_bonds(mols_atnum[1], mols_atcrd[1], 1.2)]

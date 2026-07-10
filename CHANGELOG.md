@@ -30,6 +30,7 @@ Other blocks are:
 ### Added
 - **DER**: New program `Deriveur` to handle numerical differentiation, building the displaced geometries (`Deriveur shift`) and to construct the differences (`Deriveur diff`).
 - **OAR**: New options `--overlap` and `--overlap-limit` to print details on the overlap between reference and new sets of normal modes.
+- **OAR**: Users can now specific a range of atoms on which to perform the superposition with option `-s`/`--superpose`.
 - **LIB**(`data.property`): Added components `size` and `form` to named tuple `QBaseInfo`.
 - **LIB**(`data.property`): Added component `symb`, storing a symbol or representation of the property for printing (note that some symbols are unicode and thus may not be rendered properly in terminals).
 - **LIB**(`tools`): New module `tools.output` to provide simple functions for common printing/output-related operations.
