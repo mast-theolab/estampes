@@ -31,7 +31,7 @@ from estampes.extras.derive_core import (
 #
 # TEMPLATE FILES
 # ==============
-def parse_template_file(fname: str | None = None) -> str:
+def parse_template_file(output: tp.TextIO, fname: str | None = None) -> str:
     """Get template to generate content.
 
     Parses the content of a template file or generate a generic one.
@@ -40,6 +40,8 @@ def parse_template_file(fname: str | None = None) -> str:
 
     Parameters
     ----------
+    output
+        Main output of the program.
     fname
         Filename with the template information.
 
@@ -70,7 +72,8 @@ def parse_template_file(fname: str | None = None) -> str:
         n_places = txt.count(KWORD_GEOM)
         if n_places == 0:
             if KWORD_GEOM.lower() in txt.lower():
-                print(f'{KWORD_GEOM} found with an incorrect case, fixing.')
+                print(f'{KWORD_GEOM} found with an incorrect case, fixing.',
+                      file=output)
                 pattern = f'\\{KWORD_GEOM[:-1]}\\]'
                 txt = re.sub(pattern, KWORD_GEOM, txt, flags=re.I)
             else:
@@ -81,7 +84,8 @@ def parse_template_file(fname: str | None = None) -> str:
         n_places = txt.count(KWORD_DESC)
         if n_places == 0:
             if KWORD_DESC.lower() in txt.lower():
-                print(f'{KWORD_DESC} found with an incorrect case, fixing.')
+                print(f'{KWORD_DESC} found with an incorrect case, fixing.',
+                      file=output)
                 pattern = f'\\{KWORD_DESC[:-1]}\\]'
                 txt = re.sub(pattern, KWORD_DESC, txt, flags=re.I)
         txt_lcase = txt.lower()
@@ -90,7 +94,7 @@ def parse_template_file(fname: str | None = None) -> str:
             num = txt_lcase.count(kword.lower())
             if num != txt.count(kword):
                 print(f'Occurrences of {kword} found with incorrect case.',
-                      'fixing.')
+                      'fixing.', file=output)
                 pattern = rf'\{kword[:-1]}\]'
                 txt = re.sub(pattern, kword, txt, flags=re.I)
 
@@ -263,7 +267,8 @@ def build_geoms(at_crd_ref: npt.NDArray,
 #
 # MAIN
 # ====
-def main_shift(fname_ref: str,
+def main_shift(output: tp.TextIO,
+               fname_ref: str,
                fname_tmpl: str | None,
                der_coord: str,
                n_steps: int,
@@ -277,6 +282,8 @@ def main_shift(fname_ref: str,
 
     Parameters
     ----------
+    output:
+        Main output of the program.
     fname_ref
         Filename for the reference geometry.
     fname_tmpl
@@ -296,19 +303,19 @@ def main_shift(fname_ref: str,
     # Extract atom numbers
     qdata = fref.get_data(error_noqty=True, **QLABS_ATGEOM)
     if qdata['atnum'] is None:
-        print('ERROR: Could not parse atomic numbers')
+        print('ERROR: Could not parse atomic numbers', file=output)
         sys.exit(1)
     else:
         atnum = qdata['atnum'].data
     atsmb = convert_labsymb(True, *atnum)
     natoms = len(atsmb)
     if qdata['atcrd'] is None:
-        print('ERROR: Could not parse atomic coordinates')
+        print('ERROR: Could not parse atomic coordinates', file=output)
         sys.exit(1)
     else:
         atcrd = np.array(qdata['atcrd'].data).reshape((natoms, 3))
     if qdata['atmas'] is None:
-        print('ERROR: Could not parse atomic masses')
+        print('ERROR: Could not parse atomic masses', file=output)
         sys.exit(1)
     else:
         atmas = np.array(qdata['atmas'].data)
@@ -322,8 +329,9 @@ def main_shift(fname_ref: str,
                                              get_lweigh='lwmat',
                                              norm_lweigh=True)
             except QuantityError as err:
-                print('Failed to extract normal-modes coordinates')
-                print(err)
+                print('Failed to extract normal-modes coordinates',
+                      file=output)
+                print(err, file=output)
                 sys.exit(2)
             lwmat = orient_modes(hessdat['lwmat'])
             nvib = hessdat['lwmat'].shape[0]
@@ -332,8 +340,9 @@ def main_shift(fname_ref: str,
             else:
                 indexes = convert_range_spec(opts.indexes, py_index=True)
             if max(indexes) >= nvib:
-                print('Incorrect index specification, outside valid range.')
-                print(f'The system has {nvib} modes.')
+                print('Incorrect index specification, outside valid range.',
+                      file=output)
+                print(f'The system has {nvib} modes.', file=output)
                 sys.exit(1)
         case 'X':
             displ_cart = True
@@ -342,15 +351,17 @@ def main_shift(fname_ref: str,
             else:
                 indexes = convert_range_spec(opts.indexes, py_index=True)
             if max(indexes) >= natoms:
-                print('Incorrect index specification, outside valid range.')
-                print(f'The system has {natoms} atoms.')
+                print('Incorrect index specification, outside valid range.',
+                      file=output)
+                print(f'The system has {natoms} atoms.', file=output)
                 sys.exit(1)
             lwmat = None
         case _:
-            print(f'ERROR: Unsupported steps along {der_coord} for now')
+            print(f'ERROR: Unsupported steps along {der_coord} for now',
+                  file=output)
             sys.exit(2)
 
-    tmpl_text = parse_template_file(fname_tmpl)
+    tmpl_text = parse_template_file(output, fname_tmpl)
     if opts.pattern is not None:
         tmpl_file = check_fname_pattern(opts.pattern, displ_cart)
         if n_steps > 1 and not (KWORD_STEP in tmpl_file

@@ -70,6 +70,9 @@ def parse_cmdargs(options: Sequence[str]) -> argparse.Namespace:
     msg = f'''Filenames pattern for displaced geometries. It can contain:
 {HELP_TMPL_FNAME}'''
     parser.add_argument('-p', '--pattern', help=msg)
+    msg = '''Redirect output messages to specified file.
+WARNING: the target file is overwritten, any content silently erased.'''
+    parser.add_argument('--redirect', help=msg)
     msg = 'Value of the differentiation step.  ' \
         + 'The unit should be consistent "--unit".'
     parser.add_argument('-s', '--step', help=msg)
@@ -167,6 +170,12 @@ Numbers are expected as -1/(+)1, separated by commas, the value is ignored.'''
 def main():
     """Run the main program."""
     args = parse_cmdargs(sys.argv[1:])
+
+    if args.redirect is not None:
+        prog_out = open(args.redirect, 'w', encoding='utf-8')
+    else:
+        prog_out = sys.stdout
+
     # Definition of displacement coordinates
     if args.coord in KEYS_COORDS['Q']:
         dcoord = 'Q'
@@ -174,10 +183,11 @@ def main():
         dcoord = 'X'
     elif args.coord in KEYS_COORDS['q']:
         dcoord = 'q'
-        print('ERROR: Reduced normal coordinates not yet implemented')
+        print('ERROR: Reduced normal coordinates not yet implemented',
+              file=prog_out)
         sys.exit()
     else:
-        print('ERROR: Coordinate types unsupported')
+        print('ERROR: Coordinate types unsupported', file=prog_out)
         sys.exit()
     # Check unit for distances
     if args.unit in ('au', 'a0', 'bohr'):
@@ -186,7 +196,7 @@ def main():
 NOTE: "Units=AU" must be provided in the Route section of Gaussian
       for the geometries to be correctly read.
 '''
-        print(msg)
+        print(msg, file=prog_out)
     else:
         au2unit = phfact.bohr2ang
     # Definition of step size
@@ -200,55 +210,60 @@ NOTE: "Units=AU" must be provided in the Route section of Gaussian
         dstep = (0.01/phfact.bohr2ang if args.step is None
                  else args.step/au2unit)
     else:
-        print('Internal error: displacement step not defined')
+        print('Internal error: displacement step not defined', file=prog_out)
         sys.exit(9)
     if dstep <= LIM_STEP:
-        print('ERROR: step too small')
+        print('ERROR: step too small', file=prog_out)
         sys.exit(1)
     if args.geomfile is not None:
         if not os.path.exists(args.geomfile):
-            print(f'ERROR: File "{args.geomfile}" not found')
+            print(f'ERROR: File "{args.geomfile}" not found', file=prog_out)
             sys.exit(1)
         # fobj = DataFile(args.geomfile)
         # qlabs = {'atcrd': QLabel('atcrd')}
         # ctarget = np.array(
         #     fobj.get_data(**qlabs)['atcrd'].data).reshape(-1, 3)
-        print('Not yet implemented!')
+        print('Not yet implemented!', file=prog_out)
         sys.exit()
 
     # Check reference file (true for both builder and differentiator)
     if not os.path.exists(args.reffile):
-        print(f'ERROR: File "{args.reffile}" not found')
+        print(f'ERROR: File "{args.reffile}" not found', file=prog_out)
         sys.exit(1)
     elif os.path.splitext(args.reffile)[1].lower() not in ('.fchk', 'fch'):
         print('Only formatted checkpoint files are supported for the '
-              + 'reference file for now')
+              + 'reference file for now', file=prog_out)
         sys.exit(9)
 
     # Modes
     if args.mode == 'shift':
         if args.multi_steps <= 0:
-            print('ERROR: Number of steps must be strictly positive.')
+            print('ERROR: Number of steps must be strictly positive.',
+                  file=prog_out)
             sys.exit(1)
         if args.multi_steps >= 10:
-            print('WARNING: A large number of steps will be built.')
+            print('WARNING: A large number of steps will be built.',
+                  file=prog_out)
 
         if args.template is not None:
             if not os.path.exists(args.template):
-                print(f'ERROR: Template file {args.template} does not exist.')
+                print(f'ERROR: Template file {args.template} does not exist.',
+                      file=prog_out)
                 sys.exit(1)
 
-        main_shift(args.reffile, args.template, dcoord, args.multi_steps,
-                   dstep, au2unit, args)
+        main_shift(prog_out, args.reffile, args.template, dcoord,
+                   args.multi_steps, dstep, au2unit, args)
 
     elif args.mode == 'diff':
         if args.pattern is None:
-            print('ERROR: A file pattern is needed to build the differences')
+            print('ERROR: A file pattern is needed to build the differences',
+                  file=prog_out)
             sys.exit(2)
         tmpl_file = check_fname_pattern(args.pattern, dcoord == 'X')
-        main_diff(args.reffile, tmpl_file, args.quantity, dcoord, dstep, args)
+        main_diff(prog_out, args.reffile, tmpl_file, args.quantity, dcoord,
+                  dstep, args)
     else:
-        print('ERROR: Unsupported mode')
+        print('ERROR: Unsupported mode', file=prog_out)
         sys.exit()
 
 

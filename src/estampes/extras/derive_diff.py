@@ -449,7 +449,8 @@ def print_indatax(qtag: int,
 #
 # DIFFERENTIATION ROUTINES
 # ========================
-def build_2dq_num_diff(qlabel: QLabel,
+def build_2dq_num_diff(output: tp.TextIO,
+                       qlabel: QLabel,
                        derord: int,
                        qinfo: QBaseInfo,
                        file_pattern: str,
@@ -469,6 +470,8 @@ def build_2dq_num_diff(qlabel: QLabel,
 
     Parameter
     ---------
+    output
+        Main output of the program.
     qlabel
         Quantity label.
     derord
@@ -524,9 +527,9 @@ def build_2dq_num_diff(qlabel: QLabel,
         if not os.path.exists(fplus) or not os.path.exists(fminus):
             msg = f'Missing differentiation files along mode {imode+1}'
             if print_warn:
-                print(msg)
+                print(msg, file=output)
             if error_on_missing:
-                print(msg + f'for {qinfo.name}')
+                print(msg + f'for {qinfo.name}', file=output)
                 raise QuantityError(msg)
             continue
         dfile = DataFile(fplus)
@@ -534,7 +537,7 @@ def build_2dq_num_diff(qlabel: QLabel,
         if dplus is None:
             msg = f'Failed to extract {qlabel} from +dQ_{imode}.'
             if print_warn:
-                print(msg)
+                print(msg, file=output)
             if error_on_missing:
                 raise ParsingError(msg)
             continue
@@ -543,7 +546,7 @@ def build_2dq_num_diff(qlabel: QLabel,
         if dminus is None:
             msg = f'Failed to extract {qlabel} from -dQ_{imode}.'
             if print_warn:
-                print(msg)
+                print(msg, file=output)
             if error_on_missing:
                 raise ParsingError(msg)
             continue
@@ -672,7 +675,7 @@ def build_2dq_num_diff(qlabel: QLabel,
             + 'δQ({qj}): {fj:15.8e} | δQ({qk}): {fk:15.8e} | ' \
             + 'Error: {err:.2%}'
 
-        sec_header(sys.stdout, 3, 'Inconsistency Check')
+        sec_header(output, 3, 'Inconsistency Check')
         if freq is None:
             raise ValueError('Missing harmonic frequencies')
         if derord == 2:
@@ -696,7 +699,7 @@ def build_2dq_num_diff(qlabel: QLabel,
                             print(fmt_err_ij.format(
                                 dqty=lab_qty, qi=lab_j, qj=lab_i,
                                 fi=fact*row[0], fj=fact*row[1],
-                                err=err))
+                                err=err), file=output)
                         data['d2'][ijkl] = sum(row)/2.
                     elif nvals == 1:
                         data['d2'][ijkl] = row[0]
@@ -723,7 +726,7 @@ def build_2dq_num_diff(qlabel: QLabel,
                             print(fmt_err_ijk.format(
                                 dqty=lab_qty, qi=lab_k, qj=lab_j, qk=lab_i,
                                 fi=fact*row[0], fj=fact*row[1],
-                                fk=fact*row[2], err=err))
+                                fk=fact*row[2], err=err), file=output)
                         data['d1'][ijk] = sum(row)/3.
                     elif nvals == 2:
                         vals = sorted(row, key=abs)
@@ -752,7 +755,8 @@ I am confused.'''
                                 raise ValueError(msg)
                             print(fmt_err_ij.format(
                                 dqty=lab_qty, qi=lab1, qj=lab2,
-                                fi=fact*row[0], fj=fact*row[1], err=err))
+                                fi=fact*row[0], fj=fact*row[1], err=err),
+                                file=output)
                         data['d1'][ijk] = sum(row)/2.
                     elif nvals == 1:
                         data['d1'][ijk] = row[0]
@@ -780,7 +784,7 @@ I am confused.'''
                                 print(fmt_err_ij.format(
                                     dqty=lab_qty, qi=lab_j, qj=lab_i,
                                     fi=fact*row[0], fj=fact*row[1],
-                                    err=err))
+                                    err=err), file=output)
                             data['d1'][ij] = sum(vals)/2.
                         else:
                             comps = []
@@ -796,7 +800,7 @@ I am confused.'''
                                         qi=lab_j, qj=lab_i,
                                         fi=fact*row[0][ixyz],
                                         fj=fact*row[1][ixyz],
-                                        err=err))
+                                        err=err), file=output)
                                 comps.append(sum(vals)/2.)
                             data['d1'][ij] = np.array(comps)
                     elif nvals == 1:
@@ -852,7 +856,8 @@ def build_2dx_num_diff(qlabel: QLabel,
     raise NotImplementedError('Cartesian derivatives NYI')
 
 
-def get_dq_diff(qtag: int,
+def get_dq_diff(output: tp.TextIO,
+                qtag: int,
                 derords: Sequence[int],
                 qinfo: QBaseInfo,
                 fref: DataFile,
@@ -861,8 +866,8 @@ def get_dq_diff(qtag: int,
                 indexes: Sequence[int],
                 lwmat: npt.NDArray | None,
                 freq: npt.NDArray | None,
-                output_fmt: str,
-                output: tp.IO):
+                data_fmt: str,
+                datalog: tp.IO):
     """Get derivatives with respect to normal coordinates.
 
     Get derivatives with respect to normal coordinates of quantity
@@ -870,6 +875,8 @@ def get_dq_diff(qtag: int,
 
     Parameters
     ----------
+    output
+        Main output of the program.
     qtag
         Quantity label.
     derords
@@ -889,9 +896,9 @@ def get_dq_diff(qtag: int,
         Conversion matrix Cartesian -> normal coordinates.
     freq
         Harmonic frequencies (for consistency check).
-    output_fmt
+    data_fmt
         Output format.
-    output
+    datalog
         Output file object.
     """
     if lwmat is None:
@@ -918,7 +925,7 @@ def get_dq_diff(qtag: int,
     # 1: available analytically
     # 2: done numerically
     der_stat = {i: 0 for i in sorted(derords, reverse=True)}
-    conv_to_nm = output_fmt.endswith('nm')
+    conv_to_nm = data_fmt.endswith('nm')
     ddata = {}
     for derord, derstat in der_stat.items():
         if not derstat:
@@ -930,7 +937,7 @@ def get_dq_diff(qtag: int,
                 msg = f'''\
 Data parser reported it did not support {qkey}.
 Assuming that the derivative is not yet available.'''
-                print(msg)
+                print(msg, file=output)
                 qdat = {qkey_lab: None}
             if qdat[qkey_lab] is None:
                 for i in range(derord-1, -1, -1):
@@ -941,7 +948,7 @@ Assuming that the derivative is not yet available.'''
                         msg = f'''\
 Data parser reported it did not support {qlabel}.
 Assuming that the derivative is not yet available.'''
-                        print(msg)
+                        print(msg, file=output)
                         qdata1 = {str(qlabel): None}
                     if qdata1[str(qlabel)] is not None:
                         ader = i
@@ -970,9 +977,10 @@ Analytic derivatives are only available up to order {ader}.'''
                         'Unexpected value for analytic derivative order found.'
                         )
                 lmat = lwmat if conv_to_nm else None
-                data = build_2dq_num_diff(qlabel, ader, qinfo, file_pattern,
-                                          nvib, indexes, der_step, do_d1,
-                                          do_d2, fref, lmat, freq)
+                data = build_2dq_num_diff(output, qlabel, ader, qinfo,
+                                          file_pattern, nvib, indexes,
+                                          der_step, do_d1, do_d2, fref, lmat,
+                                          freq)
                 if do_d2:
                     ddata[derord] = data['d2']
                     der_stat[derord] = 2
@@ -1024,23 +1032,24 @@ Analytic derivatives are only available up to order {ader}.'''
                     else:
                         ddata[derord] = np.array(
                             qdat[qkey_lab].data)  # type: ignore
-    if output_fmt.lower() == 'indatanm':
-        print_indatanm(qtag, qinfo, ddata, output)
-    elif output_fmt.lower() == 'indatanm':
-        print_indatax(qtag, qinfo, lwmat.shape[1]//3, ddata, der_stat, output)
+    if data_fmt.lower() == 'indatanm':
+        print_indatanm(qtag, qinfo, ddata, datalog)
+    elif data_fmt.lower() == 'indatanm':
+        print_indatax(qtag, qinfo, lwmat.shape[1]//3, ddata, der_stat, datalog)
     else:
-        raise NotImplementedError(f'Unrecognized output format: {output_fmt}')
+        raise NotImplementedError(f'Unrecognized output format: {data_fmt}')
 
 
-def get_dx_diff(qtag: int,
+def get_dx_diff(output: tp.TextIO,
+                qtag: int,
                 derords: Sequence[int],
                 qinfo: QBaseInfo,
                 fref: DataFile,
                 file_pattern: str,
                 der_step: float,
                 indexes: Sequence[int],
-                output_fmt: str,
-                output: tp.IO):
+                data_fmt: str,
+                datalog: tp.IO):
     """Get derivatives with respect to Cartesian coordinates.
 
     Get derivatives with respect to Cartesian coordinates of quantity
@@ -1048,6 +1057,8 @@ def get_dx_diff(qtag: int,
 
     Parameters
     ----------
+    output
+        Main output of the program.
     qtag
         Quantity label.
     derords
@@ -1062,9 +1073,9 @@ def get_dx_diff(qtag: int,
         Size of the displacement step for the differentation.
     indexes
         Differentiation indexes to take into account.
-    output_fmt
+    data_fmt
         Output format.
-    output
+    datalog
         Output file object.
     """
     raise NotImplementedError('Cartesian differentiation NYI.')
@@ -1073,7 +1084,8 @@ def get_dx_diff(qtag: int,
 #
 # MAIN
 # ====
-def main_diff(fname_ref: str,
+def main_diff(output: tp.TextIO,
+              fname_ref: str,
               file_pattern: str,
               quantity: str,
               der_coord: str,
@@ -1085,6 +1097,8 @@ def main_diff(fname_ref: str,
 
     Parameters
     ----------
+    output
+        Main output of the program.
     fname_ref
         Filename for the reference geometry.
     file_pattern
@@ -1106,18 +1120,18 @@ def main_diff(fname_ref: str,
 
     # First set the output for the data
     if opts.output:
-        output = open(opts.output, 'w', encoding='utf-8')
+        datalog = open(opts.output, 'w', encoding='utf-8')
     else:
-        output = sys.stdout
+        datalog = sys.stdout
 
-    sec_header(sys.stdout, -1, 'DERIVEUR - Differentiation Mode')
+    sec_header(output, -1, 'DERIVEUR - Differentiation Mode')
 
-    sec_header(sys.stdout, 1, 'Basic Parameters')
+    sec_header(output, 1, 'Basic Parameters')
     try:
         qdata = parse_qty(quantity)
     except KeyError as err:
         msg = str(err).strip("'")
-        print(f'ERROR: {msg}')
+        print(f'ERROR: {msg}', file=output)
         sys.exit(1)
 
     patt_info = get_tmpl_fmt_from_file(file_pattern)
@@ -1128,17 +1142,17 @@ def main_diff(fname_ref: str,
     fref = DataFile(fname_ref)
     dref = fref.get_data(error_noqty=True, **QLABS_ATGEOM)
     if dref['atnum'] is None:
-        print('ERROR: Could not parse atomic numbers')
+        print('ERROR: Could not parse atomic numbers', file=output)
         sys.exit(1)
     else:
         atnum_ref = dref['atnum'].data
     if dref['atcrd'] is None:
-        print('ERROR: Could not parse atomic coordinates')
+        print('ERROR: Could not parse atomic coordinates', file=output)
         sys.exit(1)
     else:
         atcrd_ref = dref['atcrd'].data
     if dref['atmas'] is None:
-        print('ERROR: Could not parse atomic masses')
+        print('ERROR: Could not parse atomic masses', file=output)
         sys.exit(1)
     else:
         atmas_ref = dref['atmas'].data
@@ -1161,33 +1175,34 @@ def main_diff(fname_ref: str,
 
     # sys.exit(1)
 
-    sec_header(sys.stdout, 1, 'Differentiation Coordinates')
+    sec_header(output, 1, 'Differentiation Coordinates')
 
     # Extract displacement coordinates if necessary
     if der_coord in ('Q', 'q'):
         if opts.Lmatfile is not None:
             if not os.path.exists(opts.Lmatfile):
-                print(f'ERROR: File {opts.Lmatfile} does not exist.')
+                print(f'ERROR: File {opts.Lmatfile} does not exist.',
+                      file=output)
                 sys.exit(1)
             dfile = DataFile(opts.Lmatfile)
             qdata = dfile.get_data(error_noqty=True, **QLABS_ATGEOM)
             if qdata['atnum'] is None:
                 print('ERROR: Could not extract atomic numbers from '
-                      + f'{opts.Lmatfile}')
+                      + f'{opts.Lmatfile}', file=output)
                 sys.exit(1)
             else:
                 atnum_tmp = qdata['atnum'].data
             if qdata['atcrd'] is None:
                 print('ERROR: Could not extract atomic coordinates from '
-                      + f'{opts.Lmatfile}')
+                      + f'{opts.Lmatfile}', file=output)
                 sys.exit(1)
             else:
                 atcrd_tmp = qdata['atcrd'].data
             if atnum_tmp != atnum_ref:
                 print('ERROR: Inconsistency in the atomic numbers between '
-                      + f'{opts.Lmatfile} and {fname_ref}.')
+                      + f'{opts.Lmatfile} and {fname_ref}.', file=output)
                 print('       Cannot ensure that the structures are '
-                      + 'consistent (superposition).')
+                      + 'consistent (superposition).', file=output)
                 sys.exit(1)
             # Deactivating typing since error_noqty ensures the absence of data
             # is impossible...
@@ -1197,8 +1212,9 @@ def main_diff(fname_ref: str,
                                               get_lweigh='lwmat',
                                               norm_lweigh=True)
             except QuantityError as err:
-                print('Failed to extract normal-modes coordinates')
-                print(err)
+                print('Failed to extract normal-modes coordinates',
+                      file=output)
+                print(err, file=output)
                 sys.exit(2)
             nvib = hessdat['lwmat'].shape[0]
             # Ignore type because Pylance does not understand type of rotmat.
@@ -1211,7 +1227,8 @@ def main_diff(fname_ref: str,
                 facts = opts.force_nmorient.split(',')
                 if len(facts) != nvib:
                     print('ERROR: Number of coefficients for nmorient '
-                          + 'different from number of normal modes')
+                          + 'different from number of normal modes',
+                          file=output)
                     sys.exit(1)
                 lwmat = np.reshape(lwmat, (nvib, -1))
                 for i, fact in enumerate(facts):
@@ -1226,8 +1243,9 @@ def main_diff(fname_ref: str,
                                              get_lweigh='lwmat',
                                              norm_lweigh=True)
             except QuantityError as err:
-                print('Failed to extract normal-modes coordinates')
-                print(err)
+                print('Failed to extract normal-modes coordinates',
+                      file=output)
+                print(err, file=output)
                 sys.exit(2)
             nvib = hessdat['lwmat'].shape[0]
             if opts.no_nmorient:
@@ -1236,7 +1254,8 @@ def main_diff(fname_ref: str,
                 facts = opts.force_nmorient.split(',')
                 if len(facts) != nvib:
                     print('ERROR: Number of coefficients for nmorient '
-                          + 'different from number of normal modes')
+                          + 'different from number of normal modes',
+                          file=output)
                     sys.exit(1)
                 lwmat = hessdat['lwmat']
                 for i, fact in enumerate(facts):
@@ -1258,56 +1277,61 @@ def main_diff(fname_ref: str,
     else:
         indexes = convert_range_spec(opts.indexes, py_index=True)
     if max(indexes) >= nmax_indexes:
-        print('Incorrect index specification, outside valid range.')
-        print(f'Maximum value of the indexes is {nmax_indexes}.')
+        print('Incorrect index specification, outside valid range.',
+              file=output)
+        print(f'Maximum value of the indexes is {nmax_indexes}.', file=output)
         sys.exit(1)
 
-    sec_header(sys.stdout, 1, 'Execution')
+    sec_header(output, 1, 'Execution')
     # == Main loop
     if opts.refheader:
-        sec_header(sys.stdout, 2, 'Header data')
+        sec_header(output, 2, 'Header data')
         if opts.format.startswith('indata'):
             if der_coord not in ('Q', 'q'):
-                print('ERROR: InDataNM/X only for Cart. displacements NYI.')
+                print('ERROR: InDataNM/X only for Cart. displacements NYI.',
+                      file=output)
                 sys.exit(9)
             if lwmat is None or hessdat['eval'] is None:
-                print('ERROR: Uninitialized data to print header for InData')
+                print('ERROR: Uninitialized data to print header for InData',
+                      file=output)
                 sys.exit(9)
-            print_header_indata(output, atcrd_ref, atsmb, atmas_ref, lwmat,
+            print_header_indata(datalog, atcrd_ref, atsmb, atmas_ref, lwmat,
                                 hessdat['eval'], indexes)
         else:
-            print_header(output, atcrd_ref, atsmb, hessdat['lwmat'])
+            print_header(datalog, atcrd_ref, atsmb, hessdat['lwmat'])
 
     for qlab, derords in qdata.items():
         qinfo = pinfo(qlab)
-        sec_header(sys.stdout, 2, f'Building Data for {qinfo.name.title()}')
+        sec_header(output, 2, f'Building Data for {qinfo.name.title()}')
         if der_coord in ('Q', 'q'):
             if n_steps == 1:
                 try:
-                    get_dq_diff(qlab, derords, qinfo, fref, patt_info['fmt'],
-                                der_step, indexes, lwmat, hessdat['eval'],
-                                opts.format, output)
+                    get_dq_diff(output, qlab, derords, qinfo, fref,
+                                patt_info['fmt'], der_step, indexes, lwmat,
+                                hessdat['eval'], opts.format, datalog)
                 except QuantityError as err:
                     print('ERROR: Failed to build derivatives for '
-                          + f'{qinfo.name}')
-                    print(err)
+                          + f'{qinfo.name}', file=output)
+                    print(err, file=output)
                     sys.exit(2)
             else:
-                print('Multi-steps derivatives NYI.')
+                print('Multi-steps derivatives NYI.', file=output)
                 sys.exit(9)
         elif der_coord == 'X':
             if n_steps == 1:
                 try:
-                    get_dx_diff(qlab, derords, qinfo, fref, patt_info['fmt'],
-                                der_step, indexes, opts.format, output)
+                    get_dx_diff(output, qlab, derords, qinfo, fref,
+                                patt_info['fmt'], der_step, indexes,
+                                opts.format, datalog)
                 except QuantityError as err:
                     print('ERROR: Failed to build derivatives for '
-                          + f'{qinfo.name}')
-                    print(err)
+                          + f'{qinfo.name}', file=output)
+                    print(err, file=output)
                     sys.exit(2)
             else:
-                print('Multi-steps derivatives NYI.')
+                print('Multi-steps derivatives NYI.', file=output)
                 sys.exit(9)
         else:
-            print(f'ERROR: Unsupported type of coordinates, {der_coord}')
+            print(f'ERROR: Unsupported type of coordinates, {der_coord}',
+                  file=output)
             sys.exit(9)
