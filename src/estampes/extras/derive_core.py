@@ -47,8 +47,8 @@ Note: the keywords are case-insensitive.
 """
 HELP_FMT = """\
 Output format (case-insensitive).  Possible values are:
-- InDataX (default): Output to be read by Gaussian with DataSrc=InDataX.
-- InDataNM: Output to be read by Gaussian with DataSrc=InDataNM.
+- InDataX: Output to be read by Gaussian with DataSrc=InDataX.
+- InDataNM (default): Output to be read by Gaussian with DataSrc=InDataNM.
 """
 LIM_STEP = 1.0e-8
 XYZ = ('X', 'Y', 'Z')
