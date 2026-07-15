@@ -1,0 +1,223 @@
+= DERIVEUR: A simple tool for numerical differentiation
+:email: julien.bloino@sns.it
+:revnumber: 0.7.0
+:revremark: First version
+:toc: left
+:toclevels: 1
+:icons: font
+:stem:
+
+:Deriveur: pass:q[[.smallcaps]##Deriveur##]
+:Gaussian: pass:q[[.smallcaps]##Gaussian##]
+:NumPy: pass:q[[.smallcaps]##NumPy##]
+
+== Overview
+
+{Deriveur} is a tool to manage the most tedious steps of constructing numerical derivatives for electronic structure quantities.
+It has two modes:
+
+Builder::
+    The program constructs the displaced geometries and prepares {Gaussian}-style input files based on a template file provided by the user or a simple internal format.
+Differentiation::
+    The program extracts data from an ensemble of files based on a pattern provided by the users and construct numerical derivatives for the specified quantities.
+
+== Requirements
+
+* The program relies on the ESTAMPES library, which needs {NumPy} to compute displacements along normal coordinates.
+* Numerical derivatives are stored in memory during the construction to limit I/O operations.
+Memory requirements may scale as (3*N~atoms~)^4^ for fourth derivatives of the energy.footnote:[in practice, (3*N~atoms~)^3^ for 2-points linear differentiation since the numerical second derivatives are linear.]
+
+== Usage
+
+Instructions are given in command-line and follow the pattern:
+
+[bash]
+----
+esderiveur [core options] shift/diff [specific options]
+----
+
+Help can be invoked in the following way:
+
+* `esderiveur -H`: provides the full help
+* `esderiveur -h`: lists the _core options_
+* `esderiveur shift -h`: lists the options specific to the *_builder_*
+* `esderiveur diff -h`: lists the options for the *_differentiation_*.
+
+[IMPORTANT]
+====
+_Core options_ and _specific options_ cannot be interchanged.
+This means that the _core options_ *must* be provided before the mode specification `shift` or `diff`, while _specific options_ must follow it.
+====
+
+== Command-line arguments
+
+=== Core options
+
+`-c` | `--coord`::
+    (*_default_*: `Q`) +
+    Coordinates for the displacement (_case-sensitive_).  Accepted values are:
+    
+    * `Q` (aliases: `modes`, `normal`, `mode`, `qweigh`): displacement along mass-weighted normal coordinates.
+    // * `q` (aliases: `qred`, `reduced`): displacement along dimensionless coordinates
+    * `X` (aliases: `x`, `cart`, `cartesian`): displacement along Cartesian coordinates
+
+
+`-i` | `--indexes`::
+    (*_default_*: all indexes) +
+    Indexes of the coordinates along which the displacements are to be carried out or the derivatives constructed.
+    For Cartesian displacements, the indexes are atomic indexes, for normal coordinates, the mode indexes.
+    The indexes can be given as lists and ranges (ex: `1-4,10`).
+
+
+`-p` | `--pattern`::
+    Filenames pattern for displaced geometries. It can contain:
++
+--
+    * `[DISP]`: replaced with the full displacement information.
+    * `[STEP]`: replaced with the step number (normally for multi-steps displacements).
+    * `[NUM]`: coordinate number (e.g., mode or atom).
+    * `[XYZ]`: Cartesian coordinate for the displacement, where relevant.
+    * `[DIR]`: direction (P: positive, N: negative).
+
+IMPORTANT: mandatory for `diff`, if not provided for `shift`, the geometries are printed in the terminal.
+
+--
+
+`--redirect`::
+    (*_default_*: _standard output_) +
+    Redirect the output of the {Deriveur} program to the specified file instead of the terminal.
+
+`-s` | `--step`::
+    (*_default_*: 0.01 u^1/2^ Å for _Q_, 0.001 Å for _X_) +
+    Value of the differentiation step, in the unit specified by `--unit`.
+
+`-u` | `--unit`::
+    (*_default_*: `ang`) +
+    Unit for the coordinates (_case-insensitive_), used in the definition of the step if not the default and the output displaced geometries.
+    Accepted values are:
+
+    * `ang` (aliases: `AA`): angstroms
+    * `au` (aliases: `a0`, `bohr`): atomic units of length
+
+
+=== Mode _Builder_: `shift`
+
+`reffile`::
+    Reference file to build derivation points.
+    At least the cartesian coordinates, atomic numbers and masses are used.
+    For displacement along normal coordinates, the file must contain the Hessian matrix or normal coordinates.
+
+`-t` | `--template`::
+    Template file used as basis to generate the files with displaced geometries.
++
+--
+The file should at least contain 2 keywords:
+
+* `[GEOM]` will be replaced with the generated geometry.
+* `[DESC]` to print information on the step.
+
+Other supported keywords are:
+* `[CHK]` generates a full chk filename based on template filename and step.
+
+In addition, the file can include the keywords supported for filename patterns, for instance to specify a custom checkpoint filename:
+
+* `[DISP]`: replaced with the full displacement information.
+* `[STEP]`: replaced with the step number (normally for multi-steps displacements).
+* `[NUM]`: coordinate number (e.g., mode or atom).
+* `[XYZ]`: Cartesian coordinate for the displacement, where relevant.
+* `[DIR]`: direction (P: positive, N: negative).
+
+IMPORTANT: If not provided, a generic template is used.
+
+--
+
+=== Mode _Differentiator_: `diff`
+
+`reffile`::
+    One mandatory argument must be provided, the file with data at the reference (equilibrium) geometry.
+
+`-f`, `--format`::
+    (*_default_*: `InDataNM`) +
+    Output format (_case-insensitive_).  Possible values are:
+
+    * `InDataX`: Output to be read by {Gaussian} with `DataSrc=InDataX`.
+    * `InDataNM`: Output to be read by {Gaussian} with `DataSrc=InDataNM`.
+
+`--force-nmorient`::
+    (*_default_*: _empty_) +
+    Force orientation of normal modes by multiplying by +/-1.
+    This should be used primarily for debugging.
+    Numbers are expected as -1/(+)1, separated by commas, the value itself is ignored, only the sign is relevant.
+
+`--no-nmorient`::
+    (*_default_*: _false_) +
+    Deactivate the correction of the normal modes orientation (primarily for backward compatibility if necessary)
+
+`-o`, `--output`::
+    Save output in given file instead of terminal
+
+`-q`, `--quantity`::
+    Multiple quantities can be given, separated by commas.
++
+--
+Supported quantities are (keywords after ->, aliases separated by commas):
+
+* _energy_ -> `Energy`, `V`
+* _electric dipole_ -> `ElecDip`, `ED`, `u`
+* _magnetic dipole_ -> `MagDip`, `MD`, `m`
+* _static polarizability tensor_ -> `PolTens`, `PT`, `a`
+* _frequency-dependent polarizability_ -> `FDAlpha`, `FDA`, `a(w)`
+* _frequency-dependent optical rotation_ -> `FDOptRot`, `FDOR`, `O(w)`
+* _frequency-dependent dipole-quadrupole_ -> `FDDipQuad`, `FDDQ`, `Q(w)`
+
+Each quantity can be preceded by "D" followed by the order(s) of derivations.
+
+* `D0`` is equivalent to reference property
+* ranges can be indicated with a "-" sign (ex: `D2-3u`)
+
+NOTE: the keywords are case-insensitive.
+
+--
+
+`--refheader`::
+    Print reference data header, primarily used by {Gaussian} to check internal data consistency.
+
+[CAUTION]
+====
+In the differentiation mode, a consistency check is carried out, checking that the same derivatives computed through along different coordinates (e.g, second derivative along normal modes _i_ and _j_) are equal within the numerical error.
+The results are printed in the terminals.
+It is recommended to redirect the output toward a file for analysis at first to check that the produced data are reliable, either using the shell commands or the _core option_ `--redirect`.
+====
+
+== Examples
+
+=== Example of {Gaussian}-compatible template file.
+
+----
+%NProcShared=16
+%Mem=16GB
+%Chk=[FULLCHK]
+#P HF/6-31G(d,p) Freq=(HPModes,VCD,SaveNM) NoSymm
+
+Methyloxirane - [DESC]
+
+0 1
+[GEOM]
+
+----
+
+=== Builder
+
+[bash]
+.Build displaced geometries along normal coordinates, redirecting the output to `builder.txt`
+----
+esderiveur -c Q shift -p "meox_[DISP].gjf" --redirect="builder.txt" meox_HF.631Gdp.frq.fchk -t template_meox_VCD.gjf > builder.txt
+----
+
+=== Differentiator
+
+[bash]
+.Build numerical derivatives relevant for anharmonic VCD and store them in `indata.txt` and redirect the output into `output_diff.txt`
+----
+esderiveur --redirect="output_diff.txt" --pattern='meox_[DISP].fchk'  -c Q diff PCPD.fchk -o indata.txt -f indatanm -q "d0-4v,d0-3u,d1-3m" --refheader
+----
