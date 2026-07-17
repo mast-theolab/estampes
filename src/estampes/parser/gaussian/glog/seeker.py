@@ -1195,7 +1195,7 @@ def qlab_to_linkdata(qlab: QLabel,
                     num1.append(0)
                     fmt1.append(
                         r'^\s+-> (?P<val>Omega =\s*\d+\.\d+ cm.-1.* '
-                        + r'Sigma =\s*-?\d+\.\d+E?[+-]\d{2,3})\s*$')
+                        + r'Sigma =\s*-?\d+\.\d+(?:E?[+-]\d{2,3})?)\s*$')
                 else:
                     if qlab.level == 'H':
                         lnk1.extend([-716, 716])

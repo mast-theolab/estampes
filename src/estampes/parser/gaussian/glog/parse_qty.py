@@ -876,7 +876,7 @@ def parse_ramact_data(qlab: QLabel, dblock: DBlocGLogType,
         txt = r'Omega =\s*(?P<incfrq>\d+\.\d+) cm.-1\s*,\s+'
         if 'Gamma' in line:
             txt += r'Gamma =\s*(?P<gamma>\d+\.\d+) cm.-1\s*,\s+'
-        txt += r'Sigma =\s*(?P<sigma>[-+]?\d\.\d+E?[+-]\d{2,3})'
+        txt += r'Sigma =\s*(?P<sigma>[-+]?\d+\.\d+(?:E?[+-]\d{2,3})?)'
         pattern = re.compile(txt)
         gamma = None
         for line in dblock[-1]:
